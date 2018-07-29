@@ -1,0 +1,430 @@
+#include"PancystarEngineBasicDx12.h"
+#include"PancyDx12Basic.h"
+enum SwapChainBitDepth
+{
+	_8 = 0,
+	_10,
+	_16,
+	SwapChainBitDepthCount
+};
+
+
+class PancyDx12Basic
+{
+	UINT now_frame_use;
+	/*
+	HWND hwnd_window;
+	int width;
+	int height;
+	//帧缓冲区数量
+	UINT FrameCount;
+	//d3d设备
+	ComPtr<ID3D12Device> m_device;
+	//交换链
+	ComPtr<IDXGISwapChain3> PancyDx12DeviceBasic::GetInstance()->GetSwapchain();
+	//渲染队列
+	ComPtr<ID3D12CommandQueue> PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect();
+	*/
+	//资源堆大小	
+	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
+	UINT m_rtvDescriptorSize;
+	std::vector<ComPtr<ID3D12Resource>> m_renderTargets;
+	//commond alloctor
+	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
+	//commond list
+	ComPtr<ID3D12GraphicsCommandList> m_commandList;
+	//管线状态
+	ComPtr<ID3D12PipelineState> m_pipelineState;
+	/*
+	//同步信号
+	ComPtr<ID3D12Fence> m_fence;
+	UINT64 m_fenceValue;
+	HANDLE m_fenceEvent;
+	*/
+public:
+	PancyDx12Basic()
+	{
+		for (int i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
+		{
+			m_renderTargets.push_back(NULL);
+		}
+	}
+	PancystarEngine::EngineFailReason Create(HWND hwnd_window_in, int width_in, int height_in);
+	void Render();
+	void Release();
+private:
+	void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);
+	void PopulateCommandList();
+	void WaitForPreviousFrame();
+	inline int ComputeIntersectionArea(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2)
+	{
+		return max(0, min(ax2, bx2) - max(ax1, bx1)) * max(0, min(ay2, by2) - max(ay1, by1));
+	}
+};
+
+void PancyDx12Basic::PopulateCommandList()
+{
+	HRESULT hr;
+	// Command list allocators can only be reset when the associated 
+	// command lists have finished execution on the GPU; apps should use 
+	// fences to determine GPU execution progress.
+	hr = m_commandAllocator->Reset();
+
+	// However, when ExecuteCommandList() is called on a particular command 
+	// list, that command list can then be reset at any time and must be before 
+	// re-recording.
+	hr = m_commandList->Reset(m_commandAllocator.Get(), m_pipelineState.Get());
+
+	// Indicate that the back buffer will be used as a render target.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), now_frame_use, m_rtvDescriptorSize);
+
+	// Record commands.
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	// Indicate that the back buffer will now be used to present.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	hr = m_commandList->Close();
+}
+void PancyDx12Basic::WaitForPreviousFrame()
+{
+	HRESULT hr;
+	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+	// This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
+	// sample illustrates how to use fences for efficient resource usage and to
+	// maximize GPU utilization.
+
+	// Signal and increment the fence value.
+	const UINT64 fence = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceValue();
+	
+	hr = PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->Signal(PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFence().Get(), fence);
+	PancyDx12DeviceBasic::GetInstance()->AddDirectQueueFenceValue();
+	// Wait until the previous frame is finished.
+	if (PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFence()->GetCompletedValue() < PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceValue())
+	{
+		hr = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFence()->SetEventOnCompletion(fence, PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceEvent());
+		WaitForSingleObject(PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceEvent(), INFINITE);
+	}
+
+	now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetCurrentBackBufferIndex();
+}
+
+void PancyDx12Basic::Render()
+{
+	HRESULT hr;
+	// Record all the commands we need to render the scene into the command list.
+	PopulateCommandList();
+
+	// Execute the command list.
+	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+	PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	// Present the frame.
+	hr = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->Present(1, 0);
+
+	WaitForPreviousFrame();
+}
+void PancyDx12Basic::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter)
+{
+	ComPtr<IDXGIAdapter1> adapter;
+	*ppAdapter = nullptr;
+	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
+	{
+		DXGI_ADAPTER_DESC1 desc;
+		adapter->GetDesc1(&desc);
+		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+		{
+			//跳过CPU渲染过程
+			continue;
+		}
+		//检验是否支持dx12
+		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, _uuidof(ID3D12Device), nullptr)))
+		{
+			break;
+		}
+	}
+	*ppAdapter = adapter.Detach();
+}
+PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, int width_in, int height_in)
+{
+	/*
+	hwnd_window = hwnd_window_in;
+	width = width_in;
+	height = height_in;
+	HRESULT hr;
+	UINT dxgiFactoryFlags = 0;
+#if defined(_DEBUG)
+	{
+		ComPtr<ID3D12Debug> debugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+		{
+			debugController->EnableDebugLayer();
+			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+		}
+	}
+#endif
+	ComPtr<IDXGIFactory4> dxgi_factory;
+	hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&dxgi_factory));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create DXGIFactory Error When init D3D basic");
+		return error_message;
+	}
+	ComPtr<IDXGIAdapter1> hardwareAdapter;
+	GetHardwareAdapter(dxgi_factory.Get(), &hardwareAdapter);
+	hr = D3D12CreateDevice(hardwareAdapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create Dx12 Device Error When init D3D basic");
+		return error_message;
+	}
+	//创建渲染队列
+	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	hr = m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()));
+	if (FAILED(hr)) 
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create Command Queue Error When init D3D basic");
+		return error_message;
+	}
+	// 创建交换链
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+	swapChainDesc.BufferCount = FrameCount;
+	swapChainDesc.Width = width;
+	swapChainDesc.Height = height;
+	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.SampleDesc.Count = 1;
+	ComPtr<IDXGISwapChain1> swapChain;
+	hr = dxgi_factory->CreateSwapChainForHwnd(
+		PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect().Get(),
+		hwnd_window,
+		&swapChainDesc,
+		nullptr,
+		nullptr,
+		&swapChain
+	);
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create Swap Chain Error When init D3D basic");
+		return error_message;
+	}
+	swapChain.As(&PancyDx12DeviceBasic::GetInstance()->GetSwapchain());
+	//禁止全屏
+	dxgi_factory->MakeWindowAssociation(hwnd_window, DXGI_MWA_NO_ALT_ENTER);
+	*/
+	HRESULT hr;
+	//选取当前激活的缓冲区
+	now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetCurrentBackBufferIndex();
+	//创建一个资源堆
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.NumDescriptors = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create DescriptorHeap Error When init D3D basic");
+		return error_message;
+	}
+	//获取资源堆的大小
+	m_rtvDescriptorSize = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	//在资源堆上创建RTV
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
+	for (UINT n = 0; n < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); n++)
+	{
+		hr = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n]));
+		PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
+		rtvHandle.Offset(1, m_rtvDescriptorSize);
+	}
+	//创建commandallocator
+	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create CommandAllocator Error When init D3D basic");
+		return error_message;
+	}
+	//创建commondlist
+	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create CommandList Error When init D3D basic");
+		return error_message;
+	}
+	m_commandList->Close();
+	//创建fence
+	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create Fence Error When init D3D basic");
+		return error_message;
+	}
+	m_fenceValue = 1;
+	m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (m_fenceEvent == nullptr)
+	{
+		PancystarEngine::EngineFailReason error_message(HRESULT_FROM_WIN32(GetLastError()), "Create FenceEvent Error When init D3D basic");
+		return error_message;
+	}
+	return PancystarEngine::succeed;
+}
+void PancyDx12Basic::Release() 
+{
+	WaitForPreviousFrame();
+	CloseHandle(m_fenceEvent);
+}
+
+
+
+
+
+class engine_windows_main
+{
+	HWND         hwnd;                                                  //指向windows类的句柄。
+	MSG          msg;                                                   //存储消息的结构。
+	WNDCLASS     wndclass;
+	int32_t      window_width;
+	int32_t      window_height;
+	HINSTANCE    hInstance;
+	HINSTANCE    hPrevInstance;
+	PSTR         szCmdLine;
+	int32_t      iCmdShow;
+	PancyDx12Basic *new_device;
+public:
+	engine_windows_main(HINSTANCE hInstance_need, HINSTANCE hPrevInstance_need, PSTR szCmdLine_need, int iCmdShow_need);
+	HRESULT game_create();
+	HRESULT game_loop();
+	WPARAM game_end();
+	static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+};
+LRESULT CALLBACK engine_windows_main::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_KEYDOWN:                // 键盘按下消息
+		if (wParam == VK_ESCAPE)    // ESC键
+			DestroyWindow(hwnd);    // 销毁窗口, 并发送一条WM_DESTROY消息
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+	case WM_SIZE:
+
+		return 0;
+	}
+	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+engine_windows_main::engine_windows_main(HINSTANCE hInstance_need, HINSTANCE hPrevInstance_need, PSTR szCmdLine_need, int iCmdShow_need)
+{
+	hwnd = NULL;
+	hInstance = hInstance_need;
+	hPrevInstance = hPrevInstance_need;
+	szCmdLine = szCmdLine_need;
+	iCmdShow = iCmdShow_need;
+	window_width = 800;
+	window_height = 600;
+}
+HRESULT engine_windows_main::game_create()
+{
+	//填充窗口类型
+	wndclass.style = CS_HREDRAW | CS_VREDRAW;                   //窗口类的类型（此处包括竖直与水平平移或者大小改变时时的刷新）。msdn原文介绍：Redraws the entire window if a movement or size adjustment changes the width of the client area.
+	wndclass.lpfnWndProc = WndProc;                                   //确定窗口的回调函数，当窗口获得windows的回调消息时用于处理消息的函数。
+	wndclass.cbClsExtra = 0;                                         //为窗口类末尾分配额外的字节。
+	wndclass.cbWndExtra = 0;                                         //为窗口类的实例末尾额外分配的字节。
+	wndclass.hInstance = hInstance;                                 //创建该窗口类的窗口的句柄。
+	wndclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);          //窗口类的图标句柄。
+	wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);              //窗口类的光标句柄。
+	wndclass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);     //窗口类的背景画刷句柄。
+	wndclass.lpszMenuName = NULL;                                      //窗口类的菜单。
+	wndclass.lpszClassName = TEXT("pancystar_engine");           //窗口类的名称。
+
+	//取消dpi对游戏的缩放
+	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+	if (!RegisterClass(&wndclass))                                      //注册窗口类。
+	{
+		MessageBox(NULL, TEXT("This program requires Windows NT!"),
+			TEXT("pancystar_engine"), MB_ICONERROR);
+		return E_FAIL;
+	}
+	//获取渲染窗口真正的大小
+	RECT R = { 0, 0, window_width, window_height };
+	AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
+	int width = R.right - R.left;
+	int height = R.bottom - R.top;
+	//创建窗口
+	hwnd = CreateWindow(TEXT("pancystar_engine"), // window class name创建窗口所用的窗口类的名字。
+		TEXT("pancystar_engine"),                 // window caption所要创建的窗口的标题。
+		WS_DLGFRAME | WS_SYSMENU,                 // window style所要创建的窗口的类型。
+		CW_USEDEFAULT,                            // initial x position窗口的初始位置水平坐标。
+		CW_USEDEFAULT,                            // initial y position窗口的初始位置垂直坐标。
+		width,                                    // initial x size窗口的水平位置大小。
+		height,                                   // initial y size窗口的垂直位置大小。
+		NULL,                                     // parent window handle其父窗口的句柄。
+		NULL,                                     // window menu handle其菜单的句柄。
+		hInstance,                                // program instance handle窗口程序的实例句柄。
+		NULL);                                    // creation parameters创建窗口的指针
+	if (hwnd == NULL)
+	{
+		return E_FAIL;
+	}
+	RECT new_info;
+	GetWindowRect(hwnd, &new_info);
+	PancyDx12DeviceBasic::SingleCreate(hwnd, window_width, window_height);
+
+	//MoveWindow(hwnd,new_info.left+100, new_info.top+100, width, height,true);
+	new_device = new PancyDx12Basic();
+	auto check_error = new_device->Create(hwnd, window_width, window_height);
+	ShowWindow(hwnd, SW_SHOW);                    // 将窗口显示到桌面上。
+	UpdateWindow(hwnd);                           // 刷新一遍窗口（直接刷新，不向windows消息循环队列做请示）。
+	return S_OK;
+}
+HRESULT engine_windows_main::game_loop()
+{
+	//游戏循环
+	ZeroMemory(&msg, sizeof(msg));
+	while (msg.message != WM_QUIT)
+	{
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			new_device->Render();
+			TranslateMessage(&msg);//消息转换
+			DispatchMessage(&msg);//消息传递给窗口过程函数
+		}
+		else
+		{
+			new_device->Render();
+		}
+	}
+	return S_OK;
+}
+WPARAM engine_windows_main::game_end()
+{
+	new_device->Release();
+	delete new_device;
+	delete PancyDx12DeviceBasic::GetInstance();
+	return msg.wParam;
+}
+//windows函数的入口
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+	PSTR szCmdLine, int iCmdShow)
+{
+	//_CrtSetBreakAlloc(224);
+	engine_windows_main *engine_main = new engine_windows_main(hInstance, hPrevInstance, szCmdLine, iCmdShow);
+	engine_main->game_create();
+	engine_main->game_loop();
+	auto msg_end = engine_main->game_end();
+	PancystarEngine::EngineFailLog::GetInstance();
+	delete engine_main;
+	delete PancystarEngine::EngineFailLog::GetInstance();
+#ifdef CheckWindowMemory
+	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
+#endif
+	
+	//_CrtDumpMemoryLeaks();
+	
+	return msg_end;
+}
+
