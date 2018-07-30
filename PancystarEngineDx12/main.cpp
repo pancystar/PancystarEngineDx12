@@ -12,39 +12,18 @@ enum SwapChainBitDepth
 class PancyDx12Basic
 {
 	UINT now_frame_use;
-	/*
-	HWND hwnd_window;
-	int width;
-	int height;
-	//帧缓冲区数量
-	UINT FrameCount;
-	//d3d设备
-	ComPtr<ID3D12Device> m_device;
-	//交换链
-	ComPtr<IDXGISwapChain3> PancyDx12DeviceBasic::GetInstance()->GetSwapchain();
-	//渲染队列
-	ComPtr<ID3D12CommandQueue> PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect();
-	*/
+	ThreadPoolGPU *main_thread;//主线程
 	//资源堆大小	
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 	UINT m_rtvDescriptorSize;
 	std::vector<ComPtr<ID3D12Resource>> m_renderTargets;
-	//commond alloctor
-	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
-	//commond list
-	ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	//管线状态
 	ComPtr<ID3D12PipelineState> m_pipelineState;
-	/*
-	//同步信号
-	ComPtr<ID3D12Fence> m_fence;
-	UINT64 m_fenceValue;
-	HANDLE m_fenceEvent;
-	*/
+	uint32_t renderlist_ID;
 public:
 	PancyDx12Basic()
 	{
-		for (int i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
+		for (uint32_t i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
 		{
 			m_renderTargets.push_back(NULL);
 		}
@@ -65,38 +44,44 @@ private:
 void PancyDx12Basic::PopulateCommandList()
 {
 	HRESULT hr;
+	PancystarEngine::EngineFailReason check_error;
 	// Command list allocators can only be reset when the associated 
 	// command lists have finished execution on the GPU; apps should use 
 	// fences to determine GPU execution progress.
-	hr = m_commandAllocator->Reset();
+	//hr = m_commandAllocator->Reset();
 
+	check_error = main_thread->FreeAlloctor(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
+	PancyRenderCommandList *m_commandList;
+	
+	check_error = main_thread->GetEmptyRenderlist(m_pipelineState.Get(),D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,&m_commandList, renderlist_ID);
 	// However, when ExecuteCommandList() is called on a particular command 
 	// list, that command list can then be reset at any time and must be before 
 	// re-recording.
-	hr = m_commandList->Reset(m_commandAllocator.Get(), m_pipelineState.Get());
+	//hr = m_commandList->GetCommandList()->Reset(m_commandAllocator.Get(), m_pipelineState.Get());
 
 	// Indicate that the back buffer will be used as a render target.
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), now_frame_use, m_rtvDescriptorSize);
 
 	// Record commands.
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	// Indicate that the back buffer will now be used to present.
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-
-	hr = m_commandList->Close();
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	m_commandList->UnlockPrepare();
+	//hr = m_commandList->GetCommandList()->Close();
 }
 void PancyDx12Basic::WaitForPreviousFrame()
 {
-	HRESULT hr;
 	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
 	// This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
 	// sample illustrates how to use fences for efficient resource usage and to
 	// maximize GPU utilization.
 
 	// Signal and increment the fence value.
+	auto  check_error = main_thread->WaitWorkRenderlist(renderlist_ID);
+	/*
 	const UINT64 fence = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceValue();
 	
 	hr = PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->Signal(PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFence().Get(), fence);
@@ -107,7 +92,7 @@ void PancyDx12Basic::WaitForPreviousFrame()
 		hr = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFence()->SetEventOnCompletion(fence, PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceEvent());
 		WaitForSingleObject(PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceEvent(), INFINITE);
 	}
-
+	*/
 	now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetCurrentBackBufferIndex();
 }
 
@@ -117,9 +102,10 @@ void PancyDx12Basic::Render()
 	// Record all the commands we need to render the scene into the command list.
 	PopulateCommandList();
 
+	auto  check_error = main_thread->SubmitRenderlist(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,1,&renderlist_ID);
 	// Execute the command list.
-	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
-	PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	//ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+	//PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// Present the frame.
 	hr = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->Present(1, 0);
@@ -149,75 +135,13 @@ void PancyDx12Basic::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1**
 }
 PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, int width_in, int height_in)
 {
-	/*
-	hwnd_window = hwnd_window_in;
-	width = width_in;
-	height = height_in;
 	HRESULT hr;
-	UINT dxgiFactoryFlags = 0;
-#if defined(_DEBUG)
+	main_thread = new ThreadPoolGPU(0);
+	auto check_error = main_thread->Create();
+	if (!check_error.CheckIfSucceed()) 
 	{
-		ComPtr<ID3D12Debug> debugController;
-		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
-		{
-			debugController->EnableDebugLayer();
-			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-		}
+		return check_error;
 	}
-#endif
-	ComPtr<IDXGIFactory4> dxgi_factory;
-	hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&dxgi_factory));
-	if (FAILED(hr))
-	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create DXGIFactory Error When init D3D basic");
-		return error_message;
-	}
-	ComPtr<IDXGIAdapter1> hardwareAdapter;
-	GetHardwareAdapter(dxgi_factory.Get(), &hardwareAdapter);
-	hr = D3D12CreateDevice(hardwareAdapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device));
-	if (FAILED(hr))
-	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Dx12 Device Error When init D3D basic");
-		return error_message;
-	}
-	//创建渲染队列
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	hr = m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()));
-	if (FAILED(hr)) 
-	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Command Queue Error When init D3D basic");
-		return error_message;
-	}
-	// 创建交换链
-	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-	swapChainDesc.BufferCount = FrameCount;
-	swapChainDesc.Width = width;
-	swapChainDesc.Height = height;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	swapChainDesc.SampleDesc.Count = 1;
-	ComPtr<IDXGISwapChain1> swapChain;
-	hr = dxgi_factory->CreateSwapChainForHwnd(
-		PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect().Get(),
-		hwnd_window,
-		&swapChainDesc,
-		nullptr,
-		nullptr,
-		&swapChain
-	);
-	if (FAILED(hr))
-	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Swap Chain Error When init D3D basic");
-		return error_message;
-	}
-	swapChain.As(&PancyDx12DeviceBasic::GetInstance()->GetSwapchain());
-	//禁止全屏
-	dxgi_factory->MakeWindowAssociation(hwnd_window, DXGI_MWA_NO_ALT_ENTER);
-	*/
-	HRESULT hr;
 	//选取当前激活的缓冲区
 	now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetCurrentBackBufferIndex();
 	//创建一个资源堆
@@ -241,6 +165,7 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 		PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
 		rtvHandle.Offset(1, m_rtvDescriptorSize);
 	}
+	/*
 	//创建commandallocator
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator));
 	if (FAILED(hr))
@@ -256,6 +181,7 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 		return error_message;
 	}
 	m_commandList->Close();
+	
 	//创建fence
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence));
 	if (FAILED(hr))
@@ -270,12 +196,15 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 		PancystarEngine::EngineFailReason error_message(HRESULT_FROM_WIN32(GetLastError()), "Create FenceEvent Error When init D3D basic");
 		return error_message;
 	}
+	*/
 	return PancystarEngine::succeed;
 }
 void PancyDx12Basic::Release() 
 {
+	
 	WaitForPreviousFrame();
-	CloseHandle(m_fenceEvent);
+	delete main_thread;
+	//CloseHandle(m_fenceEvent);
 }
 
 
@@ -390,6 +319,7 @@ HRESULT engine_windows_main::game_loop()
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			new_device->Render();
+			PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 			TranslateMessage(&msg);//消息转换
 			DispatchMessage(&msg);//消息传递给窗口过程函数
 		}

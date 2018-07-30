@@ -7,6 +7,7 @@
 #include<DXGI1_6.h>
 #include<ShellScalingApi.h>
 #include <wrl/client.h>
+#include<comdef.h>
 #pragma comment(lib, "Shcore.lib")
 using Microsoft::WRL::ComPtr;
 // C 运行时头文件

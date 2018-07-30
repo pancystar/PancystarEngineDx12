@@ -127,6 +127,7 @@ void EngineFailLog::PrintLogToconsole()
 		{
 			debug_data += std::string("error") + ":: " + log_data->fail_reason.GetFailReason().GetAsciiString();
 		}
+		debug_data += "\n";
 		PancyString out_debug_string = debug_data;
 		OutputDebugString(out_debug_string.GetUnicodeString().c_str());
 	}
