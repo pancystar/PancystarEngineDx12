@@ -194,7 +194,7 @@ CommandListEngine::CommandListEngine(const D3D12_COMMAND_LIST_TYPE &type_need, P
 	}
 	command_list_ID_selfadd = 0;
 	engine_type_id = static_cast<uint32_t>(type_need);
-	fence_value_self_add = 0;
+	fence_value_self_add = 1;
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&GPU_thread_fence));
 	if (FAILED(hr))
 	{
