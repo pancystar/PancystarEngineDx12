@@ -1,5 +1,6 @@
 #include"PancystarEngineBasicDx12.h"
 #include"PancyDx12Basic.h"
+#include"PancyGeometryDx12.h"
 enum SwapChainBitDepth
 {
 	_8 = 0,
@@ -12,7 +13,6 @@ enum SwapChainBitDepth
 class PancyDx12Basic
 {
 	UINT now_frame_use;
-	ThreadPoolGPU *main_thread;//主线程
 	//资源堆大小	
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 	UINT m_rtvDescriptorSize;
@@ -20,6 +20,8 @@ class PancyDx12Basic
 	//管线状态
 	ComPtr<ID3D12PipelineState> m_pipelineState;
 	uint32_t renderlist_ID;
+	//模型测试
+	PancystarEngine::GeometryBasic *test_model;
 public:
 	PancyDx12Basic()
 	{
@@ -43,34 +45,21 @@ private:
 
 void PancyDx12Basic::PopulateCommandList()
 {
-	HRESULT hr;
 	PancystarEngine::EngineFailReason check_error;
-	// Command list allocators can only be reset when the associated 
-	// command lists have finished execution on the GPU; apps should use 
-	// fences to determine GPU execution progress.
-	//hr = m_commandAllocator->Reset();
 
-	check_error = main_thread->FreeAlloctor(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->FreeAlloctor(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
 	PancyRenderCommandList *m_commandList;
 	
-	check_error = main_thread->GetEmptyRenderlist(m_pipelineState.Get(),D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,&m_commandList, renderlist_ID);
-	// However, when ExecuteCommandList() is called on a particular command 
-	// list, that command list can then be reset at any time and must be before 
-	// re-recording.
-	//hr = m_commandList->GetCommandList()->Reset(m_commandAllocator.Get(), m_pipelineState.Get());
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetEmptyRenderlist(m_pipelineState.Get(),D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,&m_commandList, renderlist_ID);
 
-	// Indicate that the back buffer will be used as a render target.
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), now_frame_use, m_rtvDescriptorSize);
 
-	// Record commands.
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	// Indicate that the back buffer will now be used to present.
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 	m_commandList->UnlockPrepare();
-	//hr = m_commandList->GetCommandList()->Close();
 }
 void PancyDx12Basic::WaitForPreviousFrame()
 {
@@ -80,7 +69,7 @@ void PancyDx12Basic::WaitForPreviousFrame()
 	// maximize GPU utilization.
 
 	// Signal and increment the fence value.
-	auto  check_error = main_thread->WaitWorkRenderlist(renderlist_ID);
+	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->WaitWorkRenderlist(renderlist_ID);
 	/*
 	const UINT64 fence = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceValue();
 	
@@ -102,7 +91,7 @@ void PancyDx12Basic::Render()
 	// Record all the commands we need to render the scene into the command list.
 	PopulateCommandList();
 
-	auto  check_error = main_thread->SubmitRenderlist(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,1,&renderlist_ID);
+	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->SubmitRenderlist(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,1,&renderlist_ID);
 	// Execute the command list.
 	//ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 	//PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
@@ -136,8 +125,17 @@ void PancyDx12Basic::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1**
 PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, int width_in, int height_in)
 {
 	HRESULT hr;
-	main_thread = new ThreadPoolGPU(0);
-	auto check_error = main_thread->Create();
+	PancystarEngine::Point2D point[3];
+	point[0].position = DirectX::XMFLOAT3(0.0f, 0.25f * 1.77f, 0.0f);
+	point[1].position = DirectX::XMFLOAT3(0.25f, -0.25f * 1.77f, 0.0f);
+	point[2].position = DirectX::XMFLOAT3(-0.25f, -0.25f * 1.77f, 0.0f);
+
+	point[0].tex_color = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f,0.0f);
+	point[1].tex_color = DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
+	point[2].tex_color = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);
+	UINT index[3] = {0,1,2};
+	test_model = new PancystarEngine::GeometryCommonModel<PancystarEngine::Point2D>(point, index,3,3);
+	auto check_error = test_model->Create();
 	if (!check_error.CheckIfSucceed()) 
 	{
 		return check_error;
@@ -201,9 +199,8 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 }
 void PancyDx12Basic::Release() 
 {
-	
 	WaitForPreviousFrame();
-	delete main_thread;
+	delete test_model;
 	//CloseHandle(m_fenceEvent);
 }
 
@@ -301,11 +298,20 @@ HRESULT engine_windows_main::game_create()
 	}
 	RECT new_info;
 	GetWindowRect(hwnd, &new_info);
-	PancyDx12DeviceBasic::SingleCreate(hwnd, window_width, window_height);
-
+	PancystarEngine::EngineFailReason check_error;
+	check_error = PancyDx12DeviceBasic::SingleCreate(hwnd, window_width, window_height);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return E_FAIL;
+	}
+	check_error = ThreadPoolGPUControl::SingleCreate();
+	if (!check_error.CheckIfSucceed())
+	{
+		return E_FAIL;
+	}
 	//MoveWindow(hwnd,new_info.left+100, new_info.top+100, width, height,true);
 	new_device = new PancyDx12Basic();
-	auto check_error = new_device->Create(hwnd, window_width, window_height);
+	check_error = new_device->Create(hwnd, window_width, window_height);
 	ShowWindow(hwnd, SW_SHOW);                    // 将窗口显示到桌面上。
 	UpdateWindow(hwnd);                           // 刷新一遍窗口（直接刷新，不向windows消息循环队列做请示）。
 	return S_OK;
@@ -341,7 +347,7 @@ WPARAM engine_windows_main::game_end()
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	PSTR szCmdLine, int iCmdShow)
 {
-	//_CrtSetBreakAlloc(224);
+	//_CrtSetBreakAlloc(304);
 	engine_windows_main *engine_main = new engine_windows_main(hInstance, hPrevInstance, szCmdLine, iCmdShow);
 	engine_main->game_create();
 	engine_main->game_loop();
@@ -349,12 +355,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	PancystarEngine::EngineFailLog::GetInstance();
 	delete engine_main;
 	delete PancystarEngine::EngineFailLog::GetInstance();
+	delete ThreadPoolGPUControl::GetInstance();
+	if (PancystarEngine::GeometryDesc::GetInstance() != NULL) 
+	{
+		delete PancystarEngine::GeometryDesc::GetInstance();
+	}
 #ifdef CheckWindowMemory
 	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
 #endif
 	
 	//_CrtDumpMemoryLeaks();
 	
-	return msg_end;
+	return static_cast<int>(msg_end);
 }
 

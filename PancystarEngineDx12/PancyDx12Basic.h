@@ -18,6 +18,7 @@ class PancyDx12DeviceBasic
 	ComPtr<ID3D12CommandQueue> command_queue_direct;
 	ComPtr<ID3D12CommandQueue> command_queue_copy;
 	ComPtr<ID3D12CommandQueue> command_queue_compute;
+
 private:
 	PancyDx12DeviceBasic(HWND hwnd_window, uint32_t width_in, uint32_t height_in);
 public:
@@ -67,10 +68,10 @@ public:
 	{
 		return FrameCount;
 	}
-
 private:
 	void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);
 };
+//commandlist管理(GPU线程(fence)管理)
 class PancyRenderCommandList
 {
 	std::atomic<bool> if_preparing;                       //是否正在准备
@@ -143,10 +144,6 @@ public:
 	}
 
 };
-
-
-
-
 struct CommandListEngine
 {
 	uint32_t engine_type_id;
@@ -158,8 +155,6 @@ struct CommandListEngine
 	UINT64 fence_value_self_add;
 	CommandListEngine(const D3D12_COMMAND_LIST_TYPE &type_need, PancystarEngine::EngineFailReason &error_message_out);
 };
-
-
 class ThreadPoolGPU
 {
 	uint32_t GPUThreadPoolID;
@@ -206,4 +201,47 @@ private:
 		list_in.clear();
 	}
 	PancystarEngine::EngineFailReason UpdateLastRenderList(const D3D12_COMMAND_LIST_TYPE &command_list_type);
+};
+
+class ThreadPoolGPUControl
+{	
+	ThreadPoolGPU* main_contex;//主渲染线程池
+	//其他的GPU线程池表
+	int GPU_thread_pool_self_add;
+	std::unordered_map<uint32_t, ThreadPoolGPU*> GPU_thread_pool_empty;
+	std::unordered_map<uint32_t, ThreadPoolGPU*> GPU_thread_pool_working;
+private:
+	ThreadPoolGPUControl();
+	PancystarEngine::EngineFailReason Create();
+public:
+	static ThreadPoolGPUControl* threadpool_control_instance;
+	static PancystarEngine::EngineFailReason SingleCreate()
+	{
+		if (threadpool_control_instance != NULL)
+		{
+			return PancystarEngine::succeed;
+		}
+		else
+		{
+			threadpool_control_instance = new ThreadPoolGPUControl();
+			PancystarEngine::EngineFailReason check_failed = threadpool_control_instance->Create();
+			return check_failed;
+		}
+	}
+	static ThreadPoolGPUControl* GetInstance()
+	{
+		return threadpool_control_instance;
+	}
+	ThreadPoolGPU* GetMainContex() 
+	{
+		return main_contex;
+	}
+	~ThreadPoolGPUControl();
+	//todo:为CPU多线程分配command alloctor
+};
+
+//dynamic buffer管理(GPU动态内存池)
+class DynamicMemoryPoolGPU 
+{
+
 };
