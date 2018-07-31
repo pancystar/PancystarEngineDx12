@@ -36,10 +36,10 @@ namespace PancystarEngine
 	struct PancyVertexBufferDesc
 	{
 		size_t vertex_desc_classID;
-		uint32_t input_element_num;
+		size_t input_element_num;
 		D3D12_INPUT_ELEMENT_DESC *inputElementDescs = NULL;
 	};
-	//几何体格式管理器
+	//几何体格式管理器(用于注册顶点)
 	class GeometryDesc
 	{
 		std::unordered_map<size_t, PancyVertexBufferDesc> vertex_buffer_desc_map;
@@ -57,7 +57,7 @@ namespace PancystarEngine
 		}
 		~GeometryDesc();
 		void AddVertexDesc(size_t vertex_desc_classID_in, std::vector<D3D12_INPUT_ELEMENT_DESC> input_element_desc_list);
-		inline const PancyVertexBufferDesc* GetVertexDesc(uint32_t vertex_class_id)
+		inline const PancyVertexBufferDesc* GetVertexDesc(size_t vertex_class_id)
 		{
 			auto new_vertex_desc = vertex_buffer_desc_map.find(vertex_class_id);
 			if (new_vertex_desc != vertex_buffer_desc_map.end())
@@ -92,7 +92,7 @@ namespace PancystarEngine
 		{
 			new_input_element_desc_list.push_back(inputElementDescs[i]);
 		}
-		AddVertexDesc(typeid(Point2D).hash_code, new_input_element_desc_list);
+		AddVertexDesc(typeid(Point2D).hash_code(), new_input_element_desc_list);
 		new_input_element_desc_list.clear();
 	}
 	void GeometryDesc::InitPointCommon()
@@ -113,19 +113,11 @@ namespace PancystarEngine
 		{
 			new_input_element_desc_list.push_back(inputElementDescs[i]);
 		}
-		AddVertexDesc(typeid(PointCommon).hash_code, new_input_element_desc_list);
+		AddVertexDesc(typeid(PointCommon).hash_code(), new_input_element_desc_list);
 		new_input_element_desc_list.clear();
 	}
 	void GeometryDesc::InitPointSkin() 
 	{
-		DirectX::XMFLOAT3 position;   //位置
-		DirectX::XMFLOAT3 normal;     //法线
-		DirectX::XMFLOAT3 tangent;    //切线
-		DirectX::XMUINT4  tex_id;     //使用的纹理ID号
-		DirectX::XMFLOAT4 tex_color;  //用于采样的坐标
-		DirectX::XMFLOAT4 tex_range;  //用于限制采样矩形的坐标
-		DirectX::XMUINT4  bone_id;    //骨骼ID号
-		DirectX::XMFLOAT4 bone_weight;//骨骼权重
 		std::vector<D3D12_INPUT_ELEMENT_DESC> new_input_element_desc_list;
 		//2D顶点格式
 		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
@@ -144,7 +136,7 @@ namespace PancystarEngine
 		{
 			new_input_element_desc_list.push_back(inputElementDescs[i]);
 		}
-		AddVertexDesc(typeid(PointSkinCommon).hash_code, new_input_element_desc_list);
+		AddVertexDesc(typeid(PointSkinCommon).hash_code(), new_input_element_desc_list);
 		new_input_element_desc_list.clear();
 	}
 	GeometryDesc::~GeometryDesc()
@@ -153,8 +145,8 @@ namespace PancystarEngine
 		{
 			delete now_vertex_desc->second.inputElementDescs;
 			now_vertex_desc->second.inputElementDescs = NULL;
-			vertex_buffer_desc_map.erase(now_vertex_desc);
 		}
+		vertex_buffer_desc_map.clear();
 	}
 	void GeometryDesc::AddVertexDesc(size_t vertex_desc_classID_in, std::vector<D3D12_INPUT_ELEMENT_DESC> input_element_desc_list)
 	{
@@ -315,15 +307,6 @@ namespace PancystarEngine
 		vertexData_buffer.RowPitch = BufferSize;
 		vertexData_buffer.SlicePitch = vertexData_buffer.RowPitch;
 		//资源拷贝
-		/*
-		cmdList->ResourceBarrier(
-			1,
-			&CD3DX12_RESOURCE_BARRIER::Transition(
-				default_buffer.Get(), D3D12_RESOURCE_STATE_COMMON,
-				D3D12_RESOURCE_STATE_COPY_DEST
-			)
-		);
-		*/
 		auto buffer_size = UpdateSubresources<1>(
 			cmdList,
 			default_buffer.Get(),
@@ -365,8 +348,8 @@ namespace PancystarEngine
 		GeometryCommonModel(
 			T *vertex_data_in,
 			UINT *index_data_in,
-			uint32_t *input_vert_num,
-			uint32_t *input_index_num,
+			const uint32_t &input_vert_num,
+			const uint32_t &input_index_num,
 			bool if_adj_in = false,
 			bool if_save_cpu_data_in = false
 		);
@@ -391,10 +374,10 @@ namespace PancystarEngine
 	GeometryCommonModel<T>::GeometryCommonModel(
 		T *vertex_data_in,
 		UINT *index_data_in,
-		uint32_t *input_vert_num,
-		uint32_t *input_index_num,
-		bool if_adj_in = false,
-		bool if_save_cpu_data_in = false
+		const uint32_t &input_vert_num,
+		const uint32_t &input_index_num,
+		bool if_adj_in,
+		bool if_save_cpu_data_in
 	) 
 	{
 		//拷贝CPU数据
@@ -413,7 +396,7 @@ namespace PancystarEngine
 			memcpy(index_data, index_data_in, input_index_num * sizeof(UINT));
 		}
 		if_save_CPU_data = if_save_cpu_data_in;
-
+		if_model_adj = if_adj_in;
 	}
 	template<typename T>
 	GeometryCommonModel<T>::~GeometryCommonModel()
@@ -421,13 +404,13 @@ namespace PancystarEngine
 		if (vertex_data != NULL) 
 		{
 			delete[] vertex_data;
-			vertex_data = 0;
+			vertex_data = NULL;
 
 		}
 		if (index_data != NULL) 
 		{
 			delete[] index_data;
-
+			index_data = NULL;
 		}
 	}
 	template<typename T>
@@ -465,15 +448,10 @@ namespace PancystarEngine
 		//创建临时的上传缓冲区
 		ComPtr<ID3D12Resource> geometry_vertex_buffer_upload;
 		ComPtr<ID3D12Resource> geometry_index_buffer_upload;
-		//创建一个临时的commandlist
-		ComPtr<ID3D12GraphicsCommandList> commandList;
-		PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandList(
-			0, 
-			D3D12_COMMAND_LIST_TYPE_DIRECT,
-			m_commandAllocator.Get(), 
-			m_pipelineState.Get(), 
-			IID_PPV_ARGS(&commandList)
-		);
+		//获取临时的拷贝commandlist
+		PancyRenderCommandList *copy_render_list;
+		uint32_t copy_render_list_ID;
+		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetEmptyRenderlist(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, &copy_render_list, copy_render_list_ID);
 		all_vertex_need = all_model_vertex;
 		all_index_need = all_model_index;
 		const UINT64 VertexBufferSize = all_vertex_need * sizeof(T);
@@ -481,7 +459,7 @@ namespace PancystarEngine
 		//创建顶点缓冲区
 		if (vertex_data != NULL) 
 		{
-			PancystarEngine::EngineFailReason check_error = BuildDefaultBuffer(commandList, geometry_vertex_buffer_in, geometry_vertex_buffer_upload, vertex_data, VertexBufferSize);
+			PancystarEngine::EngineFailReason check_error = BuildDefaultBuffer(copy_render_list->GetCommandList().Get(), geometry_vertex_buffer_in, geometry_vertex_buffer_upload, vertex_data, VertexBufferSize);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -490,31 +468,18 @@ namespace PancystarEngine
 		//创建索引缓冲区
 		if (index_data != NULL) 
 		{
-			PancystarEngine::EngineFailReason check_error = BuildDefaultBuffer(commandList, geometry_index_buffer_in, geometry_index_buffer_upload, index_data, IndexBufferSize);
+			PancystarEngine::EngineFailReason check_error = BuildDefaultBuffer(copy_render_list->GetCommandList().Get(), geometry_index_buffer_in, geometry_index_buffer_upload, index_data, IndexBufferSize);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
 		}
 		//完成渲染队列并提交拷贝
-		commandList->Close();
-		ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
-		PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists));
+		copy_render_list->UnlockPrepare();
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->SubmitRenderlist(D3D12_COMMAND_LIST_TYPE_DIRECT,1, &copy_render_list_ID);
 		//等待线程同步
-		UINT64 copy_fence_value = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceValue();
-		ComPtr<ID3D12Fence> copy_fence = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFence();
-		HANDLE copy_fenceEvent = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceEvent();
-		hr = PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->Signal(copy_fence.Get(), copy_fence_value);
-		PancyDx12DeviceBasic::GetInstance()->AddDirectQueueFenceValue();
-		if (copy_fence->GetCompletedValue() < PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceValue())
-		{
-			hr = copy_fence->SetEventOnCompletion(copy_fence_value, copy_fenceEvent);
-			WaitForSingleObject(copy_fenceEvent, INFINITE);
-			//删除GPU备份
-			geometry_vertex_buffer_upload.Reset();
-			geometry_index_buffer_upload.Reset();
-			//todo:存储内存队列池
-		}
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->WaitWorkRenderlist(copy_render_list_ID);
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->FreeAlloctor(D3D12_COMMAND_LIST_TYPE_DIRECT);
 		//删除CPU备份
 		if (!if_save_CPU_data) 
 		{

@@ -1,5 +1,6 @@
 #include"PancyDx12Basic.h"
 PancyDx12DeviceBasic* PancyDx12DeviceBasic::d3dbasic_instance = NULL;
+ThreadPoolGPUControl* ThreadPoolGPUControl::threadpool_control_instance = NULL;
 PancyDx12DeviceBasic::PancyDx12DeviceBasic(HWND hwnd_window_in, uint32_t width_in, uint32_t height_in)
 {
 	FrameCount = 2;
@@ -282,13 +283,13 @@ PancystarEngine::EngineFailReason ThreadPoolGPU::FreeAlloctor(const D3D12_COMMAN
 	if (commandlist_engine == multi_engine_list.end())
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "havent init the commandlist engine ID: " + std::to_string(command_list_type));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add command list int Thread Pool GPU", error_message);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free command list engine in Thread Pool GPU", error_message);
 		return error_message;
 	}
 	//±éÀúcommandlist
-	for (auto working_renderabel = command_list_work.begin(); working_renderabel != command_list_work.end(); ++working_renderabel) 
+	for (auto working_renderabel = command_list_work.begin(); working_renderabel != command_list_work.end(); ++working_renderabel)
 	{
-		if (working_renderabel->second->GetCommandListType() == command_list_type) 
+		if (working_renderabel->second->GetCommandListType() == command_list_type)
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "not all of the command list work finished engine ID: " + std::to_string(command_list_type));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free command allocter int Thread Pool GPU", error_message);
@@ -296,7 +297,7 @@ PancystarEngine::EngineFailReason ThreadPoolGPU::FreeAlloctor(const D3D12_COMMAN
 		}
 	}
 	HRESULT hr = commandlist_engine->second->allocator_use->Reset();
-	if (FAILED(hr)) 
+	if (FAILED(hr))
 	{
 		PancystarEngine::EngineFailReason error_message(hr, "release command allocator error: " + std::to_string(command_list_type));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free command allocter int Thread Pool GPU", error_message);
@@ -411,17 +412,10 @@ PancystarEngine::EngineFailReason ThreadPoolGPU::WaitWorkRenderlist(const uint32
 		if (now_wait_value < fence_value)
 		{
 			//Õ¤À¸ÉÐÎ´±»×²ÆÆ£¬¿ªÊ¼µÈ´ý
-			try 
+			auto check_error = work_command_list_use->second->BindFenceToThread(commandlist_engine->second->GPU_thread_fence);
+			if (!check_error.CheckIfSucceed())
 			{
-				auto check_error = work_command_list_use->second->BindFenceToThread(commandlist_engine->second->GPU_thread_fence);
-				if (!check_error.CheckIfSucceed())
-				{
-					return check_error;
-				}
-			}
-			catch (_com_error &e) 
-			{
-				int a = 0;
+				return check_error;
 			}
 			WaitForSingleObject(work_command_list_use->second->GetThreadID(), INFINITE);
 		}
@@ -513,7 +507,7 @@ PancystarEngine::EngineFailReason ThreadPoolGPU::SubmitRenderlist
 		now_command_queue->ExecuteCommandLists(real_command_list_num, commandlist_array);
 		//ÉèÖÃµÈ´ýÕ¤À¸
 		HRESULT hr = now_command_queue->Signal(commandlist_engine->second->GPU_thread_fence.Get(), commandlist_engine->second->fence_value_self_add);
-		if (FAILED(hr)) 
+		if (FAILED(hr))
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "signel waiting value error in engine ID: " + std::to_string(command_list_type));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("submit command list int Thread Pool GPU", error_message);
@@ -536,4 +530,37 @@ PancystarEngine::EngineFailReason ThreadPoolGPU::SubmitRenderlist
 		return PancystarEngine::succeed;
 	}
 	return PancystarEngine::succeed;
+}
+
+ThreadPoolGPUControl::ThreadPoolGPUControl()
+{
+	main_contex = NULL;
+	main_contex = new ThreadPoolGPU(0);
+	GPU_thread_pool_self_add = 1;
+}
+PancystarEngine::EngineFailReason ThreadPoolGPUControl::Create()
+{
+	auto check_error = main_contex->Create();
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+ThreadPoolGPUControl::~ThreadPoolGPUControl()
+{
+	if (main_contex != NULL)
+	{
+		delete main_contex;
+	}
+	for (auto data_working = GPU_thread_pool_working.begin(); data_working != GPU_thread_pool_working.end(); ++data_working)
+	{
+		delete data_working->second;
+	}
+	GPU_thread_pool_working.clear();
+	for (auto data_working = GPU_thread_pool_empty.begin(); data_working != GPU_thread_pool_empty.end(); ++data_working)
+	{
+		delete data_working->second;
+	}
+	GPU_thread_pool_empty.clear();
 }
