@@ -18,7 +18,8 @@ class PancyDx12DeviceBasic
 	ComPtr<ID3D12CommandQueue> command_queue_direct;
 	ComPtr<ID3D12CommandQueue> command_queue_copy;
 	ComPtr<ID3D12CommandQueue> command_queue_compute;
-
+	//ROOTsignature
+	ComPtr<ID3D12RootSignature> root_signature_draw;
 private:
 	PancyDx12DeviceBasic(HWND hwnd_window, uint32_t width_in, uint32_t height_in);
 public:
@@ -239,7 +240,16 @@ public:
 	~ThreadPoolGPUControl();
 	//todo:为CPU多线程分配command alloctor
 };
+//PSO管理
+class PancyPiplineStateObject 
+{
+	uint32_t pso_id;
+	ComPtr<ID3D12PipelineState> pso_data;
+public:
+	PancyPiplineStateObject(uint32_t pso_id_in);
+	PancystarEngine::EngineFailReason Create(D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc_in);
 
+};
 //dynamic buffer管理(GPU动态内存池)
 class DynamicMemoryPoolGPU 
 {

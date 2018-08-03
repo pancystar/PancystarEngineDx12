@@ -47,6 +47,9 @@
     <ClCompile Include="PancystarEngineBasicDx12.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="PancyShaderDx12.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\testcolor.hlsl">

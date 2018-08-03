@@ -1,6 +1,7 @@
 #include"PancystarEngineBasicDx12.h"
 #include"PancyDx12Basic.h"
 #include"PancyGeometryDx12.h"
+#include"PancyShaderDx12.h"
 enum SwapChainBitDepth
 {
 	_8 = 0,
@@ -22,6 +23,7 @@ class PancyDx12Basic
 	uint32_t renderlist_ID;
 	//模型测试
 	PancystarEngine::GeometryBasic *test_model;
+	PancyShaderBasic *shader_test;
 public:
 	PancyDx12Basic()
 	{
@@ -125,6 +127,7 @@ void PancyDx12Basic::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1**
 PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, int width_in, int height_in)
 {
 	HRESULT hr;
+	//创建临时测试
 	PancystarEngine::Point2D point[3];
 	point[0].position = DirectX::XMFLOAT3(0.0f, 0.25f * 1.77f, 0.0f);
 	point[1].position = DirectX::XMFLOAT3(0.25f, -0.25f * 1.77f, 0.0f);
@@ -137,6 +140,12 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	test_model = new PancystarEngine::GeometryCommonModel<PancystarEngine::Point2D>(point, index,3,3);
 	auto check_error = test_model->Create();
 	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	shader_test = new PancyShaderBasic("shader\\testcolor.hlsl","VSMain","vs_5_0");
+	check_error = shader_test->Create();
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}

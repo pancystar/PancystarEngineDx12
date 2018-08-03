@@ -57,25 +57,8 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	{
 		return check_error;
 	}
-	/*
-	//创建同步渲染对象
-	//创建fence
-	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Direct_queue_fence));
-	if (FAILED(hr))
-	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Fence Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
-		return error_message;
-	}
-	Direct_queue_fence_value = 1;
-	Direct_queue_fence_event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (Direct_queue_fence_event == nullptr)
-	{
-		PancystarEngine::EngineFailReason error_message(HRESULT_FROM_WIN32(GetLastError()), "Create FenceEvent Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
-		return error_message;
-	}
-	*/
+	//创建root signature draw
+	
 	//禁止alt+回车全屏
 	dxgi_factory->MakeWindowAssociation(hwnd_window, DXGI_MWA_NO_ALT_ENTER);
 	return PancystarEngine::succeed;

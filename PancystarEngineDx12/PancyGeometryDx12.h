@@ -444,7 +444,6 @@ namespace PancystarEngine
 		D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in
 	) 
 	{
-		HRESULT hr;
 		//创建临时的上传缓冲区
 		ComPtr<ID3D12Resource> geometry_vertex_buffer_upload;
 		ComPtr<ID3D12Resource> geometry_index_buffer_upload;
