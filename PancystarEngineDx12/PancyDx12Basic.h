@@ -1,6 +1,6 @@
 #pragma once
 #include"PancystarEngineBasicDx12.h"
-
+#include"PancyResourceBasic.h"
 class PancyDx12DeviceBasic
 {
 	UINT FrameCount;
@@ -294,7 +294,17 @@ PancystarEngine::EngineFailReason PancyPiplineStateObject::Create(D3D12_GRAPHICS
 
 }
 //dynamic buffer管理(GPU动态内存池)
-class DynamicMemoryPoolGPU
+class MemoryBlockGpu: public PancystarEngine::PancyBasicVirtualResource
+{
+	uint64_t memory_size;//存储块的大小
+	ComPtr<ID3D12Resource> resource_data_dx12;//存储块的数据
+	uint64_t new_memory_offset_point;//当前已经开辟的内存指针位置
+public:
+	MemoryBlockGpu(const uint64_t &memory_size_in,const uint32_t &resource_id_in);
+private:
+	PancystarEngine::EngineFailReason InitResource();
+};
+MemoryBlockGpu::MemoryBlockGpu(const uint64_t &memory_size_in, const uint32_t &resource_id_in) : PancyBasicVirtualResource(resource_id_in)
 {
 
-};
+}

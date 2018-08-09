@@ -30,10 +30,10 @@
     <ClInclude Include="PancystarEngineBasicDx12.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="GpuResource.h">
+    <ClInclude Include="PancyShaderDx12.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="PancyShaderDx12.h">
+    <ClInclude Include="PancyResourceBasic.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -48,6 +48,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="PancyShaderDx12.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PancyResourceBasic.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

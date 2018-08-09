@@ -145,15 +145,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="d3dx12.h" />
-    <ClInclude Include="GpuResource.h" />
     <ClInclude Include="PancyDx12Basic.h" />
     <ClInclude Include="PancyGeometryDx12.h" />
+    <ClInclude Include="PancyResourceBasic.h" />
     <ClInclude Include="PancyShaderDx12.h" />
     <ClInclude Include="PancystarEngineBasicDx12.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PancyDx12Basic.cpp" />
+    <ClCompile Include="PancyResourceBasic.cpp" />
     <ClCompile Include="PancyShaderDx12.cpp" />
     <ClCompile Include="PancystarEngineBasicDx12.cpp" />
   </ItemGroup>
