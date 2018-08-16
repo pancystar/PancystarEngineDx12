@@ -240,59 +240,7 @@ public:
 	~ThreadPoolGPUControl();
 	//todo:为CPU多线程分配command alloctor
 };
-//RootSignature
-class PancyRootSignature 
-{
-	uint32_t root_signature_id;
-	ComPtr<ID3D12RootSignature> root_signature_data;
-public:
-	PancyRootSignature(const uint32_t& index_id_in);
-	PancystarEngine::EngineFailReason Create(CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc);
-};
-PancyRootSignature::PancyRootSignature(const uint32_t& index_id_in) 
-{
-	root_signature_id = index_id_in;
-}
-PancystarEngine::EngineFailReason PancyRootSignature::Create(CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc)
-{
-	ComPtr<ID3DBlob> signature;
-	ComPtr<ID3DBlob> error;
-	HRESULT hr;
-	hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
-	if (FAILED(hr)) 
-	{
-		PancystarEngine::EngineFailReason error_message(hr,"serial rootsignature ID: " + std::to_string(root_signature_id) +" error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create Root Signature", error_message);
-		return error_message;
-	}
-	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&root_signature_data));
-	if (FAILED(hr))
-	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create root signature ID: " + std::to_string(root_signature_id) + " failed");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create Root Signature", error_message);
-		return error_message;
-	}
-	return PancystarEngine::succeed;
-}
-//PSO管理
-class PancyPiplineStateObject 
-{
-	uint32_t pso_id;
-	ComPtr<ID3D12PipelineState> pso_data;
-public:
-	PancyPiplineStateObject(uint32_t pso_id_in);
-	PancystarEngine::EngineFailReason Create(D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc_in);
 
-};
-PancyPiplineStateObject::PancyPiplineStateObject(uint32_t pso_id_in)
-{
-	pso_id = pso_id_in;
-}
-PancystarEngine::EngineFailReason PancyPiplineStateObject::Create(D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc_in)
-{
-	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateGraphicsPipelineState(&pso_desc_in, IID_PPV_ARGS(&pso_data));
-
-}
 //dynamic buffer管理(GPU动态内存池)
 class MemoryBlockGpu: public PancystarEngine::PancyBasicVirtualResource
 {

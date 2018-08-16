@@ -1,0 +1,51 @@
+{
+  "D3D12_FILL_MODE_WIREFRAME": 2,
+  "RootSignature": "test_signature.json",
+  "VertexShader": "testcolor.hlsl",
+  "VertexShaderFunc": "VSMain",
+  "PixelShader": "testcolor.hlsl",
+  "PixelShaderFunc": "PSMain",
+  "RasterizerState": {
+    "FILL_MODE": "D3D12_FILL_MODE_WIREFRAME",
+    "CULL_MODE": "D3D12_CULL_MODE_BACK"
+  },
+  "BlendState": {
+    "AlphaToCoverageEnable": false,
+    "IndependentBlendEnable": false,
+    "RenderTarget0": {
+      "BlendEnable": false,
+      "LogicOpEnable": false,
+      "SrcBlend": "D3D12_BLEND_ONE",
+      "DestBlend": "D3D12_BLEND_ZERO",
+      "BlendOp": "D3D12_BLEND_OP_ADD",
+      "SrcBlendAlpha": "D3D12_BLEND_ONE",
+      "DestBlendAlpha": "D3D12_BLEND_ZERO",
+      "BlendOpAlpha": "D3D12_BLEND_OP_ADD",
+      "LogicOp": "D3D12_LOGIC_OP_NOOP",
+      "RenderTargetWriteMask": "D3D12_COLOR_WRITE_ENABLE_ALL"
+    }
+  },
+  "DepthStencilState": {
+    "DepthEnable": true,
+    "DepthWriteMask": "D3D12_DEPTH_WRITE_MASK_ALL",
+    "DepthFunc": "D3D12_COMPARISON_LESS",
+    "StencilEnable": false,
+    "StencilReadMask": "D3D12_DEFAULT_STENCIL_READ_MASK",
+    "StencilWriteMask": "D3D12_DEFAULT_STENCIL_WRITE_MASK",
+    "FrontFaceDesc": {
+      "StencilFunc": "D3D12_COMPARISON_ALWAYS",
+      "StencilDepthFailOp": "D3D12_STENCIL_OP_KEEP",
+      "StencilPassOp": "D3D12_STENCIL_OP_KEEP",
+      "BackFace.StencilFailOp": "D3D12_STENCIL_OP_KEEP"
+    },
+    "BackFaceDesc": {
+      "StencilFunc": "D3D12_COMPARISON_ALWAYS",
+      "StencilDepthFailOp": "D3D12_STENCIL_OP_KEEP",
+      "StencilPassOp": "D3D12_STENCIL_OP_KEEP",
+      "BackFace.StencilFailOp": "D3D12_STENCIL_OP_KEEP"
+    },
+    "DepthBoundsTestEnable": "FALSE"
+  },
+  "SampleMask": "UINT_MAX",
+  "PrimitiveTopologyType": "D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE",
+}

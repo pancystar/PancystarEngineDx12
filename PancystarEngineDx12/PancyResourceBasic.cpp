@@ -6,6 +6,9 @@ PancyBasicVirtualResource::PancyBasicVirtualResource(const uint32_t &resource_id
 	resource_id = resource_id_in;
 	reference_count.store(0);
 }
+PancyBasicVirtualResource::~PancyBasicVirtualResource()
+{
+}
 void PancyBasicVirtualResource::AddReference()
 {
 	reference_count.fetch_add(1);
@@ -36,7 +39,15 @@ PancyBasicResourceControl::PancyBasicResourceControl(const std::string &resource
 	resource_type_name = resource_type_name_in;
 	resource_id_self_add = 0;
 }
-PancystarEngine::EngineFailReason PancyBasicResourceControl::BuildResource(PancyBasicVirtualResource* data_input, uint32_t &resource_id_out)
+PancyBasicResourceControl::~PancyBasicResourceControl()
+{
+	for (auto data_resource = basic_resource_array.begin(); data_resource != basic_resource_array.end(); ++data_resource)
+	{
+		delete data_resource->second;
+	}
+	basic_resource_array.clear();
+}
+PancystarEngine::EngineFailReason PancyBasicResourceControl::BuildResource(PancyBasicVirtualResource* data_input, uint64_t &resource_id_out)
 {
 	//创建一个新的资源
 	if (data_input == NULL)
@@ -52,7 +63,7 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::BuildResource(Pancy
 	resource_id_self_add += 1;
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyBasicResourceControl::AddResurceReference(const uint32_t &resource_id)
+PancystarEngine::EngineFailReason PancyBasicResourceControl::AddResurceReference(const uint64_t &resource_id)
 {
 	auto data_now = basic_resource_array.find(resource_id);
 	if (data_now == basic_resource_array.end())
@@ -64,7 +75,7 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::AddResurceReference
 	data_now->second->AddReference();
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyBasicResourceControl::DeleteResurceReference(const uint32_t &resource_id)
+PancystarEngine::EngineFailReason PancyBasicResourceControl::DeleteResurceReference(const uint64_t &resource_id)
 {
 	auto data_now = basic_resource_array.find(resource_id);
 	if (data_now == basic_resource_array.end())
@@ -82,7 +93,7 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::DeleteResurceRefere
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyBasicResourceControl::GetResource(const uint32_t &resource_id, PancyBasicVirtualResource** resource_out)
+PancystarEngine::EngineFailReason PancyBasicResourceControl::GetResource(const uint64_t &resource_id, PancyBasicVirtualResource** resource_out)
 {
 	auto data_now = basic_resource_array.find(resource_id);
 	if (data_now == basic_resource_array.end())
@@ -138,7 +149,15 @@ PancyBasicResourceViewControl::PancyBasicResourceViewControl(const std::string &
 	resource_type_name = resource_type_name_in;
 	resource_control_use = resource_control_use_in;
 }
-PancystarEngine::EngineFailReason PancyBasicResourceViewControl::DeleteResourceView(const uint32_t &resource_view_id)
+PancyBasicResourceViewControl::~PancyBasicResourceViewControl()
+{
+	for (auto data_resource = resource_view_array.begin(); data_resource != resource_view_array.end(); ++data_resource)
+	{
+		delete data_resource->second;
+	}
+	resource_view_array.clear();
+}
+PancystarEngine::EngineFailReason PancyBasicResourceViewControl::DeleteResourceView(const uint64_t &resource_view_id)
 {
 	auto data_now = resource_view_array.find(resource_view_id);
 	if (data_now == resource_view_array.end())
@@ -151,7 +170,7 @@ PancystarEngine::EngineFailReason PancyBasicResourceViewControl::DeleteResourceV
 	resource_view_array.erase(data_now);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyBasicResourceViewControl::BuildResourceView(PancyBasicResourceView* data_input, uint32_t &resource_view_id_out)
+PancystarEngine::EngineFailReason PancyBasicResourceViewControl::BuildResourceView(PancyBasicResourceView* data_input, uint64_t &resource_view_id_out)
 {
 	//创建一个新的资源
 	if (data_input == NULL)

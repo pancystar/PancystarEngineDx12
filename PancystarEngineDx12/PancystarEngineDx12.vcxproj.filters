@@ -16,6 +16,9 @@
     <Filter Include="shader">
       <UniqueIdentifier>{6a7e44c0-3932-4266-b948-4cdfe73143c1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="json">
+      <UniqueIdentifier>{b9bad99b-57c3-4cf7-bceb-fa8474e21f1b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="d3dx12.h">
@@ -58,5 +61,13 @@
     <FxCompile Include="shader\testcolor.hlsl">
       <Filter>shader</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="json\pipline_state_object\pso_test.json">
+      <Filter>json</Filter>
+    </None>
+    <None Include="json\root_signature\test_root_signature.json">
+      <Filter>json</Filter>
+    </None>
   </ItemGroup>
 </Project>
