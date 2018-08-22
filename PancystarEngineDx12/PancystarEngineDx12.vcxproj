@@ -149,6 +149,7 @@
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="PancyDx12Basic.h" />
     <ClInclude Include="PancyGeometryDx12.h" />
+    <ClInclude Include="PancyJsonTool.h" />
     <ClInclude Include="PancyResourceBasic.h" />
     <ClInclude Include="PancyShaderDx12.h" />
     <ClInclude Include="PancystarEngineBasicDx12.h" />
@@ -156,6 +157,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PancyDx12Basic.cpp" />
+    <ClCompile Include="PancyJsonTool.cpp" />
     <ClCompile Include="PancyResourceBasic.cpp" />
     <ClCompile Include="PancyShaderDx12.cpp" />
     <ClCompile Include="PancystarEngineBasicDx12.cpp" />

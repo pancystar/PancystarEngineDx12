@@ -22,7 +22,7 @@
     "ComparisonFunc": "D3D12_COMPARISON_FUNC_NEVER",
     "BorderColor": "D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK",
     "MinLOD": 0.0,
-    "MaxLOD": "D3D12_FLOAT32_MAX",
+    "MaxLOD": 3.402823466e+38,
     "ShaderRegister": 0,
     "RegisterSpace": 0,
     "ShaderVisibility": "D3D12_SHADER_VISIBILITY_ALL"
