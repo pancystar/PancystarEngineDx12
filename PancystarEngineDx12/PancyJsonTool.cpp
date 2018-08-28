@@ -198,7 +198,7 @@ PancystarEngine::EngineFailReason JsonLoader::GetJsonShader(
 	auto shader_func_value = root_value.get(shader_func_param, Json::Value::null);
 	PancystarEngine::EngineFailReason check_error;
 	pancy_json_value new_value;
-	check_error = GetJsonMemberData(file_name, shader_file_value, shader_file_name, pancy_json_data_type::json_data_string, new_value);
+	check_error = GetJsonMemberData(file_name, shader_file_value, shader_file_param, pancy_json_data_type::json_data_string, new_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;

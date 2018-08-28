@@ -242,6 +242,7 @@ public:
 };
 
 //dynamic buffer管理(GPU动态内存池)
+/*
 class MemoryBlockGpu: public PancystarEngine::PancyBasicVirtualResource
 {
 	uint64_t memory_size;//存储块的大小
@@ -256,3 +257,4 @@ MemoryBlockGpu::MemoryBlockGpu(const uint64_t &memory_size_in, const uint32_t &r
 {
 
 }
+*/

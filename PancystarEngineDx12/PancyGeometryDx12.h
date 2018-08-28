@@ -6,9 +6,9 @@ namespace PancystarEngine
 	//2D顶点格式
 	struct Point2D
 	{
-		DirectX::XMFLOAT3 position;
+		DirectX::XMFLOAT4 position;
 		DirectX::XMFLOAT4 tex_color;  //用于采样的坐标
-		DirectX::XMFLOAT4 tex_range;  //用于限制采样矩形的坐标
+		//DirectX::XMFLOAT4 tex_range;  //用于限制采样矩形的坐标
 	};
 	//标准3D顶点格式
 	struct PointCommon
@@ -32,136 +32,7 @@ namespace PancystarEngine
 		DirectX::XMUINT4  bone_id;    //骨骼ID号
 		DirectX::XMFLOAT4 bone_weight;//骨骼权重
 	};
-	//几何体的格式对接类型
-	struct PancyVertexBufferDesc
-	{
-		size_t vertex_desc_classID;
-		size_t input_element_num;
-		D3D12_INPUT_ELEMENT_DESC *inputElementDescs = NULL;
-	};
-	//几何体格式管理器(用于注册顶点)
-	class GeometryDesc
-	{
-		std::unordered_map<size_t, PancyVertexBufferDesc> vertex_buffer_desc_map;
-	private:
-		GeometryDesc();
-	public:
-		static GeometryDesc* GetInstance()
-		{
-			static GeometryDesc* this_instance;
-			if (this_instance == NULL)
-			{
-				this_instance = new GeometryDesc();
-			}
-			return this_instance;
-		}
-		~GeometryDesc();
-		void AddVertexDesc(size_t vertex_desc_classID_in, std::vector<D3D12_INPUT_ELEMENT_DESC> input_element_desc_list);
-		inline const PancyVertexBufferDesc* GetVertexDesc(size_t vertex_class_id)
-		{
-			auto new_vertex_desc = vertex_buffer_desc_map.find(vertex_class_id);
-			if (new_vertex_desc != vertex_buffer_desc_map.end())
-			{
-				return &new_vertex_desc->second;
-			}
-			return NULL;
-		}
-	private:
-		void InitPoint2D();
-		void InitPointCommon();
-		void InitPointSkin();
-	};
-	GeometryDesc::GeometryDesc()
-	{
-		InitPoint2D();
-		InitPointCommon();
-		InitPointSkin();
-	}
-	void GeometryDesc::InitPoint2D()
-	{
-		std::vector<D3D12_INPUT_ELEMENT_DESC> new_input_element_desc_list;
-		//2D顶点格式
-		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,  0 },
-			{ "UVCOLOR",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "UVRANGE",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 28, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		};
-		uint32_t now_size = sizeof(inputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
-		for (uint32_t i = 0; i < now_size; ++i)
-		{
-			new_input_element_desc_list.push_back(inputElementDescs[i]);
-		}
-		AddVertexDesc(typeid(Point2D).hash_code(), new_input_element_desc_list);
-		new_input_element_desc_list.clear();
-	}
-	void GeometryDesc::InitPointCommon()
-	{
-		std::vector<D3D12_INPUT_ELEMENT_DESC> new_input_element_desc_list;
-		//2D顶点格式
-		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,  0 },
-			{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		    { "TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "UVID",     0, DXGI_FORMAT_R32G32B32A32_UINT,  0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		    { "UVCOLOR",  0, DXGI_FORMAT_R32G32B32A32_UINT,  0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		    { "UVRANGE",  0, DXGI_FORMAT_R32G32B32A32_UINT,  0, 72, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		};
-		uint32_t now_size = sizeof(inputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
-		for (uint32_t i = 0; i < now_size; ++i)
-		{
-			new_input_element_desc_list.push_back(inputElementDescs[i]);
-		}
-		AddVertexDesc(typeid(PointCommon).hash_code(), new_input_element_desc_list);
-		new_input_element_desc_list.clear();
-	}
-	void GeometryDesc::InitPointSkin() 
-	{
-		std::vector<D3D12_INPUT_ELEMENT_DESC> new_input_element_desc_list;
-		//2D顶点格式
-		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
-		{
-			{ "POSITION",   0, DXGI_FORMAT_R32G32B32_FLOAT,     0, 0,   D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "NORMAL",     0, DXGI_FORMAT_R32G32B32_FLOAT,     0, 12,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "TANGENT",    0, DXGI_FORMAT_R32G32B32_FLOAT,     0, 24,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "UVID",       0, DXGI_FORMAT_R32G32B32A32_UINT,   0, 36,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "UVCOLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  0, 52,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "UVRANGE",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  0, 68,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "BONEID",     0, DXGI_FORMAT_R32G32B32A32_UINT,   0, 84,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "BONEWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_UINT,   0, 100, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		};
-		uint32_t now_size = sizeof(inputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
-		for (uint32_t i = 0; i < now_size; ++i)
-		{
-			new_input_element_desc_list.push_back(inputElementDescs[i]);
-		}
-		AddVertexDesc(typeid(PointSkinCommon).hash_code(), new_input_element_desc_list);
-		new_input_element_desc_list.clear();
-	}
-	GeometryDesc::~GeometryDesc()
-	{
-		for (auto now_vertex_desc = vertex_buffer_desc_map.begin(); now_vertex_desc != vertex_buffer_desc_map.end(); ++now_vertex_desc) 
-		{
-			delete now_vertex_desc->second.inputElementDescs;
-			now_vertex_desc->second.inputElementDescs = NULL;
-		}
-		vertex_buffer_desc_map.clear();
-	}
-	void GeometryDesc::AddVertexDesc(size_t vertex_desc_classID_in, std::vector<D3D12_INPUT_ELEMENT_DESC> input_element_desc_list)
-	{
-		PancyVertexBufferDesc new_vertex_desc;
-		new_vertex_desc.vertex_desc_classID = vertex_desc_classID_in;
-		new_vertex_desc.input_element_num = input_element_desc_list.size();
-		new_vertex_desc.inputElementDescs = new D3D12_INPUT_ELEMENT_DESC[input_element_desc_list.size()];
-		uint32_t count_element = 0;
-		for (auto now_element = input_element_desc_list.begin(); now_element != input_element_desc_list.end(); ++now_element) 
-		{
-			new_vertex_desc.inputElementDescs[count_element] = *now_element;
-			count_element += 1;
-		}
-		vertex_buffer_desc_map.insert(std::pair<size_t, PancyVertexBufferDesc>(vertex_desc_classID_in, new_vertex_desc));
-	}
+	
 	
 	//几何体基础类型
 	class GeometryBasic
@@ -176,8 +47,6 @@ namespace PancystarEngine
 		uint32_t all_vertex;
 		uint32_t all_index;
 		uint32_t all_index_adj;
-		//输入格式
-		size_t vertex_desc_info_hash;
 		//几何体的创建信息
 		bool if_create_adj;
 		bool if_buffer_created;
@@ -197,9 +66,16 @@ namespace PancystarEngine
 		{
 			return geometry_adjindex_buffer;
 		};
+		inline D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()
+		{
+			return geometry_vertex_buffer_view;
+		};
+		inline D3D12_INDEX_BUFFER_VIEW GetIndexBufferView()
+		{
+			return geometry_index_buffer_view;
+		};
 	protected:
 		virtual PancystarEngine::EngineFailReason InitGeometryDesc(
-			size_t &vertex_class_hash, 
 			bool &if_create_adj
 		) = 0;
 		virtual PancystarEngine::EngineFailReason InitGeometry(
@@ -236,7 +112,7 @@ namespace PancystarEngine
 			return PancystarEngine::succeed;
 		}
 		//注册几何体格式
-		check_error = InitGeometryDesc(vertex_desc_info_hash, if_create_adj);
+		check_error = InitGeometryDesc(if_create_adj);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -333,7 +209,7 @@ namespace PancystarEngine
 	}
 	//基本模型几何体
 	template<typename T>
-	class GeometryCommonModel : public GeometryBasic 
+	class GeometryCommonModel : public GeometryBasic
 	{
 		T *vertex_data;
 		UINT *index_data;
@@ -356,7 +232,6 @@ namespace PancystarEngine
 		~GeometryCommonModel();
 	private:
 		PancystarEngine::EngineFailReason InitGeometryDesc(
-			size_t &vertex_class_hash,
 			bool &if_create_adj
 		);
 		PancystarEngine::EngineFailReason InitGeometry(
@@ -415,21 +290,10 @@ namespace PancystarEngine
 	}
 	template<typename T>
 	PancystarEngine::EngineFailReason GeometryCommonModel<T>::InitGeometryDesc(
-		size_t &vertex_class_hash,
 		bool &if_create_adj
 	) 
 	{
 		if_create_adj = if_model_adj;
-		vertex_class_hash = typeid(T).hash_code();
-		std::string vertex_type_name = typeid(T).name();
-		auto vertex_desc = GeometryDesc::GetInstance()->GetVertexDesc(vertex_class_hash);
-		if (vertex_desc == NULL) 
-		{
-			//指定的顶点格式尚未注册,无法根据指定的顶点格式创建几何体
-			PancystarEngine::EngineFailReason error_message(E_FAIL,"The vertex type: " + vertex_type_name + " haven't init to vertex desc controler");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("load model data error", error_message);
-			return error_message;
-		}
 		return PancystarEngine::succeed;
 	}
 	template<typename T>
@@ -497,7 +361,9 @@ namespace PancystarEngine
 		if (if_model_adj) 
 		{
 		}
-
+		geometry_vertex_buffer_view_in.BufferLocation = geometry_vertex_buffer_in->GetGPUVirtualAddress();
+		geometry_vertex_buffer_view_in.StrideInBytes = sizeof(T);
+		geometry_vertex_buffer_view_in.SizeInBytes = VertexBufferSize;
 		return PancystarEngine::succeed;
 	}
 }

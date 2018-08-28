@@ -24,6 +24,9 @@ class PancyDx12Basic
 	//模型测试
 	PancystarEngine::GeometryBasic *test_model;
 	PancyShaderBasic *shader_test;
+	//视口
+	CD3DX12_VIEWPORT view_port;
+	CD3DX12_RECT view_rect;
 public:
 	PancyDx12Basic()
 	{
@@ -48,18 +51,28 @@ private:
 void PancyDx12Basic::PopulateCommandList()
 {
 	PancystarEngine::EngineFailReason check_error;
-
+	
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->FreeAlloctor(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
 	PancyRenderCommandList *m_commandList;
-	
-	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetEmptyRenderlist(m_pipelineState.Get(),D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,&m_commandList, renderlist_ID);
+	auto pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetData();
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetEmptyRenderlist(pso_data,D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,&m_commandList, renderlist_ID);
+	// Set necessary state.
+	auto rootsignature_data = PancyRootSignatureControl::GetInstance()->GetRootSignature("json\\root_signature\\test_root_signature.json")->GetRootSignature();
+	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
+	m_commandList->GetCommandList()->RSSetViewports(1, &view_port);
+	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
 
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), now_frame_use, m_rtvDescriptorSize);
+	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &test_model->GetVertexBufferView());
+	m_commandList->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[now_frame_use].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 	m_commandList->UnlockPrepare();
 }
@@ -127,11 +140,21 @@ void PancyDx12Basic::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1**
 PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, int width_in, int height_in)
 {
 	HRESULT hr;
+	view_port.TopLeftX = 0;
+	view_port.TopLeftY = 0;
+	view_port.Width = width_in;
+	view_port.Height = height_in;
+	view_port.MaxDepth = 1.0f;
+	view_port.MinDepth = 0.0f;
+	view_rect.left = 0;
+	view_rect.top = 0;
+	view_rect.right = width_in;
+	view_rect.bottom = height_in;
 	//创建临时测试
 	PancystarEngine::Point2D point[3];
-	point[0].position = DirectX::XMFLOAT3(0.0f, 0.25f * 1.77f, 0.0f);
-	point[1].position = DirectX::XMFLOAT3(0.25f, -0.25f * 1.77f, 0.0f);
-	point[2].position = DirectX::XMFLOAT3(-0.25f, -0.25f * 1.77f, 0.0f);
+	point[0].position = DirectX::XMFLOAT4(0.0f, 0.25f * 1.77f, 0.0f,1);
+	point[1].position = DirectX::XMFLOAT4(0.25f, -0.25f * 1.77f, 0.0f,1);
+	point[2].position = DirectX::XMFLOAT4(-0.25f, -0.25f * 1.77f, 0.0f,1);
 
 	point[0].tex_color = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f,0.0f);
 	point[1].tex_color = DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
@@ -173,6 +196,12 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 		PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
 		rtvHandle.Offset(1, m_rtvDescriptorSize);
 	}
+	//加载一个psv
+	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_test.json");
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
 	/*
 	//创建commandallocator
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator));
@@ -211,6 +240,7 @@ void PancyDx12Basic::Release()
 {
 	WaitForPreviousFrame();
 	delete test_model;
+	delete shader_test;
 	//CloseHandle(m_fenceEvent);
 }
 
@@ -260,8 +290,8 @@ engine_windows_main::engine_windows_main(HINSTANCE hInstance_need, HINSTANCE hPr
 	hPrevInstance = hPrevInstance_need;
 	szCmdLine = szCmdLine_need;
 	iCmdShow = iCmdShow_need;
-	window_width = 800;
-	window_height = 600;
+	window_width = 1280;
+	window_height = 720;
 }
 HRESULT engine_windows_main::game_create()
 {
@@ -357,7 +387,7 @@ WPARAM engine_windows_main::game_end()
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	PSTR szCmdLine, int iCmdShow)
 {
-	//_CrtSetBreakAlloc(304);
+	//_CrtSetBreakAlloc(343);
 	engine_windows_main *engine_main = new engine_windows_main(hInstance, hPrevInstance, szCmdLine, iCmdShow);
 	engine_main->game_create();
 	engine_main->game_loop();
@@ -366,9 +396,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	delete engine_main;
 	delete PancystarEngine::EngineFailLog::GetInstance();
 	delete ThreadPoolGPUControl::GetInstance();
-	if (PancystarEngine::GeometryDesc::GetInstance() != NULL) 
+	delete PancyShaderControl::GetInstance();
+	delete PancyRootSignatureControl::GetInstance();
+	delete PancyEffectGraphic::GetInstance();
+	delete JsonLoader::GetInstance();
+	if (InputLayoutDesc::GetInstance() != NULL)
 	{
-		delete PancystarEngine::GeometryDesc::GetInstance();
+		delete InputLayoutDesc::GetInstance();
 	}
 #ifdef CheckWindowMemory
 	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);

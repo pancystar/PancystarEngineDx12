@@ -13,10 +13,10 @@ enum pancy_json_data_type
 enum Pancy_json_shader_type
 {
 	json_shader_vertex = 0,
-	json_shader_pixel = 0,
-	json_shader_geometry = 0,
-	json_shader_hull = 0,
-	json_shader_domin = 0
+	json_shader_pixel,
+	json_shader_geometry,
+	json_shader_hull,
+	json_shader_domin
 };
 struct pancy_json_value
 {
