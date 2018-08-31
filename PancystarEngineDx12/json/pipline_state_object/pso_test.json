@@ -56,7 +56,7 @@
   "PrimitiveTopologyType": "D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE",
   "NumRenderTargets": 1,
   "RTVFormats": [
-    "DXGI_FORMAT_R8G8B8A8_UNORM"
+    "DXGI_FORMAT_R8G8B8A8_UNORM_SRGB"
   ],
   "DSVFormat": "DXGI_FORMAT_D32_FLOAT",
   "SampleDesc": {

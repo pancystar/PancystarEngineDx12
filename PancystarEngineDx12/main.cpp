@@ -156,9 +156,9 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	point[1].position = DirectX::XMFLOAT4(0.25f, -0.25f * 1.77f, 0.0f,1);
 	point[2].position = DirectX::XMFLOAT4(-0.25f, -0.25f * 1.77f, 0.0f,1);
 
-	point[0].tex_color = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f,0.0f);
-	point[1].tex_color = DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
-	point[2].tex_color = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);
+	point[0].tex_color = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f,0.0f);
+	point[1].tex_color = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	point[2].tex_color = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	UINT index[3] = {0,1,2};
 	test_model = new PancystarEngine::GeometryCommonModel<PancystarEngine::Point2D>(point, index,3,3);
 	auto check_error = test_model->Create();
@@ -193,7 +193,10 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	for (UINT n = 0; n < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); n++)
 	{
 		hr = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n]));
-		PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
+		D3D12_RENDER_TARGET_VIEW_DESC rtv_desc = {};
+		rtv_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		rtv_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+		PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRenderTargetView(m_renderTargets[n].Get(), &rtv_desc, rtvHandle);
 		rtvHandle.Offset(1, m_rtvDescriptorSize);
 	}
 	//º”‘ÿ“ª∏ˆpsv
