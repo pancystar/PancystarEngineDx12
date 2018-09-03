@@ -242,19 +242,176 @@ public:
 };
 
 
-//静态显存块
-class MemoryBlockStaticGpu: public PancystarEngine::PancyBasicVirtualResource
+//显存块
+class MemoryBlockGpu : public PancystarEngine::PancyBasicVirtualResource
 {
+	bool if_use_heap;//是否有专用的显存堆
+	std::string memory_heap;//显存堆的名称
 	uint64_t memory_size;//存储块的大小
 	ComPtr<ID3D12Resource> resource_data_dx12;//存储块的数据
-	uint64_t new_memory_offset_point;//当前已经开辟的内存指针位置
+	uint64_t now_memory_offset_point;//当前已经开辟的内存指针位置
 public:
-	MemoryBlockStaticGpu(const uint64_t &memory_size_in,const uint32_t &resource_id_in);
+	MemoryBlockGpu(
+		bool if_use_heap_in,
+		std::string memory_heap_in, 
+		const uint64_t &memory_size_in, 
+		const uint32_t &resource_id_in
+	);
 private:
 	PancystarEngine::EngineFailReason InitResource();
 };
-
-MemoryBlockStaticGpu::MemoryBlockStaticGpu(const uint64_t &memory_size_in, const uint32_t &resource_id_in) : PancyBasicVirtualResource(resource_id_in)
+MemoryBlockGpu::MemoryBlockGpu(
+	bool if_use_heap_in,
+	std::string memory_heap_in,
+	const uint64_t &memory_size_in,
+	const uint32_t &resource_id_in
+) : PancyBasicVirtualResource(resource_id_in)
 {
-
+	if_use_heap = if_use_heap_in;
+	memory_heap = memory_heap_in;
+	memory_size = 0;
+	now_memory_offset_point = 0;
 }
+//保留显存堆
+class MemoryHeapGpu
+{
+	std::string heap_type_name;
+	uint64_t size_per_block;
+	uint32_t max_block_num;
+	ComPtr<ID3D12Heap> heap_data;
+	std::unordered_set<uint32_t> free_list;
+public:
+	MemoryHeapGpu(std::string heap_type_name_in);
+	//每个显存块的大小
+	inline uint64_t GetMemorySizePerBlock()
+	{
+		return size_per_block;
+	}
+	//显存堆保留的显存大小
+	inline uint32_t GetMaxMemoryBlockNum()
+	{
+		return max_block_num;
+	}
+	//显存堆尚未使用的显存大小
+	inline size_t GetFreeMemoryBlockNum()
+	{
+		return free_list.size();
+	}
+	PancystarEngine::EngineFailReason Create(const CD3DX12_HEAP_DESC &heap_desc_in, const int32_t &size_per_block_in, const int32_t &max_block_num_in);
+	//从显存堆开辟资源
+	PancystarEngine::EngineFailReason GetMemoryResource(
+		const CD3DX12_RESOURCE_DESC &resource_desc,
+		const D3D12_RESOURCE_ALLOCATION_INFO &resource_size_desc,
+		const D3D12_RESOURCE_STATES &resource_state,
+		Microsoft::WRL::Details::ComPtrRef<ComPtr<ID3D12Resource>> ppvResourc,
+		int32_t &memory_block_ID
+	);
+	//检验对应id的资源是否已经被分配
+	bool CheckIfFree(int32_t memory_block_ID);
+	//释放一个对应id的资源
+	PancystarEngine::EngineFailReason FreeMemoryReference(const int32_t &memory_block_ID);
+};
+MemoryHeapGpu::MemoryHeapGpu(std::string heap_type_name_in)
+{
+	heap_type_name = heap_type_name_in;
+	size_per_block = 0;
+	max_block_num = 0;
+}
+PancystarEngine::EngineFailReason MemoryHeapGpu::Create(const CD3DX12_HEAP_DESC &heap_desc_in,const int32_t &size_per_block_in, const int32_t &max_block_num_in)
+{
+	size_per_block = size_per_block_in;
+	max_block_num = max_block_num_in;
+	//检查堆缓存的大小
+	if (heap_desc_in.SizeInBytes != size_per_block * max_block_num) 
+	{
+		PancystarEngine::EngineFailReason check_error(E_FAIL, "Memory Heap Size In" + heap_type_name + " need "+std::to_string(size_per_block * max_block_num) + " But Find " + std::to_string(heap_desc_in.SizeInBytes));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Memorty Heap", check_error);
+		return check_error;
+	}
+	//创建资源堆
+	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateHeap(&heap_desc_in, IID_PPV_ARGS(&heap_data));
+	if (FAILED(hr)) 
+	{
+		PancystarEngine::EngineFailReason check_error(hr,"Create Memory Heap "+ heap_type_name + "error");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Memorty Heap", check_error);
+		return check_error;
+	}
+	//初始化堆内空闲的资源块
+	for (uint32_t i = 0; i < max_block_num; ++i)
+	{
+		free_list.insert(i);
+	}
+	return PancystarEngine::succeed;
+}
+bool MemoryHeapGpu::CheckIfFree(int32_t memory_block_ID) 
+{
+	if (memory_block_ID >= max_block_num) 
+	{
+		return false;
+	}
+	auto check_data = free_list.find(memory_block_ID);
+	if (check_data != free_list.end()) 
+	{
+		return true;
+	}
+	return false;
+}
+PancystarEngine::EngineFailReason MemoryHeapGpu::GetMemoryResource(
+	const CD3DX12_RESOURCE_DESC &resource_desc,
+	const D3D12_RESOURCE_ALLOCATION_INFO &resource_size_desc,
+	const D3D12_RESOURCE_STATES &resource_state,
+	Microsoft::WRL::Details::ComPtrRef<ComPtr<ID3D12Resource>> ppvResourc,
+	int32_t &memory_block_ID
+) 
+{
+	if (resource_size_desc.SizeInBytes != size_per_block) 
+	{
+		PancystarEngine::EngineFailReason check_error(E_FAIL, "The resource allocated need size " + std::to_string(resource_size_desc.SizeInBytes) + " But the heap " + heap_type_name + " Could only buid memory with size " + std::to_string(size_per_block));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Allocated Memorty From Heap", check_error);
+		return check_error;
+	}
+	auto rand_free_memory = free_list.begin();
+	if (rand_free_memory == free_list.end()) 
+	{
+		PancystarEngine::EngineFailReason check_error(E_FAIL, "The Heap " + heap_type_name + " Is empty, can't alloc new memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Allocated Memorty From Heap", check_error);
+		return check_error;
+	}
+	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreatePlacedResource(
+		heap_data.Get(),
+		(*rand_free_memory) * size_per_block,
+		&resource_desc,
+		resource_state,
+		nullptr,
+		IID_PPV_ARGS(ppvResourc)
+	);
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason check_error(hr, "Allocate Memory From Heap " + heap_type_name + "error");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Allocated Memorty From Heap", check_error);
+		return check_error;
+	}
+	memory_block_ID = *rand_free_memory;
+	free_list.erase(rand_free_memory);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason MemoryHeapGpu::FreeMemoryReference(const int32_t &memory_block_ID)
+{
+	if (memory_block_ID >= max_block_num)
+	{
+		PancystarEngine::EngineFailReason check_error(E_FAIL,"The heap "+ heap_type_name + " Only have " +std::to_string(max_block_num) +" Memory block,ID " +std::to_string(memory_block_ID) +" Out of range");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free Memorty From Heap", check_error);
+		return check_error;
+	}
+	auto check_data = free_list.find(memory_block_ID);
+	if (check_data != free_list.end())
+	{
+		PancystarEngine::EngineFailReason check_error(E_FAIL,"The memory block ID " + std::to_string(memory_block_ID) + " Haven't been allocated");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free Memorty From Heap", check_error);
+		return check_error;
+	}
+	free_list.insert(memory_block_ID);
+	return PancystarEngine::succeed;
+}
+
+
