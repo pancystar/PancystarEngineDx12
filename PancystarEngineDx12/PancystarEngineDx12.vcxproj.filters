@@ -56,10 +56,10 @@
     <ClCompile Include="PancyShaderDx12.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="PancyResourceBasic.cpp">
+    <ClCompile Include="PancyJsonTool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="PancyJsonTool.cpp">
+    <ClCompile Include="PancyResourceBasic.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

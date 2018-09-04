@@ -1,6 +1,7 @@
 #pragma once
 #include"PancystarEngineBasicDx12.h"
 #include"PancyResourceBasic.h"
+#include"PancyJsonTool.h"
 class PancyDx12DeviceBasic
 {
 	UINT FrameCount;
@@ -243,7 +244,7 @@ public:
 
 
 //显存块
-class MemoryBlockGpu : public PancystarEngine::PancyBasicVirtualResource
+class MemoryBlockGpu
 {
 	bool if_use_heap;//是否有专用的显存堆
 	std::string memory_heap;//显存堆的名称
@@ -254,7 +255,7 @@ public:
 	MemoryBlockGpu(
 		bool if_use_heap_in,
 		std::string memory_heap_in, 
-		const uint64_t &memory_size_in, 
+		const uint64_t &memory_size_in,
 		const uint32_t &resource_id_in
 	);
 private:
@@ -273,7 +274,7 @@ MemoryBlockGpu::MemoryBlockGpu(
 	now_memory_offset_point = 0;
 }
 //保留显存堆
-class MemoryHeapGpu
+class MemoryHeapGpu : PancystarEngine::PancyBasicVirtualResource
 {
 	std::string heap_type_name;
 	uint64_t size_per_block;
@@ -281,7 +282,7 @@ class MemoryHeapGpu
 	ComPtr<ID3D12Heap> heap_data;
 	std::unordered_set<uint32_t> free_list;
 public:
-	MemoryHeapGpu(std::string heap_type_name_in);
+	MemoryHeapGpu(std::string heap_type_name_in, const uint32_t resource_id);
 	//每个显存块的大小
 	inline uint64_t GetMemorySizePerBlock()
 	{
@@ -297,7 +298,7 @@ public:
 	{
 		return free_list.size();
 	}
-	PancystarEngine::EngineFailReason Create(const CD3DX12_HEAP_DESC &heap_desc_in, const int32_t &size_per_block_in, const int32_t &max_block_num_in);
+	//PancystarEngine::EngineFailReason Create(const CD3DX12_HEAP_DESC &heap_desc_in, const int32_t &size_per_block_in, const int32_t &max_block_num_in);
 	//从显存堆开辟资源
 	PancystarEngine::EngineFailReason GetMemoryResource(
 		const CD3DX12_RESOURCE_DESC &resource_desc,
@@ -310,13 +311,16 @@ public:
 	bool CheckIfFree(int32_t memory_block_ID);
 	//释放一个对应id的资源
 	PancystarEngine::EngineFailReason FreeMemoryReference(const int32_t &memory_block_ID);
+private:
+	PancystarEngine::EngineFailReason InitResource(std::string resource_desc_file);
 };
-MemoryHeapGpu::MemoryHeapGpu(std::string heap_type_name_in)
+MemoryHeapGpu::MemoryHeapGpu(std::string heap_type_name_in,const uint32_t resource_id):PancyBasicVirtualResource(resource_id)
 {
 	heap_type_name = heap_type_name_in;
 	size_per_block = 0;
 	max_block_num = 0;
 }
+/*
 PancystarEngine::EngineFailReason MemoryHeapGpu::Create(const CD3DX12_HEAP_DESC &heap_desc_in,const int32_t &size_per_block_in, const int32_t &max_block_num_in)
 {
 	size_per_block = size_per_block_in;
@@ -342,6 +346,11 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::Create(const CD3DX12_HEAP_DESC 
 		free_list.insert(i);
 	}
 	return PancystarEngine::succeed;
+}
+*/
+PancystarEngine::EngineFailReason MemoryHeapGpu::InitResource(std::string resource_desc_file)
+{
+
 }
 bool MemoryHeapGpu::CheckIfFree(int32_t memory_block_ID) 
 {
@@ -414,4 +423,64 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::FreeMemoryReference(const int32
 	return PancystarEngine::succeed;
 }
 
+class MemoryHeapGpuControl : PancystarEngine::PancyBasicResourceControl<MemoryHeapGpu>
+{
+	MemoryHeapGpuControl();
+public:
+	static MemoryHeapGpuControl* GetInstance()
+	{
+		static MemoryHeapGpuControl* this_instance;
+		if (this_instance == NULL)
+		{
+			this_instance = new MemoryHeapGpuControl();
+		}
+		return this_instance;
+	}
+	/*
+	PancystarEngine::EngineFailReason BuildHeap(
+		const uint32_t &commit_block_num,
+		const uint64_t &per_block_size,
+		const D3D12_HEAP_TYPE &heap_type_in,
+		const D3D12_HEAP_FLAGS &heap_flag_in,
+		uint64_t &resource_id,
+		uint64_t heap_alignment_size = 0
+		);
+	*/
+};
+MemoryHeapGpuControl::MemoryHeapGpuControl() :PancystarEngine::PancyBasicResourceControl<MemoryHeapGpu>("MemoryHeapGpu")
+{
+}
+/*
+PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildHeap(
+	const uint32_t &commit_block_num,
+	const uint64_t &per_block_size,
+	const D3D12_HEAP_TYPE &heap_type_in,
+	const D3D12_HEAP_FLAGS &heap_flag_in,
+	uint64_t &resource_id,
+	uint64_t heap_alignment_size
+)
+{
+	CD3DX12_HEAP_DESC heapDesc(commit_block_num * per_block_size, heap_type_in, heap_alignment_size, heap_flag_in);
+	std::string heap_desc_hash_name;
+	heap_desc_hash_name = std::to_string(heap_type_in) + 
+		std::to_string(heap_flag_in) + 
+		"::" + 
+		std::to_string(commit_block_num) +
+		"::" + 
+		std::to_string(per_block_size);
+	MemoryHeapGpu *new_heap = new MemoryHeapGpu(heap_desc_hash_name);
+	PancystarEngine::EngineFailReason check_error;
+	check_error = new_heap->Create(heapDesc, per_block_size, commit_block_num);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = BuildResource(new_heap, resource_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+*/
 
