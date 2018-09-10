@@ -244,7 +244,7 @@ public:
 
 
 //显存块
-class MemoryBlockGpu
+class MemoryBlockGpu :public PancystarEngine::PancyBasicVirtualResource
 {
 	bool if_use_heap;//是否有专用的显存堆
 	std::string memory_heap;//显存堆的名称
@@ -255,8 +255,7 @@ public:
 	MemoryBlockGpu(
 		bool if_use_heap_in,
 		std::string memory_heap_in, 
-		const uint64_t &memory_size_in,
-		const uint32_t &resource_id_in
+		const uint64_t &memory_size_in
 	);
 private:
 	PancystarEngine::EngineFailReason InitResource();
@@ -264,9 +263,8 @@ private:
 MemoryBlockGpu::MemoryBlockGpu(
 	bool if_use_heap_in,
 	std::string memory_heap_in,
-	const uint64_t &memory_size_in,
-	const uint32_t &resource_id_in
-) : PancyBasicVirtualResource(resource_id_in)
+	const uint64_t &memory_size_in
+) : PancyBasicVirtualResource()
 {
 	if_use_heap = if_use_heap_in;
 	memory_heap = memory_heap_in;
@@ -274,15 +272,14 @@ MemoryBlockGpu::MemoryBlockGpu(
 	now_memory_offset_point = 0;
 }
 //保留显存堆
-class MemoryHeapGpu : PancystarEngine::PancyBasicVirtualResource
+class MemoryHeapGpu :public PancystarEngine::PancyBasicVirtualResource
 {
-	std::string heap_type_name;
 	uint64_t size_per_block;
 	uint32_t max_block_num;
 	ComPtr<ID3D12Heap> heap_data;
 	std::unordered_set<uint32_t> free_list;
 public:
-	MemoryHeapGpu(std::string heap_type_name_in, const uint32_t resource_id);
+	MemoryHeapGpu();
 	//每个显存块的大小
 	inline uint64_t GetMemorySizePerBlock()
 	{
@@ -314,40 +311,11 @@ public:
 private:
 	PancystarEngine::EngineFailReason InitResource(std::string resource_desc_file);
 };
-MemoryHeapGpu::MemoryHeapGpu(std::string heap_type_name_in,const uint32_t resource_id):PancyBasicVirtualResource(resource_id)
+MemoryHeapGpu::MemoryHeapGpu():PancyBasicVirtualResource()
 {
-	heap_type_name = heap_type_name_in;
 	size_per_block = 0;
 	max_block_num = 0;
 }
-/*
-PancystarEngine::EngineFailReason MemoryHeapGpu::Create(const CD3DX12_HEAP_DESC &heap_desc_in,const int32_t &size_per_block_in, const int32_t &max_block_num_in)
-{
-	size_per_block = size_per_block_in;
-	max_block_num = max_block_num_in;
-	//检查堆缓存的大小
-	if (heap_desc_in.SizeInBytes != size_per_block * max_block_num) 
-	{
-		PancystarEngine::EngineFailReason check_error(E_FAIL, "Memory Heap Size In" + heap_type_name + " need "+std::to_string(size_per_block * max_block_num) + " But Find " + std::to_string(heap_desc_in.SizeInBytes));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Memorty Heap", check_error);
-		return check_error;
-	}
-	//创建资源堆
-	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateHeap(&heap_desc_in, IID_PPV_ARGS(&heap_data));
-	if (FAILED(hr)) 
-	{
-		PancystarEngine::EngineFailReason check_error(hr,"Create Memory Heap "+ heap_type_name + "error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Memorty Heap", check_error);
-		return check_error;
-	}
-	//初始化堆内空闲的资源块
-	for (uint32_t i = 0; i < max_block_num; ++i)
-	{
-		free_list.insert(i);
-	}
-	return PancystarEngine::succeed;
-}
-*/
 PancystarEngine::EngineFailReason MemoryHeapGpu::InitResource(std::string resource_desc_file)
 {
 
@@ -375,14 +343,14 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::GetMemoryResource(
 {
 	if (resource_size_desc.SizeInBytes != size_per_block) 
 	{
-		PancystarEngine::EngineFailReason check_error(E_FAIL, "The resource allocated need size " + std::to_string(resource_size_desc.SizeInBytes) + " But the heap " + heap_type_name + " Could only buid memory with size " + std::to_string(size_per_block));
+		PancystarEngine::EngineFailReason check_error(E_FAIL, "The resource allocated need size " + std::to_string(resource_size_desc.SizeInBytes) + " But the heap " + resource_name + " Could only buid memory with size " + std::to_string(size_per_block));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Allocated Memorty From Heap", check_error);
 		return check_error;
 	}
 	auto rand_free_memory = free_list.begin();
 	if (rand_free_memory == free_list.end()) 
 	{
-		PancystarEngine::EngineFailReason check_error(E_FAIL, "The Heap " + heap_type_name + " Is empty, can't alloc new memory");
+		PancystarEngine::EngineFailReason check_error(E_FAIL, "The Heap " + resource_name + " Is empty, can't alloc new memory");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Allocated Memorty From Heap", check_error);
 		return check_error;
 	}
@@ -396,7 +364,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::GetMemoryResource(
 	);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason check_error(hr, "Allocate Memory From Heap " + heap_type_name + "error");
+		PancystarEngine::EngineFailReason check_error(hr, "Allocate Memory From Heap " + resource_name + "error");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Allocated Memorty From Heap", check_error);
 		return check_error;
 	}
@@ -408,7 +376,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::FreeMemoryReference(const int32
 {
 	if (memory_block_ID >= max_block_num)
 	{
-		PancystarEngine::EngineFailReason check_error(E_FAIL,"The heap "+ heap_type_name + " Only have " +std::to_string(max_block_num) +" Memory block,ID " +std::to_string(memory_block_ID) +" Out of range");
+		PancystarEngine::EngineFailReason check_error(E_FAIL,"The heap "+ resource_name + " Only have " +std::to_string(max_block_num) +" Memory block,ID " +std::to_string(memory_block_ID) +" Out of range");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free Memorty From Heap", check_error);
 		return check_error;
 	}
@@ -423,7 +391,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::FreeMemoryReference(const int32
 	return PancystarEngine::succeed;
 }
 
-class MemoryHeapGpuControl : PancystarEngine::PancyBasicResourceControl<MemoryHeapGpu>
+class MemoryHeapGpuControl : public PancystarEngine::PancyBasicResourceControl
 {
 	MemoryHeapGpuControl();
 public:
@@ -436,6 +404,7 @@ public:
 		}
 		return this_instance;
 	}
+	void BuildResource(PancystarEngine::PancyBasicVirtualResource** resource_out = NULL);
 	/*
 	PancystarEngine::EngineFailReason BuildHeap(
 		const uint32_t &commit_block_num,
@@ -447,8 +416,12 @@ public:
 		);
 	*/
 };
-MemoryHeapGpuControl::MemoryHeapGpuControl() :PancystarEngine::PancyBasicResourceControl<MemoryHeapGpu>("MemoryHeapGpu")
+MemoryHeapGpuControl::MemoryHeapGpuControl() :PancystarEngine::PancyBasicResourceControl("MemoryHeapGpu")
 {
+}
+void MemoryHeapGpuControl::BuildResource(PancystarEngine::PancyBasicVirtualResource** resource_out = NULL)
+{
+	*resource_out = new MemoryHeapGpu();
 }
 /*
 PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildHeap(
