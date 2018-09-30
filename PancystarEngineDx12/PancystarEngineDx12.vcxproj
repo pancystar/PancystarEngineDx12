@@ -150,6 +150,7 @@
     <ClInclude Include="PancyDx12Basic.h" />
     <ClInclude Include="PancyGeometryDx12.h" />
     <ClInclude Include="PancyJsonTool.h" />
+    <ClInclude Include="PancyMemoryBasic.h" />
     <ClInclude Include="PancyResourceBasic.h" />
     <ClInclude Include="PancyShaderDx12.h" />
     <ClInclude Include="PancystarEngineBasicDx12.h" />
@@ -158,6 +159,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PancyDx12Basic.cpp" />
     <ClCompile Include="PancyJsonTool.cpp" />
+    <ClCompile Include="PancyMemoryBasic.cpp" />
     <ClCompile Include="PancyResourceBasic.cpp" />
     <ClCompile Include="PancyShaderDx12.cpp" />
     <ClCompile Include="PancystarEngineBasicDx12.cpp" />
@@ -173,6 +175,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="json\pipline_state_object\pso_test.json" />
+    <None Include="json\resource_heap\heap_vertex.json" />
     <None Include="json\root_signature\test_root_signature.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
