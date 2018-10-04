@@ -1,49 +1,25 @@
 #pragma once
-#include"PancystarEngineBasicDx12.h"
+#include"PancyMemoryBasic.h"
 namespace PancystarEngine
 {
-	class reference_basic 
-	{
-		std::atomic<uint64_t> reference_count;
-	public:
-		reference_basic() 
-		{
-			reference_count = 0;
-		}
-		inline void AddReference() 
-		{
-			reference_count.fetch_add(1);
-		}
-		inline void DeleteReference() 
-		{
-			if (reference_count > 0)
-			{
-				reference_count.fetch_sub(1);
-			}
-			else
-			{
-				reference_count.store(0);
-			}
-		}
-		inline uint64_t GetReference() 
-		{
-			return reference_count.load();
-		}
-	};
 	class PancyBasicVirtualResource
 	{
 	protected:
 		std::string resource_name;
-		std::atomic<int32_t> reference_count;
+		std::atomic<pancy_object_id> reference_count;
 	public:
-		PancyBasicVirtualResource();
+		PancyBasicVirtualResource(std::string desc_file_in);
 		virtual ~PancyBasicVirtualResource();
-		PancystarEngine::EngineFailReason Create(std::string desc_file_in);
+		PancystarEngine::EngineFailReason Create();
 		void AddReference();
 		void DeleteReference();
-		inline int32_t GetReference()
+		inline int32_t GetReferenceCount()
 		{
 			return reference_count;
+		}
+		inline std::string GetResourceName() 
+		{
+			return resource_name;
 		}
 	private:
 		virtual PancystarEngine::EngineFailReason InitResource(std::string resource_desc_file) = 0;
@@ -52,15 +28,20 @@ namespace PancystarEngine
 	{
 		std::string resource_type_name;
 	private:
-		std::unordered_map<std::string, PancyBasicVirtualResource*> basic_resource_array;
+		std::unordered_map<std::string, pancy_object_id> resource_name_list;
+		std::unordered_map<pancy_object_id, PancyBasicVirtualResource*> basic_resource_array;
+		std::unordered_set<pancy_object_id> free_id_list;
 	public:
 		PancyBasicResourceControl(const std::string &resource_type_name_in);
 		virtual ~PancyBasicResourceControl();
-		PancystarEngine::EngineFailReason AddResurceReference(const std::string &resource_id);
-		PancystarEngine::EngineFailReason DeleteResurceReference(const std::string &resource_id);
-		PancystarEngine::EngineFailReason GetResource(const std::string &resource_id, PancyBasicVirtualResource** resource_out = NULL);
+		PancystarEngine::EngineFailReason AddResurceReference(const pancy_object_id &resource_id);
+		PancystarEngine::EngineFailReason DeleteResurceReference(const pancy_object_id &resource_id);
+		PancyBasicVirtualResource* GetResource(const pancy_object_id &desc_file_name);
 		PancystarEngine::EngineFailReason LoadResource(std::string desc_file_in);
 	private:
-		virtual void BuildResource(PancyBasicVirtualResource** resource_out = NULL) = 0;
+		virtual PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out) = 0;
 	};
+	
+	
+
 }

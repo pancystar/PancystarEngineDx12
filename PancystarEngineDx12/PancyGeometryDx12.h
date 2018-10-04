@@ -1,6 +1,7 @@
 #pragma once
 #include"PancystarEngineBasicDx12.h"
 #include"PancyDx12Basic.h"
+#include"PancyMemoryBasic.h"
 namespace PancystarEngine
 {
 	//2D顶点格式
@@ -39,9 +40,9 @@ namespace PancystarEngine
 	{
 	protected:
 		//几何体的渲染buffer
-		ComPtr<ID3D12Resource> geometry_vertex_buffer;
-		ComPtr<ID3D12Resource> geometry_index_buffer;
-		ComPtr<ID3D12Resource> geometry_adjindex_buffer;
+		VirtualMemoryPointer geometry_vertex_buffer;
+		VirtualMemoryPointer geometry_index_buffer;
+		VirtualMemoryPointer geometry_adjindex_buffer;
 		D3D12_VERTEX_BUFFER_VIEW geometry_vertex_buffer_view;
 		D3D12_INDEX_BUFFER_VIEW geometry_index_buffer_view;
 		uint32_t all_vertex;
@@ -56,15 +57,15 @@ namespace PancystarEngine
 		virtual ~GeometryBasic();
 		inline ComPtr<ID3D12Resource> GetVertexBuffer() 
 		{
-			return geometry_vertex_buffer;
+			return MemoryHeapGpuControl::GetInstance()->GetMemoryResource(geometry_vertex_buffer)->GetResource();
 		};
 		inline ComPtr<ID3D12Resource> GetIndexBuffer()
 		{
-			return geometry_index_buffer;
+			return MemoryHeapGpuControl::GetInstance()->GetMemoryResource(geometry_index_buffer)->GetResource();
 		};
 		inline ComPtr<ID3D12Resource> GetIndexAdjBuffer()
 		{
-			return geometry_adjindex_buffer;
+			return MemoryHeapGpuControl::GetInstance()->GetMemoryResource(geometry_adjindex_buffer)->GetResource();
 		};
 		inline D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()
 		{
@@ -82,16 +83,18 @@ namespace PancystarEngine
 			uint32_t &all_vertex_need, 
 			uint32_t &all_index_need, 
 			uint32_t &all_index_adj_need,
-			ComPtr<ID3D12Resource> &geometry_vertex_buffer,
-			ComPtr<ID3D12Resource> &geometry_index_buffer,
-			ComPtr<ID3D12Resource> &geometry_adjindex_buffer,
+			VirtualMemoryPointer &geometry_vertex_buffer,
+			VirtualMemoryPointer &geometry_index_buffer,
+			VirtualMemoryPointer &geometry_adjindex_buffer,
 			D3D12_VERTEX_BUFFER_VIEW &geometry_vertex_buffer_view_in,
 			D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in
 		) = 0;
 		PancystarEngine::EngineFailReason BuildDefaultBuffer(
 			ID3D12GraphicsCommandList* cmdList,
-			ComPtr<ID3D12Resource> &default_buffer,
-			ComPtr<ID3D12Resource> &upload_buffer,
+			//ComPtr<ID3D12Resource> &default_buffer,
+			//ComPtr<ID3D12Resource> &upload_buffer,
+			VirtualMemoryPointer &default_buffer,
+			VirtualMemoryPointer &upload_buffer,
 			const void* initData,
 			const UINT64 BufferSize
 		);
@@ -140,42 +143,43 @@ namespace PancystarEngine
 	}
 	PancystarEngine::EngineFailReason GeometryBasic::BuildDefaultBuffer(
 		ID3D12GraphicsCommandList* cmdList,
-		ComPtr<ID3D12Resource> &default_buffer,
-		ComPtr<ID3D12Resource> &upload_buffer,
+		VirtualMemoryPointer &default_buffer,
+		VirtualMemoryPointer &upload_buffer,
 		const void* initData,
 		const UINT64 BufferSize
 	) 
 	{
 		HRESULT hr;
-		//创建一个仅由GPU访问的缓冲区
-		hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		PancystarEngine::EngineFailReason check_error;
+		check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceCommit(
+			D3D12_HEAP_TYPE_DEFAULT,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(BufferSize),
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			nullptr,
-			IID_PPV_ARGS(&default_buffer)
+			CD3DX12_RESOURCE_DESC::Buffer(BufferSize),
+			D3D12_RESOURCE_STATE_COPY_DEST, default_buffer
 		);
-		if (FAILED(hr))
+		if (!check_error.CheckIfSucceed()) 
 		{
-			PancystarEngine::EngineFailReason error_message(hr, "create default vertex buffer error");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build geometry data", error_message);
-			return error_message;
+			return check_error;
 		}
-		//创建一个由CPU可访问的缓冲区
-		hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(BufferSize),
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&upload_buffer)
+		
+		check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceFromHeap(
+			"json\\resource_heap\\heap_vertex.json",
+			CD3DX12_RESOURCE_DESC::Buffer(BufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ, upload_buffer
 		);
-		if (FAILED(hr))
+		if (!check_error.CheckIfSucceed())
 		{
-			PancystarEngine::EngineFailReason error_message(hr, "create upload vertex buffer error");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build geometry data", error_message);
-			return error_message;
+			return check_error;
+		}
+		check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceCommit(
+			D3D12_HEAP_TYPE_UPLOAD,
+			D3D12_HEAP_FLAG_NONE,
+			CD3DX12_RESOURCE_DESC::Buffer(BufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ, upload_buffer
+		);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
 		}
 		//向CPU可访问缓冲区添加数据
 		D3D12_SUBRESOURCE_DATA vertexData_buffer = {};
@@ -185,8 +189,8 @@ namespace PancystarEngine
 		//资源拷贝
 		auto buffer_size = UpdateSubresources<1>(
 			cmdList,
-			default_buffer.Get(),
-			upload_buffer.Get(),
+			MemoryHeapGpuControl::GetInstance()->GetMemoryResource(default_buffer)->GetResource().Get(),
+			MemoryHeapGpuControl::GetInstance()->GetMemoryResource(upload_buffer)->GetResource().Get(),
 			0,
 			0,
 			1,
@@ -194,14 +198,15 @@ namespace PancystarEngine
 			);
 		if (buffer_size <= 0)
 		{
-			PancystarEngine::EngineFailReason error_message(hr, "update vertex buffer data error");
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "update vertex buffer data error");
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build geometry data", error_message);
 			return error_message;
 		}
 		cmdList->ResourceBarrier(
 			1,
 			&CD3DX12_RESOURCE_BARRIER::Transition(
-				default_buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
+				MemoryHeapGpuControl::GetInstance()->GetMemoryResource(default_buffer)->GetResource().Get(),
+				D3D12_RESOURCE_STATE_COPY_DEST,
 				D3D12_RESOURCE_STATE_GENERIC_READ
 			)
 		);
@@ -238,9 +243,9 @@ namespace PancystarEngine
 			uint32_t &all_vertex_need,
 			uint32_t &all_index_need,
 			uint32_t &all_index_adj_need,
-			ComPtr<ID3D12Resource> &geometry_vertex_buffer,
-			ComPtr<ID3D12Resource> &geometry_index_buffer,
-			ComPtr<ID3D12Resource> &geometry_adjindex_buffer,
+			VirtualMemoryPointer &geometry_vertex_buffer,
+			VirtualMemoryPointer &geometry_index_buffer,
+			VirtualMemoryPointer &geometry_adjindex_buffer,
 			D3D12_VERTEX_BUFFER_VIEW &geometry_vertex_buffer_view_in,
 			D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in
 		);
@@ -301,16 +306,16 @@ namespace PancystarEngine
 		uint32_t &all_vertex_need,
 		uint32_t &all_index_need,
 		uint32_t &all_index_adj_need,
-		ComPtr<ID3D12Resource> &geometry_vertex_buffer_in,
-		ComPtr<ID3D12Resource> &geometry_index_buffer_in,
-		ComPtr<ID3D12Resource> &geometry_adjindex_buffer_in,
+		VirtualMemoryPointer &geometry_vertex_buffer_in,
+		VirtualMemoryPointer &geometry_index_buffer_in,
+		VirtualMemoryPointer &geometry_adjindex_buffer_in,
 		D3D12_VERTEX_BUFFER_VIEW &geometry_vertex_buffer_view_in,
 		D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in
 	) 
 	{
 		//创建临时的上传缓冲区
-		ComPtr<ID3D12Resource> geometry_vertex_buffer_upload;
-		ComPtr<ID3D12Resource> geometry_index_buffer_upload;
+		VirtualMemoryPointer geometry_vertex_buffer_upload;
+		VirtualMemoryPointer geometry_index_buffer_upload;
 		//获取临时的拷贝commandlist
 		PancyRenderCommandList *copy_render_list;
 		uint32_t copy_render_list_ID;
@@ -342,6 +347,9 @@ namespace PancystarEngine
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->SubmitRenderlist(D3D12_COMMAND_LIST_TYPE_DIRECT,1, &copy_render_list_ID);
 		//等待线程同步
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->WaitWorkRenderlist(copy_render_list_ID);
+		//删除临时缓冲区
+		MemoryHeapGpuControl::GetInstance()->FreeResource(geometry_vertex_buffer_upload);
+		MemoryHeapGpuControl::GetInstance()->FreeResource(geometry_index_buffer_upload);
 		//ThreadPoolGPUControl::GetInstance()->GetMainContex()->FreeAlloctor(D3D12_COMMAND_LIST_TYPE_DIRECT);
 		//删除CPU备份
 		if (!if_save_CPU_data) 
@@ -361,7 +369,7 @@ namespace PancystarEngine
 		if (if_model_adj) 
 		{
 		}
-		geometry_vertex_buffer_view_in.BufferLocation = geometry_vertex_buffer_in->GetGPUVirtualAddress();
+		geometry_vertex_buffer_view_in.BufferLocation = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(geometry_vertex_buffer_in)->GetResource()->GetGPUVirtualAddress();
 		geometry_vertex_buffer_view_in.StrideInBytes = sizeof(T);
 		geometry_vertex_buffer_view_in.SizeInBytes = VertexBufferSize;
 		return PancystarEngine::succeed;

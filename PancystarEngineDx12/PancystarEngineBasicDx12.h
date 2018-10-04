@@ -41,6 +41,7 @@ using Microsoft::WRL::ComPtr;
     //#endif
 #endif
 #define pancy_resource_id uint8_t
+#define pancy_object_id uint16_t
 namespace PancystarEngine
 {
 	enum LogMessageType 

@@ -75,14 +75,16 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\vs2017_library\json\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\vs2017_library\json\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>F:\vs2017_library\json\Include;F:\vs2017_library\dx12\include;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\vs2017_library\json\Debug;F:\vs2017_library\dx12\lib_debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>F:\vs2017_library\dx12\include;F:\vs2017_library\json\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\vs2017_library\dx12\lib_release;F:\vs2017_library\json\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -143,6 +145,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;jsoncpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -154,6 +157,9 @@
     <ClInclude Include="PancyResourceBasic.h" />
     <ClInclude Include="PancyShaderDx12.h" />
     <ClInclude Include="PancystarEngineBasicDx12.h" />
+    <ClInclude Include="PancyTextureDx12.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -163,6 +169,9 @@
     <ClCompile Include="PancyResourceBasic.cpp" />
     <ClCompile Include="PancyShaderDx12.cpp" />
     <ClCompile Include="PancystarEngineBasicDx12.cpp" />
+    <ClCompile Include="PancyTextureDx12.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\testcolor.hlsl">
@@ -171,11 +180,13 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VSMain</EntryPointName>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="json\pipline_state_object\pso_test.json" />
     <None Include="json\resource_heap\heap_vertex.json" />
+    <None Include="json\resource_heap\tex_512_4_singlemip.json" />
     <None Include="json\root_signature\test_root_signature.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

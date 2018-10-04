@@ -6,8 +6,7 @@ MemoryBlockGpu::MemoryBlockGpu(
 )
 {
 	memory_size = memory_size_in;
-	resource_data_dx12 = resource_data_in;
-	now_memory_offset_point = 0;
+	resource_data = resource_data_in;
 }
 //GPU资源堆
 MemoryHeapGpu::MemoryHeapGpu(const std::string &heap_type_name_in)
@@ -48,14 +47,14 @@ bool MemoryHeapGpu::CheckIfFree(pancy_resource_id memory_block_ID)
 	{
 		return false;
 	}
-	auto check_data = free_list.find(memory_block_ID);
-	if (check_data != free_list.end())
+	auto check_data = empty_memory_block.find(memory_block_ID);
+	if (check_data != empty_memory_block.end())
 	{
 		return true;
 	}
 	return false;
 }
-PancystarEngine::EngineFailReason MemoryHeapGpu::GetMemoryResource(
+PancystarEngine::EngineFailReason MemoryHeapGpu::BuildMemoryResource(
 	const CD3DX12_RESOURCE_DESC &resource_desc,
 	const D3D12_RESOURCE_STATES &resource_state,
 	//Microsoft::WRL::Details::ComPtrRef<ComPtr<ID3D12Resource>> ppvResourc,
@@ -71,6 +70,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::GetMemoryResource(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Allocated Memorty From Heap", check_error);
 		return check_error;
 	}
+	auto check_desc = heap_data->GetDesc();
 	//在显存堆上创建显存资源
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreatePlacedResource(
 		heap_data.Get(),
@@ -91,6 +91,17 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::GetMemoryResource(
 	MemoryBlockGpu *new_memory_block_data = new MemoryBlockGpu(size_per_block, ppvResourc);
 	memory_heap_block.insert(std::pair<pancy_resource_id, MemoryBlockGpu*>(memory_block_ID, new_memory_block_data));
 	return PancystarEngine::succeed;
+}
+MemoryBlockGpu* MemoryHeapGpu::GetMemoryResource(const pancy_resource_id &memory_block_ID) 
+{
+	auto check_data = memory_heap_block.find(memory_block_ID);
+	if (check_data == memory_heap_block.end()) 
+	{
+		PancystarEngine::EngineFailReason check_error(E_FAIL, "The memory block ID " + std::to_string(memory_block_ID) + " Haven't been allocated or illegal memory id");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free Memorty From Heap"+ heap_type_name, check_error);
+		return NULL;
+	}
+	return check_data->second;
 }
 PancystarEngine::EngineFailReason MemoryHeapGpu::FreeMemoryReference(const pancy_resource_id &memory_block_ID)
 {
@@ -119,6 +130,14 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::FreeMemoryReference(const pancy
 	memory_heap_block.erase(memory_data);
 	return PancystarEngine::succeed;
 }
+MemoryHeapGpu::~MemoryHeapGpu()
+{
+	for (auto data_heap = memory_heap_block.begin(); data_heap != memory_heap_block.end(); ++data_heap)
+	{
+		delete data_heap->second;
+	}
+	memory_heap_block.clear();
+}
 //GPU线性增长的资源堆
 MemoryHeapLinear::MemoryHeapLinear(const std::string &heap_type_name_in, const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in)
 {
@@ -127,17 +146,16 @@ MemoryHeapLinear::MemoryHeapLinear(const std::string &heap_type_name_in, const C
 	max_block_num = max_block_num_in;
 	heap_type_name = heap_type_name_in;
 }
-PancystarEngine::EngineFailReason MemoryHeapLinear::GetMemoryResource(
+PancystarEngine::EngineFailReason MemoryHeapLinear::BuildMemoryResource(
 	const CD3DX12_RESOURCE_DESC &resource_desc,
 	const D3D12_RESOURCE_STATES &resource_state,
-	Microsoft::WRL::Details::ComPtrRef<ComPtr<ID3D12Resource>> ppvResourc,
 	pancy_resource_id &memory_block_ID,//显存块地址指针
 	pancy_resource_id &memory_heap_ID//显存段地址指针
 )
 {
 	if (empty_memory_heap.size() == 0)
 	{
-		pancy_resource_id new_id = memory_heap_data.size();
+		pancy_resource_id new_id = static_cast<pancy_resource_id>(memory_heap_data.size());
 		if (new_id + static_cast<pancy_resource_id>(1) < new_id)
 		{
 			//内存已经满了
@@ -159,7 +177,7 @@ PancystarEngine::EngineFailReason MemoryHeapLinear::GetMemoryResource(
 	pancy_resource_id new_empty_id = *empty_memory_heap.begin();
 	auto new_empty_heap = memory_heap_data.find(new_empty_id);
 	//开辟存储空间
-	auto check_error = new_empty_heap->second->GetMemoryResource(resource_desc, resource_state, ppvResourc, memory_block_ID);
+	auto check_error = new_empty_heap->second->BuildMemoryResource(resource_desc, resource_state, memory_block_ID);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -171,6 +189,23 @@ PancystarEngine::EngineFailReason MemoryHeapLinear::GetMemoryResource(
 		empty_memory_heap.erase(new_empty_id);
 	}
 	return PancystarEngine::succeed;
+}
+MemoryBlockGpu* MemoryHeapLinear::GetMemoryResource(
+	const pancy_resource_id &memory_heap_ID,//显存段地址指针
+	const pancy_resource_id &memory_block_ID//显存块地址指针
+	
+)
+{
+	//根据段指针找到显存段
+	auto memory_heap_now = memory_heap_data.find(memory_heap_ID);
+	if (memory_heap_now == memory_heap_data.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource heap: " + std::to_string(memory_heap_ID) + " could not be find");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free resource heap data", error_message);
+		return NULL;
+	}
+	//根据块指针找到显存块
+	return memory_heap_now->second->GetMemoryResource(memory_block_ID);
 }
 PancystarEngine::EngineFailReason MemoryHeapLinear::FreeMemoryReference(
 	const pancy_resource_id &memory_heap_ID,
@@ -226,6 +261,92 @@ MemoryHeapGpuControl::MemoryHeapGpuControl()
 	JsonLoader::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES));
 	JsonLoader::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES));
 }
+PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResourceCommit(
+	const D3D12_HEAP_TYPE &heap_type_in,
+	const D3D12_HEAP_FLAGS &heap_flag_in,
+	const CD3DX12_RESOURCE_DESC &resource_desc,
+	const D3D12_RESOURCE_STATES &resource_state,
+	VirtualMemoryPointer &virtual_pointer
+)
+{
+	//创建资源
+	ComPtr<ID3D12Resource> ppvResourc;
+	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(heap_type_in),
+		heap_flag_in,
+		&resource_desc,
+		resource_state,
+		nullptr,
+		IID_PPV_ARGS(&ppvResourc));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason check_error(hr, "Build commit memory resource error ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Memorty From List", check_error);
+		return check_error;
+	}
+	if (resource_memory_free_id.size() > 0)
+	{
+		virtual_pointer.memory_resource_id = *resource_memory_free_id.begin();
+		resource_memory_free_id.erase(virtual_pointer.memory_resource_id);
+	}
+	else
+	{
+		if (resource_memory_list.size() + static_cast<pancy_resource_id>(1) > resource_memory_list.size())
+		{
+			virtual_pointer.memory_resource_id = static_cast<pancy_resource_id>(resource_memory_list.size());
+		}
+		else
+		{
+			PancystarEngine::EngineFailReason check_error(hr, "commit resource memory list if full,use big id to recombile project");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Memorty From List", check_error);
+			return check_error;
+		}
+	}
+	MemoryBlockGpu *new_block = new MemoryBlockGpu(virtual_pointer.memory_resource_id, ppvResourc);
+	resource_memory_list.insert(std::pair<pancy_object_id, MemoryBlockGpu *>(virtual_pointer.memory_resource_id, new_block));
+	return PancystarEngine::succeed;
+}
+MemoryBlockGpu* MemoryHeapGpuControl::GetMemoryResource(VirtualMemoryPointer &virtual_pointer)
+{
+	if (virtual_pointer.if_heap) 
+	{
+		return GetMemoryResourceFromHeap(virtual_pointer.heap_type, virtual_pointer.heap_list_id, virtual_pointer.memory_block_id);
+	}
+	return GetMemoryFromList(virtual_pointer.memory_resource_id);
+}
+PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResource(VirtualMemoryPointer &virtual_pointer)
+{
+	if (virtual_pointer.if_heap)
+	{
+		return FreeResourceFromHeap(virtual_pointer.heap_type, virtual_pointer.heap_list_id, virtual_pointer.memory_block_id);
+	}
+	return FreeResourceCommit(virtual_pointer.memory_resource_id);
+}
+MemoryBlockGpu* MemoryHeapGpuControl::GetMemoryFromList(const pancy_object_id &memory_block_ID)
+{
+	auto check_data = resource_memory_list.find(memory_block_ID);
+	if (check_data == resource_memory_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the commit resource id:" + std::to_string(memory_block_ID) + " could not be find");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get commit resource  data", error_message);
+		return NULL;
+	}
+	return check_data->second;
+}
+PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResourceCommit(const pancy_object_id &memory_block_ID)
+{
+	auto check_data = resource_memory_list.find(memory_block_ID);
+	if (check_data == resource_memory_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the commit resource id:" + std::to_string(memory_block_ID) + " could not be find");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free commit resource  data", error_message);
+		return error_message;
+	}
+	delete check_data->second;
+	resource_memory_free_id.insert(check_data->first);
+	resource_memory_list.erase(check_data);
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason MemoryHeapGpuControl::LoadHeapFromFile(
 	const std::string &HeapFileName,
 	pancy_resource_id &resource_id,
@@ -261,11 +382,12 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::LoadHeapFromFile(
 	{
 		return check_error;
 	}
+	heap_type_in = static_cast<D3D12_HEAP_TYPE>(rec_value.int_value);
 	Json::Value value_heap_flags = root_value.get("heap_flag_in", Json::Value::null);
 	int32_t rec_data = 0;
-	for (int32_t i = 0; i < value_heap_flags.size(); ++i)
+	for (uint32_t i = 0; i < value_heap_flags.size(); ++i)
 	{
-		JsonLoader::GetInstance()->GetJsonData(HeapFileName, root_value, i, pancy_json_data_type::json_data_enum, rec_value);
+		JsonLoader::GetInstance()->GetJsonData(HeapFileName, value_heap_flags, i, pancy_json_data_type::json_data_enum, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -299,25 +421,23 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildHeap(
 	}
 	CD3DX12_HEAP_DESC heapDesc(commit_block_num * per_block_size, heap_type_in, heap_alignment_size, heap_flag_in);
 	MemoryHeapLinear *new_heap = new MemoryHeapLinear(heap_desc_name, heapDesc, per_block_size, commit_block_num);
-	resource_id = resource_init_list.size();
+	resource_id = static_cast<pancy_resource_id>(resource_init_list.size());
 	resource_init_list.insert(std::pair<std::string, pancy_resource_id>(heap_desc_name, resource_id));
 	resource_heap_list.insert(std::pair<pancy_resource_id, MemoryHeapLinear*>(resource_id, new_heap));
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResource(
+PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResourceFromHeap(
 	const std::string &HeapFileName,
 	const CD3DX12_RESOURCE_DESC &resource_desc,
 	const D3D12_RESOURCE_STATES &resource_state,
-	Microsoft::WRL::Details::ComPtrRef<ComPtr<ID3D12Resource>> ppvResourc,
-	pancy_resource_id &memory_block_ID,//显存块地址指针
-	pancy_resource_id &memory_heap_ID//显存段地址指针
+	VirtualMemoryPointer &virtual_pointer
 )
 {
-	pancy_resource_id resource_heap_id;
+	virtual_pointer.if_heap = true;
 	auto heap_list_id = resource_init_list.find(HeapFileName);
 	if (heap_list_id == resource_init_list.end())
 	{
-		auto check_error = LoadHeapFromFile(HeapFileName, resource_heap_id);
+		auto check_error = LoadHeapFromFile(HeapFileName, virtual_pointer.heap_type);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -325,17 +445,32 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResource(
 	}
 	else 
 	{
-		resource_heap_id = heap_list_id->second;
+		virtual_pointer.heap_type = heap_list_id->second;
 	}
-	auto heap_list_data = resource_heap_list.find(resource_heap_id);
-	auto check_error = heap_list_data->second->GetMemoryResource(resource_desc, resource_state, ppvResourc, memory_block_ID, memory_heap_ID);
+	auto heap_list_data = resource_heap_list.find(virtual_pointer.heap_type);
+	auto check_error = heap_list_data->second->BuildMemoryResource(resource_desc, resource_state, virtual_pointer.memory_block_id, virtual_pointer.heap_list_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResource(
+MemoryBlockGpu* MemoryHeapGpuControl::GetMemoryResourceFromHeap(
+	const pancy_resource_id &memory_heap_list_ID,//显存域地址指针
+	const pancy_resource_id &memory_heap_ID,//显存段地址指针
+	const pancy_resource_id &memory_block_ID//显存块地址指针
+) 
+{
+	auto heap_list_data = resource_heap_list.find(memory_heap_list_ID);
+	if (heap_list_data == resource_heap_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource heap list: " + std::to_string(memory_heap_list_ID) + " could not be find");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get resource heap data", error_message);
+		return NULL;
+	}
+	return heap_list_data->second->GetMemoryResource(memory_heap_ID, memory_block_ID);
+}
+PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResourceFromHeap(
 	const pancy_resource_id &memory_heap_list_ID,//显存域地址指针
 	const pancy_resource_id &memory_heap_ID,//显存段地址指针
 	const pancy_resource_id &memory_block_ID//显存块地址指针
@@ -349,6 +484,11 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResource(
 		return error_message;
 	}
 	auto check_error = heap_list_data->second->FreeMemoryReference(memory_heap_ID, memory_block_ID);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
 }
 MemoryHeapGpuControl::~MemoryHeapGpuControl()
 {
@@ -356,6 +496,12 @@ MemoryHeapGpuControl::~MemoryHeapGpuControl()
 	{
 		delete data_heap->second;
 	}
+	for (auto data_res = resource_memory_list.begin(); data_res != resource_memory_list.end(); ++data_res)
+	{
+		delete data_res->second;
+	}
 	resource_heap_list.clear();
 	resource_init_list.clear();
+	resource_memory_list.clear();
+	resource_memory_free_id.clear();
 }

@@ -45,6 +45,9 @@
     <ClInclude Include="PancyMemoryBasic.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="PancyTextureDx12.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -68,6 +71,9 @@
     <ClCompile Include="PancyMemoryBasic.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="PancyTextureDx12.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\testcolor.hlsl">
@@ -82,6 +88,9 @@
       <Filter>json</Filter>
     </None>
     <None Include="json\resource_heap\heap_vertex.json">
+      <Filter>json</Filter>
+    </None>
+    <None Include="json\resource_heap\tex_512_4_singlemip.json">
       <Filter>json</Filter>
     </None>
   </ItemGroup>

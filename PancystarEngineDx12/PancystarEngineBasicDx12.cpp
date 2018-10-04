@@ -131,4 +131,5 @@ void EngineFailLog::PrintLogToconsole()
 		PancyString out_debug_string = debug_data;
 		OutputDebugString(out_debug_string.GetUnicodeString().c_str());
 	}
+	log_save_list.clear();
 }

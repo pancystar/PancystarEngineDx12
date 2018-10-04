@@ -1,4 +1,5 @@
 #include"PancyDx12Basic.h"
+#include"PancyTextureDx12.h"
 PancyDx12DeviceBasic* PancyDx12DeviceBasic::d3dbasic_instance = NULL;
 ThreadPoolGPUControl* ThreadPoolGPUControl::threadpool_control_instance = NULL;
 PancyDx12DeviceBasic::PancyDx12DeviceBasic(HWND hwnd_window_in, uint32_t width_in, uint32_t height_in)
@@ -58,7 +59,12 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		return check_error;
 	}
 	//创建root signature draw
-	
+	PancystarEngine::PancyBasicTexture *check = new PancystarEngine::PancyBasicTexture("data\\test222.dds",false,true);
+	check_error = check->Create();
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
 	//禁止alt+回车全屏
 	dxgi_factory->MakeWindowAssociation(hwnd_window, DXGI_MWA_NO_ALT_ENTER);
 	return PancystarEngine::succeed;

@@ -355,6 +355,10 @@ HRESULT engine_windows_main::game_create()
 	//MoveWindow(hwnd,new_info.left+100, new_info.top+100, width, height,true);
 	new_device = new PancyDx12Basic();
 	check_error = new_device->Create(hwnd, window_width, window_height);
+	if (!check_error.CheckIfSucceed())
+	{
+		return E_FAIL;
+	}
 	ShowWindow(hwnd, SW_SHOW);                    // 将窗口显示到桌面上。
 	UpdateWindow(hwnd);                           // 刷新一遍窗口（直接刷新，不向windows消息循环队列做请示）。
 	return S_OK;
@@ -368,7 +372,6 @@ HRESULT engine_windows_main::game_loop()
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			new_device->Render();
-			PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 			TranslateMessage(&msg);//消息转换
 			DispatchMessage(&msg);//消息传递给窗口过程函数
 		}
@@ -392,10 +395,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 {
 	//_CrtSetBreakAlloc(343);
 	engine_windows_main *engine_main = new engine_windows_main(hInstance, hPrevInstance, szCmdLine, iCmdShow);
-	engine_main->game_create();
+	HRESULT hr = engine_main->game_create();
+	if (FAILED(hr)) 
+	{
+		return 0;
+	}
 	engine_main->game_loop();
 	auto msg_end = engine_main->game_end();
-	PancystarEngine::EngineFailLog::GetInstance();
+	PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 	delete engine_main;
 	delete PancystarEngine::EngineFailLog::GetInstance();
 	delete ThreadPoolGPUControl::GetInstance();
@@ -403,6 +410,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	delete PancyRootSignatureControl::GetInstance();
 	delete PancyEffectGraphic::GetInstance();
 	delete JsonLoader::GetInstance();
+	delete MemoryHeapGpuControl::GetInstance();
 	if (InputLayoutDesc::GetInstance() != NULL)
 	{
 		delete InputLayoutDesc::GetInstance();

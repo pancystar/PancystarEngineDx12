@@ -1,19 +1,36 @@
 #pragma once
 #include"PancyDx12Basic.h"
+//显存指针
+struct VirtualMemoryPointer
+{
+	bool if_heap;//资源是否是由堆上分配而来
+	pancy_resource_id heap_type;      //堆类型
+	pancy_resource_id heap_list_id;   //堆id号
+	pancy_resource_id memory_block_id;//内存块id号
+	pancy_object_id memory_resource_id;//直接指向内存的id号
+	VirtualMemoryPointer()
+	{
+		if_heap = false;
+		heap_type = 0;
+		heap_list_id = 0;
+		memory_block_id = 0;
+		memory_resource_id = 0;
+	}
+};
 //显存块
 class MemoryBlockGpu
 {
-	pancy_resource_id memory_heap_list_id;//显存堆类型地址
-	pancy_resource_id memory_heap_id;     //显存堆段地址
-	pancy_resource_id memory_block_id;    //显存块地址
 	uint64_t memory_size;//存储块的大小
-	ComPtr<ID3D12Resource> resource_data_dx12;//存储块的数据
-	uint64_t now_memory_offset_point;//当前已经开辟的内存指针位置
+	ComPtr<ID3D12Resource> resource_data;//存储块的数据
 public:
 	MemoryBlockGpu(
 		const uint64_t &memory_size_in,
 		ComPtr<ID3D12Resource> resource_data_in
 	);
+	inline ComPtr<ID3D12Resource> GetResource() 
+	{
+		return resource_data;
+	}
 };
 //保留显存堆
 class MemoryHeapGpu
@@ -47,15 +64,18 @@ public:
 	}
 	PancystarEngine::EngineFailReason Create(const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in);
 	//从显存堆开辟资源
-	PancystarEngine::EngineFailReason GetMemoryResource(
+	PancystarEngine::EngineFailReason BuildMemoryResource(
 		const CD3DX12_RESOURCE_DESC &resource_desc,
 		const D3D12_RESOURCE_STATES &resource_state,
 		pancy_resource_id &memory_block_ID
 	);
+	//获取显存资源
+	MemoryBlockGpu* GetMemoryResource(const pancy_resource_id &memory_block_ID);
 	//检验对应id的资源是否已经被分配
 	bool CheckIfFree(pancy_resource_id memory_block_ID);
 	//释放一个对应id的资源
 	PancystarEngine::EngineFailReason FreeMemoryReference(const pancy_resource_id &memory_block_ID);
+	~MemoryHeapGpu();
 };
 //线性增长的显存堆
 class MemoryHeapLinear
@@ -74,12 +94,16 @@ class MemoryHeapLinear
 public:
 	MemoryHeapLinear(const std::string &heap_type_name_in, const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in);
 	//从显存堆开辟资源
-	PancystarEngine::EngineFailReason GetMemoryResource(
+	PancystarEngine::EngineFailReason BuildMemoryResource(
 		const CD3DX12_RESOURCE_DESC &resource_desc,
 		const D3D12_RESOURCE_STATES &resource_state,
-		Microsoft::WRL::Details::ComPtrRef<ComPtr<ID3D12Resource>> ppvResourc,
 		pancy_resource_id &memory_block_ID,//显存块地址指针
 		pancy_resource_id &memory_heap_ID//显存段地址指针
+	);
+	MemoryBlockGpu* GetMemoryResource(
+		const pancy_resource_id &memory_heap_ID,//显存段地址指针
+		const pancy_resource_id &memory_block_ID//显存块地址指针
+		
 	);
 	//释放一个对应id的资源
 	PancystarEngine::EngineFailReason FreeMemoryReference(
@@ -88,11 +112,14 @@ public:
 	);
 	~MemoryHeapLinear();
 };
-//资源堆管理器
+//资源管理器
 class MemoryHeapGpuControl
 {
+	pancy_object_id resource_memory_id_self_add;
 	std::unordered_map<std::string, pancy_resource_id> resource_init_list;
-	std::unordered_map<pancy_resource_id, MemoryHeapLinear*> resource_heap_list;//虚拟显存资源表
+	std::unordered_map<pancy_resource_id, MemoryHeapLinear*> resource_heap_list;//显存堆表
+	std::unordered_map<pancy_object_id, MemoryBlockGpu*>resource_memory_list;//离散的显存块表
+	std::unordered_set<pancy_object_id> resource_memory_free_id;
 	MemoryHeapGpuControl();
 public:
 	static MemoryHeapGpuControl* GetInstance()
@@ -104,27 +131,43 @@ public:
 		}
 		return this_instance;
 	}
-	
-	PancystarEngine::EngineFailReason BuildResource(
+	PancystarEngine::EngineFailReason BuildResourceCommit(
+		const D3D12_HEAP_TYPE &heap_type_in,
+		const D3D12_HEAP_FLAGS &heap_flag_in,
+		const CD3DX12_RESOURCE_DESC &resource_desc,
+		const D3D12_RESOURCE_STATES &resource_state,
+		VirtualMemoryPointer &virtual_pointer
+	);
+	PancystarEngine::EngineFailReason BuildResourceFromHeap(
 		const std::string &HeapFileName,
 		const CD3DX12_RESOURCE_DESC &resource_desc,
 		const D3D12_RESOURCE_STATES &resource_state,
-		Microsoft::WRL::Details::ComPtrRef<ComPtr<ID3D12Resource>> ppvResourc,
-		pancy_resource_id &memory_block_ID,//显存块地址指针
-		pancy_resource_id &memory_heap_ID//显存段地址指针
+		VirtualMemoryPointer &virtual_pointer
 	);
+	MemoryBlockGpu *GetMemoryResource(VirtualMemoryPointer &virtual_pointer);
+	PancystarEngine::EngineFailReason FreeResource(VirtualMemoryPointer &virtual_pointer);
+	~MemoryHeapGpuControl();
+private:
+	//不存放在指定堆上的资源
+	MemoryBlockGpu* GetMemoryFromList(const pancy_object_id &memory_block_ID);
+	PancystarEngine::EngineFailReason FreeResourceCommit(const pancy_object_id &memory_block_ID);
+	//存放在指定堆上的资源
+	MemoryBlockGpu * GetMemoryResourceFromHeap(
+		const pancy_resource_id &memory_heap_list_ID,//显存域地址指针
+		const pancy_resource_id &memory_heap_ID,//显存段地址指针
+		const pancy_resource_id &memory_block_ID//显存块地址指针
+	);
+	
 	PancystarEngine::EngineFailReason LoadHeapFromFile(
 		const std::string &HeapFileName,
 		pancy_resource_id &resource_id,
 		uint64_t heap_alignment_size = 0
 	);
-	PancystarEngine::EngineFailReason FreeResource(
+	PancystarEngine::EngineFailReason FreeResourceFromHeap(
 		const pancy_resource_id &memory_heap_list_ID,//显存域地址指针
 		const pancy_resource_id &memory_heap_ID,//显存段地址指针
 		const pancy_resource_id &memory_block_ID//显存块地址指针
 	);
-	~MemoryHeapGpuControl();
-private:
 	PancystarEngine::EngineFailReason BuildHeap(
 		const std::string &HeapFileName,
 		const pancy_resource_id &commit_block_num,
@@ -135,6 +178,4 @@ private:
 		uint64_t heap_alignment_size = 0
 	);
 };
-//资源管理器
-
 
