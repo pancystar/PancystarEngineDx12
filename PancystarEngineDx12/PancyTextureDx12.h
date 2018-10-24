@@ -35,12 +35,6 @@ namespace PancystarEngine
 		int                              max_size;      //纹理最大大小
 		D3D12_RESOURCE_DESC              texture_desc;  //纹理格式
 		VirtualMemoryPointer             tex_data;      //纹理数据指针
-		D3D12_SHADER_RESOURCE_VIEW_DESC  SRV_need;      //SRV访问视图
-		D3D12_RENDER_TARGET_VIEW_DESC    RTV_need;      //RTV访问视图
-		D3D12_UNORDERED_ACCESS_VIEW_DESC UAV_need;      //UAV访问视图
-		ComPtr<ID3D12DescriptorHeap>     SRV_heap_need; //SRV描述符堆
-		ComPtr<ID3D12DescriptorHeap>     RTV_heap_need; //RTV描述符堆
-		ComPtr<ID3D12DescriptorHeap>     UAV_heap_need; //UAV描述符堆
 	public:
 		PancyBasicTexture(
 			std::string desc_file_in,
@@ -49,7 +43,6 @@ namespace PancystarEngine
 			int max_size_in = 0);
 	private:
 		PancystarEngine::EngineFailReason InitResource(std::string resource_desc_file);
-		PancystarEngine::EngineFailReason BuildSRVFromResource();
 		PancystarEngine::EngineFailReason LoadPictureFromFile(std::string picture_path_file);
 		PancystarEngine::EngineFailReason BuildEmptyPicture(std::string picture_desc_file);
 		std::string GetFileTile(const std::string &data_input);
@@ -65,11 +58,6 @@ namespace PancystarEngine
 			unsigned int loadFlags
 		);
 	};
-	PancystarEngine::EngineFailReason PancyBasicTexture::BuildSRVFromResource()
-	{
-		auto resource = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(tex_data);
-
-	}
 	class PancyTextureControl 
 	{
 	};

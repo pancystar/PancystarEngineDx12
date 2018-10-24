@@ -1,6 +1,7 @@
 #pragma once
 #include"PancyDx12Basic.h"
 #include"PancyJsonTool.h"
+#include"PancyMemoryBasic.h"
 //几何体的格式对接类型
 struct PancyVertexBufferDesc
 {
@@ -83,6 +84,7 @@ public:
 //RootSignature
 class PancyRootSignature
 {
+	pancy_resource_id descriptor_heap_id;
 	PancystarEngine::PancyString root_signature_name;
 	ComPtr<ID3D12RootSignature> root_signature_data;
 public:
@@ -91,7 +93,7 @@ public:
 	{
 		return root_signature_data;
 	};
-	PancystarEngine::EngineFailReason Create(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc);
+	PancystarEngine::EngineFailReason Create(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,const pancy_resource_id &descriptor_heap_id_in);
 };
 //RootSignature管理器
 class PancyRootSignatureControl
@@ -114,7 +116,11 @@ public:
 	}
 	PancyRootSignature* GetRootSignature(std::string name_in);
 	PancystarEngine::EngineFailReason BuildRootSignature(std::string rootsig_config_file);
-	PancystarEngine::EngineFailReason GetDesc(const std::string &file_name, CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &desc_out);
+	PancystarEngine::EngineFailReason GetDesc(
+		const std::string &file_name,
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &desc_out,
+		pancy_resource_id &descriptor_heap_id
+	);
 	~PancyRootSignatureControl();
 private:
 	void AddRootSignatureGlobelVariable();
