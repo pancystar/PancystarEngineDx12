@@ -38,10 +38,18 @@ namespace PancystarEngine
 		D3D12_SHADER_RESOURCE_VIEW_DESC  SRV_need;      //SRV∑√Œ  ”Õº
 		D3D12_RENDER_TARGET_VIEW_DESC    RTV_need;      //RTV∑√Œ  ”Õº
 		D3D12_UNORDERED_ACCESS_VIEW_DESC UAV_need;      //UAV∑√Œ  ”Õº
+		ComPtr<ID3D12DescriptorHeap>     SRV_heap_need; //SRV√Ë ˆ∑˚∂—
+		ComPtr<ID3D12DescriptorHeap>     RTV_heap_need; //RTV√Ë ˆ∑˚∂—
+		ComPtr<ID3D12DescriptorHeap>     UAV_heap_need; //UAV√Ë ˆ∑˚∂—
 	public:
-		PancyBasicTexture(std::string desc_file_in,bool if_gen_mipmap_in = false,bool if_force_srgb_in = false,int max_size_in = 0);
+		PancyBasicTexture(
+			std::string desc_file_in,
+			bool if_gen_mipmap_in = false,
+			bool if_force_srgb_in = false,
+			int max_size_in = 0);
 	private:
 		PancystarEngine::EngineFailReason InitResource(std::string resource_desc_file);
+		PancystarEngine::EngineFailReason BuildSRVFromResource();
 		PancystarEngine::EngineFailReason LoadPictureFromFile(std::string picture_path_file);
 		PancystarEngine::EngineFailReason BuildEmptyPicture(std::string picture_desc_file);
 		std::string GetFileTile(const std::string &data_input);
@@ -57,6 +65,11 @@ namespace PancystarEngine
 			unsigned int loadFlags
 		);
 	};
+	PancystarEngine::EngineFailReason PancyBasicTexture::BuildSRVFromResource()
+	{
+		auto resource = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(tex_data);
+
+	}
 	class PancyTextureControl 
 	{
 	};

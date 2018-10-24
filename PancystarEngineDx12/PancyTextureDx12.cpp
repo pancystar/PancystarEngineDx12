@@ -610,4 +610,5 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(std::string resource_desc_file)
 {
 	return LoadPictureFromFile(resource_desc_file);
+
 }

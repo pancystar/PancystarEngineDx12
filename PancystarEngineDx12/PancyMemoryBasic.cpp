@@ -306,7 +306,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResourceCommit(
 	resource_memory_list.insert(std::pair<pancy_object_id, MemoryBlockGpu *>(virtual_pointer.memory_resource_id, new_block));
 	return PancystarEngine::succeed;
 }
-MemoryBlockGpu* MemoryHeapGpuControl::GetMemoryResource(VirtualMemoryPointer &virtual_pointer)
+MemoryBlockGpu* MemoryHeapGpuControl::GetMemoryResource(const VirtualMemoryPointer &virtual_pointer)
 {
 	if (virtual_pointer.if_heap) 
 	{
@@ -314,7 +314,7 @@ MemoryBlockGpu* MemoryHeapGpuControl::GetMemoryResource(VirtualMemoryPointer &vi
 	}
 	return GetMemoryFromList(virtual_pointer.memory_resource_id);
 }
-PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResource(VirtualMemoryPointer &virtual_pointer)
+PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResource(const VirtualMemoryPointer &virtual_pointer)
 {
 	if (virtual_pointer.if_heap)
 	{
