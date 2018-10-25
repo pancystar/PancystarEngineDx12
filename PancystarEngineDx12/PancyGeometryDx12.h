@@ -374,4 +374,7 @@ namespace PancystarEngine
 		geometry_vertex_buffer_view_in.SizeInBytes = VertexBufferSize;
 		return PancystarEngine::succeed;
 	}
+	class ModelResourceBasic 
+	{
+	};
 }

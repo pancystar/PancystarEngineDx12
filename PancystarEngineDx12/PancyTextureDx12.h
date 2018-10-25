@@ -58,8 +58,9 @@ namespace PancystarEngine
 			unsigned int loadFlags
 		);
 	};
-	class PancyTextureControl 
+	class PancyTextureControl : public PancystarEngine::PancyBasicResourceControl
 	{
+
 	};
 	
 }
