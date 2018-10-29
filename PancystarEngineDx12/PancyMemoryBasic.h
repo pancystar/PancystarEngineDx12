@@ -31,6 +31,10 @@ public:
 	{
 		return resource_data;
 	}
+	inline uint64_t GetSize()
+	{
+		return memory_size;
+	}
 };
 //保留显存堆
 class MemoryHeapGpu
@@ -178,6 +182,72 @@ private:
 		uint64_t heap_alignment_size = 0
 	);
 };
+//二级资源
+struct SubMemoryPointer 
+{
+	VirtualMemoryPointer buffer_data;
+	pancy_object_id offset;
+};
+class SubMemoryData 
+{
+	VirtualMemoryPointer buffer_data;//显存资源指针
+	pancy_object_id per_memory_size;//每个常量缓冲区的大小
+	std::unordered_set<pancy_object_id> empty_sub_memory;
+	std::unordered_map<pancy_object_id, SubMemoryPointer*> sub_memory_data;
+public:
+	SubMemoryData();
+	PancystarEngine::EngineFailReason Create(
+		const std::string &buffer_desc_file,
+		const CD3DX12_RESOURCE_DESC &resource_desc,
+		const D3D12_RESOURCE_STATES &resource_state,
+		const pancy_object_id &per_memory_size_in
+	);
+	PancystarEngine::EngineFailReason BuildSubMemory(pancy_object_id &offset);
+	PancystarEngine::EngineFailReason FreeSubMemory(const pancy_object_id &offset);
+};
+SubMemoryData::SubMemoryData()
+{
+}
+PancystarEngine::EngineFailReason SubMemoryData::Create(
+	const std::string &buffer_desc_file,
+	const CD3DX12_RESOURCE_DESC &resource_desc,
+	const D3D12_RESOURCE_STATES &resource_state,
+	const pancy_object_id &per_memory_size_in
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceFromHeap(buffer_desc_file, resource_desc, resource_state, buffer_data);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	per_memory_size = per_memory_size_in;
+	auto memory_data = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
+	auto check_size = memory_data->GetSize() % static_cast<uint64_t>(per_memory_size_in);
+	if (check_size != 0) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL,"the memory size:"+std::to_string(memory_data->GetSize())+" could not mod the submemory size: "+std::to_string(per_memory_size_in));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build subresource from memory block", error_message);
+		return error_message;
+	}
+	pancy_object_id all_empty_num = static_cast<pancy_object_id>(memory_data->GetSize() / static_cast<uint64_t>(per_memory_size_in));
+	for (pancy_object_id i = 0; i < all_empty_num; ++i)
+	{
+		empty_sub_memory.insert(i);
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubMemoryData::BuildSubMemory(pancy_object_id &offset) 
+{
+	if (empty_sub_memory.size() == 0) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the memory block is full, could not build new memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build subresource from memory block", error_message);
+		return error_message;
+	}
+	auto new_sub_memory = *empty_sub_memory.begin();
+
+}
 //资源描述视图
 class PancyResourceView
 {

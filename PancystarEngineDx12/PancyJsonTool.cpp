@@ -1,5 +1,5 @@
 #include"PancyJsonTool.h"
-JsonLoader::JsonLoader()
+PancyJsonTool::PancyJsonTool()
 {
 	builder["collectComments"] = false;
 	std::string name_value_need[] = {
@@ -29,7 +29,7 @@ JsonLoader::JsonLoader()
 		name_shader_type[i] = name_shader_need[i];
 	}
 }
-PancystarEngine::EngineFailReason JsonLoader::LoadJsonFile(const std::string &file_name, Json::Value &root_value)
+PancystarEngine::EngineFailReason PancyJsonTool::LoadJsonFile(const std::string &file_name, Json::Value &root_value)
 {
 	FileOpen.open(file_name);
 	if (!FileOpen.is_open())
@@ -49,7 +49,7 @@ PancystarEngine::EngineFailReason JsonLoader::LoadJsonFile(const std::string &fi
 	FileOpen.close();
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason JsonLoader::SetGlobelVraiable(const std::string &variable_name, const int32_t &variable_value)
+PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(const std::string &variable_name, const int32_t &variable_value)
 {
 	auto check_if_have = globel_variables.find(variable_name);
 	if (check_if_have != globel_variables.end())
@@ -61,7 +61,7 @@ PancystarEngine::EngineFailReason JsonLoader::SetGlobelVraiable(const std::strin
 	globel_variables.insert(std::pair<std::string, int32_t>(variable_name, variable_value));
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason JsonLoader::GetJsonData
+PancystarEngine::EngineFailReason PancyJsonTool::GetJsonData
 (
 	const std::string &file_name,
 	const Json::Value &root_value,
@@ -73,7 +73,7 @@ PancystarEngine::EngineFailReason JsonLoader::GetJsonData
 	auto enum_type_value = root_value.get(member_name, Json::Value::null);
 	return GetJsonMemberData(file_name, enum_type_value, member_name, json_type, variable_value);
 }
-PancystarEngine::EngineFailReason JsonLoader::GetJsonData
+PancystarEngine::EngineFailReason PancyJsonTool::GetJsonData
 (
 	const std::string &file_name,
 	const Json::Value &root_value,
@@ -85,7 +85,7 @@ PancystarEngine::EngineFailReason JsonLoader::GetJsonData
 	auto enum_type_value = root_value[member_num];
 	return GetJsonMemberData(file_name, enum_type_value, "array::" + std::to_string(member_num), json_type, variable_value);
 }
-PancystarEngine::EngineFailReason JsonLoader::GetJsonMemberData
+PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 (
 	const std::string &file_name,
 	const Json::Value &enum_type_value,
@@ -183,7 +183,7 @@ PancystarEngine::EngineFailReason JsonLoader::GetJsonMemberData
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason JsonLoader::GetJsonShader(
+PancystarEngine::EngineFailReason PancyJsonTool::GetJsonShader(
 	const std::string &file_name,
 	const Json::Value &root_value,
 	const Pancy_json_shader_type &json_type,
@@ -212,7 +212,7 @@ PancystarEngine::EngineFailReason JsonLoader::GetJsonShader(
 	shader_func_name = new_value.string_value;
 	return PancystarEngine::succeed;
 }
-int32_t JsonLoader::GetGlobelVariable(const std::string &variable_name)
+int32_t PancyJsonTool::GetGlobelVariable(const std::string &variable_name)
 {
 	auto check_data = globel_variables.find(variable_name);
 	if (check_data != globel_variables.end())
@@ -223,4 +223,30 @@ int32_t JsonLoader::GetGlobelVariable(const std::string &variable_name)
 	{
 		return -1;
 	}
+}
+
+PancystarEngine::EngineFailReason PancyJsonTool::WriteValueToJson(
+	const Json::Value &insert_value,
+	const std::string &Json_name
+)
+{
+	std::string save_file_name = Json_name;
+	bool if_json_tail = false;
+	if (Json_name.size() >= 5)
+	{
+		std::string tail_name = Json_name.substr(Json_name.size() - 5,5);
+		if (tail_name == ".json")
+		{
+			if_json_tail = true;
+		}
+	}
+	if (!if_json_tail)
+	{
+		save_file_name += ".json";
+	}
+	std::unique_ptr<Json::StreamWriter> writer(Jwriter.newStreamWriter());
+	FileWrite.open(save_file_name);
+	writer->write(insert_value,&FileWrite);
+	FileWrite.close();
+	return PancystarEngine::succeed;
 }

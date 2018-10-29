@@ -205,7 +205,7 @@ std::string PancyBasicTexture::GetFileTile(const std::string &data_input)
 {
 	std::string out_pre;
 	std::string out_final;
-	for (int i = data_input.size() - 1; i >= 0; --i)
+	for (int32_t i = static_cast<int32_t>(data_input.size() - 1); i >= 0; --i)
 	{
 		if (data_input[i] != '.')
 		{
@@ -216,13 +216,13 @@ std::string PancyBasicTexture::GetFileTile(const std::string &data_input)
 			break;
 		}
 	}
-	for (int i = out_pre.size() - 1; i >= 0; --i)
+	for (int32_t i = static_cast<int32_t>(out_pre.size() - 1); i >= 0; --i)
 	{
 		out_final += out_pre[i];
 	}
 	return out_final;
 }
-PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(std::string picture_path_file)
+PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const std::string &picture_path_file)
 {
 	PancystarEngine::EngineFailReason check_error;
 	PancystarEngine::PancyString file_name = picture_path_file;
@@ -547,15 +547,15 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(std::st
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
-	D3D12_RESOURCE_DIMENSION resDim,
-	size_t width,
-	size_t height,
-	size_t depth,
-	size_t mipCount,
-	size_t arraySize,
-	DXGI_FORMAT format,
-	D3D12_RESOURCE_FLAGS resFlags,
-	unsigned int loadFlags
+	const D3D12_RESOURCE_DIMENSION &resDim,
+	const size_t &width,
+	const size_t &height,
+	const size_t &depth,
+	const size_t &mipCount,
+	const size_t &arraySize,
+	DXGI_FORMAT &format,
+	const D3D12_RESOURCE_FLAGS &resFlags,
+	const unsigned int &loadFlags
 )
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -607,8 +607,96 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(std::string resource_desc_file)
+bool PancyBasicTexture::CheckIfJson(const std::string &path_name)
 {
-	return LoadPictureFromFile(resource_desc_file);
-
+	if (path_name.substr(path_name.size() - 4, 4) == "json")
+	{
+		return true;
+	}
+	return false;
+}
+PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const std::string &picture_desc_file)
+{
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::string &resource_desc_file)
+{
+	if (!CheckIfJson(resource_desc_file)) 
+	{
+		return LoadPictureFromFile(resource_desc_file);
+	}
+	else 
+	{
+		return BuildEmptyPicture(resource_desc_file);
+	}
+}
+//纹理管理器
+PancyTextureControl::PancyTextureControl(const std::string &resource_type_name_in) :PancystarEngine::PancyBasicResourceControl(resource_type_name_in)
+{
+}
+PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_json_value rec_value;
+	Json::Value root_value;
+	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(desc_file_in, root_value);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "IfFromFile", pancy_json_data_type::json_data_int, rec_value);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	if (rec_value.int_value == 1)
+	{
+		std::string tex_file_name;
+		bool if_auto_mipmap;
+		bool if_force_srgb;
+		int32_t max_size;
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "FileName", pancy_json_data_type::json_data_string, rec_value);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		tex_file_name = rec_value.string_value;
+		//是否自动创建mipmap
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "IfAutoBuildMipMap", pancy_json_data_type::json_data_int, rec_value);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		if (rec_value.int_value == 1)
+		{
+			if_auto_mipmap = true;
+		}
+		else
+		{
+			if_auto_mipmap = false;
+		}
+		//是否强制转换为srgb
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "IfForceSrgb", pancy_json_data_type::json_data_int, rec_value);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		if (rec_value.int_value == 1)
+		{
+			if_force_srgb = true;
+		}
+		else
+		{
+			if_force_srgb = false;
+		}
+		//最大内存大小
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "MaxSize", pancy_json_data_type::json_data_int, rec_value);
+		max_size = rec_value.int_value;
+		*resource_out = new PancyBasicTexture(tex_file_name, if_auto_mipmap, if_force_srgb, max_size);
+	}
+	else
+	{
+		*resource_out = new PancyBasicTexture(desc_file_in);
+	}
+	return PancystarEngine::succeed;
 }

@@ -2,6 +2,7 @@
 #include"PancyDx12Basic.h"
 #include"PancyGeometryDx12.h"
 #include"PancyShaderDx12.h"
+#include"PancyTextureDx12.h"
 enum SwapChainBitDepth
 {
 	_8 = 0,
@@ -23,7 +24,7 @@ class PancyDx12Basic
 	uint32_t renderlist_ID;
 	//模型测试
 	PancystarEngine::GeometryBasic *test_model;
-	PancyShaderBasic *shader_test;
+	//PancyShaderBasic *shader_test;
 	//视口
 	CD3DX12_VIEWPORT view_port;
 	CD3DX12_RECT view_rect;
@@ -142,8 +143,8 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	HRESULT hr;
 	view_port.TopLeftX = 0;
 	view_port.TopLeftY = 0;
-	view_port.Width = width_in;
-	view_port.Height = height_in;
+	view_port.Width = static_cast<FLOAT>(width_in);
+	view_port.Height = static_cast<FLOAT>(height_in);
 	view_port.MaxDepth = 1.0f;
 	view_port.MinDepth = 0.0f;
 	view_rect.left = 0;
@@ -166,12 +167,14 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	{
 		return check_error;
 	}
+	/*
 	shader_test = new PancyShaderBasic("shader\\testcolor.hlsl","VSMain","vs_5_0");
 	check_error = shader_test->Create();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	*/
 	//选取当前激活的缓冲区
 	now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetCurrentBackBufferIndex();
 	//创建一个资源堆
@@ -200,12 +203,24 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 		PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRenderTargetView(m_renderTargets[n].Get(), &rtv_desc, rtvHandle);
 		rtvHandle.Offset(1, m_rtvDescriptorSize);
 	}
-	//加载一个psv
+	//加载一个pso
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_test.json");
 	if (!check_error.CheckIfSucceed()) 
 	{
 		return check_error;
 	}
+	//创建一个cbuffer
+	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
+	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetCbufferHeapName(Cbuffer_Heap_desc);
+	VirtualMemoryPointer cbuffer[2];
+	int32_t count = 0;
+	for (auto cbuffer_data = Cbuffer_Heap_desc.begin(); cbuffer_data != Cbuffer_Heap_desc.end(); ++cbuffer_data) 
+	{
+		auto check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceFromHeap(cbuffer_data->second, CD3DX12_RESOURCE_DESC::Buffer(256),D3D12_RESOURCE_STATE_GENERIC_READ, cbuffer[count]);
+		count += 1;
+	}
+	int a = 0;
+	
 	/*
 	//创建commandallocator
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator));
@@ -244,7 +259,7 @@ void PancyDx12Basic::Release()
 {
 	WaitForPreviousFrame();
 	delete test_model;
-	delete shader_test;
+	//delete shader_test;
 	//CloseHandle(m_fenceEvent);
 }
 
@@ -394,7 +409,7 @@ WPARAM engine_windows_main::game_end()
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	PSTR szCmdLine, int iCmdShow)
 {
-	//_CrtSetBreakAlloc(343);
+	//_CrtSetBreakAlloc(4969);
 	engine_windows_main *engine_main = new engine_windows_main(hInstance, hPrevInstance, szCmdLine, iCmdShow);
 	HRESULT hr = engine_main->game_create();
 	if (FAILED(hr)) 
@@ -410,8 +425,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	delete PancyShaderControl::GetInstance();
 	delete PancyRootSignatureControl::GetInstance();
 	delete PancyEffectGraphic::GetInstance();
-	delete JsonLoader::GetInstance();
+	delete PancyJsonTool::GetInstance();
 	delete MemoryHeapGpuControl::GetInstance();
+	delete PancyDescriptorHeapControl::GetInstance();
+	delete PancystarEngine::PancyTextureControl::GetInstance();
 	if (InputLayoutDesc::GetInstance() != NULL)
 	{
 		delete InputLayoutDesc::GetInstance();

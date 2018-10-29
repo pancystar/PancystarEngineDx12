@@ -42,25 +42,44 @@ namespace PancystarEngine
 			bool if_force_srgb_in = false,
 			int max_size_in = 0);
 	private:
-		PancystarEngine::EngineFailReason InitResource(std::string resource_desc_file);
-		PancystarEngine::EngineFailReason LoadPictureFromFile(std::string picture_path_file);
-		PancystarEngine::EngineFailReason BuildEmptyPicture(std::string picture_desc_file);
+		PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
+		PancystarEngine::EngineFailReason LoadPictureFromFile(const std::string &picture_path_file);
+		PancystarEngine::EngineFailReason BuildEmptyPicture(const std::string &picture_desc_file);
 		std::string GetFileTile(const std::string &data_input);
 		PancystarEngine::EngineFailReason BuildTextureResource(
-			D3D12_RESOURCE_DIMENSION resDim,
-			size_t width,
-			size_t height,
-			size_t depth,
-			size_t mipCount,
-			size_t arraySize,
-			DXGI_FORMAT format,
-			D3D12_RESOURCE_FLAGS resFlags,
-			unsigned int loadFlags
+			const D3D12_RESOURCE_DIMENSION &resDim,
+			const size_t &width,
+			const size_t &height,
+			const size_t &depth,
+			const size_t &mipCount,
+			const size_t &arraySize,
+			DXGI_FORMAT &format,
+			const D3D12_RESOURCE_FLAGS &resFlags,
+			const unsigned int &loadFlags
 		);
+		bool CheckIfJson(const std::string &path_name);
 	};
+
+
+
+
 	class PancyTextureControl : public PancystarEngine::PancyBasicResourceControl
 	{
-
+	private:
+		PancyTextureControl(const std::string &resource_type_name_in);
+	public:
+		static PancyTextureControl* GetInstance()
+		{
+			static PancyTextureControl* this_instance;
+			if (this_instance == NULL)
+			{
+				this_instance = new PancyTextureControl("Texture Resource Control");
+			}
+			return this_instance;
+		}
+	private:
+		PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out);
 	};
+
 	
 }

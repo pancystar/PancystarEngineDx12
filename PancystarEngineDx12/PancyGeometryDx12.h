@@ -96,7 +96,7 @@ namespace PancystarEngine
 			VirtualMemoryPointer &default_buffer,
 			VirtualMemoryPointer &upload_buffer,
 			const void* initData,
-			const UINT64 BufferSize
+			const UINT BufferSize
 		);
 	};
 	GeometryBasic::GeometryBasic()
@@ -146,10 +146,9 @@ namespace PancystarEngine
 		VirtualMemoryPointer &default_buffer,
 		VirtualMemoryPointer &upload_buffer,
 		const void* initData,
-		const UINT64 BufferSize
+		const UINT BufferSize
 	) 
 	{
-		HRESULT hr;
 		PancystarEngine::EngineFailReason check_error;
 		check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceCommit(
 			D3D12_HEAP_TYPE_DEFAULT,
@@ -322,8 +321,8 @@ namespace PancystarEngine
 		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetEmptyRenderlist(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, &copy_render_list, copy_render_list_ID);
 		all_vertex_need = all_model_vertex;
 		all_index_need = all_model_index;
-		const UINT64 VertexBufferSize = all_vertex_need * sizeof(T);
-		const UINT64 IndexBufferSize = all_index_need * sizeof(UINT);
+		const UINT VertexBufferSize = all_vertex_need * sizeof(T);
+		const UINT IndexBufferSize = all_index_need * sizeof(UINT);
 		//创建顶点缓冲区
 		if (vertex_data != NULL) 
 		{

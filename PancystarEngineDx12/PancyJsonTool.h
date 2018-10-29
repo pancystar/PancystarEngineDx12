@@ -26,25 +26,28 @@ struct pancy_json_value
 	bool bool_value;
 	std::string string_value;
 };
-class JsonLoader
+class PancyJsonTool
 {
+	Json::StreamWriterBuilder Jwriter;
 	Json::CharReaderBuilder builder;
 	ifstream FileOpen;
+	ofstream FileWrite;
 	std::unordered_map<std::string, int32_t> globel_variables;
 	std::string name_value_type[7];
 	std::string name_shader_type[5];
 private:
-	JsonLoader();
+	PancyJsonTool();
 public:
-	static JsonLoader* GetInstance()
+	static PancyJsonTool* GetInstance()
 	{
-		static JsonLoader* this_instance;
+		static PancyJsonTool* this_instance;
 		if (this_instance == NULL)
 		{
-			this_instance = new JsonLoader();
+			this_instance = new PancyJsonTool();
 		}
 		return this_instance;
 	}
+	//读取json数据
 	PancystarEngine::EngineFailReason LoadJsonFile(const std::string &file_name, Json::Value &root_value);
 	PancystarEngine::EngineFailReason SetGlobelVraiable(const std::string &variable_name, const int32_t &variable_value);
 	PancystarEngine::EngineFailReason GetJsonData
@@ -69,6 +72,29 @@ public:
 		const Pancy_json_shader_type &json_type,
 		std::string &shader_file_name,
 		std::string &shader_func_name
+	);
+	//更改及输出json数据
+	template<class T>
+	void SetJsonValue(
+		Json::Value &insert_value,
+		const std::string &value_name,
+		const T &value
+	)
+	{
+		insert_value[value_name] = value;
+	}
+	template<class T>
+	void AddJsonArrayValue(
+		Json::Value &insert_value,
+		const std::string &value_name,
+		const T &value
+	)
+	{
+		insert_value[value_name].append(value);
+	}
+	PancystarEngine::EngineFailReason WriteValueToJson(
+		const Json::Value &insert_value,
+		const std::string &Json_name
 	);
 private:
 	PancystarEngine::EngineFailReason GetJsonMemberData

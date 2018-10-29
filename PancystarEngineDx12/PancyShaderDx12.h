@@ -44,6 +44,7 @@ class PancyShaderBasic
 	PancystarEngine::PancyString shader_type_name;
 	ComPtr<ID3DBlob> shader_memory_pointer;
 	ComPtr<ID3D12ShaderReflection> shader_reflection;
+	//std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> Cbuffer_map;
 public:
 	PancyShaderBasic
 	(
@@ -84,7 +85,7 @@ public:
 //RootSignature
 class PancyRootSignature
 {
-	pancy_resource_id descriptor_heap_id;
+	std::vector<pancy_resource_id> descriptor_heap_id;
 	PancystarEngine::PancyString root_signature_name;
 	ComPtr<ID3D12RootSignature> root_signature_data;
 public:
@@ -93,7 +94,7 @@ public:
 	{
 		return root_signature_data;
 	};
-	PancystarEngine::EngineFailReason Create(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,const pancy_resource_id &descriptor_heap_id_in);
+	PancystarEngine::EngineFailReason Create(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,const std::vector<pancy_resource_id> &descriptor_heap_id_in);
 };
 //RootSignature管理器
 class PancyRootSignatureControl
@@ -119,7 +120,7 @@ public:
 	PancystarEngine::EngineFailReason GetDesc(
 		const std::string &file_name,
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &desc_out,
-		pancy_resource_id &descriptor_heap_id
+		std::vector<pancy_resource_id> &descriptor_heap_id
 	);
 	~PancyRootSignatureControl();
 private:
@@ -128,16 +129,21 @@ private:
 //PSO object
 class PancyPiplineStateObjectGraph
 {
+	std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> Cbuffer_map;
 	PancystarEngine::PancyString root_signature_name;
 	PancystarEngine::PancyString pso_name;
 	ComPtr<ID3D12PipelineState> pso_data;
 public:
-	PancyPiplineStateObjectGraph(std::string pso_name_in);
-	PancystarEngine::EngineFailReason Create(const D3D12_GRAPHICS_PIPELINE_STATE_DESC &pso_desc_in);
+	PancyPiplineStateObjectGraph(const std::string &pso_name_in);
+	PancystarEngine::EngineFailReason Create(
+		const D3D12_GRAPHICS_PIPELINE_STATE_DESC &pso_desc_in, 
+		const std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in
+	);
 	inline ComPtr<ID3D12PipelineState> GetData() 
 	{
 		return pso_data;
 	}
+	void GetCbufferHeapName(std::unordered_map<std::string, std::string> &Cbuffer_Heap_desc);
 };
 //pso管理器
 class PancyEffectGraphic
@@ -156,9 +162,14 @@ public:
 		return this_instance;
 	}
 	PancystarEngine::EngineFailReason BuildPso(std::string pso_config_file);
-	PancystarEngine::EngineFailReason GetDesc(const std::string &file_name, D3D12_GRAPHICS_PIPELINE_STATE_DESC &desc_out);
+	PancystarEngine::EngineFailReason GetDesc(
+		const std::string &file_name, 
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC &desc_out,
+		std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in
+	);
 	PancystarEngine::EngineFailReason GetInputDesc(ComPtr<ID3D12ShaderReflection> t_ShaderReflection, std::vector<D3D12_INPUT_ELEMENT_DESC> &t_InputElementDescVec);
 	PancyPiplineStateObjectGraph* GetPSO(std::string name_in);
+	
 	~PancyEffectGraphic();
 private:
 	void AddPSOGlobelVariable();

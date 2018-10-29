@@ -8,7 +8,7 @@ namespace PancystarEngine
 		std::string resource_name;
 		std::atomic<pancy_object_id> reference_count;
 	public:
-		PancyBasicVirtualResource(std::string desc_file_in);
+		PancyBasicVirtualResource(const std::string &desc_file_in);
 		virtual ~PancyBasicVirtualResource();
 		PancystarEngine::EngineFailReason Create();
 		void AddReference();
@@ -22,7 +22,7 @@ namespace PancystarEngine
 			return resource_name;
 		}
 	private:
-		virtual PancystarEngine::EngineFailReason InitResource(std::string resource_desc_file) = 0;
+		virtual PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file) = 0;
 	};
 	class PancyBasicResourceControl
 	{
@@ -37,7 +37,7 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason AddResurceReference(const pancy_object_id &resource_id);
 		PancystarEngine::EngineFailReason DeleteResurceReference(const pancy_object_id &resource_id);
 		PancyBasicVirtualResource* GetResource(const pancy_object_id &desc_file_name);
-		PancystarEngine::EngineFailReason LoadResource(std::string desc_file_in);
+		PancystarEngine::EngineFailReason LoadResource(const std::string &desc_file_in);
 	private:
 		virtual PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out) = 0;
 	};

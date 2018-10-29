@@ -59,8 +59,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		return check_error;
 	}
 	//´´½¨root signature draw
-	PancystarEngine::PancyBasicTexture *check = new PancystarEngine::PancyBasicTexture("data\\test222.dds",false,true);
-	check_error = check->Create();
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\test222.json");
+	//PancystarEngine::PancyBasicTexture *check = new PancystarEngine::PancyBasicTexture("data\\test222.dds",false,true);
+	//check_error = check->Create();
 	if (!check_error.CheckIfSucceed()) 
 	{
 		return check_error;

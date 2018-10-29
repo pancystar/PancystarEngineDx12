@@ -93,5 +93,8 @@
     <None Include="json\resource_heap\tex_512_4_singlemip.json">
       <Filter>json</Filter>
     </None>
+    <None Include="data\test222.json">
+      <Filter>json</Filter>
+    </None>
   </ItemGroup>
 </Project>

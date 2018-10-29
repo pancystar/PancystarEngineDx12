@@ -1,7 +1,7 @@
 #include"PancyResourceBasic.h"
 using namespace PancystarEngine;
 //基础资源
-PancyBasicVirtualResource::PancyBasicVirtualResource(std::string desc_file_in)
+PancyBasicVirtualResource::PancyBasicVirtualResource(const std::string &desc_file_in)
 {
 	resource_name = desc_file_in;
 	reference_count.store(0);
@@ -48,7 +48,7 @@ PancyBasicResourceControl::~PancyBasicResourceControl()
 	resource_name_list.clear();
 	free_id_list.clear();
 }
-PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(std::string desc_file_in)
+PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(const std::string &desc_file_in)
 {
 	//资源加载判断重复
 	auto check_data = resource_name_list.find(desc_file_in);
