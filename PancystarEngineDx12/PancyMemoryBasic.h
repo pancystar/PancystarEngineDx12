@@ -194,7 +194,7 @@ class SubMemoryData
 	VirtualMemoryPointer buffer_data;//显存资源指针
 	pancy_object_id per_memory_size;//每个常量缓冲区的大小
 	std::unordered_set<pancy_object_id> empty_sub_memory;
-	std::unordered_map<pancy_object_id, SubMemoryPointer> sub_memory_data;
+	std::unordered_set<pancy_object_id> sub_memory_data;
 public:
 	SubMemoryData();
 	PancystarEngine::EngineFailReason Create(
@@ -205,73 +205,18 @@ public:
 	);
 	PancystarEngine::EngineFailReason BuildSubMemory(pancy_object_id &offset);
 	PancystarEngine::EngineFailReason FreeSubMemory(const pancy_object_id &offset);
-	inline pancy_object_id GetEmptySize() 
+	//查看当前空闲资源的大小
+	inline pancy_object_id GetEmptySize()
 	{
 		return static_cast<pancy_object_id>(empty_sub_memory.size());
 	}
+	//获取资源
+	inline MemoryBlockGpu* GetResource() 
+	{
+		return MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
+	}
 };
-SubMemoryData::SubMemoryData()
-{
-}
-PancystarEngine::EngineFailReason SubMemoryData::Create(
-	const std::string &buffer_desc_file,
-	const CD3DX12_RESOURCE_DESC &resource_desc,
-	const D3D12_RESOURCE_STATES &resource_state,
-	const pancy_object_id &per_memory_size_in
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceFromHeap(buffer_desc_file, resource_desc, resource_state, buffer_data);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
-	}
-	per_memory_size = per_memory_size_in;
-	auto memory_data = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
-	auto check_size = memory_data->GetSize() % static_cast<uint64_t>(per_memory_size_in);
-	if (check_size != 0) 
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL,"the memory size:"+std::to_string(memory_data->GetSize())+" could not mod the submemory size: "+std::to_string(per_memory_size_in));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build subresource from memory block", error_message);
-		return error_message;
-	}
-	pancy_object_id all_empty_num = static_cast<pancy_object_id>(memory_data->GetSize() / static_cast<uint64_t>(per_memory_size_in));
-	for (pancy_object_id i = 0; i < all_empty_num; ++i)
-	{
-		empty_sub_memory.insert(i);
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason SubMemoryData::BuildSubMemory(pancy_object_id &offset) 
-{
-	if (empty_sub_memory.size() == 0) 
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the memory block is full, could not build new memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build subresource from memory block", error_message);
-		return error_message;
-	}
-	auto new_sub_memory = *empty_sub_memory.begin();
-	offset = new_sub_memory;
-	empty_sub_memory.erase(new_sub_memory);
-	SubMemoryPointer new_submemory;
-	new_submemory.buffer_data = buffer_data;
-	new_submemory.offset = offset;
-	sub_memory_data.insert(std::pair<pancy_object_id, SubMemoryPointer>(offset, new_submemory));
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason SubMemoryData::FreeSubMemory(const pancy_object_id &offset)
-{
-	auto check_data = sub_memory_data.find(offset);
-	if (check_data == sub_memory_data.end()) 
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the sub memory"+ std::to_string(offset)+" from memory_block",PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free subresource from memory block", error_message);
-		return error_message;
-	}
-	sub_memory_data.erase(offset);
-	empty_sub_memory.insert(offset);
-	return PancystarEngine::succeed;
-}
+
 class SubresourceLiner 
 {
 	std::string heap_name;
@@ -299,88 +244,11 @@ public:
 		const pancy_object_id &new_memory_block_id,
 		const pancy_object_id &sub_memory_offset
 	);
+	MemoryBlockGpu* GetSubResource(pancy_object_id sub_memory_id);
 };
-SubresourceLiner::SubresourceLiner(
-	const std::string &heap_name_in,
-	const CD3DX12_RESOURCE_DESC &resource_desc_in,
-	const D3D12_RESOURCE_STATES &resource_state_in,
-	const pancy_object_id &per_memory_size_in
-) 
-{
-	max_id = 0;
-	heap_name = heap_name_in;
-	resource_desc = resource_desc_in;
-	resource_state = resource_state_in;
-	per_memory_size = per_memory_size_in;
-}
-PancystarEngine::EngineFailReason SubresourceLiner::BuildSubresource(
-	pancy_object_id &new_memory_block_id, 
-	pancy_object_id &sub_memory_offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	if (empty_memory_heap.size() == 0) 
-	{
-		SubMemoryData *new_data = new SubMemoryData();
-		check_error = new_data->Create(heap_name, resource_desc, resource_state, per_memory_size);
-		if (!check_error.CheckIfSucceed()) 
-		{
-			return check_error;
-		}
-		pancy_object_id id_now;
-		//获取当前闲置的id号
-		if (free_id.size() == 0) 
-		{
-			id_now = max_id;
-			max_id += 1;
-		}
-		else 
-		{
-			id_now = *free_id.begin();
-			free_id.erase(id_now);
-		}
-		//插入一个空的资源
-		submemory_list.insert(std::pair<pancy_object_id, SubMemoryData*>(id_now, new_data));
-		empty_memory_heap.insert(id_now);
-	}
-	//获取一个尚有空间的内存块
-	new_memory_block_id = *empty_memory_heap.begin();
-	auto new_memory_block = submemory_list.find(new_memory_block_id);
-	//在该内存块中开辟一个subresource
-	check_error = new_memory_block->second->BuildSubMemory(sub_memory_offset);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
-	}
-	//检查开辟过后该内存块是否已满
-	if (new_memory_block->second->GetEmptySize() == 0) 
-	{
-		empty_memory_heap.erase(new_memory_block_id);
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason SubresourceLiner::ReleaseSubResource
-(
-	const pancy_object_id &new_memory_block_id,
-	const pancy_object_id &sub_memory_offset
-) 
-{
-	auto memory_check = submemory_list.find(new_memory_block_id);
-	if (memory_check == submemory_list.end()) 
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find memory_block id:"+std::to_string(new_memory_block_id)+" from submemory list: "+ heap_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Release sub memory from submemory list",error_message);
-		return error_message;
-	}
-	memory_check->second->FreeSubMemory(sub_memory_offset);
-	//检查是否之前已满
-	if (empty_memory_heap.find(new_memory_block_id) == empty_memory_heap.end()) 
-	{
-		empty_memory_heap.insert(new_memory_block_id);
-	}
-	return PancystarEngine::succeed;
-}
-class SubresourceControl 
+
+
+class SubresourceControl
 {
 	pancy_object_id subresource_id_self_add;
 	std::unordered_map<pancy_resource_id, SubresourceLiner*> subresource_list_map;
@@ -404,81 +272,9 @@ public:
 		SubMemoryPointer &submemory_pointer
 	);
 	PancystarEngine::EngineFailReason FreeSubResource(const SubMemoryPointer &submemory_pointer);
-	PancystarEngine::EngineFailReason GetDx12ResourceData(const SubMemoryPointer &submemory_pointer);
+	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer);
 };
-SubresourceControl::SubresourceControl()
-{
-	subresource_id_self_add = 0;
-}
-void SubresourceControl::InitSubResourceType(
-	const std::string &heap_name_in,
-	const CD3DX12_RESOURCE_DESC &resource_desc_in,
-	const D3D12_RESOURCE_STATES &resource_state_in,
-	const pancy_object_id &per_memory_size_in,
-	pancy_resource_id &subresource_type_id
-) 
-{
-	std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in)+"::"+std::to_string(per_memory_size_in);
-	SubresourceLiner *new_subresource = new SubresourceLiner(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in);
-	if (subresource_free_id.size() == 0) 
-	{
-		subresource_type_id = *subresource_free_id.begin();
-		subresource_free_id.erase(subresource_type_id);
-	}
-	else 
-	{
-		subresource_type_id = subresource_id_self_add;
-		subresource_id_self_add += 1;
-	}
-	//创建一个新的资源存储链并保存名称
-	subresource_list_map.insert(std::pair<pancy_resource_id, SubresourceLiner*>(subresource_type_id, new_subresource));
-	subresource_init_list.insert(std::pair<std::string, pancy_resource_id>(hash_name, subresource_type_id));
-}
-PancystarEngine::EngineFailReason SubresourceControl::BuildSubresource(
-	const std::string &heap_name_in,
-	const CD3DX12_RESOURCE_DESC &resource_desc_in,
-	const D3D12_RESOURCE_STATES &resource_state_in,
-	const pancy_object_id &per_memory_size_in,
-	SubMemoryPointer &submemory_pointer
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
-	//获取资源名称对应的id号,如果没有则重新创建一个
-	auto check_data = subresource_init_list.find(hash_name);
-	if (check_data == subresource_init_list.end())
-	{
-		InitSubResourceType(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in, submemory_pointer.type_id);
-	}
-	else 
-	{
-		submemory_pointer.type_id = check_data->second;
-	}
-	auto now_subresource_type = subresource_list_map.find(submemory_pointer.type_id);
-	check_error = now_subresource_type->second->BuildSubresource(submemory_pointer.list_id, submemory_pointer.offset);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason SubresourceControl::FreeSubResource(const SubMemoryPointer &submemory_pointer)
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto now_subresource_type = subresource_list_map.find(submemory_pointer.type_id);
-	if (now_subresource_type == subresource_list_map.end()) 
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find memory_type id:" + std::to_string(submemory_pointer.type_id) + " from subresource control: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Release sub memory from submemory control", error_message);
-		return error_message;
-	}
-	check_error = now_subresource_type->second->ReleaseSubResource(submemory_pointer.list_id, submemory_pointer.offset);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
+
 //todo：大规模释放和创建资源的测试
 //资源描述视图
 class PancyResourceView
