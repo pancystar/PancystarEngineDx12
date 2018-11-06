@@ -55,7 +55,7 @@ bool MemoryHeapGpu::CheckIfFree(pancy_resource_id memory_block_ID)
 	return false;
 }
 PancystarEngine::EngineFailReason MemoryHeapGpu::BuildMemoryResource(
-	const CD3DX12_RESOURCE_DESC &resource_desc,
+	const D3D12_RESOURCE_DESC &resource_desc,
 	const D3D12_RESOURCE_STATES &resource_state,
 	//Microsoft::WRL::Details::ComPtrRef<ComPtr<ID3D12Resource>> ppvResourc,
 	pancy_resource_id &memory_block_ID
@@ -147,7 +147,7 @@ MemoryHeapLinear::MemoryHeapLinear(const std::string &heap_type_name_in, const C
 	heap_type_name = heap_type_name_in;
 }
 PancystarEngine::EngineFailReason MemoryHeapLinear::BuildMemoryResource(
-	const CD3DX12_RESOURCE_DESC &resource_desc,
+	const D3D12_RESOURCE_DESC &resource_desc,
 	const D3D12_RESOURCE_STATES &resource_state,
 	pancy_resource_id &memory_block_ID,//显存块地址指针
 	pancy_resource_id &memory_heap_ID//显存段地址指针
@@ -428,7 +428,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildHeap(
 }
 PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResourceFromHeap(
 	const std::string &HeapFileName,
-	const CD3DX12_RESOURCE_DESC &resource_desc,
+	const D3D12_RESOURCE_DESC &resource_desc,
 	const D3D12_RESOURCE_STATES &resource_state,
 	VirtualMemoryPointer &virtual_pointer
 )
@@ -504,6 +504,535 @@ MemoryHeapGpuControl::~MemoryHeapGpuControl()
 	resource_init_list.clear();
 	resource_memory_list.clear();
 	resource_memory_free_id.clear();
+}
+//二级资源
+SubMemoryData::SubMemoryData()
+{
+}
+PancystarEngine::EngineFailReason SubMemoryData::Create(
+	const std::string &buffer_desc_file,
+	const D3D12_RESOURCE_DESC &resource_desc,
+	const D3D12_RESOURCE_STATES &resource_state,
+	const pancy_object_id &per_memory_size_in
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceFromHeap(buffer_desc_file, resource_desc, resource_state, buffer_data);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	per_memory_size = per_memory_size_in;
+	auto memory_data = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
+	auto check_size = memory_data->GetSize() % static_cast<uint64_t>(per_memory_size_in);
+	if (check_size != 0)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the memory size:" + std::to_string(memory_data->GetSize()) + " could not mod the submemory size: " + std::to_string(per_memory_size_in));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build subresource from memory block", error_message);
+		return error_message;
+	}
+	pancy_object_id all_empty_num = static_cast<pancy_object_id>(memory_data->GetSize() / static_cast<uint64_t>(per_memory_size_in));
+	for (pancy_object_id i = 0; i < all_empty_num; ++i)
+	{
+		empty_sub_memory.insert(i);
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubMemoryData::BuildSubMemory(pancy_object_id &offset)
+{
+	if (empty_sub_memory.size() == 0)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the memory block is full, could not build new memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build subresource from memory block", error_message);
+		return error_message;
+	}
+	auto new_sub_memory = *empty_sub_memory.begin();
+	offset = new_sub_memory;
+	empty_sub_memory.erase(new_sub_memory);
+	sub_memory_data.insert(offset);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubMemoryData::FreeSubMemory(const pancy_object_id &offset)
+{
+	auto check_data = sub_memory_data.find(offset);
+	if (check_data == sub_memory_data.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the sub memory" + std::to_string(offset) + " from memory_block", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free subresource from memory block", error_message);
+		return error_message;
+	}
+	sub_memory_data.erase(offset);
+	empty_sub_memory.insert(offset);
+	return PancystarEngine::succeed;
+}
+//二级资源链
+SubresourceLiner::SubresourceLiner(
+	const std::string &heap_name_in,
+	const D3D12_RESOURCE_DESC &resource_desc_in,
+	const D3D12_RESOURCE_STATES &resource_state_in,
+	const pancy_object_id &per_memory_size_in
+)
+{
+	max_id = 0;
+	heap_name = heap_name_in;
+	resource_desc = resource_desc_in;
+	resource_state = resource_state_in;
+	per_memory_size = per_memory_size_in;
+}
+PancystarEngine::EngineFailReason SubresourceLiner::BuildSubresource(
+	pancy_object_id &new_memory_block_id,
+	pancy_object_id &sub_memory_offset
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	if (empty_memory_heap.size() == 0)
+	{
+		SubMemoryData *new_data = new SubMemoryData();
+		check_error = new_data->Create(heap_name, resource_desc, resource_state, per_memory_size);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		pancy_object_id id_now;
+		//获取当前闲置的id号
+		if (free_id.size() == 0)
+		{
+			id_now = max_id;
+			max_id += 1;
+		}
+		else
+		{
+			id_now = *free_id.begin();
+			free_id.erase(id_now);
+		}
+		//插入一个空的资源
+		submemory_list.insert(std::pair<pancy_object_id, SubMemoryData*>(id_now, new_data));
+		empty_memory_heap.insert(id_now);
+	}
+	//获取一个尚有空间的内存块
+	new_memory_block_id = *empty_memory_heap.begin();
+	auto new_memory_block = submemory_list.find(new_memory_block_id);
+	//在该内存块中开辟一个subresource
+	check_error = new_memory_block->second->BuildSubMemory(sub_memory_offset);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//检查开辟过后该内存块是否已满
+	if (new_memory_block->second->GetEmptySize() == 0)
+	{
+		empty_memory_heap.erase(new_memory_block_id);
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceLiner::ReleaseSubResource
+(
+	const pancy_object_id &new_memory_block_id,
+	const pancy_object_id &sub_memory_offset
+)
+{
+	auto memory_check = submemory_list.find(new_memory_block_id);
+	if (memory_check == submemory_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find memory_block id:" + std::to_string(new_memory_block_id) + " from submemory list: " + heap_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Release sub memory from submemory list", error_message);
+		return error_message;
+	}
+	memory_check->second->FreeSubMemory(sub_memory_offset);
+	//检查是否之前已满
+	if (empty_memory_heap.find(new_memory_block_id) == empty_memory_heap.end())
+	{
+		empty_memory_heap.insert(new_memory_block_id);
+	}
+	return PancystarEngine::succeed;
+}
+MemoryBlockGpu* SubresourceLiner::GetSubResource(pancy_object_id sub_memory_id)
+{
+	auto subresource_block = submemory_list.find(sub_memory_id);
+	if (subresource_block == submemory_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find memory_block id:" + std::to_string(sub_memory_id) + " from submemory list: " + heap_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Release sub memory from submemory list", error_message);
+		return NULL;
+	}
+	return subresource_block->second->GetResource();
+}
+//二级资源管理
+SubresourceControl::SubresourceControl()
+{
+	subresource_id_self_add = 0;
+	//资源状态
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_COMMON", static_cast<int32_t>(D3D12_RESOURCE_STATE_COMMON));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER", static_cast<int32_t>(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_INDEX_BUFFER", static_cast<int32_t>(D3D12_RESOURCE_STATE_INDEX_BUFFER));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_RENDER_TARGET", static_cast<int32_t>(D3D12_RESOURCE_STATE_RENDER_TARGET));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_UNORDERED_ACCESS", static_cast<int32_t>(D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_DEPTH_WRITE", static_cast<int32_t>(D3D12_RESOURCE_STATE_DEPTH_WRITE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_DEPTH_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_DEPTH_READ));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_STREAM_OUT", static_cast<int32_t>(D3D12_RESOURCE_STATE_STREAM_OUT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT", static_cast<int32_t>(D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_COPY_DEST", static_cast<int32_t>(D3D12_RESOURCE_STATE_COPY_DEST));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_COPY_SOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_COPY_SOURCE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_RESOLVE_DEST", static_cast<int32_t>(D3D12_RESOURCE_STATE_RESOLVE_DEST));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_RESOLVE_SOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_RESOLVE_SOURCE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_GENERIC_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_GENERIC_READ));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_PRESENT", static_cast<int32_t>(D3D12_RESOURCE_STATE_PRESENT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_PREDICATION", static_cast<int32_t>(D3D12_RESOURCE_STATE_PREDICATION));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_DECODE_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_DECODE_READ));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE));
+	//资源格式demention
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_UNKNOWN", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_UNKNOWN));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_BUFFER", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_BUFFER));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_TEXTURE1D", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_TEXTURE1D));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_TEXTURE2D", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_TEXTURE2D));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_TEXTURE3D", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_TEXTURE3D));
+	//资源格式DXGI格式
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_UNKNOWN", static_cast<int32_t>(DXGI_FORMAT_UNKNOWN));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_FLOAT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_FLOAT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_FLOAT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32_FLOAT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G8X24_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT_S8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT_S8X24_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X32_TYPELESS_G8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UINT", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R11G11B10_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R11G11B10_FLOAT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16_FLOAT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_SNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24G8_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D24_UNORM_S8_UINT", static_cast<int32_t>(DXGI_FORMAT_D24_UNORM_S8_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24_UNORM_X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24_UNORM_X8_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X24_TYPELESS_G8_UINT", static_cast<int32_t>(DXGI_FORMAT_X24_TYPELESS_G8_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_SNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16_FLOAT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D16_UNORM", static_cast<int32_t>(DXGI_FORMAT_D16_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16_SNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8_UINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8_SNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8_SINT));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_A8_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R1_UNORM", static_cast<int32_t>(DXGI_FORMAT_R1_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R9G9B9E5_SHAREDEXP", static_cast<int32_t>(DXGI_FORMAT_R9G9B9E5_SHAREDEXP));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_B8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_B8G8_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_G8R8_G8B8_UNORM", static_cast<int32_t>(DXGI_FORMAT_G8R8_G8B8_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC1_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM_SRGB));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC2_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM_SRGB));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC3_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM_SRGB));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC4_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_SNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC5_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_SNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G6R5_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G6R5_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G5R5A1_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G5R5A1_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC6H_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_UF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_UF16));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_SF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_SF16));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC7_TYPELESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM_SRGB));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AYUV", static_cast<int32_t>(DXGI_FORMAT_AYUV));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y410", static_cast<int32_t>(DXGI_FORMAT_Y410));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y416", static_cast<int32_t>(DXGI_FORMAT_Y416));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV12", static_cast<int32_t>(DXGI_FORMAT_NV12));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P010", static_cast<int32_t>(DXGI_FORMAT_P010));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P016", static_cast<int32_t>(DXGI_FORMAT_P016));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_420_OPAQUE", static_cast<int32_t>(DXGI_FORMAT_420_OPAQUE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_YUY2", static_cast<int32_t>(DXGI_FORMAT_YUY2));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y210", static_cast<int32_t>(DXGI_FORMAT_Y210));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y216", static_cast<int32_t>(DXGI_FORMAT_Y216));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV11", static_cast<int32_t>(DXGI_FORMAT_NV11));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AI44", static_cast<int32_t>(DXGI_FORMAT_AI44));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_IA44", static_cast<int32_t>(DXGI_FORMAT_IA44));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P8", static_cast<int32_t>(DXGI_FORMAT_P8));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8P8", static_cast<int32_t>(DXGI_FORMAT_A8P8));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B4G4R4A4_UNORM", static_cast<int32_t>(DXGI_FORMAT_B4G4R4A4_UNORM));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P208", static_cast<int32_t>(DXGI_FORMAT_P208));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V208", static_cast<int32_t>(DXGI_FORMAT_V208));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V408", static_cast<int32_t>(DXGI_FORMAT_V408));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_FORCE_UINT", static_cast<int32_t>(DXGI_FORMAT_FORCE_UINT));
+	//资源格式layout格式
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_UNKNOWN", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_UNKNOWN));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_ROW_MAJOR", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_ROW_MAJOR));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE));
+	//资源格式flag格式
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_NONE", static_cast<int32_t>(D3D12_RESOURCE_FLAG_NONE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE", static_cast<int32_t>(D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS));
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY", static_cast<int32_t>(D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY));
+}
+PancystarEngine::EngineFailReason SubresourceControl::BuildSubresourceFromFile(
+	const std::string &resource_name_in,
+	SubMemoryPointer &submemory_pointer
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	D3D12_RESOURCE_DESC res_desc;
+	D3D12_RESOURCE_STATES res_states;
+	pancy_object_id per_memory_size;
+	std::string resource_heap_name;
+	pancy_json_value value_root;
+	//加载json文件
+	Json::Value root_value;
+	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_name_in, root_value);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	//加载资源状态
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in,root_value,"D3D12_RESOURCE_STATES",pancy_json_data_type::json_data_enum, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_states = static_cast<D3D12_RESOURCE_STATES>(value_root.int_value);
+	//加载资源分块大小
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, root_value, "per_block_size", pancy_json_data_type::json_data_int, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	per_memory_size = value_root.int_value;
+	//加载资源堆的名称
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, root_value, "ResourceType", pancy_json_data_type::json_data_string, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	resource_heap_name = value_root.string_value;
+	//加载资源格式
+	pancy_json_value value_res_desc;
+	Json::Value resource_desc_value = root_value.get("D3D12_RESOURCE_DESC",Json::Value::null);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "Alignment", pancy_json_data_type::json_data_int, value_res_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.Alignment = value_res_desc.int_value;
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "DepthOrArraySize", pancy_json_data_type::json_data_int, value_res_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.DepthOrArraySize = value_res_desc.int_value;
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "Dimension", pancy_json_data_type::json_data_enum, value_res_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.Dimension = static_cast<D3D12_RESOURCE_DIMENSION>(value_res_desc.int_value);
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "Flags", pancy_json_data_type::json_data_enum, value_res_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.Flags = static_cast<D3D12_RESOURCE_FLAGS>(value_res_desc.int_value);
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "Format", pancy_json_data_type::json_data_enum, value_res_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.Format = static_cast<DXGI_FORMAT>(value_res_desc.int_value);
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "Height", pancy_json_data_type::json_data_int, value_res_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.Height = value_res_desc.int_value;
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "Width", pancy_json_data_type::json_data_int, value_res_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.Width = value_res_desc.int_value;
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "Layout", pancy_json_data_type::json_data_enum, value_res_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.Layout = static_cast<D3D12_TEXTURE_LAYOUT>(value_res_desc.int_value);
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "MipLevels", pancy_json_data_type::json_data_int, value_res_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.MipLevels = value_res_desc.int_value;
+	//采样格式
+	pancy_json_value value_res_sample;
+	Json::Value resource_sample_value = resource_desc_value.get("SampleDesc", Json::Value::null);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_sample_value, "Count", pancy_json_data_type::json_data_int, value_res_sample);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.SampleDesc.Count = value_res_sample.int_value;
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_sample_value, "Quality", pancy_json_data_type::json_data_int, value_res_sample);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	res_desc.SampleDesc.Quality = value_res_sample.int_value;
+	//创建资源
+	check_error = BuildSubresource(resource_heap_name, res_desc, res_states, per_memory_size, submemory_pointer);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+void SubresourceControl::InitSubResourceType(
+	const std::string &heap_name_in,
+	const D3D12_RESOURCE_DESC &resource_desc_in,
+	const D3D12_RESOURCE_STATES &resource_state_in,
+	const pancy_object_id &per_memory_size_in,
+	pancy_resource_id &subresource_type_id
+)
+{
+	std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
+	SubresourceLiner *new_subresource = new SubresourceLiner(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in);
+	if (subresource_free_id.size() != 0)
+	{
+		subresource_type_id = *subresource_free_id.begin();
+		subresource_free_id.erase(subresource_type_id);
+	}
+	else
+	{
+		subresource_type_id = subresource_id_self_add;
+		subresource_id_self_add += 1;
+	}
+	//创建一个新的资源存储链并保存名称
+	subresource_list_map.insert(std::pair<pancy_resource_id, SubresourceLiner*>(subresource_type_id, new_subresource));
+	subresource_init_list.insert(std::pair<std::string, pancy_resource_id>(hash_name, subresource_type_id));
+}
+PancystarEngine::EngineFailReason SubresourceControl::BuildSubresource(
+	const std::string &heap_name_in,
+	const D3D12_RESOURCE_DESC &resource_desc_in,
+	const D3D12_RESOURCE_STATES &resource_state_in,
+	const pancy_object_id &per_memory_size_in,
+	SubMemoryPointer &submemory_pointer
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	//todo::修改资源的hash名称
+	std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
+	//获取资源名称对应的id号,如果没有则重新创建一个
+	auto check_data = subresource_init_list.find(hash_name);
+	if (check_data == subresource_init_list.end())
+	{
+		InitSubResourceType(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in, submemory_pointer.type_id);
+	}
+	else
+	{
+		submemory_pointer.type_id = check_data->second;
+	}
+	auto now_subresource_type = subresource_list_map.find(submemory_pointer.type_id);
+	check_error = now_subresource_type->second->BuildSubresource(submemory_pointer.list_id, submemory_pointer.offset);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::FreeSubResource(const SubMemoryPointer &submemory_pointer)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto now_subresource_type = subresource_list_map.find(submemory_pointer.type_id);
+	if (now_subresource_type == subresource_list_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find memory_type id:" + std::to_string(submemory_pointer.type_id) + " from subresource control: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Release sub memory from submemory control", error_message);
+		return error_message;
+	}
+	check_error = now_subresource_type->second->ReleaseSubResource(submemory_pointer.list_id, submemory_pointer.offset);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &submemory_pointer)
+{
+	auto submemory_list = subresource_list_map.find(submemory_pointer.type_id);
+	if (submemory_list == subresource_list_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find memory_type id:" + std::to_string(submemory_pointer.type_id) + " from subresource control: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get sub memory from submemory control", error_message);
+		return NULL;
+	}
+	return submemory_list->second->GetSubResource(submemory_pointer.list_id);
 }
 //资源描述视图
 PancyResourceView::PancyResourceView(
@@ -949,241 +1478,4 @@ PancyDescriptorHeapControl::~PancyDescriptorHeapControl()
 		FreeDescriptorHeap(free_id_list[i]);
 	}
 	resource_memory_free_id.clear();
-}
-//二级资源
-SubMemoryData::SubMemoryData()
-{
-}
-PancystarEngine::EngineFailReason SubMemoryData::Create(
-	const std::string &buffer_desc_file,
-	const CD3DX12_RESOURCE_DESC &resource_desc,
-	const D3D12_RESOURCE_STATES &resource_state,
-	const pancy_object_id &per_memory_size_in
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceFromHeap(buffer_desc_file, resource_desc, resource_state, buffer_data);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	per_memory_size = per_memory_size_in;
-	auto memory_data = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
-	auto check_size = memory_data->GetSize() % static_cast<uint64_t>(per_memory_size_in);
-	if (check_size != 0)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the memory size:" + std::to_string(memory_data->GetSize()) + " could not mod the submemory size: " + std::to_string(per_memory_size_in));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build subresource from memory block", error_message);
-		return error_message;
-	}
-	pancy_object_id all_empty_num = static_cast<pancy_object_id>(memory_data->GetSize() / static_cast<uint64_t>(per_memory_size_in));
-	for (pancy_object_id i = 0; i < all_empty_num; ++i)
-	{
-		empty_sub_memory.insert(i);
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason SubMemoryData::BuildSubMemory(pancy_object_id &offset)
-{
-	if (empty_sub_memory.size() == 0)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the memory block is full, could not build new memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build subresource from memory block", error_message);
-		return error_message;
-	}
-	auto new_sub_memory = *empty_sub_memory.begin();
-	offset = new_sub_memory;
-	empty_sub_memory.erase(new_sub_memory);
-	sub_memory_data.insert(offset);
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason SubMemoryData::FreeSubMemory(const pancy_object_id &offset)
-{
-	auto check_data = sub_memory_data.find(offset);
-	if (check_data == sub_memory_data.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the sub memory" + std::to_string(offset) + " from memory_block", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free subresource from memory block", error_message);
-		return error_message;
-	}
-	sub_memory_data.erase(offset);
-	empty_sub_memory.insert(offset);
-	return PancystarEngine::succeed;
-}
-//二级资源链
-SubresourceLiner::SubresourceLiner(
-	const std::string &heap_name_in,
-	const CD3DX12_RESOURCE_DESC &resource_desc_in,
-	const D3D12_RESOURCE_STATES &resource_state_in,
-	const pancy_object_id &per_memory_size_in
-)
-{
-	max_id = 0;
-	heap_name = heap_name_in;
-	resource_desc = resource_desc_in;
-	resource_state = resource_state_in;
-	per_memory_size = per_memory_size_in;
-}
-PancystarEngine::EngineFailReason SubresourceLiner::BuildSubresource(
-	pancy_object_id &new_memory_block_id,
-	pancy_object_id &sub_memory_offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	if (empty_memory_heap.size() == 0)
-	{
-		SubMemoryData *new_data = new SubMemoryData();
-		check_error = new_data->Create(heap_name, resource_desc, resource_state, per_memory_size);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		pancy_object_id id_now;
-		//获取当前闲置的id号
-		if (free_id.size() == 0)
-		{
-			id_now = max_id;
-			max_id += 1;
-		}
-		else
-		{
-			id_now = *free_id.begin();
-			free_id.erase(id_now);
-		}
-		//插入一个空的资源
-		submemory_list.insert(std::pair<pancy_object_id, SubMemoryData*>(id_now, new_data));
-		empty_memory_heap.insert(id_now);
-	}
-	//获取一个尚有空间的内存块
-	new_memory_block_id = *empty_memory_heap.begin();
-	auto new_memory_block = submemory_list.find(new_memory_block_id);
-	//在该内存块中开辟一个subresource
-	check_error = new_memory_block->second->BuildSubMemory(sub_memory_offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//检查开辟过后该内存块是否已满
-	if (new_memory_block->second->GetEmptySize() == 0)
-	{
-		empty_memory_heap.erase(new_memory_block_id);
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason SubresourceLiner::ReleaseSubResource
-(
-	const pancy_object_id &new_memory_block_id,
-	const pancy_object_id &sub_memory_offset
-)
-{
-	auto memory_check = submemory_list.find(new_memory_block_id);
-	if (memory_check == submemory_list.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find memory_block id:" + std::to_string(new_memory_block_id) + " from submemory list: " + heap_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Release sub memory from submemory list", error_message);
-		return error_message;
-	}
-	memory_check->second->FreeSubMemory(sub_memory_offset);
-	//检查是否之前已满
-	if (empty_memory_heap.find(new_memory_block_id) == empty_memory_heap.end())
-	{
-		empty_memory_heap.insert(new_memory_block_id);
-	}
-	return PancystarEngine::succeed;
-}
-MemoryBlockGpu* SubresourceLiner::GetSubResource(pancy_object_id sub_memory_id)
-{
-	auto subresource_block = submemory_list.find(sub_memory_id);
-	if (subresource_block == submemory_list.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find memory_block id:" + std::to_string(sub_memory_id) + " from submemory list: " + heap_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Release sub memory from submemory list", error_message);
-		return NULL;
-	}
-	return subresource_block->second->GetResource();
-}
-//二级资源管理
-SubresourceControl::SubresourceControl()
-{
-	subresource_id_self_add = 0;
-}
-void SubresourceControl::InitSubResourceType(
-	const std::string &heap_name_in,
-	const CD3DX12_RESOURCE_DESC &resource_desc_in,
-	const D3D12_RESOURCE_STATES &resource_state_in,
-	const pancy_object_id &per_memory_size_in,
-	pancy_resource_id &subresource_type_id
-)
-{
-	std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
-	SubresourceLiner *new_subresource = new SubresourceLiner(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in);
-	if (subresource_free_id.size() == 0)
-	{
-		subresource_type_id = *subresource_free_id.begin();
-		subresource_free_id.erase(subresource_type_id);
-	}
-	else
-	{
-		subresource_type_id = subresource_id_self_add;
-		subresource_id_self_add += 1;
-	}
-	//创建一个新的资源存储链并保存名称
-	subresource_list_map.insert(std::pair<pancy_resource_id, SubresourceLiner*>(subresource_type_id, new_subresource));
-	subresource_init_list.insert(std::pair<std::string, pancy_resource_id>(hash_name, subresource_type_id));
-}
-PancystarEngine::EngineFailReason SubresourceControl::BuildSubresource(
-	const std::string &heap_name_in,
-	const CD3DX12_RESOURCE_DESC &resource_desc_in,
-	const D3D12_RESOURCE_STATES &resource_state_in,
-	const pancy_object_id &per_memory_size_in,
-	SubMemoryPointer &submemory_pointer
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
-	//获取资源名称对应的id号,如果没有则重新创建一个
-	auto check_data = subresource_init_list.find(hash_name);
-	if (check_data == subresource_init_list.end())
-	{
-		InitSubResourceType(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in, submemory_pointer.type_id);
-	}
-	else
-	{
-		submemory_pointer.type_id = check_data->second;
-	}
-	auto now_subresource_type = subresource_list_map.find(submemory_pointer.type_id);
-	check_error = now_subresource_type->second->BuildSubresource(submemory_pointer.list_id, submemory_pointer.offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason SubresourceControl::FreeSubResource(const SubMemoryPointer &submemory_pointer)
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto now_subresource_type = subresource_list_map.find(submemory_pointer.type_id);
-	if (now_subresource_type == subresource_list_map.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find memory_type id:" + std::to_string(submemory_pointer.type_id) + " from subresource control: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Release sub memory from submemory control", error_message);
-		return error_message;
-	}
-	check_error = now_subresource_type->second->ReleaseSubResource(submemory_pointer.list_id, submemory_pointer.offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &submemory_pointer)
-{
-	auto submemory_list = subresource_list_map.find(submemory_pointer.type_id);
-	if (submemory_list == subresource_list_map.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find memory_type id:" + std::to_string(submemory_pointer.type_id) + " from subresource control: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get sub memory from submemory control", error_message);
-		return NULL;
-	}
-	return submemory_list->second->GetSubResource(submemory_pointer.list_id);
 }

@@ -212,11 +212,12 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	//创建一个cbuffer
 	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetCbufferHeapName(Cbuffer_Heap_desc);
-	VirtualMemoryPointer cbuffer[2];
+	SubMemoryPointer cbuffer[2];
 	int32_t count = 0;
 	for (auto cbuffer_data = Cbuffer_Heap_desc.begin(); cbuffer_data != Cbuffer_Heap_desc.end(); ++cbuffer_data) 
 	{
-		auto check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceFromHeap(cbuffer_data->second, CD3DX12_RESOURCE_DESC::Buffer(256),D3D12_RESOURCE_STATE_GENERIC_READ, cbuffer[count]);
+
+		check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(cbuffer_data->second, cbuffer[count]);
 		count += 1;
 	}
 	int a = 0;

@@ -69,7 +69,7 @@ public:
 	PancystarEngine::EngineFailReason Create(const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in);
 	//从显存堆开辟资源
 	PancystarEngine::EngineFailReason BuildMemoryResource(
-		const CD3DX12_RESOURCE_DESC &resource_desc,
+		const D3D12_RESOURCE_DESC &resource_desc,
 		const D3D12_RESOURCE_STATES &resource_state,
 		pancy_resource_id &memory_block_ID
 	);
@@ -99,7 +99,7 @@ public:
 	MemoryHeapLinear(const std::string &heap_type_name_in, const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in);
 	//从显存堆开辟资源
 	PancystarEngine::EngineFailReason BuildMemoryResource(
-		const CD3DX12_RESOURCE_DESC &resource_desc,
+		const D3D12_RESOURCE_DESC &resource_desc,
 		const D3D12_RESOURCE_STATES &resource_state,
 		pancy_resource_id &memory_block_ID,//显存块地址指针
 		pancy_resource_id &memory_heap_ID//显存段地址指针
@@ -144,7 +144,7 @@ public:
 	);
 	PancystarEngine::EngineFailReason BuildResourceFromHeap(
 		const std::string &HeapFileName,
-		const CD3DX12_RESOURCE_DESC &resource_desc,
+		const D3D12_RESOURCE_DESC &resource_desc,
 		const D3D12_RESOURCE_STATES &resource_state,
 		VirtualMemoryPointer &virtual_pointer
 	);
@@ -199,7 +199,7 @@ public:
 	SubMemoryData();
 	PancystarEngine::EngineFailReason Create(
 		const std::string &buffer_desc_file,
-		const CD3DX12_RESOURCE_DESC &resource_desc,
+		const D3D12_RESOURCE_DESC &resource_desc,
 		const D3D12_RESOURCE_STATES &resource_state,
 		const pancy_object_id &per_memory_size_in
 	);
@@ -216,11 +216,10 @@ public:
 		return MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
 	}
 };
-
 class SubresourceLiner 
 {
 	std::string heap_name;
-	CD3DX12_RESOURCE_DESC resource_desc;
+	D3D12_RESOURCE_DESC resource_desc;
 	D3D12_RESOURCE_STATES resource_state;
 	pancy_object_id per_memory_size;
 	std::unordered_map<pancy_object_id, SubMemoryData*> submemory_list;
@@ -232,7 +231,7 @@ class SubresourceLiner
 public:
 	SubresourceLiner(
 		const std::string &heap_name_in,
-		const CD3DX12_RESOURCE_DESC &resource_desc_in,
+		const D3D12_RESOURCE_DESC &resource_desc_in,
 		const D3D12_RESOURCE_STATES &resource_state_in,
 		const pancy_object_id &per_memory_size_in
 	);
@@ -246,35 +245,47 @@ public:
 	);
 	MemoryBlockGpu* GetSubResource(pancy_object_id sub_memory_id);
 };
-
-
 class SubresourceControl
 {
 	pancy_object_id subresource_id_self_add;
 	std::unordered_map<pancy_resource_id, SubresourceLiner*> subresource_list_map;
 	std::unordered_map<std::string, pancy_resource_id> subresource_init_list;
 	std::unordered_set<pancy_object_id> subresource_free_id;
-public:
+private:
 	SubresourceControl();
+public:
 	~SubresourceControl();
+	static SubresourceControl* GetInstance()
+	{
+		static SubresourceControl* this_instance;
+		if (this_instance == NULL)
+		{
+			this_instance = new SubresourceControl();
+		}
+		return this_instance;
+	}
+	PancystarEngine::EngineFailReason BuildSubresourceFromFile(
+		const std::string &resource_name_in,
+		SubMemoryPointer &submemory_pointer
+	);
+	PancystarEngine::EngineFailReason FreeSubResource(const SubMemoryPointer &submemory_pointer);
+	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer);
+private:
 	void InitSubResourceType(
 		const std::string &heap_name_in,
-		const CD3DX12_RESOURCE_DESC &resource_desc_in,
+		const D3D12_RESOURCE_DESC &resource_desc_in,
 		const D3D12_RESOURCE_STATES &resource_state_in,
 		const pancy_object_id &per_memory_size_in,
 		pancy_resource_id &subresource_type_id
 	);
 	PancystarEngine::EngineFailReason BuildSubresource(
 		const std::string &heap_name_in,
-		const CD3DX12_RESOURCE_DESC &resource_desc_in,
+		const D3D12_RESOURCE_DESC &resource_desc_in,
 		const D3D12_RESOURCE_STATES &resource_state_in,
 		const pancy_object_id &per_memory_size_in,
 		SubMemoryPointer &submemory_pointer
 	);
-	PancystarEngine::EngineFailReason FreeSubResource(const SubMemoryPointer &submemory_pointer);
-	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer);
 };
-
 //todo：大规模释放和创建资源的测试
 //资源描述视图
 class PancyResourceView
@@ -384,6 +395,8 @@ public:
 		}
 		return this_instance;
 	}
+
+	//todo:改为创建block
 	PancystarEngine::EngineFailReason BuildDescriptorHeap(
 		const std::string &descriptor_heap_name_in,
 		const pancy_object_id &heap_block_size_in,

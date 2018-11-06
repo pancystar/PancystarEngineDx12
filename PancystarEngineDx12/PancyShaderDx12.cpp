@@ -41,21 +41,21 @@ PancystarEngine::EngineFailReason PancyShaderBasic::Create()
 {
 #if defined(_DEBUG)
 	// Enable better shader debugging with the graphics debugging tools.
-	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION| D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
+	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 #else
-	UINT compileFlags = 0| D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
+	UINT compileFlags = 0 | D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 #endif
 	//编译shader文件
 	ID3D10Blob *error_message;
 	HRESULT hr = D3DCompileFromFile(shader_file_name.GetUnicodeString().c_str(), nullptr, nullptr, shader_entry_point_name.GetAsciiString().c_str(), shader_type_name.GetAsciiString().c_str(), compileFlags, 0, &shader_memory_pointer, &error_message);
-	if (FAILED(hr)) 
+	if (FAILED(hr))
 	{
 		char data[1000];
 		if (error_message != NULL)
 		{
 			memcpy(data, error_message->GetBufferPointer(), error_message->GetBufferSize());
 		}
-		PancystarEngine::EngineFailReason error_message(hr, "Compile shader : " + shader_file_name.GetAsciiString() +":: " + shader_entry_point_name.GetAsciiString() +" error:"+ data);
+		PancystarEngine::EngineFailReason error_message(hr, "Compile shader : " + shader_file_name.GetAsciiString() + ":: " + shader_entry_point_name.GetAsciiString() + " error:" + data);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("load shader from file", error_message);
 		return error_message;
 	}
@@ -84,7 +84,7 @@ PancystarEngine::EngineFailReason PancyShaderBasic::Create()
 		now_constant_buffer->GetDesc(&buffer_shader);
 		int a = 0;
 	}
-	
+
 	for (UINT i = 0; i < shader_desc.BoundResources; ++i)
 	{
 		D3D12_SHADER_INPUT_BIND_DESC now_bind;
@@ -152,11 +152,11 @@ PancyRootSignature::PancyRootSignature(const std::string &file_name)
 	root_signature_name = file_name;
 }
 PancystarEngine::EngineFailReason PancyRootSignature::Create(
-	const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc, 
+	const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,
 	const std::vector<pancy_resource_id> &descriptor_heap_id_in
 )
 {
-	for (int i = 0; i < descriptor_heap_id_in.size(); ++i) 
+	for (int i = 0; i < descriptor_heap_id_in.size(); ++i)
 	{
 		descriptor_heap_id.push_back(descriptor_heap_id_in[i]);
 	}
@@ -362,11 +362,11 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDesc(
 		rootParameters[i].InitAsDescriptorTable(descriptor_range_num, &ranges[i], shader_visibility_type);
 		//根据当前格式创建描述符堆
 		D3D12_DESCRIPTOR_HEAP_DESC resource_view_heap_desc = {};
-		resource_view_heap_desc.NumDescriptors = max_descriptor_num* descriptor_num;
+		resource_view_heap_desc.NumDescriptors = max_descriptor_num * descriptor_num;
 		resource_view_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		resource_view_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		pancy_resource_id now_descriptor;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildDescriptorHeap("descriptor heap"+std::to_string(i)+" for rootsig: " + file_name, descriptor_num, resource_view_heap_desc, now_descriptor);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildDescriptorHeap("descriptor heap" + std::to_string(i) + " for rootsig: " + file_name, descriptor_num, resource_view_heap_desc, now_descriptor);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -467,7 +467,7 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDesc(
 		root_signature = root_signature | static_cast<D3D12_ROOT_SIGNATURE_FLAGS>(now_value.int_value);
 	}
 	desc_out.Init_1_1(num_parameter, rootParameters, num_static_sampler, data_sampledesc, root_signature);
-	
+
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyRootSignatureControl::BuildRootSignature(std::string rootsig_config_file)
@@ -547,38 +547,69 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build PSO", error_message);
 		return error_message;
 	}
-	for (auto data_now = Cbuffer_map_in.begin(); data_now != Cbuffer_map_in.end(); ++data_now) 
+	for (auto data_now = Cbuffer_map_in.begin(); data_now != Cbuffer_map_in.end(); ++data_now)
 	{
 		Cbuffer_map.insert(std::pair<std::string, D3D12_SHADER_BUFFER_DESC>(data_now->first, data_now->second));
 		//创建对应的cbuffer资源堆
-		UINT buffer_size = (data_now->second.Size + 255) & ~255;//256位对齐
+		UINT buffer_size = (data_now->second.Size + 65535) & ~65535;//65536位对齐
 		std::string heapdesc_file_name = "json\\resource_heap\\Cbuffer" + std::to_string(buffer_size) + ".json";
 		fstream _file;
 		_file.open(heapdesc_file_name, ios::in);
-		if (!_file)
-		{
-			//资源堆格式文件不存在，创建一个格式文件
-			Json::Value json_data_out;
-			PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "commit_block_num", 32768);
-			PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "per_block_size", buffer_size);
-			PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_type_in", "D3D12_HEAP_TYPE_UPLOAD");
-			PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_out, "heap_flag_in", "D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS");
-			PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, heapdesc_file_name);
-		}
+
+		//更新格式文件
+		Json::Value json_data_out;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "commit_block_num", 256);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "per_block_size", buffer_size);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_type_in", "D3D12_HEAP_TYPE_UPLOAD");
+		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_out, "heap_flag_in", "D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS");
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, heapdesc_file_name);
+
+		_file.close();
+		//创建对应的资源分块格式
+		UINT buffer_block_size = (data_now->second.Size + 255) & ~255;//65536位对齐
+		std::string bufferblock_file_name = "json\\resource_view\\CbufferSub" + std::to_string(buffer_block_size) + ".json";
+		_file.open(bufferblock_file_name, ios::in);
+
+		//更新格式文件
+		Json::Value json_data_resourceview;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "ResourceType", heapdesc_file_name);
+		Json::Value json_data_res_desc;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Dimension", "D3D12_RESOURCE_DIMENSION_BUFFER");
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Alignment", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Width", buffer_size);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Height", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "DepthOrArraySize", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "MipLevels", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Format", "DXGI_FORMAT_UNKNOWN");
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Layout", "D3D12_TEXTURE_LAYOUT_ROW_MAJOR");
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Flags", "D3D12_RESOURCE_FLAG_NONE");
+		Json::Value json_data_sample_desc;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Count", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Quality", 0);
+		//递归回调
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "SampleDesc", json_data_sample_desc);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_DESC", json_data_res_desc);
+		//继续填充主干
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_STATES", "D3D12_RESOURCE_STATE_GENERIC_READ");
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "per_block_size", buffer_block_size);
+
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_resourceview, bufferblock_file_name);
+
+
 	}
 	return PancystarEngine::succeed;
 }
 void PancyPiplineStateObjectGraph::GetCbufferHeapName(std::unordered_map<std::string, std::string> &Cbuffer_Heap_desc)
 {
-	for (auto cbuffer_data = Cbuffer_map.begin(); cbuffer_data != Cbuffer_map.end(); ++cbuffer_data) 
+	for (auto cbuffer_data = Cbuffer_map.begin(); cbuffer_data != Cbuffer_map.end(); ++cbuffer_data)
 	{
 		UINT buffer_size = (cbuffer_data->second.Size + 255) & ~255;//256位对齐
-		std::string heapdesc_file_name = "json\\resource_heap\\Cbuffer" + std::to_string(buffer_size) + ".json";
+		std::string heapdesc_file_name = "json\\resource_view\\CbufferSub" + std::to_string(buffer_size) + ".json";
 		Cbuffer_Heap_desc.insert(std::pair<std::string, std::string>(cbuffer_data->first, heapdesc_file_name));
 	}
 }
 //effect
-PancyEffectGraphic::PancyEffectGraphic() 
+PancyEffectGraphic::PancyEffectGraphic()
 {
 	AddPSOGlobelVariable();
 }
@@ -788,7 +819,7 @@ void PancyEffectGraphic::AddPSOGlobelVariable()
 	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_FORCE_UINT", static_cast<int32_t>(DXGI_FORMAT_FORCE_UINT));
 }
 PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
-	const std::string &file_name, 
+	const std::string &file_name,
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC &desc_out,
 	std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in
 )
@@ -809,7 +840,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 	if (PancyRootSignatureControl::GetInstance()->GetRootSignature(now_value.string_value) == NULL)
 	{
 		check_error = PancyRootSignatureControl::GetInstance()->BuildRootSignature(now_value.string_value);
-		if (!check_error.CheckIfSucceed()) 
+		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
@@ -826,7 +857,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 		"ds_5_1",
 	};
 	std::string vertex_shader_name, vertex_shader_mainfunc;
-	for (int i = 0; i < 5; ++i) 
+	for (int i = 0; i < 5; ++i)
 	{
 		std::string shader_file_name, shader_func_name;
 		Pancy_json_shader_type now_shader_read = static_cast<Pancy_json_shader_type>(static_cast<int32_t>(Pancy_json_shader_type::json_shader_vertex) + i);
@@ -891,7 +922,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 	}
 	//根据顶点着色器获取顶点输入格式
 	auto vertex_shader_reflect = PancyShaderControl::GetInstance()->GetShaderReflection(vertex_shader_name, vertex_shader_mainfunc);
-	if (InputLayoutDesc::GetInstance()->GetVertexDesc(vertex_shader_name + "::" + vertex_shader_mainfunc) == NULL) 
+	if (InputLayoutDesc::GetInstance()->GetVertexDesc(vertex_shader_name + "::" + vertex_shader_mainfunc) == NULL)
 	{
 		//未找到输入缓冲区，添加新的缓冲区
 		std::vector<D3D12_INPUT_ELEMENT_DESC> input_desc_array;
@@ -1137,7 +1168,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 	if (desc_out.NumRenderTargets != data_render_target.size())
 	{
 		//渲染目标数量不对
-		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the render_target need " + std::to_string(desc_out.NumRenderTargets) +" but find "+ std::to_string(data_render_target.size()));
+		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the render_target need " + std::to_string(desc_out.NumRenderTargets) + " but find " + std::to_string(data_render_target.size()));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Graphic PSO json file " + file_name + " error", error_mesage);
 		return error_mesage;
 	}
@@ -1192,7 +1223,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::BuildPso(std::string pso_c
 	}
 	PancyPiplineStateObjectGraph *new_pancy = new PancyPiplineStateObjectGraph(pso_config_file);
 	check_error = new_pancy->Create(PSO_desc_graphic, Cbuffer_map);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
