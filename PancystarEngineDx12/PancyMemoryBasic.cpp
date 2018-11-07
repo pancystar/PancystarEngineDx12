@@ -657,6 +657,16 @@ MemoryBlockGpu* SubresourceLiner::GetSubResource(pancy_object_id sub_memory_id)
 	}
 	return subresource_block->second->GetResource();
 }
+SubresourceLiner::~SubresourceLiner()
+{
+	for (auto data_release = submemory_list.begin(); data_release != submemory_list.end(); ++data_release)
+	{
+		delete data_release->second;
+	}
+	submemory_list.clear();
+	empty_memory_heap.clear();
+	free_id.clear();
+}
 //二级资源管理
 SubresourceControl::SubresourceControl()
 {
@@ -946,7 +956,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildSubresourceFromFile(
 	}
 	res_desc.SampleDesc.Quality = value_res_sample.int_value;
 	//创建资源
-	check_error = BuildSubresource(resource_heap_name, res_desc, res_states, per_memory_size, submemory_pointer);
+	check_error = BuildSubresource(resource_name_in,resource_heap_name, res_desc, res_states, per_memory_size, submemory_pointer);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -954,6 +964,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildSubresourceFromFile(
 	return PancystarEngine::succeed;
 }
 void SubresourceControl::InitSubResourceType(
+	const std::string &hash_name,
 	const std::string &heap_name_in,
 	const D3D12_RESOURCE_DESC &resource_desc_in,
 	const D3D12_RESOURCE_STATES &resource_state_in,
@@ -961,7 +972,7 @@ void SubresourceControl::InitSubResourceType(
 	pancy_resource_id &subresource_type_id
 )
 {
-	std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
+	//std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
 	SubresourceLiner *new_subresource = new SubresourceLiner(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in);
 	if (subresource_free_id.size() != 0)
 	{
@@ -978,6 +989,7 @@ void SubresourceControl::InitSubResourceType(
 	subresource_init_list.insert(std::pair<std::string, pancy_resource_id>(hash_name, subresource_type_id));
 }
 PancystarEngine::EngineFailReason SubresourceControl::BuildSubresource(
+	const std::string &hash_name,
 	const std::string &heap_name_in,
 	const D3D12_RESOURCE_DESC &resource_desc_in,
 	const D3D12_RESOURCE_STATES &resource_state_in,
@@ -987,12 +999,12 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildSubresource(
 {
 	PancystarEngine::EngineFailReason check_error;
 	//todo::修改资源的hash名称
-	std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
+	//std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
 	//获取资源名称对应的id号,如果没有则重新创建一个
 	auto check_data = subresource_init_list.find(hash_name);
 	if (check_data == subresource_init_list.end())
 	{
-		InitSubResourceType(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in, submemory_pointer.type_id);
+		InitSubResourceType(hash_name,heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in, submemory_pointer.type_id);
 	}
 	else
 	{
@@ -1033,6 +1045,16 @@ MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &sub
 		return NULL;
 	}
 	return submemory_list->second->GetSubResource(submemory_pointer.list_id);
+}
+SubresourceControl::~SubresourceControl()
+{
+	for (auto data_release = subresource_list_map.begin(); data_release != subresource_list_map.end(); ++data_release)
+	{
+		delete data_release->second;
+	}
+	subresource_list_map.clear();
+	subresource_init_list.clear();
+	subresource_free_id.clear();
 }
 //资源描述视图
 PancyResourceView::PancyResourceView(
@@ -1331,33 +1353,101 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildDescriptorHea
 	const std::string &descriptor_heap_name_in,
 	const pancy_object_id &heap_block_size_in,
 	const D3D12_DESCRIPTOR_HEAP_DESC &heap_desc_in,
-	pancy_resource_id &descriptor_heap_id
+	ResourceViewPack &RSV_pack_id
 )
 {
-	if (resource_init_list.find(descriptor_heap_name_in) != resource_init_list.end())
+	PancystarEngine::EngineFailReason check_error;
+	//没有对应的描述符堆，先创建一个
+	if (resource_init_list.find(descriptor_heap_name_in) == resource_init_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap: " + descriptor_heap_name_in + " already been build before", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap", error_message);
-		return error_message;
+		pancy_object_id new_heap_id;
+		if (resource_memory_free_id.size() != 0)
+		{
+			new_heap_id = *resource_memory_free_id.begin();
+			resource_memory_free_id.erase(new_heap_id);
+		}
+		else
+		{
+			new_heap_id = descriptor_heap_id_selfadd;
+			descriptor_heap_id_selfadd += 1;
+		}
+		PancyDescriptorHeap *new_heap = new PancyDescriptorHeap(descriptor_heap_name_in, heap_block_size_in, heap_desc_in);
+		check_error = new_heap->Create();
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		resource_init_list.insert(std::pair<std::string, pancy_resource_id>(descriptor_heap_name_in, new_heap_id));
+		resource_heap_list.insert(std::pair<pancy_resource_id, PancyDescriptorHeap*>(new_heap_id, new_heap));
 	}
-	if (resource_memory_free_id.size() != 0)
-	{
-		descriptor_heap_id = *resource_memory_free_id.begin();
-		resource_memory_free_id.erase(descriptor_heap_id);
-	}
-	else
-	{
-		descriptor_heap_id = descriptor_heap_id_selfadd;
-		descriptor_heap_id_selfadd += 1;
-	}
-	PancyDescriptorHeap *new_heap = new PancyDescriptorHeap(descriptor_heap_name_in, heap_block_size_in, heap_desc_in);
-	PancystarEngine::EngineFailReason check_error = new_heap->Create();
+	//在描述符下创建一个资源描述包
+	RSV_pack_id.descriptor_heap_type_id = resource_init_list.find(descriptor_heap_name_in)->second;
+	auto resview_heap_data = resource_heap_list.find(RSV_pack_id.descriptor_heap_type_id);
+	check_error = resview_heap_data->second->BuildHeapBlock(RSV_pack_id.descriptor_heap_offset);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	resource_init_list.insert(std::pair<std::string, pancy_resource_id>(descriptor_heap_name_in, descriptor_heap_id));
-	resource_heap_list.insert(std::pair<pancy_resource_id, PancyDescriptorHeap*>(descriptor_heap_id, new_heap));
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildResourceViewFromFile(
+	const std::string &file_name,
+	ResourceViewPack &RSV_pack_id
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	D3D12_DESCRIPTOR_HEAP_DESC descriptor_heap_desc;
+	pancy_object_id per_resource_view_pack_size;
+	pancy_json_value root_data;
+	//加载json文件
+	Json::Value root_value;
+	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(file_name, root_value);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//读取每个resourceview绑定包的大小
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, root_value, "heap_block_size", pancy_json_data_type::json_data_int, root_data);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	per_resource_view_pack_size = static_cast<pancy_object_id>(root_data.int_value);
+	//读取描述符堆的格式
+	Json::Value heap_desc_value = root_value.get("D3D12_DESCRIPTOR_HEAP_DESC", Json::Value::null);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "Type", pancy_json_data_type::json_data_enum, root_data);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.Type = static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(root_data.int_value);
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "NumDescriptors", pancy_json_data_type::json_data_int, root_data);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.NumDescriptors = root_data.int_value;
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "NodeMask", pancy_json_data_type::json_data_int, root_data);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.NodeMask = root_data.int_value;
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "Flags", pancy_json_data_type::json_data_enum, root_data);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.Flags = static_cast<D3D12_DESCRIPTOR_HEAP_FLAGS>(root_data.int_value);
+	//创建描述符数据
+	check_error = BuildDescriptorHeap(file_name, per_resource_view_pack_size, descriptor_heap_desc, RSV_pack_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::FreeDescriptorHeap(pancy_resource_id &descriptor_heap_id)
@@ -1380,21 +1470,19 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::FreeDescriptorHeap
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildSRV(
-	const pancy_resource_id &descriptor_heap_id, 
-	const pancy_object_id &descriptor_block_id, 
-	const pancy_object_id &self_offset, 
+	ResourceViewPointer RSV_point,
 	const VirtualMemoryPointer &resource_in, 
 	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
 )
 {
-	auto descriptor_heap_use = resource_heap_list.find(descriptor_heap_id);
+	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
 	if (descriptor_heap_use == resource_heap_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(descriptor_heap_id));
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
 		return error_message;
 	}
-	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildSRV(descriptor_block_id, self_offset, resource_in, SRV_desc);
+	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildSRV(RSV_point.resource_view_pack_id.descriptor_heap_offset, RSV_point.resource_view_offset_id, resource_in, SRV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -1402,20 +1490,18 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildSRV(
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCBV(
-	const pancy_resource_id &descriptor_heap_id, 
-	const pancy_object_id &descriptor_block_id, 
-	const pancy_object_id &self_offset, 
+	ResourceViewPointer RSV_point,
 	const D3D12_CONSTANT_BUFFER_VIEW_DESC  &CBV_desc
 )
 {
-	auto descriptor_heap_use = resource_heap_list.find(descriptor_heap_id);
+	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
 	if (descriptor_heap_use == resource_heap_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(descriptor_heap_id));
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
 		return error_message;
 	}
-	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildCBV(descriptor_block_id, self_offset, CBV_desc);
+	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildCBV(RSV_point.resource_view_pack_id.descriptor_heap_offset, RSV_point.resource_view_offset_id, CBV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -1423,21 +1509,19 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCBV(
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildUAV(
-	const pancy_resource_id &descriptor_heap_id, 
-	const pancy_object_id &descriptor_block_id, 
-	const pancy_object_id &self_offset, 
+	ResourceViewPointer RSV_point,
 	const VirtualMemoryPointer &resource_in, 
 	const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
 )
 {
-	auto descriptor_heap_use = resource_heap_list.find(descriptor_heap_id);
+	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
 	if (descriptor_heap_use == resource_heap_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(descriptor_heap_id));
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
 		return error_message;
 	}
-	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildUAV(descriptor_block_id, self_offset, resource_in, UAV_desc);
+	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildUAV(RSV_point.resource_view_pack_id.descriptor_heap_offset, RSV_point.resource_view_offset_id, resource_in, UAV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -1445,21 +1529,19 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildUAV(
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildRTV(
-	const pancy_resource_id &descriptor_heap_id, 
-	const pancy_object_id &descriptor_block_id, 
-	const pancy_object_id &self_offset,
-	const VirtualMemoryPointer &resource_in, 
+	ResourceViewPointer RSV_point,
+	const VirtualMemoryPointer &resource_in,
 	const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
 )
 {
-	auto descriptor_heap_use = resource_heap_list.find(descriptor_heap_id);
+	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
 	if (descriptor_heap_use == resource_heap_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(descriptor_heap_id));
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
 		return error_message;
 	}
-	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildRTV(descriptor_block_id, self_offset, resource_in, RTV_desc);
+	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildRTV(RSV_point.resource_view_pack_id.descriptor_heap_offset, RSV_point.resource_view_offset_id, resource_in, RTV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;

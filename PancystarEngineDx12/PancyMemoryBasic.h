@@ -86,7 +86,7 @@ class MemoryHeapLinear
 {
 	//显存堆的格式
 	CD3DX12_HEAP_DESC heap_desc;
-	int32_t size_per_block;
+	int64_t size_per_block;
 	pancy_resource_id max_block_num;
 	//显存堆的名称
 	std::string heap_type_name;
@@ -235,6 +235,7 @@ public:
 		const D3D12_RESOURCE_STATES &resource_state_in,
 		const pancy_object_id &per_memory_size_in
 	);
+	~SubresourceLiner();
 	PancystarEngine::EngineFailReason BuildSubresource(
 		pancy_object_id &new_memory_block_id, 
 		pancy_object_id &sub_memory_offset
@@ -272,6 +273,7 @@ public:
 	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer);
 private:
 	void InitSubResourceType(
+		const std::string &hash_name,
 		const std::string &heap_name_in,
 		const D3D12_RESOURCE_DESC &resource_desc_in,
 		const D3D12_RESOURCE_STATES &resource_state_in,
@@ -279,6 +281,7 @@ private:
 		pancy_resource_id &subresource_type_id
 	);
 	PancystarEngine::EngineFailReason BuildSubresource(
+		const std::string &hash_name,
 		const std::string &heap_name_in,
 		const D3D12_RESOURCE_DESC &resource_desc_in,
 		const D3D12_RESOURCE_STATES &resource_state_in,
@@ -286,8 +289,17 @@ private:
 		SubMemoryPointer &submemory_pointer
 	);
 };
-//todo：大规模释放和创建资源的测试
 //资源描述视图
+struct ResourceViewPack 
+{
+	pancy_resource_id descriptor_heap_type_id;
+	pancy_resource_id descriptor_heap_offset;
+};
+struct ResourceViewPointer 
+{
+	ResourceViewPack resource_view_pack_id;
+	pancy_resource_id resource_view_offset_id;
+};
 class PancyResourceView
 {
 	ComPtr<ID3D12DescriptorHeap> heap_data;
@@ -295,7 +307,7 @@ class PancyResourceView
 	//资源视图的位置
 	int32_t heap_offset;
 	//资源视图包含的资源
-	int32_t resource_view_number;
+	uint32_t resource_view_number;
 	pancy_object_id resource_block_size;
 public:
 	PancyResourceView(
@@ -395,44 +407,40 @@ public:
 		}
 		return this_instance;
 	}
-
-	//todo:改为创建block
-	PancystarEngine::EngineFailReason BuildDescriptorHeap(
-		const std::string &descriptor_heap_name_in,
-		const pancy_object_id &heap_block_size_in,
-		const D3D12_DESCRIPTOR_HEAP_DESC &heap_desc_in,
-		pancy_resource_id &descriptor_heap_id
+	PancystarEngine::EngineFailReason BuildResourceViewFromFile(
+		const std::string &file_name,
+		ResourceViewPack &RSV_pack_id
 	);
 	PancystarEngine::EngineFailReason FreeDescriptorHeap(
 		pancy_resource_id &descriptor_heap_id
 	);
 	//创建资源视图
 	PancystarEngine::EngineFailReason BuildSRV(
-		const pancy_resource_id &descriptor_heap_id,
-		const pancy_object_id &descriptor_block_id,
-		const pancy_object_id &self_offset, 
+		ResourceViewPointer RSV_point,
 		const VirtualMemoryPointer &resource_in,
 		const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
 	);
 	PancystarEngine::EngineFailReason BuildCBV(
-		const pancy_resource_id &descriptor_heap_id, 
-		const pancy_object_id &descriptor_block_id, 
-		const pancy_object_id &self_offset, 
+		ResourceViewPointer RSV_point,
 		const D3D12_CONSTANT_BUFFER_VIEW_DESC  &CBV_desc
 	);
 	PancystarEngine::EngineFailReason BuildUAV(
-		const pancy_resource_id &descriptor_heap_id, 
-		const pancy_object_id &descriptor_block_id,
-		const pancy_object_id &self_offset, 
+		ResourceViewPointer RSV_point,
 		const VirtualMemoryPointer &resource_in, 
 		const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
 	);
 	PancystarEngine::EngineFailReason BuildRTV(
-		const pancy_resource_id &descriptor_heap_id, 
-		const pancy_object_id &descriptor_block_id, 
-		const pancy_object_id &self_offset, 
+		ResourceViewPointer RSV_point,
 		const VirtualMemoryPointer &resource_in, 
 		const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
 	);
 	~PancyDescriptorHeapControl();
+private:
+PancystarEngine::EngineFailReason BuildDescriptorHeap(
+		const std::string &descriptor_heap_name_in,
+		const pancy_object_id &heap_block_size_in,
+		const D3D12_DESCRIPTOR_HEAP_DESC &heap_desc_in,
+		ResourceViewPack &RSV_pack_id
+	);
 };
+

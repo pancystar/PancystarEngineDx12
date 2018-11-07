@@ -212,15 +212,27 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	//创建一个cbuffer
 	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetCbufferHeapName(Cbuffer_Heap_desc);
-	SubMemoryPointer cbuffer[2];
-	int32_t count = 0;
+	std::vector<string> descriptor_use_data;
+	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetDescriptorHeapUse(descriptor_use_data);
+	SubMemoryPointer cbuffer[2048];
 	for (auto cbuffer_data = Cbuffer_Heap_desc.begin(); cbuffer_data != Cbuffer_Heap_desc.end(); ++cbuffer_data) 
 	{
-
-		check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(cbuffer_data->second, cbuffer[count]);
-		count += 1;
+		int32_t count = 0;
+		for (int i = 0; i < 1000; ++i)
+		{
+			check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(cbuffer_data->second, cbuffer[count]);
+			if (!check_error.CheckIfSucceed()) 
+			{
+				int a = 0;
+			}
+			count += 1;
+		}
+		for (int i = 0; i < 1000; ++i)
+		{
+			check_error = SubresourceControl::GetInstance()->FreeSubResource(cbuffer[i]);
+		}
+		int a = 0;
 	}
-	int a = 0;
 	
 	/*
 	//创建commandallocator
@@ -430,6 +442,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	delete MemoryHeapGpuControl::GetInstance();
 	delete PancyDescriptorHeapControl::GetInstance();
 	delete PancystarEngine::PancyTextureControl::GetInstance();
+	delete SubresourceControl::GetInstance();
 	if (InputLayoutDesc::GetInstance() != NULL)
 	{
 		delete InputLayoutDesc::GetInstance();

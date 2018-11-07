@@ -85,7 +85,7 @@ public:
 //RootSignature
 class PancyRootSignature
 {
-	std::vector<pancy_resource_id> descriptor_heap_id;
+	std::vector<std::string> descriptor_heap_id;
 	PancystarEngine::PancyString root_signature_name;
 	ComPtr<ID3D12RootSignature> root_signature_data;
 public:
@@ -94,7 +94,8 @@ public:
 	{
 		return root_signature_data;
 	};
-	PancystarEngine::EngineFailReason Create(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,const std::vector<pancy_resource_id> &descriptor_heap_id_in);
+	void GetDescriptorHeapUse(std::vector<std::string> &descriptor_heap_id_in);
+	PancystarEngine::EngineFailReason Create(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,const std::vector<std::string> &descriptor_heap_id_in);
 };
 //RootSignature管理器
 class PancyRootSignatureControl
@@ -103,6 +104,7 @@ class PancyRootSignatureControl
 	CD3DX12_DESCRIPTOR_RANGE1 *ranges;
 	CD3DX12_ROOT_PARAMETER1 *rootParameters;
 	std::unordered_map<std::string, PancyRootSignature*> root_signature_array;
+
 private:
 	PancyRootSignatureControl();
 public:
@@ -120,8 +122,9 @@ public:
 	PancystarEngine::EngineFailReason GetDesc(
 		const std::string &file_name,
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &desc_out,
-		std::vector<pancy_resource_id> &descriptor_heap_id
+		std::vector<std::string> &descriptor_heap_id
 	);
+	std::string GetJsonFileRealName(const std::string &file_name_in);
 	~PancyRootSignatureControl();
 private:
 	void AddRootSignatureGlobelVariable();
@@ -137,12 +140,14 @@ public:
 	PancyPiplineStateObjectGraph(const std::string &pso_name_in);
 	PancystarEngine::EngineFailReason Create(
 		const D3D12_GRAPHICS_PIPELINE_STATE_DESC &pso_desc_in, 
-		const std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in
+		const std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in,
+		const PancystarEngine::PancyString &root_signature_name_in
 	);
 	inline ComPtr<ID3D12PipelineState> GetData() 
 	{
 		return pso_data;
 	}
+	void GetDescriptorHeapUse(std::vector<std::string> &descriptor_heap_id);
 	void GetCbufferHeapName(std::unordered_map<std::string, std::string> &Cbuffer_Heap_desc);
 };
 //pso管理器
@@ -165,7 +170,8 @@ public:
 	PancystarEngine::EngineFailReason GetDesc(
 		const std::string &file_name, 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC &desc_out,
-		std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in
+		std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in,
+		PancystarEngine::PancyString &root_sig_name
 	);
 	PancystarEngine::EngineFailReason GetInputDesc(ComPtr<ID3D12ShaderReflection> t_ShaderReflection, std::vector<D3D12_INPUT_ELEMENT_DESC> &t_InputElementDescVec);
 	PancyPiplineStateObjectGraph* GetPSO(std::string name_in);

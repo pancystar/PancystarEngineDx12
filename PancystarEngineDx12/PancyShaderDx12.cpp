@@ -153,7 +153,7 @@ PancyRootSignature::PancyRootSignature(const std::string &file_name)
 }
 PancystarEngine::EngineFailReason PancyRootSignature::Create(
 	const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,
-	const std::vector<pancy_resource_id> &descriptor_heap_id_in
+	const std::vector<std::string> &descriptor_heap_id_in
 )
 {
 	for (int i = 0; i < descriptor_heap_id_in.size(); ++i)
@@ -178,6 +178,13 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create(
 		return error_message;
 	}
 	return PancystarEngine::succeed;
+}
+void PancyRootSignature::GetDescriptorHeapUse(std::vector<std::string> &descriptor_heap_id_in)
+{
+	for (auto data_copy = descriptor_heap_id.begin(); data_copy != descriptor_heap_id.end(); ++data_copy)
+	{
+		descriptor_heap_id_in.push_back(*data_copy);
+	}
 }
 //rootsignature管理器
 PancyRootSignatureControl::PancyRootSignatureControl()
@@ -273,10 +280,29 @@ void PancyRootSignatureControl::AddRootSignatureGlobelVariable()
 	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS));
 	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT));
 }
+std::string PancyRootSignatureControl::GetJsonFileRealName(const std::string &file_name_in)
+{
+	std::string new_str;
+	int st = 0;
+	int length = -4;
+	for (int i = file_name_in.size() - 2; i >= 0; --i) 
+	{
+		if (file_name_in[i-1] == '\\') 
+		{
+			st = i;
+			break;
+		}
+		else 
+		{
+			length += 1;
+		}
+	}
+	return file_name_in.substr(st, length);
+}
 PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDesc(
 	const std::string &file_name,
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &desc_out,
-	std::vector<pancy_resource_id> &descriptor_heap_id
+	std::vector<std::string> &descriptor_heap_id
 )
 {
 	Json::Value jsonRoot;
@@ -361,17 +387,18 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDesc(
 		//注册rootsignature格式
 		rootParameters[i].InitAsDescriptorTable(descriptor_range_num, &ranges[i], shader_visibility_type);
 		//根据当前格式创建描述符堆
-		D3D12_DESCRIPTOR_HEAP_DESC resource_view_heap_desc = {};
-		resource_view_heap_desc.NumDescriptors = max_descriptor_num * descriptor_num;
-		resource_view_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		resource_view_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		pancy_resource_id now_descriptor;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildDescriptorHeap("descriptor heap" + std::to_string(i) + " for rootsig: " + file_name, descriptor_num, resource_view_heap_desc, now_descriptor);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		descriptor_heap_id.push_back(now_descriptor);
+
+		std::string json_name = "json\\descriptor_heap\\" + GetJsonFileRealName(file_name) + "_heap" + std::to_string(i)+".json";
+		Json::Value json_data_out;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_block_size", descriptor_num);
+		Json::Value json_data_desc;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "NumDescriptors", max_descriptor_num * descriptor_num);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "Type", "D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV");
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "Flags", "D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE");
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "NodeMask", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "D3D12_DESCRIPTOR_HEAP_DESC", json_data_desc);
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, json_name);
+		descriptor_heap_id.push_back(json_name);
 	}
 
 	int num_static_sampler;
@@ -483,7 +510,7 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::BuildRootSignature(
 		return error_message;
 	}
 	//创建RootSignature
-	std::vector<pancy_resource_id> descriotor_heap_id;
+	std::vector<std::string> descriotor_heap_id;
 	PancyRootSignature *data_root_signature = new PancyRootSignature(rootsig_config_file);
 	check_error = GetDesc(rootsig_config_file, root_signature_desc, descriotor_heap_id);
 	if (!check_error.CheckIfSucceed())
@@ -531,15 +558,25 @@ PancyRootSignatureControl::~PancyRootSignatureControl()
 	root_signature_array.clear();
 }
 //pipline state object graph
+void PancyPiplineStateObjectGraph::GetDescriptorHeapUse(std::vector<std::string> &descriptor_heap_id) 
+{
+	auto rootsig = PancyRootSignatureControl::GetInstance()->GetRootSignature(root_signature_name.GetAsciiString());
+	if (rootsig != NULL) 
+	{
+		rootsig->GetDescriptorHeapUse(descriptor_heap_id);
+	}
+}
 PancyPiplineStateObjectGraph::PancyPiplineStateObjectGraph(const std::string &pso_name_in)
 {
 	pso_name = pso_name_in;
 }
 PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create(
 	const D3D12_GRAPHICS_PIPELINE_STATE_DESC &pso_desc_in,
-	const std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in
+	const std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in,
+	const PancystarEngine::PancyString &root_signature_name_in
 )
 {
+	root_signature_name = root_signature_name_in;
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateGraphicsPipelineState(&pso_desc_in, IID_PPV_ARGS(&pso_data));
 	if (FAILED(hr))
 	{
@@ -821,7 +858,8 @@ void PancyEffectGraphic::AddPSOGlobelVariable()
 PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 	const std::string &file_name,
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC &desc_out,
-	std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in
+	std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> &Cbuffer_map_in,
+	PancystarEngine::PancyString &root_sig_name
 )
 {
 	Json::Value jsonRoot;
@@ -837,6 +875,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 	{
 		return check_error;
 	}
+	root_sig_name = now_value.string_value;
 	if (PancyRootSignatureControl::GetInstance()->GetRootSignature(now_value.string_value) == NULL)
 	{
 		check_error = PancyRootSignatureControl::GetInstance()->BuildRootSignature(now_value.string_value);
@@ -1216,13 +1255,14 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::BuildPso(std::string pso_c
 	PancystarEngine::EngineFailReason check_error;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC PSO_desc_graphic = {};
 	std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> Cbuffer_map;
-	check_error = GetDesc(pso_config_file, PSO_desc_graphic, Cbuffer_map);
+	PancystarEngine::PancyString root_sig_name;
+	check_error = GetDesc(pso_config_file, PSO_desc_graphic, Cbuffer_map, root_sig_name);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	PancyPiplineStateObjectGraph *new_pancy = new PancyPiplineStateObjectGraph(pso_config_file);
-	check_error = new_pancy->Create(PSO_desc_graphic, Cbuffer_map);
+	check_error = new_pancy->Create(PSO_desc_graphic, Cbuffer_map, root_sig_name);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
