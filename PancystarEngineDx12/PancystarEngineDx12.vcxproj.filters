@@ -90,10 +90,10 @@
     <None Include="json\resource_heap\heap_vertex.json">
       <Filter>json</Filter>
     </None>
-    <None Include="json\resource_heap\tex_512_4_singlemip.json">
+    <None Include="data\test222.json">
       <Filter>json</Filter>
     </None>
-    <None Include="data\test222.json">
+    <None Include="json\resource_heap\tex_512_512_4_singlemip.json">
       <Filter>json</Filter>
     </None>
   </ItemGroup>

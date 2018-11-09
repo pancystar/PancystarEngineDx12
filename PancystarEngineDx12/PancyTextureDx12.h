@@ -57,7 +57,16 @@ namespace PancystarEngine
 			const D3D12_RESOURCE_FLAGS &resFlags,
 			const unsigned int &loadFlags
 		);
+		PancystarEngine::EngineFailReason UpdateTextureResourceAndWait();
 		bool CheckIfJson(const std::string &path_name);
+		inline bool CheckIfPow2(int32_t input) 
+		{
+			if (input == 32 || input == 64 || input == 128 || input == 256 || input == 512 || input == 1024 || input == 2048 || input == 4096) 
+			{
+				return true;
+			}
+			return false;
+		}
 	};
 
 

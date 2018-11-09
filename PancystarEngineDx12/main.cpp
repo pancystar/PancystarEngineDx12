@@ -214,26 +214,24 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetCbufferHeapName(Cbuffer_Heap_desc);
 	std::vector<string> descriptor_use_data;
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetDescriptorHeapUse(descriptor_use_data);
-	SubMemoryPointer cbuffer[2048];
+	SubMemoryPointer cbuffer[2];
+	int count = 0;
 	for (auto cbuffer_data = Cbuffer_Heap_desc.begin(); cbuffer_data != Cbuffer_Heap_desc.end(); ++cbuffer_data) 
 	{
-		int32_t count = 0;
-		for (int i = 0; i < 1000; ++i)
-		{
-			check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(cbuffer_data->second, cbuffer[count]);
-			if (!check_error.CheckIfSucceed()) 
-			{
-				int a = 0;
-			}
-			count += 1;
-		}
-		for (int i = 0; i < 1000; ++i)
-		{
-			check_error = SubresourceControl::GetInstance()->FreeSubResource(cbuffer[i]);
-		}
-		int a = 0;
+		check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(cbuffer_data->second, cbuffer[count]);
+		count += 1;
 	}
-	
+	ResourceViewPack globel_var[3];
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[0], globel_var[0]);
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[1], globel_var[1]);
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[2], globel_var[2]);
+	ResourceViewPointer new_rsv;
+	new_rsv.resource_view_pack_id = globel_var[0];
+	new_rsv.resource_view_offset_id = 0;
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_rsv, cbuffer[0]);
+	new_rsv.resource_view_pack_id = globel_var[1];
+	new_rsv.resource_view_offset_id = 0;
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_rsv, cbuffer[1]);
 	/*
 	//´´½¨commandallocator
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator));

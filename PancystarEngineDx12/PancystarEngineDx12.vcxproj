@@ -188,7 +188,7 @@
     <None Include="data\test222.json" />
     <None Include="json\pipline_state_object\pso_test.json" />
     <None Include="json\resource_heap\heap_vertex.json" />
-    <None Include="json\resource_heap\tex_512_4_singlemip.json" />
+    <None Include="json\resource_heap\tex_512_512_4_singlemip.json" />
     <None Include="json\root_signature\test_root_signature.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

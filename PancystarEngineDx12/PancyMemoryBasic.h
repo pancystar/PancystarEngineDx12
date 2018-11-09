@@ -211,9 +211,13 @@ public:
 		return static_cast<pancy_object_id>(empty_sub_memory.size());
 	}
 	//获取资源
-	inline MemoryBlockGpu* GetResource() 
+	inline MemoryBlockGpu* GetResource()
 	{
 		return MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
+	}
+	inline int64_t GetBlockSize() 
+	{
+		return static_cast<int64_t>(per_memory_size);
 	}
 };
 class SubresourceLiner 
@@ -244,7 +248,7 @@ public:
 		const pancy_object_id &new_memory_block_id,
 		const pancy_object_id &sub_memory_offset
 	);
-	MemoryBlockGpu* GetSubResource(pancy_object_id sub_memory_id);
+	MemoryBlockGpu* GetSubResource(pancy_object_id sub_memory_id, int64_t &per_memory_size);
 };
 class SubresourceControl
 {
@@ -270,7 +274,7 @@ public:
 		SubMemoryPointer &submemory_pointer
 	);
 	PancystarEngine::EngineFailReason FreeSubResource(const SubMemoryPointer &submemory_pointer);
-	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer);
+	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer,int64_t &per_memory_size);
 private:
 	void InitSubResourceType(
 		const std::string &hash_name,
@@ -318,21 +322,21 @@ public:
 	);
 	PancystarEngine::EngineFailReason BuildSRV(
 		const pancy_object_id &self_offset, 
-		const VirtualMemoryPointer &resource_in,
+		const SubMemoryPointer &resource_in,
 		const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
 	);
 	PancystarEngine::EngineFailReason BuildCBV(
-		const pancy_object_id &self_offset, 
-		const D3D12_CONSTANT_BUFFER_VIEW_DESC  &CBV_desc
+		const pancy_object_id &self_offset,
+		const SubMemoryPointer &resource_in
 	);
 	PancystarEngine::EngineFailReason BuildUAV(
-		const pancy_object_id &self_offset, 
-		const VirtualMemoryPointer &resource_in, 
+		const pancy_object_id &self_offset,
+		const SubMemoryPointer &resource_in,
 		const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
 	);
 	PancystarEngine::EngineFailReason BuildRTV(
-		const pancy_object_id &self_offset, 
-		const VirtualMemoryPointer &resource_in, 
+		const pancy_object_id &self_offset,
+		const SubMemoryPointer &resource_in,
 		const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
 	);
 };
@@ -366,24 +370,24 @@ public:
 	PancystarEngine::EngineFailReason BuildSRV(
 		const pancy_object_id &descriptor_block_id, 
 		const pancy_object_id &self_offset,
-		const VirtualMemoryPointer &resource_in,
+		const SubMemoryPointer &resource_in,
 		const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
 	);
 	PancystarEngine::EngineFailReason BuildCBV(
 		const pancy_object_id &descriptor_block_id, 
 		const pancy_object_id &self_offset, 
-		const D3D12_CONSTANT_BUFFER_VIEW_DESC  &CBV_desc
+		const SubMemoryPointer &resource_in
 	);
 	PancystarEngine::EngineFailReason BuildUAV(
 		const pancy_object_id &descriptor_block_id, 
 		const pancy_object_id &self_offset, 
-		const VirtualMemoryPointer &resource_in, 
+		const SubMemoryPointer &resource_in,
 		const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
 	);
 	PancystarEngine::EngineFailReason BuildRTV(
 		const pancy_object_id &descriptor_block_id, 
 		const pancy_object_id &self_offset, 
-		const VirtualMemoryPointer &resource_in, 
+		const SubMemoryPointer &resource_in,
 		const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
 	);
 private:
@@ -416,22 +420,22 @@ public:
 	);
 	//创建资源视图
 	PancystarEngine::EngineFailReason BuildSRV(
-		ResourceViewPointer RSV_point,
-		const VirtualMemoryPointer &resource_in,
+		const ResourceViewPointer &RSV_point,
+		const SubMemoryPointer &resource_in,
 		const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
 	);
 	PancystarEngine::EngineFailReason BuildCBV(
-		ResourceViewPointer RSV_point,
-		const D3D12_CONSTANT_BUFFER_VIEW_DESC  &CBV_desc
+		const ResourceViewPointer &RSV_point,
+		const SubMemoryPointer &resource_in
 	);
 	PancystarEngine::EngineFailReason BuildUAV(
-		ResourceViewPointer RSV_point,
-		const VirtualMemoryPointer &resource_in, 
+		const ResourceViewPointer &RSV_point,
+		const SubMemoryPointer &resource_in,
 		const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
 	);
 	PancystarEngine::EngineFailReason BuildRTV(
-		ResourceViewPointer RSV_point,
-		const VirtualMemoryPointer &resource_in, 
+		const ResourceViewPointer &RSV_point,
+		const SubMemoryPointer &resource_in,
 		const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
 	);
 	~PancyDescriptorHeapControl();

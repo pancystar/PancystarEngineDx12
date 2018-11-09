@@ -535,6 +535,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 					return check_error;
 				}
 			}
+			//todo:¿½±´ÎÆÀí
 		}
 		else
 		{
@@ -577,18 +578,20 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	desc.Dimension = resDim;
 	CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 
-	if (desc.Width == desc.Height && (desc.Width == 256 || desc.Width == 512 || desc.Width == 1024 || desc.Width == 2048 || desc.Width == 4096))
+	if (CheckIfPow2(desc.Width) && CheckIfPow2(desc.Height)) 
 	{
 		std::string heap_name = "json\\resource_heap\\tex_";
 		heap_name += std::to_string(desc.Width);
+		heap_name += "_";
+		heap_name += std::to_string(desc.Height);
 		//·ÇÑ¹ËõÎÆÀí
-		if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) 
+		if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB)
 		{
 			heap_name += "_4_singlemip";
 		}
-		else 
+		else
 		{
-			PancystarEngine::EngineFailReason error_message(E_INVALIDARG, " the format of texture: "+ resource_name +" not surport: " + std::to_string(desc.Format));
+			PancystarEngine::EngineFailReason error_message(E_INVALIDARG, " the format of texture: " + resource_name + " not surport: " + std::to_string(desc.Format));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
 			return error_message;
 		}
