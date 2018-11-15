@@ -547,6 +547,10 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 	
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWait()
+{
+
+}
 PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	const D3D12_RESOURCE_DIMENSION &resDim,
 	const size_t &width,
