@@ -48,6 +48,9 @@
     <ClInclude Include="PancyTextureDx12.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="PancyThreadBasic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -72,6 +75,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="PancyTextureDx12.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PancyThreadBasic.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

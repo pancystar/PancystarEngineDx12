@@ -1,5 +1,6 @@
 #pragma once
 #include"PancyResourceBasic.h"
+#include"PancyThreadBasic.h"
 #include<LoaderHelpers.h>
 #include<DDSTextureLoader.h>
 #include<WICTextureLoader.h>
@@ -57,7 +58,7 @@ namespace PancystarEngine
 			const D3D12_RESOURCE_FLAGS &resFlags,
 			const unsigned int &loadFlags
 		);
-		PancystarEngine::EngineFailReason UpdateTextureResourceAndWait();
+		PancystarEngine::EngineFailReason UpdateTextureResourceAndWait(const std::vector<D3D12_SUBRESOURCE_DATA> &subresources);
 		bool CheckIfJson(const std::string &path_name);
 		inline bool CheckIfPow2(int32_t input) 
 		{

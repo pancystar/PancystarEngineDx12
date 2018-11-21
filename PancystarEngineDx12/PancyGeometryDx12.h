@@ -2,6 +2,7 @@
 #include"PancystarEngineBasicDx12.h"
 #include"PancyDx12Basic.h"
 #include"PancyMemoryBasic.h"
+#include"PancyThreadBasic.h"
 namespace PancystarEngine
 {
 	//2D顶点格式
@@ -170,6 +171,12 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
+		//todo:对齐内存后通过heap来分配离散的buffer数据
+		/*
+		先将buffer大小与4M对齐以开辟堆内存，
+		再将buffer大小与256对齐以开辟subresource，
+		单独书写一个用于等待的函数，不做立即等待操作
+		*/
 		check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceCommit(
 			D3D12_HEAP_TYPE_UPLOAD,
 			D3D12_HEAP_FLAG_NONE,
@@ -318,7 +325,7 @@ namespace PancystarEngine
 		//获取临时的拷贝commandlist
 		PancyRenderCommandList *copy_render_list;
 		uint32_t copy_render_list_ID;
-		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetEmptyRenderlist(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, &copy_render_list, copy_render_list_ID);
+		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
 		all_vertex_need = all_model_vertex;
 		all_index_need = all_model_index;
 		const UINT VertexBufferSize = all_vertex_need * sizeof(T);
@@ -343,9 +350,11 @@ namespace PancystarEngine
 		}
 		//完成渲染队列并提交拷贝
 		copy_render_list->UnlockPrepare();
-		ThreadPoolGPUControl::GetInstance()->GetMainContex()->SubmitRenderlist(D3D12_COMMAND_LIST_TYPE_DIRECT,1, &copy_render_list_ID);
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &copy_render_list_ID);
 		//等待线程同步
-		ThreadPoolGPUControl::GetInstance()->GetMainContex()->WaitWorkRenderlist(copy_render_list_ID);
+		PancyFenceIdGPU broken_fence_direct;
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(broken_fence_direct);
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(broken_fence_direct);
 		//删除临时缓冲区
 		MemoryHeapGpuControl::GetInstance()->FreeResource(geometry_vertex_buffer_upload);
 		MemoryHeapGpuControl::GetInstance()->FreeResource(geometry_index_buffer_upload);

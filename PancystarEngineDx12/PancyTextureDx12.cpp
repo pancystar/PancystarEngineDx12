@@ -547,9 +547,16 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 	
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWait()
+PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWait(const std::vector<D3D12_SUBRESOURCE_DATA> &subresources)
 {
-
+	const D3D12_SUBRESOURCE_DATA *subres = &subresources[0];
+	UINT subres_size = static_cast<UINT>(subresources.size());
+	ComPtr<ID3D12Resource> tex_data_res = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(tex_data)->GetResource();
+	PancyRenderCommandList *copy_render_list;
+	uint32_t copy_render_list_ID;
+	//auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetEmptyRenderlist(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, &copy_render_list, copy_render_list_ID);
+	//auto update_thread = pancy;
+	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	const D3D12_RESOURCE_DIMENSION &resDim,

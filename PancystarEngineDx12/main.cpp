@@ -3,6 +3,7 @@
 #include"PancyGeometryDx12.h"
 #include"PancyShaderDx12.h"
 #include"PancyTextureDx12.h"
+#include"PancyThreadBasic.h"
 enum SwapChainBitDepth
 {
 	_8 = 0,
@@ -28,6 +29,8 @@ class PancyDx12Basic
 	//ÊÓ¿Ú
 	CD3DX12_VIEWPORT view_port;
 	CD3DX12_RECT view_rect;
+	//Ö¡µÈ´ýfenceºÅÂë
+	PancyFenceIdGPU broken_fence_id;
 public:
 	PancyDx12Basic()
 	{
@@ -53,10 +56,10 @@ void PancyDx12Basic::PopulateCommandList()
 {
 	PancystarEngine::EngineFailReason check_error;
 	
-	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->FreeAlloctor(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->FreeAlloctor();
 	PancyRenderCommandList *m_commandList;
 	auto pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetData();
-	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetEmptyRenderlist(pso_data,D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,&m_commandList, renderlist_ID);
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data,&m_commandList, renderlist_ID);
 	// Set necessary state.
 	auto rootsignature_data = PancyRootSignatureControl::GetInstance()->GetRootSignature("json\\root_signature\\test_root_signature.json")->GetRootSignature();
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
@@ -79,25 +82,7 @@ void PancyDx12Basic::PopulateCommandList()
 }
 void PancyDx12Basic::WaitForPreviousFrame()
 {
-	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
-	// This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
-	// sample illustrates how to use fences for efficient resource usage and to
-	// maximize GPU utilization.
-
-	// Signal and increment the fence value.
-	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->WaitWorkRenderlist(renderlist_ID);
-	/*
-	const UINT64 fence = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceValue();
-	
-	hr = PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->Signal(PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFence().Get(), fence);
-	PancyDx12DeviceBasic::GetInstance()->AddDirectQueueFenceValue();
-	// Wait until the previous frame is finished.
-	if (PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFence()->GetCompletedValue() < PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceValue())
-	{
-		hr = PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFence()->SetEventOnCompletion(fence, PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceEvent());
-		WaitForSingleObject(PancyDx12DeviceBasic::GetInstance()->GetDirectQueueFenceEvent(), INFINITE);
-	}
-	*/
+	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(broken_fence_id);
 	now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetCurrentBackBufferIndex();
 }
 
@@ -107,7 +92,10 @@ void PancyDx12Basic::Render()
 	// Record all the commands we need to render the scene into the command list.
 	PopulateCommandList();
 
-	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->SubmitRenderlist(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,1,&renderlist_ID);
+	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1,&renderlist_ID);
+	
+	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(broken_fence_id);
+	
 	// Execute the command list.
 	//ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 	//PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);

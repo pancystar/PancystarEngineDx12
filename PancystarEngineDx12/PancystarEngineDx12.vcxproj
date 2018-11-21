@@ -160,6 +160,7 @@
     <ClInclude Include="PancyTextureDx12.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="PancyThreadBasic.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -172,6 +173,7 @@
     <ClCompile Include="PancyTextureDx12.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="PancyThreadBasic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\testcolor.hlsl">
