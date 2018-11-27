@@ -35,7 +35,11 @@ namespace PancystarEngine
 		bool                             if_force_srgb; //是否强制转换为线性空间纹理
 		int                              max_size;      //纹理最大大小
 		D3D12_RESOURCE_DESC              texture_desc;  //纹理格式
-		VirtualMemoryPointer             tex_data;      //纹理数据指针
+		//VirtualMemoryPointer             tex_data;      //纹理数据指针
+		//todo：纹理拷贝
+		bool                             if_copy_finish;   //纹理上传gpu是否完成
+		SubMemoryPointer                 tex_data;        //纹理数据指针
+		SubMemoryPointer                 update_tex_data;      //纹理上传数据指针
 	public:
 		PancyBasicTexture(
 			std::string desc_file_in,

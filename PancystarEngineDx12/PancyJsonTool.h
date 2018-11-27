@@ -33,6 +33,7 @@ class PancyJsonTool
 	ifstream FileOpen;
 	ofstream FileWrite;
 	std::unordered_map<std::string, int32_t> globel_variables;
+	std::unordered_map<std::string, std::unordered_map<int32_t, std::string>> enum_name_list;
 	std::string name_value_type[7];
 	std::string name_shader_type[5];
 private:
@@ -49,7 +50,7 @@ public:
 	}
 	//¶ÁÈ¡jsonÊý¾Ý
 	PancystarEngine::EngineFailReason LoadJsonFile(const std::string &file_name, Json::Value &root_value);
-	PancystarEngine::EngineFailReason SetGlobelVraiable(const std::string &variable_name, const int32_t &variable_value);
+	PancystarEngine::EngineFailReason SetGlobelVraiable(const std::string &variable_name, const int32_t &variable_value,std::string enum_type);
 	PancystarEngine::EngineFailReason GetJsonData
 	(
 		const std::string &file_name,
@@ -96,6 +97,7 @@ public:
 		const Json::Value &insert_value,
 		const std::string &Json_name
 	);
+	std::string GetEnumName(const std::string &enum_type, int32_t enum_num);
 private:
 	PancystarEngine::EngineFailReason GetJsonMemberData
 	(
@@ -106,5 +108,6 @@ private:
 		pancy_json_value &variable_value
 	);
 	int32_t GetGlobelVariable(const std::string &variable_name);
+	
 };
 

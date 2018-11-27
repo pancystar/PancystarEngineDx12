@@ -154,6 +154,38 @@ namespace PancystarEngine
 		void SaveLogToFile(std::string log_file_name);
 		void PrintLogToconsole();
 	};
+	//创建文件的重复查询
+	class FileBuildRepeatCheck
+	{
+		std::unordered_set<std::string> name_list;
+	private:
+		FileBuildRepeatCheck() {};
+	public:	
+		static FileBuildRepeatCheck* GetInstance()
+		{
+			static FileBuildRepeatCheck* this_instance;
+			if (this_instance == NULL)
+			{
+				this_instance = new FileBuildRepeatCheck();
+			}
+			return this_instance;
+		}
+		inline void AddFileName(std::string name) 
+		{
+			if (name_list.find(name) == name_list.end()) 
+			{
+				name_list.insert(name);
+			}
+		}
+		inline bool CheckIfCreated(std::string name)
+		{
+			if (name_list.find(name) == name_list.end())
+			{
+				return false;
+			}
+			return true;
+		}
+	};
 	static EngineFailReason succeed;
 }
 

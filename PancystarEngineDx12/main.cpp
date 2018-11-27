@@ -356,6 +356,16 @@ HRESULT engine_windows_main::game_create()
 	}
 	RECT new_info;
 	GetWindowRect(hwnd, &new_info);
+	//×¢²áµ¥Àý
+	PancyShaderControl::GetInstance();
+	PancyRootSignatureControl::GetInstance();
+	PancyEffectGraphic::GetInstance();
+	PancyJsonTool::GetInstance();
+	MemoryHeapGpuControl::GetInstance();
+	PancyDescriptorHeapControl::GetInstance();
+	MemoryHeapGpuControl::GetInstance();
+	SubresourceControl::GetInstance();
+	//´´½¨
 	PancystarEngine::EngineFailReason check_error;
 	check_error = PancyDx12DeviceBasic::SingleCreate(hwnd, window_width, window_height);
 	if (!check_error.CheckIfSucceed()) 

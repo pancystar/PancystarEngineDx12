@@ -49,7 +49,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::LoadJsonFile(const std::string 
 	FileOpen.close();
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(const std::string &variable_name, const int32_t &variable_value)
+PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(const std::string &variable_name, const int32_t &variable_value,std::string enum_type)
 {
 	auto check_if_have = globel_variables.find(variable_name);
 	if (check_if_have != globel_variables.end())
@@ -59,6 +59,15 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(const std::st
 		return PancystarEngine::succeed;
 	}
 	globel_variables.insert(std::pair<std::string, int32_t>(variable_name, variable_value));
+	
+	auto enum_list_type = enum_name_list.find(enum_type);
+	if (enum_list_type == enum_name_list.end())
+	{
+		std::unordered_map<int32_t, std::string> new_map;
+		enum_name_list.insert(std::pair<std::string, std::unordered_map<int32_t, std::string>>(enum_type, new_map));
+		enum_list_type = enum_name_list.find(enum_type);
+	}
+	enum_list_type->second.insert(std::pair<int32_t, std::string>(variable_value, variable_name));
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyJsonTool::GetJsonData
@@ -224,7 +233,20 @@ int32_t PancyJsonTool::GetGlobelVariable(const std::string &variable_name)
 		return -1;
 	}
 }
-
+std::string PancyJsonTool::GetEnumName(const std::string &enum_type, int32_t enum_num)
+{
+	auto enum_type_namepack = enum_name_list.find(enum_type);
+	if (enum_type_namepack == enum_name_list.end()) 
+	{
+		return "";
+	}
+	auto enum_value = enum_type_namepack->second.find(enum_num);
+	if (enum_value == enum_type_namepack->second.end()) 
+	{
+		return "";
+	}
+	return enum_value->second;
+}
 PancystarEngine::EngineFailReason PancyJsonTool::WriteValueToJson(
 	const Json::Value &insert_value,
 	const std::string &Json_name

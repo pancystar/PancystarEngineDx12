@@ -133,3 +133,5 @@ void EngineFailLog::PrintLogToconsole()
 	}
 	log_save_list.clear();
 }
+//文件加载判重
+static FileBuildRepeatCheck* this_instance = NULL;

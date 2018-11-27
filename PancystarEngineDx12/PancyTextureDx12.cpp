@@ -551,9 +551,21 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWai
 {
 	const D3D12_SUBRESOURCE_DATA *subres = &subresources[0];
 	UINT subres_size = static_cast<UINT>(subresources.size());
-	ComPtr<ID3D12Resource> tex_data_res = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(tex_data)->GetResource();
+	int64_t res_size;
+	ComPtr<ID3D12Resource> tex_data_res = SubresourceControl::GetInstance()->GetResourceData(tex_data, res_size)->GetResource();
 	PancyRenderCommandList *copy_render_list;
 	uint32_t copy_render_list_ID;
+
+	std::string bufferblock_file_name = "json\\resource_view\\Subtex_";
+	std::string heap_name = "json\\resource_heap\\tex_";
+	heap_name += std::to_string(desc.Width);
+	heap_name += "_";
+	heap_name += std::to_string(desc.Height);
+
+	bufferblock_file_name += std::to_string(desc.Width);
+	bufferblock_file_name += "_";
+	bufferblock_file_name += std::to_string(desc.Height);
+
 	//auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetEmptyRenderlist(NULL, D3D12_COMMAND_LIST_TYPE_DIRECT, &copy_render_list, copy_render_list_ID);
 	//auto update_thread = pancy;
 	return PancystarEngine::succeed;
@@ -588,33 +600,79 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	desc.SampleDesc.Quality = 0;
 	desc.Dimension = resDim;
 	CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+	//获取纹理名称
+	std::string bufferblock_file_name = "json\\resource_view\\Subtex_";
+	std::string heap_name = "json\\resource_heap\\tex_";
+	heap_name += std::to_string(desc.Width);
+	heap_name += "_";
+	heap_name += std::to_string(desc.Height);
 
-	if (CheckIfPow2(desc.Width) && CheckIfPow2(desc.Height)) 
+	bufferblock_file_name += std::to_string(desc.Width);
+	bufferblock_file_name += "_";
+	bufferblock_file_name += std::to_string(desc.Height);
+	//非压缩纹理
+	if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB)
 	{
-		std::string heap_name = "json\\resource_heap\\tex_";
-		heap_name += std::to_string(desc.Width);
-		heap_name += "_";
-		heap_name += std::to_string(desc.Height);
-		//非压缩纹理
-		if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB)
-		{
-			heap_name += "_4_singlemip";
-		}
-		else
-		{
-			PancystarEngine::EngineFailReason error_message(E_INVALIDARG, " the format of texture: " + resource_name + " not surport: " + std::to_string(desc.Format));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
-			return error_message;
-		}
-		heap_name += ".json";
-		//可以放入预存的显存堆的数据
-		check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceFromHeap(heap_name, CD3DX12_RESOURCE_DESC(desc), D3D12_RESOURCE_STATE_COPY_DEST, tex_data);
+		heap_name += "_4_singlemip";
+		bufferblock_file_name += "_4_singlemip";
 	}
 	else
 	{
-		//无法放入预存的显存堆的数据
-		check_error = MemoryHeapGpuControl::GetInstance()->BuildResourceCommit(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_NONE, CD3DX12_RESOURCE_DESC(desc), D3D12_RESOURCE_STATE_COPY_DEST, tex_data);
+		PancystarEngine::EngineFailReason error_message(E_INVALIDARG, " the format of texture: " + resource_name + " not surport: " + std::to_string(desc.Format));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+		return error_message;
 	}
+	heap_name += ".json";
+	bufferblock_file_name += ".json";
+	if (!FileBuildRepeatCheck::GetInstance()->CheckIfCreated(heap_name))
+	{
+		//更新格式文件
+		Json::Value json_data_out;
+		UINT texture_size = desc.Width * desc.Height * 4;
+		UINT resource_block_num = 16777216 / texture_size;
+		if (resource_block_num < 1)
+		{
+			resource_block_num = 1;
+		}
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "commit_block_num", resource_block_num);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "per_block_size", texture_size);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_type_in", "D3D12_HEAP_TYPE_DEFAULT");
+		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_out, "heap_flag_in", "D3D12_HEAP_FLAG_DENY_BUFFERS");
+		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_out, "heap_flag_in", "D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES");
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, heap_name);
+		//将文件标记为已经创建
+		FileBuildRepeatCheck::GetInstance()->AddFileName(heap_name);
+	}
+	if (!FileBuildRepeatCheck::GetInstance()->CheckIfCreated(bufferblock_file_name))
+	{
+		UINT texture_size = desc.Width * desc.Height * 4;
+		//更新格式文件
+		Json::Value json_data_resourceview;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "ResourceType", heap_name);
+		Json::Value json_data_res_desc;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Dimension", PancyJsonTool::GetInstance()->GetEnumName(typeid(desc.Dimension).name(), desc.Dimension));
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Alignment", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Width", desc.Width);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Height", desc.Height);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "DepthOrArraySize", desc.DepthOrArraySize);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "MipLevels", desc.MipLevels);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Format", PancyJsonTool::GetInstance()->GetEnumName(typeid(desc.Format).name(), desc.Format));
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Layout", PancyJsonTool::GetInstance()->GetEnumName(typeid(desc.Layout).name(), desc.Layout));
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Flags", PancyJsonTool::GetInstance()->GetEnumName(typeid(desc.Flags).name(), desc.Flags));
+		Json::Value json_data_sample_desc;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Count", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Quality", 0);
+		//递归回调
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "SampleDesc", json_data_sample_desc);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_DESC", json_data_res_desc);
+		//继续填充主干
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_STATES", "D3D12_RESOURCE_STATE_COPY_DEST");
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "per_block_size", texture_size);
+		//写入文件并标记为已创建
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_resourceview, bufferblock_file_name);
+		FileBuildRepeatCheck::GetInstance()->AddFileName(bufferblock_file_name);
+	}
+	check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(bufferblock_file_name, tex_data);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
