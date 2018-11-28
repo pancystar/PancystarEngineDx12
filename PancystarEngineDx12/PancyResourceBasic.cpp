@@ -48,7 +48,7 @@ PancyBasicResourceControl::~PancyBasicResourceControl()
 	resource_name_list.clear();
 	free_id_list.clear();
 }
-PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(const std::string &desc_file_in)
+PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(const std::string &desc_file_in, pancy_object_id &id_need)
 {
 	//资源加载判断重复
 	auto check_data = resource_name_list.find(desc_file_in);
@@ -84,6 +84,7 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(const 
 	resource_name_list.insert(std::pair<std::string, pancy_object_id>(desc_file_in, id_now));
 	//插入到资源列表
 	basic_resource_array.insert(std::pair<pancy_object_id, PancyBasicVirtualResource*>(id_now, new_data));
+	id_need = id_now;
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicResourceControl::AddResurceReference(const pancy_object_id &resource_id)

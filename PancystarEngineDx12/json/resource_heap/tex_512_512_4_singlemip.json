@@ -1,5 +1,5 @@
 {
-	"commit_block_num" : 16,
+	"commit_block_num" : 32,
 	"heap_flag_in" : 
 	[
 		"D3D12_HEAP_FLAG_DENY_BUFFERS",

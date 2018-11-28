@@ -37,7 +37,7 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason AddResurceReference(const pancy_object_id &resource_id);
 		PancystarEngine::EngineFailReason DeleteResurceReference(const pancy_object_id &resource_id);
 		PancyBasicVirtualResource* GetResource(const pancy_object_id &desc_file_name);
-		PancystarEngine::EngineFailReason LoadResource(const std::string &desc_file_in);
+		PancystarEngine::EngineFailReason LoadResource(const std::string &desc_file_in, pancy_object_id &id_need);
 	private:
 		virtual PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out) = 0;
 	};

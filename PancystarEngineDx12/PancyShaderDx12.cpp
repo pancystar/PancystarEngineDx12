@@ -153,7 +153,7 @@ PancyRootSignature::PancyRootSignature(const std::string &file_name)
 }
 PancystarEngine::EngineFailReason PancyRootSignature::Create(
 	const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,
-	const std::vector<std::string> &descriptor_heap_id_in
+	const std::vector<DescriptorTableDesc> &descriptor_heap_id_in
 )
 {
 	for (int i = 0; i < descriptor_heap_id_in.size(); ++i)
@@ -179,7 +179,7 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create(
 	}
 	return PancystarEngine::succeed;
 }
-void PancyRootSignature::GetDescriptorHeapUse(std::vector<std::string> &descriptor_heap_id_in)
+void PancyRootSignature::GetDescriptorHeapUse(std::vector<DescriptorTableDesc> &descriptor_heap_id_in)
 {
 	for (auto data_copy = descriptor_heap_id.begin(); data_copy != descriptor_heap_id.end(); ++data_copy)
 	{
@@ -197,102 +197,102 @@ PancyRootSignatureControl::PancyRootSignatureControl()
 void PancyRootSignatureControl::AddRootSignatureGlobelVariable()
 {
 	//descriptor range格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_TYPE_SRV", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_TYPE_SRV),typeid(D3D12_DESCRIPTOR_RANGE_TYPE_SRV).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_TYPE_UAV", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_TYPE_UAV),typeid(D3D12_DESCRIPTOR_RANGE_TYPE_UAV).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_TYPE_CBV", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_TYPE_CBV),typeid(D3D12_DESCRIPTOR_RANGE_TYPE_CBV).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER),typeid(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_TYPE_SRV", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_TYPE_SRV), typeid(D3D12_DESCRIPTOR_RANGE_TYPE_SRV).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_TYPE_UAV", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_TYPE_UAV), typeid(D3D12_DESCRIPTOR_RANGE_TYPE_UAV).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_TYPE_CBV", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_TYPE_CBV), typeid(D3D12_DESCRIPTOR_RANGE_TYPE_CBV).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER), typeid(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER).name());
 	//descriptor flag格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_NONE", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_NONE),typeid(D3D12_DESCRIPTOR_RANGE_FLAG_NONE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE),typeid(D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE),typeid(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE),typeid(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC),typeid(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_NONE", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_NONE), typeid(D3D12_DESCRIPTOR_RANGE_FLAG_NONE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE), typeid(D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE), typeid(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE), typeid(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC", static_cast<int32_t>(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC), typeid(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC).name());
 	//shader访问权限
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_ALL", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_ALL),typeid(D3D12_SHADER_VISIBILITY_ALL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_VERTEX", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_VERTEX),typeid(D3D12_SHADER_VISIBILITY_VERTEX).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_HULL", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_HULL),typeid(D3D12_SHADER_VISIBILITY_HULL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_DOMAIN", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_DOMAIN),typeid(D3D12_SHADER_VISIBILITY_DOMAIN).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_GEOMETRY", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_GEOMETRY),typeid(D3D12_SHADER_VISIBILITY_GEOMETRY).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_PIXEL", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_PIXEL),typeid(D3D12_SHADER_VISIBILITY_PIXEL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_ALL", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_ALL), typeid(D3D12_SHADER_VISIBILITY_ALL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_VERTEX", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_VERTEX), typeid(D3D12_SHADER_VISIBILITY_VERTEX).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_HULL", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_HULL), typeid(D3D12_SHADER_VISIBILITY_HULL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_DOMAIN", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_DOMAIN), typeid(D3D12_SHADER_VISIBILITY_DOMAIN).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_GEOMETRY", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_GEOMETRY), typeid(D3D12_SHADER_VISIBILITY_GEOMETRY).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_SHADER_VISIBILITY_PIXEL", static_cast<int32_t>(D3D12_SHADER_VISIBILITY_PIXEL), typeid(D3D12_SHADER_VISIBILITY_PIXEL).name());
 	//采样格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MIN_MAG_MIP_POINT),typeid(D3D12_FILTER_MIN_MAG_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR),typeid(D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT),typeid(D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR),typeid(D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT),typeid(D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR),typeid(D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT),typeid(D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MIN_MAG_MIP_LINEAR),typeid(D3D12_FILTER_MIN_MAG_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_ANISOTROPIC", static_cast<int32_t>(D3D12_FILTER_ANISOTROPIC),typeid(D3D12_FILTER_ANISOTROPIC).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT),typeid(D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR),typeid(D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT),typeid(D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR),typeid(D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT),typeid(D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR),typeid(D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT),typeid(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR),typeid(D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_ANISOTROPIC", static_cast<int32_t>(D3D12_FILTER_COMPARISON_ANISOTROPIC),typeid(D3D12_FILTER_COMPARISON_ANISOTROPIC).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT),typeid(D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR),typeid(D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT),typeid(D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR),typeid(D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT),typeid(D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR),typeid(D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT),typeid(D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR),typeid(D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_ANISOTROPIC", static_cast<int32_t>(D3D12_FILTER_MINIMUM_ANISOTROPIC),typeid(D3D12_FILTER_MINIMUM_ANISOTROPIC).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT),typeid(D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR),typeid(D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT),typeid(D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR),typeid(D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT),typeid(D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR),typeid(D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT),typeid(D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR),typeid(D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_ANISOTROPIC", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_ANISOTROPIC),typeid(D3D12_FILTER_MAXIMUM_ANISOTROPIC).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MIN_MAG_MIP_POINT), typeid(D3D12_FILTER_MIN_MAG_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR), typeid(D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT), typeid(D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR), typeid(D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT), typeid(D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR), typeid(D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT), typeid(D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MIN_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MIN_MAG_MIP_LINEAR), typeid(D3D12_FILTER_MIN_MAG_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_ANISOTROPIC", static_cast<int32_t>(D3D12_FILTER_ANISOTROPIC), typeid(D3D12_FILTER_ANISOTROPIC).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT), typeid(D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR), typeid(D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT), typeid(D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR), typeid(D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT), typeid(D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR), typeid(D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT), typeid(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR), typeid(D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_COMPARISON_ANISOTROPIC", static_cast<int32_t>(D3D12_FILTER_COMPARISON_ANISOTROPIC), typeid(D3D12_FILTER_COMPARISON_ANISOTROPIC).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT), typeid(D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR), typeid(D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT), typeid(D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR), typeid(D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT), typeid(D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR), typeid(D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT), typeid(D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR), typeid(D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MINIMUM_ANISOTROPIC", static_cast<int32_t>(D3D12_FILTER_MINIMUM_ANISOTROPIC), typeid(D3D12_FILTER_MINIMUM_ANISOTROPIC).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT), typeid(D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR), typeid(D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT), typeid(D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR), typeid(D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT), typeid(D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR), typeid(D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT), typeid(D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR), typeid(D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILTER_MAXIMUM_ANISOTROPIC", static_cast<int32_t>(D3D12_FILTER_MAXIMUM_ANISOTROPIC), typeid(D3D12_FILTER_MAXIMUM_ANISOTROPIC).name());
 	//寻址格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_WRAP", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_WRAP),typeid(D3D12_TEXTURE_ADDRESS_MODE_WRAP).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_MIRROR", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_MIRROR),typeid(D3D12_TEXTURE_ADDRESS_MODE_MIRROR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_CLAMP", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_CLAMP),typeid(D3D12_TEXTURE_ADDRESS_MODE_CLAMP).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_BORDER", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_BORDER),typeid(D3D12_TEXTURE_ADDRESS_MODE_BORDER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE),typeid(D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_WRAP", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_WRAP), typeid(D3D12_TEXTURE_ADDRESS_MODE_WRAP).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_MIRROR", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_MIRROR), typeid(D3D12_TEXTURE_ADDRESS_MODE_MIRROR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_CLAMP", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_CLAMP), typeid(D3D12_TEXTURE_ADDRESS_MODE_CLAMP).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_BORDER", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_BORDER), typeid(D3D12_TEXTURE_ADDRESS_MODE_BORDER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE", static_cast<int32_t>(D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE), typeid(D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE).name());
 	//比较函数格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_NEVER", static_cast<int32_t>(D3D12_COMPARISON_FUNC_NEVER),typeid(D3D12_COMPARISON_FUNC_NEVER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_LESS", static_cast<int32_t>(D3D12_COMPARISON_FUNC_LESS),typeid(D3D12_COMPARISON_FUNC_LESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_EQUAL),typeid(D3D12_COMPARISON_FUNC_EQUAL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_LESS_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_LESS_EQUAL),typeid(D3D12_COMPARISON_FUNC_LESS_EQUAL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_GREATER", static_cast<int32_t>(D3D12_COMPARISON_FUNC_GREATER),typeid(D3D12_COMPARISON_FUNC_GREATER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_NOT_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_NOT_EQUAL),typeid(D3D12_COMPARISON_FUNC_NOT_EQUAL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_GREATER_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_GREATER_EQUAL),typeid(D3D12_COMPARISON_FUNC_GREATER_EQUAL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_ALWAYS", static_cast<int32_t>(D3D12_COMPARISON_FUNC_ALWAYS),typeid(D3D12_COMPARISON_FUNC_ALWAYS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_NEVER", static_cast<int32_t>(D3D12_COMPARISON_FUNC_NEVER), typeid(D3D12_COMPARISON_FUNC_NEVER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_LESS", static_cast<int32_t>(D3D12_COMPARISON_FUNC_LESS), typeid(D3D12_COMPARISON_FUNC_LESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_EQUAL), typeid(D3D12_COMPARISON_FUNC_EQUAL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_LESS_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_LESS_EQUAL), typeid(D3D12_COMPARISON_FUNC_LESS_EQUAL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_GREATER", static_cast<int32_t>(D3D12_COMPARISON_FUNC_GREATER), typeid(D3D12_COMPARISON_FUNC_GREATER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_NOT_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_NOT_EQUAL), typeid(D3D12_COMPARISON_FUNC_NOT_EQUAL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_GREATER_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_GREATER_EQUAL), typeid(D3D12_COMPARISON_FUNC_GREATER_EQUAL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_ALWAYS", static_cast<int32_t>(D3D12_COMPARISON_FUNC_ALWAYS), typeid(D3D12_COMPARISON_FUNC_ALWAYS).name());
 	//超出边界的采样颜色
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK", static_cast<int32_t>(D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK),typeid(D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK", static_cast<int32_t>(D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),typeid(D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE", static_cast<int32_t>(D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE),typeid(D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK", static_cast<int32_t>(D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK), typeid(D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK", static_cast<int32_t>(D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK), typeid(D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE", static_cast<int32_t>(D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE), typeid(D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE).name());
 	//root signature的访问权限
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_NONE", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_NONE),typeid(D3D12_ROOT_SIGNATURE_FLAG_NONE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT),typeid(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS),typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS),typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS),typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS),typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS),typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT),typeid(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_NONE", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_NONE), typeid(D3D12_ROOT_SIGNATURE_FLAG_NONE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), typeid(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS), typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS), typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS), typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS), typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS), typeid(D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT", static_cast<int32_t>(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT), typeid(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT).name());
 }
 std::string PancyRootSignatureControl::GetJsonFileRealName(const std::string &file_name_in)
 {
 	std::string new_str;
 	int st = 0;
 	int length = -4;
-	for (int i = file_name_in.size() - 2; i >= 0; --i) 
+	for (int i = file_name_in.size() - 2; i >= 0; --i)
 	{
-		if (file_name_in[i-1] == '\\') 
+		if (file_name_in[i - 1] == '\\')
 		{
 			st = i;
 			break;
 		}
-		else 
+		else
 		{
 			length += 1;
 		}
@@ -302,7 +302,7 @@ std::string PancyRootSignatureControl::GetJsonFileRealName(const std::string &fi
 PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDesc(
 	const std::string &file_name,
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &desc_out,
-	std::vector<std::string> &descriptor_heap_id
+	std::vector<DescriptorTableDesc> &descriptor_heap_id
 )
 {
 	Json::Value jsonRoot;
@@ -335,6 +335,8 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDesc(
 		ranges = new CD3DX12_DESCRIPTOR_RANGE1[num_parameter];
 		rootParameters = new CD3DX12_ROOT_PARAMETER1[num_parameter];
 	}
+	int32_t all_descriptor_num = 0;
+	DescriptorTableDesc new_desc;
 	for (int i = 0; i < num_parameter; ++i)
 	{
 		pancy_json_value data_param_value[7];
@@ -386,20 +388,22 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDesc(
 		D3D12_SHADER_VISIBILITY shader_visibility_type = static_cast<D3D12_SHADER_VISIBILITY>(data_param_value[6].int_value);
 		//注册rootsignature格式
 		rootParameters[i].InitAsDescriptorTable(descriptor_range_num, &ranges[i], shader_visibility_type);
-		//根据当前格式创建描述符堆
-
-		std::string json_name = "json\\descriptor_heap\\" + GetJsonFileRealName(file_name) + "_heap" + std::to_string(i)+".json";
-		Json::Value json_data_out;
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_block_size", descriptor_num);
-		Json::Value json_data_desc;
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "NumDescriptors", max_descriptor_num * descriptor_num);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "Type", "D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV");
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "Flags", "D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE");
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "NodeMask", 0);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "D3D12_DESCRIPTOR_HEAP_DESC", json_data_desc);
-		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, json_name);
-		descriptor_heap_id.push_back(json_name);
+		new_desc.table_offset.push_back(all_descriptor_num);
+		all_descriptor_num += descriptor_num;
 	}
+	//根据当前格式创建描述符堆
+	std::string json_name = "json\\descriptor_heap\\" + GetJsonFileRealName(file_name) + "_descriptor_heap" + ".json";
+	Json::Value json_data_out;
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_block_size", all_descriptor_num);
+	Json::Value json_data_desc;
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "NumDescriptors", max_descriptor_num * all_descriptor_num);
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "Type", "D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV");
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "Flags", "D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE");
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_desc, "NodeMask", 0);
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "D3D12_DESCRIPTOR_HEAP_DESC", json_data_desc);
+	PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, json_name);
+	new_desc.descriptor_heap_name = json_name;
+	descriptor_heap_id.push_back(new_desc);
 
 	int num_static_sampler;
 	//获取每个静态采样器
@@ -510,7 +514,7 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::BuildRootSignature(
 		return error_message;
 	}
 	//创建RootSignature
-	std::vector<std::string> descriotor_heap_id;
+	std::vector<DescriptorTableDesc> descriotor_heap_id;
 	PancyRootSignature *data_root_signature = new PancyRootSignature(rootsig_config_file);
 	check_error = GetDesc(rootsig_config_file, root_signature_desc, descriotor_heap_id);
 	if (!check_error.CheckIfSucceed())
@@ -558,10 +562,10 @@ PancyRootSignatureControl::~PancyRootSignatureControl()
 	root_signature_array.clear();
 }
 //pipline state object graph
-void PancyPiplineStateObjectGraph::GetDescriptorHeapUse(std::vector<std::string> &descriptor_heap_id) 
+void PancyPiplineStateObjectGraph::GetDescriptorHeapUse(std::vector<DescriptorTableDesc> &descriptor_heap_id)
 {
 	auto rootsig = PancyRootSignatureControl::GetInstance()->GetRootSignature(root_signature_name.GetAsciiString());
-	if (rootsig != NULL) 
+	if (rootsig != NULL)
 	{
 		rootsig->GetDescriptorHeapUse(descriptor_heap_id);
 	}
@@ -653,207 +657,207 @@ PancyEffectGraphic::PancyEffectGraphic()
 void PancyEffectGraphic::AddPSOGlobelVariable()
 {
 	//几何体填充格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILL_MODE_WIREFRAME", static_cast<int32_t>(D3D12_FILL_MODE_WIREFRAME),typeid(D3D12_FILL_MODE_WIREFRAME).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILL_MODE_SOLID", static_cast<int32_t>(D3D12_FILL_MODE_SOLID),typeid(D3D12_FILL_MODE_SOLID).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILL_MODE_WIREFRAME", static_cast<int32_t>(D3D12_FILL_MODE_WIREFRAME), typeid(D3D12_FILL_MODE_WIREFRAME).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_FILL_MODE_SOLID", static_cast<int32_t>(D3D12_FILL_MODE_SOLID), typeid(D3D12_FILL_MODE_SOLID).name());
 	//几何体消隐格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_CULL_MODE_NONE", static_cast<int32_t>(D3D12_CULL_MODE_NONE),typeid(D3D12_CULL_MODE_NONE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_CULL_MODE_FRONT", static_cast<int32_t>(D3D12_CULL_MODE_FRONT),typeid(D3D12_CULL_MODE_FRONT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_CULL_MODE_BACK", static_cast<int32_t>(D3D12_CULL_MODE_BACK),typeid(D3D12_CULL_MODE_BACK).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_CULL_MODE_NONE", static_cast<int32_t>(D3D12_CULL_MODE_NONE), typeid(D3D12_CULL_MODE_NONE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_CULL_MODE_FRONT", static_cast<int32_t>(D3D12_CULL_MODE_FRONT), typeid(D3D12_CULL_MODE_FRONT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_CULL_MODE_BACK", static_cast<int32_t>(D3D12_CULL_MODE_BACK), typeid(D3D12_CULL_MODE_BACK).name());
 	//alpha混合系数
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_ZERO", static_cast<int32_t>(D3D12_BLEND_ZERO),typeid(D3D12_BLEND_ZERO).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_ONE", static_cast<int32_t>(D3D12_BLEND_ONE),typeid(D3D12_BLEND_ONE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC_COLOR", static_cast<int32_t>(D3D12_BLEND_SRC_COLOR),typeid(D3D12_BLEND_SRC_COLOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_SRC_COLOR", static_cast<int32_t>(D3D12_BLEND_INV_SRC_COLOR),typeid(D3D12_BLEND_INV_SRC_COLOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC_ALPHA", static_cast<int32_t>(D3D12_BLEND_SRC_ALPHA),typeid(D3D12_BLEND_SRC_ALPHA).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_SRC_ALPHA", static_cast<int32_t>(D3D12_BLEND_INV_SRC_ALPHA),typeid(D3D12_BLEND_INV_SRC_ALPHA).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_DEST_ALPHA", static_cast<int32_t>(D3D12_BLEND_DEST_ALPHA),typeid(D3D12_BLEND_DEST_ALPHA).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_DEST_ALPHA", static_cast<int32_t>(D3D12_BLEND_INV_DEST_ALPHA),typeid(D3D12_BLEND_INV_DEST_ALPHA).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_DEST_COLOR", static_cast<int32_t>(D3D12_BLEND_DEST_COLOR),typeid(D3D12_BLEND_DEST_COLOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_DEST_COLOR", static_cast<int32_t>(D3D12_BLEND_INV_DEST_COLOR),typeid(D3D12_BLEND_INV_DEST_COLOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC_ALPHA_SAT", static_cast<int32_t>(D3D12_BLEND_SRC_ALPHA_SAT),typeid(D3D12_BLEND_SRC_ALPHA_SAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_BLEND_FACTOR", static_cast<int32_t>(D3D12_BLEND_BLEND_FACTOR),typeid(D3D12_BLEND_BLEND_FACTOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_BLEND_FACTOR", static_cast<int32_t>(D3D12_BLEND_INV_BLEND_FACTOR),typeid(D3D12_BLEND_INV_BLEND_FACTOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC1_COLOR", static_cast<int32_t>(D3D12_BLEND_SRC1_COLOR),typeid(D3D12_BLEND_SRC1_COLOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_SRC1_COLOR", static_cast<int32_t>(D3D12_BLEND_INV_SRC1_COLOR),typeid(D3D12_BLEND_INV_SRC1_COLOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC1_ALPHA", static_cast<int32_t>(D3D12_BLEND_SRC1_ALPHA),typeid(D3D12_BLEND_SRC1_ALPHA).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_SRC1_ALPHA", static_cast<int32_t>(D3D12_BLEND_INV_SRC1_ALPHA),typeid(D3D12_BLEND_INV_SRC1_ALPHA).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_ZERO", static_cast<int32_t>(D3D12_BLEND_ZERO), typeid(D3D12_BLEND_ZERO).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_ONE", static_cast<int32_t>(D3D12_BLEND_ONE), typeid(D3D12_BLEND_ONE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC_COLOR", static_cast<int32_t>(D3D12_BLEND_SRC_COLOR), typeid(D3D12_BLEND_SRC_COLOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_SRC_COLOR", static_cast<int32_t>(D3D12_BLEND_INV_SRC_COLOR), typeid(D3D12_BLEND_INV_SRC_COLOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC_ALPHA", static_cast<int32_t>(D3D12_BLEND_SRC_ALPHA), typeid(D3D12_BLEND_SRC_ALPHA).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_SRC_ALPHA", static_cast<int32_t>(D3D12_BLEND_INV_SRC_ALPHA), typeid(D3D12_BLEND_INV_SRC_ALPHA).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_DEST_ALPHA", static_cast<int32_t>(D3D12_BLEND_DEST_ALPHA), typeid(D3D12_BLEND_DEST_ALPHA).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_DEST_ALPHA", static_cast<int32_t>(D3D12_BLEND_INV_DEST_ALPHA), typeid(D3D12_BLEND_INV_DEST_ALPHA).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_DEST_COLOR", static_cast<int32_t>(D3D12_BLEND_DEST_COLOR), typeid(D3D12_BLEND_DEST_COLOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_DEST_COLOR", static_cast<int32_t>(D3D12_BLEND_INV_DEST_COLOR), typeid(D3D12_BLEND_INV_DEST_COLOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC_ALPHA_SAT", static_cast<int32_t>(D3D12_BLEND_SRC_ALPHA_SAT), typeid(D3D12_BLEND_SRC_ALPHA_SAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_BLEND_FACTOR", static_cast<int32_t>(D3D12_BLEND_BLEND_FACTOR), typeid(D3D12_BLEND_BLEND_FACTOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_BLEND_FACTOR", static_cast<int32_t>(D3D12_BLEND_INV_BLEND_FACTOR), typeid(D3D12_BLEND_INV_BLEND_FACTOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC1_COLOR", static_cast<int32_t>(D3D12_BLEND_SRC1_COLOR), typeid(D3D12_BLEND_SRC1_COLOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_SRC1_COLOR", static_cast<int32_t>(D3D12_BLEND_INV_SRC1_COLOR), typeid(D3D12_BLEND_INV_SRC1_COLOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_SRC1_ALPHA", static_cast<int32_t>(D3D12_BLEND_SRC1_ALPHA), typeid(D3D12_BLEND_SRC1_ALPHA).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_INV_SRC1_ALPHA", static_cast<int32_t>(D3D12_BLEND_INV_SRC1_ALPHA), typeid(D3D12_BLEND_INV_SRC1_ALPHA).name());
 	//alpha混合操作
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_ADD", static_cast<int32_t>(D3D12_BLEND_OP_ADD),typeid(D3D12_BLEND_OP_ADD).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_SUBTRACT", static_cast<int32_t>(D3D12_BLEND_OP_SUBTRACT),typeid(D3D12_BLEND_OP_SUBTRACT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_REV_SUBTRACT", static_cast<int32_t>(D3D12_BLEND_OP_REV_SUBTRACT),typeid(D3D12_BLEND_OP_REV_SUBTRACT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_MIN", static_cast<int32_t>(D3D12_BLEND_OP_MIN),typeid(D3D12_BLEND_OP_MIN).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_MAX", static_cast<int32_t>(D3D12_BLEND_OP_MAX),typeid(D3D12_BLEND_OP_MAX).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_ADD", static_cast<int32_t>(D3D12_BLEND_OP_ADD), typeid(D3D12_BLEND_OP_ADD).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_SUBTRACT", static_cast<int32_t>(D3D12_BLEND_OP_SUBTRACT), typeid(D3D12_BLEND_OP_SUBTRACT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_REV_SUBTRACT", static_cast<int32_t>(D3D12_BLEND_OP_REV_SUBTRACT), typeid(D3D12_BLEND_OP_REV_SUBTRACT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_MIN", static_cast<int32_t>(D3D12_BLEND_OP_MIN), typeid(D3D12_BLEND_OP_MIN).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_BLEND_OP_MAX", static_cast<int32_t>(D3D12_BLEND_OP_MAX), typeid(D3D12_BLEND_OP_MAX).name());
 	//alpha混合logic操作
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_CLEAR", static_cast<int32_t>(D3D12_LOGIC_OP_CLEAR),typeid(D3D12_LOGIC_OP_CLEAR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_SET", static_cast<int32_t>(D3D12_LOGIC_OP_SET),typeid(D3D12_LOGIC_OP_SET).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_COPY", static_cast<int32_t>(D3D12_LOGIC_OP_COPY),typeid(D3D12_LOGIC_OP_COPY).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_COPY_INVERTED", static_cast<int32_t>(D3D12_LOGIC_OP_COPY_INVERTED),typeid(D3D12_LOGIC_OP_COPY_INVERTED).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_NOOP", static_cast<int32_t>(D3D12_LOGIC_OP_NOOP),typeid(D3D12_LOGIC_OP_NOOP).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_INVERT", static_cast<int32_t>(D3D12_LOGIC_OP_INVERT),typeid(D3D12_LOGIC_OP_INVERT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_AND", static_cast<int32_t>(D3D12_LOGIC_OP_AND),typeid(D3D12_LOGIC_OP_AND).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_NAND", static_cast<int32_t>(D3D12_LOGIC_OP_NAND),typeid(D3D12_LOGIC_OP_NAND).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_OR", static_cast<int32_t>(D3D12_LOGIC_OP_OR),typeid(D3D12_LOGIC_OP_OR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_NOR", static_cast<int32_t>(D3D12_LOGIC_OP_NOR),typeid(D3D12_LOGIC_OP_NOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_XOR", static_cast<int32_t>(D3D12_LOGIC_OP_XOR),typeid(D3D12_LOGIC_OP_XOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_EQUIV", static_cast<int32_t>(D3D12_LOGIC_OP_EQUIV),typeid(D3D12_LOGIC_OP_EQUIV).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_AND_REVERSE", static_cast<int32_t>(D3D12_LOGIC_OP_AND_REVERSE),typeid(D3D12_LOGIC_OP_AND_REVERSE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_AND_INVERTED", static_cast<int32_t>(D3D12_LOGIC_OP_AND_INVERTED),typeid(D3D12_LOGIC_OP_AND_INVERTED).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_OR_REVERSE", static_cast<int32_t>(D3D12_LOGIC_OP_OR_REVERSE),typeid(D3D12_LOGIC_OP_OR_REVERSE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_OR_INVERTED", static_cast<int32_t>(D3D12_LOGIC_OP_OR_INVERTED),typeid(D3D12_LOGIC_OP_OR_INVERTED).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_CLEAR", static_cast<int32_t>(D3D12_LOGIC_OP_CLEAR), typeid(D3D12_LOGIC_OP_CLEAR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_SET", static_cast<int32_t>(D3D12_LOGIC_OP_SET), typeid(D3D12_LOGIC_OP_SET).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_COPY", static_cast<int32_t>(D3D12_LOGIC_OP_COPY), typeid(D3D12_LOGIC_OP_COPY).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_COPY_INVERTED", static_cast<int32_t>(D3D12_LOGIC_OP_COPY_INVERTED), typeid(D3D12_LOGIC_OP_COPY_INVERTED).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_NOOP", static_cast<int32_t>(D3D12_LOGIC_OP_NOOP), typeid(D3D12_LOGIC_OP_NOOP).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_INVERT", static_cast<int32_t>(D3D12_LOGIC_OP_INVERT), typeid(D3D12_LOGIC_OP_INVERT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_AND", static_cast<int32_t>(D3D12_LOGIC_OP_AND), typeid(D3D12_LOGIC_OP_AND).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_NAND", static_cast<int32_t>(D3D12_LOGIC_OP_NAND), typeid(D3D12_LOGIC_OP_NAND).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_OR", static_cast<int32_t>(D3D12_LOGIC_OP_OR), typeid(D3D12_LOGIC_OP_OR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_NOR", static_cast<int32_t>(D3D12_LOGIC_OP_NOR), typeid(D3D12_LOGIC_OP_NOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_XOR", static_cast<int32_t>(D3D12_LOGIC_OP_XOR), typeid(D3D12_LOGIC_OP_XOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_EQUIV", static_cast<int32_t>(D3D12_LOGIC_OP_EQUIV), typeid(D3D12_LOGIC_OP_EQUIV).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_AND_REVERSE", static_cast<int32_t>(D3D12_LOGIC_OP_AND_REVERSE), typeid(D3D12_LOGIC_OP_AND_REVERSE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_AND_INVERTED", static_cast<int32_t>(D3D12_LOGIC_OP_AND_INVERTED), typeid(D3D12_LOGIC_OP_AND_INVERTED).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_OR_REVERSE", static_cast<int32_t>(D3D12_LOGIC_OP_OR_REVERSE), typeid(D3D12_LOGIC_OP_OR_REVERSE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_LOGIC_OP_OR_INVERTED", static_cast<int32_t>(D3D12_LOGIC_OP_OR_INVERTED), typeid(D3D12_LOGIC_OP_OR_INVERTED).name());
 	//alpha混合目标掩码
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_RED", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_RED),typeid(D3D12_COLOR_WRITE_ENABLE_RED).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_GREEN", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_GREEN),typeid(D3D12_COLOR_WRITE_ENABLE_GREEN).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_BLUE", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_BLUE),typeid(D3D12_COLOR_WRITE_ENABLE_BLUE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_ALPHA", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_ALPHA),typeid(D3D12_COLOR_WRITE_ENABLE_ALPHA).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_ALL", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_ALL),typeid(D3D12_COLOR_WRITE_ENABLE_ALL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_RED", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_RED), typeid(D3D12_COLOR_WRITE_ENABLE_RED).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_GREEN", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_GREEN), typeid(D3D12_COLOR_WRITE_ENABLE_GREEN).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_BLUE", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_BLUE), typeid(D3D12_COLOR_WRITE_ENABLE_BLUE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_ALPHA", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_ALPHA), typeid(D3D12_COLOR_WRITE_ENABLE_ALPHA).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COLOR_WRITE_ENABLE_ALL", static_cast<int32_t>(D3D12_COLOR_WRITE_ENABLE_ALL), typeid(D3D12_COLOR_WRITE_ENABLE_ALL).name());
 	//深度缓冲区写掩码
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DEPTH_WRITE_MASK_ZERO", static_cast<int32_t>(D3D12_DEPTH_WRITE_MASK_ZERO),typeid(D3D12_DEPTH_WRITE_MASK_ZERO).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DEPTH_WRITE_MASK_ALL", static_cast<int32_t>(D3D12_DEPTH_WRITE_MASK_ALL),typeid(D3D12_DEPTH_WRITE_MASK_ALL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DEPTH_WRITE_MASK_ZERO", static_cast<int32_t>(D3D12_DEPTH_WRITE_MASK_ZERO), typeid(D3D12_DEPTH_WRITE_MASK_ZERO).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DEPTH_WRITE_MASK_ALL", static_cast<int32_t>(D3D12_DEPTH_WRITE_MASK_ALL), typeid(D3D12_DEPTH_WRITE_MASK_ALL).name());
 	//深度缓冲区比较函数
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_NEVER", static_cast<int32_t>(D3D12_COMPARISON_FUNC_NEVER),typeid(D3D12_COMPARISON_FUNC_NEVER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_LESS", static_cast<int32_t>(D3D12_COMPARISON_FUNC_LESS),typeid(D3D12_COMPARISON_FUNC_LESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_EQUAL),typeid(D3D12_COMPARISON_FUNC_EQUAL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_LESS_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_LESS_EQUAL),typeid(D3D12_COMPARISON_FUNC_LESS_EQUAL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_GREATER", static_cast<int32_t>(D3D12_COMPARISON_FUNC_GREATER),typeid(D3D12_COMPARISON_FUNC_GREATER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_NOT_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_NOT_EQUAL),typeid(D3D12_COMPARISON_FUNC_NOT_EQUAL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_GREATER_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_GREATER_EQUAL),typeid(D3D12_COMPARISON_FUNC_GREATER_EQUAL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_ALWAYS", static_cast<int32_t>(D3D12_COMPARISON_FUNC_ALWAYS),typeid(D3D12_COMPARISON_FUNC_ALWAYS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_NEVER", static_cast<int32_t>(D3D12_COMPARISON_FUNC_NEVER), typeid(D3D12_COMPARISON_FUNC_NEVER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_LESS", static_cast<int32_t>(D3D12_COMPARISON_FUNC_LESS), typeid(D3D12_COMPARISON_FUNC_LESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_EQUAL), typeid(D3D12_COMPARISON_FUNC_EQUAL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_LESS_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_LESS_EQUAL), typeid(D3D12_COMPARISON_FUNC_LESS_EQUAL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_GREATER", static_cast<int32_t>(D3D12_COMPARISON_FUNC_GREATER), typeid(D3D12_COMPARISON_FUNC_GREATER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_NOT_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_NOT_EQUAL), typeid(D3D12_COMPARISON_FUNC_NOT_EQUAL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_GREATER_EQUAL", static_cast<int32_t>(D3D12_COMPARISON_FUNC_GREATER_EQUAL), typeid(D3D12_COMPARISON_FUNC_GREATER_EQUAL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_COMPARISON_FUNC_ALWAYS", static_cast<int32_t>(D3D12_COMPARISON_FUNC_ALWAYS), typeid(D3D12_COMPARISON_FUNC_ALWAYS).name());
 	//模板缓冲区操作
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_KEEP", static_cast<int32_t>(D3D12_STENCIL_OP_KEEP),typeid(D3D12_STENCIL_OP_KEEP).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_ZERO", static_cast<int32_t>(D3D12_STENCIL_OP_ZERO),typeid(D3D12_STENCIL_OP_ZERO).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_REPLACE", static_cast<int32_t>(D3D12_STENCIL_OP_REPLACE),typeid(D3D12_STENCIL_OP_REPLACE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_INCR_SAT", static_cast<int32_t>(D3D12_STENCIL_OP_INCR_SAT),typeid(D3D12_STENCIL_OP_INCR_SAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_DECR_SAT", static_cast<int32_t>(D3D12_STENCIL_OP_DECR_SAT),typeid(D3D12_STENCIL_OP_DECR_SAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_INVERT", static_cast<int32_t>(D3D12_STENCIL_OP_INVERT),typeid(D3D12_STENCIL_OP_INVERT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_INCR", static_cast<int32_t>(D3D12_STENCIL_OP_INCR),typeid(D3D12_STENCIL_OP_INCR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_DECR", static_cast<int32_t>(D3D12_STENCIL_OP_DECR),typeid(D3D12_STENCIL_OP_DECR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_KEEP", static_cast<int32_t>(D3D12_STENCIL_OP_KEEP), typeid(D3D12_STENCIL_OP_KEEP).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_ZERO", static_cast<int32_t>(D3D12_STENCIL_OP_ZERO), typeid(D3D12_STENCIL_OP_ZERO).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_REPLACE", static_cast<int32_t>(D3D12_STENCIL_OP_REPLACE), typeid(D3D12_STENCIL_OP_REPLACE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_INCR_SAT", static_cast<int32_t>(D3D12_STENCIL_OP_INCR_SAT), typeid(D3D12_STENCIL_OP_INCR_SAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_DECR_SAT", static_cast<int32_t>(D3D12_STENCIL_OP_DECR_SAT), typeid(D3D12_STENCIL_OP_DECR_SAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_INVERT", static_cast<int32_t>(D3D12_STENCIL_OP_INVERT), typeid(D3D12_STENCIL_OP_INVERT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_INCR", static_cast<int32_t>(D3D12_STENCIL_OP_INCR), typeid(D3D12_STENCIL_OP_INCR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_STENCIL_OP_DECR", static_cast<int32_t>(D3D12_STENCIL_OP_DECR), typeid(D3D12_STENCIL_OP_DECR).name());
 	//渲染图元格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED),typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT),typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE),typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE),typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH),typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED), typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT), typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE), typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE), typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH", static_cast<int32_t>(D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH), typeid(D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH).name());
 	//采样格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_UNKNOWN", static_cast<int32_t>(DXGI_FORMAT_UNKNOWN),typeid(DXGI_FORMAT_UNKNOWN).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_TYPELESS),typeid(DXGI_FORMAT_R32G32B32A32_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_FLOAT),typeid(DXGI_FORMAT_R32G32B32A32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_UINT),typeid(DXGI_FORMAT_R32G32B32A32_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_SINT),typeid(DXGI_FORMAT_R32G32B32A32_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_TYPELESS),typeid(DXGI_FORMAT_R32G32B32_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_FLOAT),typeid(DXGI_FORMAT_R32G32B32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_UINT),typeid(DXGI_FORMAT_R32G32B32_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_SINT),typeid(DXGI_FORMAT_R32G32B32_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_TYPELESS),typeid(DXGI_FORMAT_R16G16B16A16_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_FLOAT),typeid(DXGI_FORMAT_R16G16B16A16_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UNORM),typeid(DXGI_FORMAT_R16G16B16A16_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UINT),typeid(DXGI_FORMAT_R16G16B16A16_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SNORM),typeid(DXGI_FORMAT_R16G16B16A16_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SINT),typeid(DXGI_FORMAT_R16G16B16A16_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32_TYPELESS),typeid(DXGI_FORMAT_R32G32_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32_FLOAT),typeid(DXGI_FORMAT_R32G32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_UINT),typeid(DXGI_FORMAT_R32G32_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_SINT),typeid(DXGI_FORMAT_R32G32_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G8X24_TYPELESS),typeid(DXGI_FORMAT_R32G8X24_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT_S8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT_S8X24_UINT),typeid(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS),typeid(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X32_TYPELESS_G8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT),typeid(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_TYPELESS),typeid(DXGI_FORMAT_R10G10B10A2_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UNORM),typeid(DXGI_FORMAT_R10G10B10A2_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UINT", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UINT),typeid(DXGI_FORMAT_R10G10B10A2_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R11G11B10_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R11G11B10_FLOAT),typeid(DXGI_FORMAT_R11G11B10_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_TYPELESS),typeid(DXGI_FORMAT_R8G8B8A8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM),typeid(DXGI_FORMAT_R8G8B8A8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB),typeid(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UINT),typeid(DXGI_FORMAT_R8G8B8A8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SNORM),typeid(DXGI_FORMAT_R8G8B8A8_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SINT),typeid(DXGI_FORMAT_R8G8B8A8_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16_TYPELESS),typeid(DXGI_FORMAT_R16G16_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16_FLOAT),typeid(DXGI_FORMAT_R16G16_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_UNORM),typeid(DXGI_FORMAT_R16G16_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_UINT),typeid(DXGI_FORMAT_R16G16_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_SNORM),typeid(DXGI_FORMAT_R16G16_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_SINT),typeid(DXGI_FORMAT_R16G16_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_TYPELESS),typeid(DXGI_FORMAT_R32_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT),typeid(DXGI_FORMAT_D32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT),typeid(DXGI_FORMAT_R32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32_UINT),typeid(DXGI_FORMAT_R32_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32_SINT),typeid(DXGI_FORMAT_R32_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24G8_TYPELESS),typeid(DXGI_FORMAT_R24G8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D24_UNORM_S8_UINT", static_cast<int32_t>(DXGI_FORMAT_D24_UNORM_S8_UINT),typeid(DXGI_FORMAT_D24_UNORM_S8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24_UNORM_X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24_UNORM_X8_TYPELESS),typeid(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X24_TYPELESS_G8_UINT", static_cast<int32_t>(DXGI_FORMAT_X24_TYPELESS_G8_UINT),typeid(DXGI_FORMAT_X24_TYPELESS_G8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8_TYPELESS),typeid(DXGI_FORMAT_R8G8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_UNORM),typeid(DXGI_FORMAT_R8G8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_UINT),typeid(DXGI_FORMAT_R8G8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_SNORM),typeid(DXGI_FORMAT_R8G8_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_SINT),typeid(DXGI_FORMAT_R8G8_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16_TYPELESS),typeid(DXGI_FORMAT_R16_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16_FLOAT),typeid(DXGI_FORMAT_R16_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D16_UNORM", static_cast<int32_t>(DXGI_FORMAT_D16_UNORM),typeid(DXGI_FORMAT_D16_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16_UNORM),typeid(DXGI_FORMAT_R16_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16_UINT),typeid(DXGI_FORMAT_R16_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16_SNORM),typeid(DXGI_FORMAT_R16_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16_SINT),typeid(DXGI_FORMAT_R16_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8_TYPELESS),typeid(DXGI_FORMAT_R8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8_UNORM),typeid(DXGI_FORMAT_R8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8_UINT),typeid(DXGI_FORMAT_R8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8_SNORM),typeid(DXGI_FORMAT_R8_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8_SINT),typeid(DXGI_FORMAT_R8_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_A8_UNORM),typeid(DXGI_FORMAT_A8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R1_UNORM", static_cast<int32_t>(DXGI_FORMAT_R1_UNORM),typeid(DXGI_FORMAT_R1_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R9G9B9E5_SHAREDEXP", static_cast<int32_t>(DXGI_FORMAT_R9G9B9E5_SHAREDEXP),typeid(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_B8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_B8G8_UNORM),typeid(DXGI_FORMAT_R8G8_B8G8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_G8R8_G8B8_UNORM", static_cast<int32_t>(DXGI_FORMAT_G8R8_G8B8_UNORM),typeid(DXGI_FORMAT_G8R8_G8B8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC1_TYPELESS),typeid(DXGI_FORMAT_BC1_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM),typeid(DXGI_FORMAT_BC1_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM_SRGB),typeid(DXGI_FORMAT_BC1_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC2_TYPELESS),typeid(DXGI_FORMAT_BC2_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM),typeid(DXGI_FORMAT_BC2_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM_SRGB),typeid(DXGI_FORMAT_BC2_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC3_TYPELESS),typeid(DXGI_FORMAT_BC3_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM),typeid(DXGI_FORMAT_BC3_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM_SRGB),typeid(DXGI_FORMAT_BC3_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC4_TYPELESS),typeid(DXGI_FORMAT_BC4_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_UNORM),typeid(DXGI_FORMAT_BC4_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_SNORM),typeid(DXGI_FORMAT_BC4_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC5_TYPELESS),typeid(DXGI_FORMAT_BC5_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_UNORM),typeid(DXGI_FORMAT_BC5_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_SNORM),typeid(DXGI_FORMAT_BC5_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G6R5_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G6R5_UNORM),typeid(DXGI_FORMAT_B5G6R5_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G5R5A1_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G5R5A1_UNORM),typeid(DXGI_FORMAT_B5G5R5A1_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM),typeid(DXGI_FORMAT_B8G8R8A8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM),typeid(DXGI_FORMAT_B8G8R8X8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM),typeid(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_TYPELESS),typeid(DXGI_FORMAT_B8G8R8A8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB),typeid(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_TYPELESS),typeid(DXGI_FORMAT_B8G8R8X8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB),typeid(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC6H_TYPELESS),typeid(DXGI_FORMAT_BC6H_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_UF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_UF16),typeid(DXGI_FORMAT_BC6H_UF16).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_SF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_SF16),typeid(DXGI_FORMAT_BC6H_SF16).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC7_TYPELESS),typeid(DXGI_FORMAT_BC7_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM),typeid(DXGI_FORMAT_BC7_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM_SRGB),typeid(DXGI_FORMAT_BC7_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AYUV", static_cast<int32_t>(DXGI_FORMAT_AYUV),typeid(DXGI_FORMAT_AYUV).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y410", static_cast<int32_t>(DXGI_FORMAT_Y410),typeid(DXGI_FORMAT_Y410).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y416", static_cast<int32_t>(DXGI_FORMAT_Y416),typeid(DXGI_FORMAT_Y416).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV12", static_cast<int32_t>(DXGI_FORMAT_NV12),typeid(DXGI_FORMAT_NV12).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P010", static_cast<int32_t>(DXGI_FORMAT_P010),typeid(DXGI_FORMAT_P010).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P016", static_cast<int32_t>(DXGI_FORMAT_P016),typeid(DXGI_FORMAT_P016).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_420_OPAQUE", static_cast<int32_t>(DXGI_FORMAT_420_OPAQUE),typeid(DXGI_FORMAT_420_OPAQUE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_YUY2", static_cast<int32_t>(DXGI_FORMAT_YUY2),typeid(DXGI_FORMAT_YUY2).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y210", static_cast<int32_t>(DXGI_FORMAT_Y210),typeid(DXGI_FORMAT_Y210).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y216", static_cast<int32_t>(DXGI_FORMAT_Y216),typeid(DXGI_FORMAT_Y216).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV11", static_cast<int32_t>(DXGI_FORMAT_NV11),typeid(DXGI_FORMAT_NV11).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AI44", static_cast<int32_t>(DXGI_FORMAT_AI44),typeid(DXGI_FORMAT_AI44).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_IA44", static_cast<int32_t>(DXGI_FORMAT_IA44),typeid(DXGI_FORMAT_IA44).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P8", static_cast<int32_t>(DXGI_FORMAT_P8),typeid(DXGI_FORMAT_P8).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8P8", static_cast<int32_t>(DXGI_FORMAT_A8P8),typeid(DXGI_FORMAT_A8P8).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B4G4R4A4_UNORM", static_cast<int32_t>(DXGI_FORMAT_B4G4R4A4_UNORM),typeid(DXGI_FORMAT_B4G4R4A4_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P208", static_cast<int32_t>(DXGI_FORMAT_P208),typeid(DXGI_FORMAT_P208).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V208", static_cast<int32_t>(DXGI_FORMAT_V208),typeid(DXGI_FORMAT_V208).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V408", static_cast<int32_t>(DXGI_FORMAT_V408),typeid(DXGI_FORMAT_V408).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_FORCE_UINT", static_cast<int32_t>(DXGI_FORMAT_FORCE_UINT),typeid(DXGI_FORMAT_FORCE_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_UNKNOWN", static_cast<int32_t>(DXGI_FORMAT_UNKNOWN), typeid(DXGI_FORMAT_UNKNOWN).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_TYPELESS), typeid(DXGI_FORMAT_R32G32B32A32_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_FLOAT), typeid(DXGI_FORMAT_R32G32B32A32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_UINT), typeid(DXGI_FORMAT_R32G32B32A32_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_SINT), typeid(DXGI_FORMAT_R32G32B32A32_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_TYPELESS), typeid(DXGI_FORMAT_R32G32B32_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_FLOAT), typeid(DXGI_FORMAT_R32G32B32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_UINT), typeid(DXGI_FORMAT_R32G32B32_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_SINT), typeid(DXGI_FORMAT_R32G32B32_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_TYPELESS), typeid(DXGI_FORMAT_R16G16B16A16_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_FLOAT), typeid(DXGI_FORMAT_R16G16B16A16_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UNORM), typeid(DXGI_FORMAT_R16G16B16A16_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UINT), typeid(DXGI_FORMAT_R16G16B16A16_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SNORM), typeid(DXGI_FORMAT_R16G16B16A16_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SINT), typeid(DXGI_FORMAT_R16G16B16A16_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32_TYPELESS), typeid(DXGI_FORMAT_R32G32_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32_FLOAT), typeid(DXGI_FORMAT_R32G32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_UINT), typeid(DXGI_FORMAT_R32G32_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_SINT), typeid(DXGI_FORMAT_R32G32_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G8X24_TYPELESS), typeid(DXGI_FORMAT_R32G8X24_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT_S8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT_S8X24_UINT), typeid(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS), typeid(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X32_TYPELESS_G8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT), typeid(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_TYPELESS), typeid(DXGI_FORMAT_R10G10B10A2_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UNORM), typeid(DXGI_FORMAT_R10G10B10A2_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UINT", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UINT), typeid(DXGI_FORMAT_R10G10B10A2_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R11G11B10_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R11G11B10_FLOAT), typeid(DXGI_FORMAT_R11G11B10_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_TYPELESS), typeid(DXGI_FORMAT_R8G8B8A8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM), typeid(DXGI_FORMAT_R8G8B8A8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB), typeid(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UINT), typeid(DXGI_FORMAT_R8G8B8A8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SNORM), typeid(DXGI_FORMAT_R8G8B8A8_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SINT), typeid(DXGI_FORMAT_R8G8B8A8_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16_TYPELESS), typeid(DXGI_FORMAT_R16G16_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16_FLOAT), typeid(DXGI_FORMAT_R16G16_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_UNORM), typeid(DXGI_FORMAT_R16G16_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_UINT), typeid(DXGI_FORMAT_R16G16_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_SNORM), typeid(DXGI_FORMAT_R16G16_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_SINT), typeid(DXGI_FORMAT_R16G16_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_TYPELESS), typeid(DXGI_FORMAT_R32_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT), typeid(DXGI_FORMAT_D32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT), typeid(DXGI_FORMAT_R32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32_UINT), typeid(DXGI_FORMAT_R32_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32_SINT), typeid(DXGI_FORMAT_R32_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24G8_TYPELESS), typeid(DXGI_FORMAT_R24G8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D24_UNORM_S8_UINT", static_cast<int32_t>(DXGI_FORMAT_D24_UNORM_S8_UINT), typeid(DXGI_FORMAT_D24_UNORM_S8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24_UNORM_X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24_UNORM_X8_TYPELESS), typeid(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X24_TYPELESS_G8_UINT", static_cast<int32_t>(DXGI_FORMAT_X24_TYPELESS_G8_UINT), typeid(DXGI_FORMAT_X24_TYPELESS_G8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8_TYPELESS), typeid(DXGI_FORMAT_R8G8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_UNORM), typeid(DXGI_FORMAT_R8G8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_UINT), typeid(DXGI_FORMAT_R8G8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_SNORM), typeid(DXGI_FORMAT_R8G8_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_SINT), typeid(DXGI_FORMAT_R8G8_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16_TYPELESS), typeid(DXGI_FORMAT_R16_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16_FLOAT), typeid(DXGI_FORMAT_R16_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D16_UNORM", static_cast<int32_t>(DXGI_FORMAT_D16_UNORM), typeid(DXGI_FORMAT_D16_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16_UNORM), typeid(DXGI_FORMAT_R16_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16_UINT), typeid(DXGI_FORMAT_R16_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16_SNORM), typeid(DXGI_FORMAT_R16_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16_SINT), typeid(DXGI_FORMAT_R16_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8_TYPELESS), typeid(DXGI_FORMAT_R8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8_UNORM), typeid(DXGI_FORMAT_R8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8_UINT), typeid(DXGI_FORMAT_R8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8_SNORM), typeid(DXGI_FORMAT_R8_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8_SINT), typeid(DXGI_FORMAT_R8_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_A8_UNORM), typeid(DXGI_FORMAT_A8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R1_UNORM", static_cast<int32_t>(DXGI_FORMAT_R1_UNORM), typeid(DXGI_FORMAT_R1_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R9G9B9E5_SHAREDEXP", static_cast<int32_t>(DXGI_FORMAT_R9G9B9E5_SHAREDEXP), typeid(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_B8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_B8G8_UNORM), typeid(DXGI_FORMAT_R8G8_B8G8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_G8R8_G8B8_UNORM", static_cast<int32_t>(DXGI_FORMAT_G8R8_G8B8_UNORM), typeid(DXGI_FORMAT_G8R8_G8B8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC1_TYPELESS), typeid(DXGI_FORMAT_BC1_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM), typeid(DXGI_FORMAT_BC1_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM_SRGB), typeid(DXGI_FORMAT_BC1_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC2_TYPELESS), typeid(DXGI_FORMAT_BC2_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM), typeid(DXGI_FORMAT_BC2_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM_SRGB), typeid(DXGI_FORMAT_BC2_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC3_TYPELESS), typeid(DXGI_FORMAT_BC3_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM), typeid(DXGI_FORMAT_BC3_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM_SRGB), typeid(DXGI_FORMAT_BC3_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC4_TYPELESS), typeid(DXGI_FORMAT_BC4_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_UNORM), typeid(DXGI_FORMAT_BC4_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_SNORM), typeid(DXGI_FORMAT_BC4_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC5_TYPELESS), typeid(DXGI_FORMAT_BC5_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_UNORM), typeid(DXGI_FORMAT_BC5_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_SNORM), typeid(DXGI_FORMAT_BC5_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G6R5_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G6R5_UNORM), typeid(DXGI_FORMAT_B5G6R5_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G5R5A1_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G5R5A1_UNORM), typeid(DXGI_FORMAT_B5G5R5A1_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM), typeid(DXGI_FORMAT_B8G8R8A8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM), typeid(DXGI_FORMAT_B8G8R8X8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM), typeid(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_TYPELESS), typeid(DXGI_FORMAT_B8G8R8A8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB), typeid(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_TYPELESS), typeid(DXGI_FORMAT_B8G8R8X8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB), typeid(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC6H_TYPELESS), typeid(DXGI_FORMAT_BC6H_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_UF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_UF16), typeid(DXGI_FORMAT_BC6H_UF16).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_SF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_SF16), typeid(DXGI_FORMAT_BC6H_SF16).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC7_TYPELESS), typeid(DXGI_FORMAT_BC7_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM), typeid(DXGI_FORMAT_BC7_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM_SRGB), typeid(DXGI_FORMAT_BC7_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AYUV", static_cast<int32_t>(DXGI_FORMAT_AYUV), typeid(DXGI_FORMAT_AYUV).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y410", static_cast<int32_t>(DXGI_FORMAT_Y410), typeid(DXGI_FORMAT_Y410).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y416", static_cast<int32_t>(DXGI_FORMAT_Y416), typeid(DXGI_FORMAT_Y416).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV12", static_cast<int32_t>(DXGI_FORMAT_NV12), typeid(DXGI_FORMAT_NV12).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P010", static_cast<int32_t>(DXGI_FORMAT_P010), typeid(DXGI_FORMAT_P010).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P016", static_cast<int32_t>(DXGI_FORMAT_P016), typeid(DXGI_FORMAT_P016).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_420_OPAQUE", static_cast<int32_t>(DXGI_FORMAT_420_OPAQUE), typeid(DXGI_FORMAT_420_OPAQUE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_YUY2", static_cast<int32_t>(DXGI_FORMAT_YUY2), typeid(DXGI_FORMAT_YUY2).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y210", static_cast<int32_t>(DXGI_FORMAT_Y210), typeid(DXGI_FORMAT_Y210).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y216", static_cast<int32_t>(DXGI_FORMAT_Y216), typeid(DXGI_FORMAT_Y216).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV11", static_cast<int32_t>(DXGI_FORMAT_NV11), typeid(DXGI_FORMAT_NV11).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AI44", static_cast<int32_t>(DXGI_FORMAT_AI44), typeid(DXGI_FORMAT_AI44).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_IA44", static_cast<int32_t>(DXGI_FORMAT_IA44), typeid(DXGI_FORMAT_IA44).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P8", static_cast<int32_t>(DXGI_FORMAT_P8), typeid(DXGI_FORMAT_P8).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8P8", static_cast<int32_t>(DXGI_FORMAT_A8P8), typeid(DXGI_FORMAT_A8P8).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B4G4R4A4_UNORM", static_cast<int32_t>(DXGI_FORMAT_B4G4R4A4_UNORM), typeid(DXGI_FORMAT_B4G4R4A4_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P208", static_cast<int32_t>(DXGI_FORMAT_P208), typeid(DXGI_FORMAT_P208).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V208", static_cast<int32_t>(DXGI_FORMAT_V208), typeid(DXGI_FORMAT_V208).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V408", static_cast<int32_t>(DXGI_FORMAT_V408), typeid(DXGI_FORMAT_V408).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_FORCE_UINT", static_cast<int32_t>(DXGI_FORMAT_FORCE_UINT), typeid(DXGI_FORMAT_FORCE_UINT).name());
 }
 PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 	const std::string &file_name,

@@ -29,7 +29,7 @@ PSInput VSMain(float4 position : POSITION, float4 color : COLOR)
 	return result;
 }
 float4 PSMain(PSInput input) : SV_TARGET
-{ 
-	float4 color_1 = texture_test[0].Sample(g_sampler, input.pos_out.xy);
-	return input.color + 0.0001*color_1;
+{
+	float4 color_1 = texture_test[0].Sample(g_sampler, input.color.xy);
+	return color_1;
 }

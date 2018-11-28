@@ -82,10 +82,15 @@ public:
 	ComPtr<ID3DBlob> GetShaderData(std::string shader_file, std::string shader_main_func);
 };
 
+struct DescriptorTableDesc 
+{
+	std::string descriptor_heap_name;
+	std::vector<pancy_object_id> table_offset;
+};
 //RootSignature
 class PancyRootSignature
 {
-	std::vector<std::string> descriptor_heap_id;
+	std::vector<DescriptorTableDesc> descriptor_heap_id;
 	PancystarEngine::PancyString root_signature_name;
 	ComPtr<ID3D12RootSignature> root_signature_data;
 public:
@@ -94,8 +99,8 @@ public:
 	{
 		return root_signature_data;
 	};
-	void GetDescriptorHeapUse(std::vector<std::string> &descriptor_heap_id_in);
-	PancystarEngine::EngineFailReason Create(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,const std::vector<std::string> &descriptor_heap_id_in);
+	void GetDescriptorHeapUse(std::vector<DescriptorTableDesc> &descriptor_heap_id_in);
+	PancystarEngine::EngineFailReason Create(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc,const std::vector<DescriptorTableDesc> &descriptor_heap_id_in);
 };
 //RootSignature管理器
 class PancyRootSignatureControl
@@ -122,7 +127,7 @@ public:
 	PancystarEngine::EngineFailReason GetDesc(
 		const std::string &file_name,
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &desc_out,
-		std::vector<std::string> &descriptor_heap_id
+		std::vector<DescriptorTableDesc> &descriptor_heap_id
 	);
 	std::string GetJsonFileRealName(const std::string &file_name_in);
 	~PancyRootSignatureControl();
@@ -147,7 +152,7 @@ public:
 	{
 		return pso_data;
 	}
-	void GetDescriptorHeapUse(std::vector<std::string> &descriptor_heap_id);
+	void GetDescriptorHeapUse(std::vector<DescriptorTableDesc> &descriptor_heap_id);
 	void GetCbufferHeapName(std::unordered_map<std::string, std::string> &Cbuffer_Heap_desc);
 };
 //pso管理器

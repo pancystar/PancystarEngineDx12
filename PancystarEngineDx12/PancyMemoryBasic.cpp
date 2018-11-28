@@ -1197,6 +1197,7 @@ PancyDescriptorHeap::PancyDescriptorHeap(
 	heap_block_size = heap_block_size_in;
 	heap_block_num = heap_desc_in.NumDescriptors / heap_block_size_in;
 	heap_desc = heap_desc_in;
+	per_offset_size = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetDescriptorHandleIncrementSize(heap_desc.Type);
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeap::Create()
 {

@@ -31,6 +31,8 @@ class PancyDx12Basic
 	CD3DX12_RECT view_rect;
 	//帧等待fence号码
 	PancyFenceIdGPU broken_fence_id;
+	//资源绑定测试
+	ResourceViewPointer table_offset[3];
 public:
 	PancyDx12Basic()
 	{
@@ -63,6 +65,21 @@ void PancyDx12Basic::PopulateCommandList()
 	// Set necessary state.
 	auto rootsignature_data = PancyRootSignatureControl::GetInstance()->GetRootSignature("json\\root_signature\\test_root_signature.json")->GetRootSignature();
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
+
+
+	//设置描述符堆
+	ID3D12DescriptorHeap *heap_pointer;
+	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset[0].resource_view_pack_id.descriptor_heap_type_id).Get();
+	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
+	//设置描述符堆的偏移
+	for (int i = 0; i < 3; ++i) 
+	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
+		//CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(heap_pointer->GetGPUDescriptorHandleForHeapStart());
+		auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(table_offset[i], srvHandle);
+		//srvHandle.Offset(heap_offset);
+		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(i, srvHandle);
+	}
 	m_commandList->GetCommandList()->RSSetViewports(1, &view_port);
 	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
 
@@ -145,9 +162,9 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	point[1].position = DirectX::XMFLOAT4(0.25f, -0.25f * 1.77f, 0.0f,1);
 	point[2].position = DirectX::XMFLOAT4(-0.25f, -0.25f * 1.77f, 0.0f,1);
 
-	point[0].tex_color = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f,0.0f);
-	point[1].tex_color = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-	point[2].tex_color = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	point[0].tex_color = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f,0.0f);
+	point[1].tex_color = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
+	point[2].tex_color = DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
 	UINT index[3] = {0,1,2};
 	test_model = new PancystarEngine::GeometryCommonModel<PancystarEngine::Point2D>(point, index,3,3);
 	auto check_error = test_model->Create();
@@ -197,10 +214,11 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 	{
 		return check_error;
 	}
+	
 	//创建一个cbuffer
 	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetCbufferHeapName(Cbuffer_Heap_desc);
-	std::vector<string> descriptor_use_data;
+	std::vector<DescriptorTableDesc> descriptor_use_data;
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetDescriptorHeapUse(descriptor_use_data);
 	SubMemoryPointer cbuffer[2];
 	int count = 0;
@@ -209,17 +227,26 @@ PancystarEngine::EngineFailReason PancyDx12Basic::Create(HWND hwnd_window_in, in
 		check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(cbuffer_data->second, cbuffer[count]);
 		count += 1;
 	}
-	ResourceViewPack globel_var[3];
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[0], globel_var[0]);
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[1], globel_var[1]);
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[2], globel_var[2]);
-	ResourceViewPointer new_rsv;
-	new_rsv.resource_view_pack_id = globel_var[0];
-	new_rsv.resource_view_offset_id = 0;
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_rsv, cbuffer[0]);
-	new_rsv.resource_view_pack_id = globel_var[1];
-	new_rsv.resource_view_offset_id = 0;
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_rsv, cbuffer[1]);
+	ResourceViewPack globel_var;
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[0].descriptor_heap_name, globel_var);
+	//ResourceViewPointer new_rsv;
+	table_offset[0].resource_view_pack_id = globel_var;
+	table_offset[0].resource_view_offset_id = descriptor_use_data[0].table_offset[0];
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(table_offset[0], cbuffer[0]);
+	table_offset[1].resource_view_pack_id = globel_var;
+	table_offset[1].resource_view_offset_id = descriptor_use_data[0].table_offset[1];
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(table_offset[1], cbuffer[1]);
+	//加载一张纹理
+	pancy_object_id tex_id;
+	SubMemoryPointer texture_need;
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\test222.json", tex_id);
+	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_id, texture_need);
+	table_offset[2].resource_view_pack_id = globel_var;
+	table_offset[2].resource_view_offset_id = descriptor_use_data[0].table_offset[2];
+	D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
+	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_id, SRV_desc);
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(table_offset[2], texture_need, SRV_desc);
+
 	/*
 	//创建commandallocator
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator));
@@ -372,6 +399,7 @@ HRESULT engine_windows_main::game_create()
 	{
 		return E_FAIL;
 	}
+
 	check_error = ThreadPoolGPUControl::SingleCreate();
 	if (!check_error.CheckIfSucceed())
 	{

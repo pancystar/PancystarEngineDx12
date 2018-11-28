@@ -35,17 +35,41 @@ namespace PancystarEngine
 		bool                             if_force_srgb; //是否强制转换为线性空间纹理
 		int                              max_size;      //纹理最大大小
 		D3D12_RESOURCE_DESC              texture_desc;  //纹理格式
+		D3D12_SHADER_RESOURCE_VIEW_DESC  tex_srv_desc = {};  //纹理访问格式
 		//VirtualMemoryPointer             tex_data;      //纹理数据指针
 		//todo：纹理拷贝
-		bool                             if_copy_finish;   //纹理上传gpu是否完成
-		SubMemoryPointer                 tex_data;        //纹理数据指针
+		bool                             if_copy_finish;       //纹理上传gpu是否完成
+		SubMemoryPointer                 tex_data;             //纹理数据指针
 		SubMemoryPointer                 update_tex_data;      //纹理上传数据指针
+		PancyFenceIdGPU                  copy_broken_fence;
 	public:
 		PancyBasicTexture(
 			std::string desc_file_in,
 			bool if_gen_mipmap_in = false,
 			bool if_force_srgb_in = false,
 			int max_size_in = 0);
+		PancystarEngine::EngineFailReason GetResource(SubMemoryPointer &resource)
+		{
+			if (!if_copy_finish) 
+			{
+				if (!ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->CheckGpuBrokenFence(copy_broken_fence))
+				{
+					PancystarEngine::EngineFailReason error_message(E_FAIL,"The Texture haven't been copy finished to GPU, call WaitThreadPool to wait until it finished copy");
+					PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture Resource", error_message);
+					return error_message;
+				}
+				else 
+				{
+					if_copy_finish = true;
+				}
+			}
+			resource = tex_data;
+			return PancystarEngine::succeed;
+		}
+		inline D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc() 
+		{
+			return tex_srv_desc;
+		}
 	private:
 		PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
 		PancystarEngine::EngineFailReason LoadPictureFromFile(const std::string &picture_path_file);
@@ -62,7 +86,7 @@ namespace PancystarEngine
 			const D3D12_RESOURCE_FLAGS &resFlags,
 			const unsigned int &loadFlags
 		);
-		PancystarEngine::EngineFailReason UpdateTextureResourceAndWait(const std::vector<D3D12_SUBRESOURCE_DATA> &subresources);
+		PancystarEngine::EngineFailReason UpdateTextureResourceAndWait(std::vector<D3D12_SUBRESOURCE_DATA> &subresources);
 		bool CheckIfJson(const std::string &path_name);
 		inline bool CheckIfPow2(int32_t input) 
 		{
@@ -90,6 +114,29 @@ namespace PancystarEngine
 				this_instance = new PancyTextureControl("Texture Resource Control");
 			}
 			return this_instance;
+		}
+		inline PancystarEngine::EngineFailReason GetTexResource(const pancy_object_id &tex_id, SubMemoryPointer &res_pointer)
+		{
+			PancyBasicTexture *tex_data = dynamic_cast<PancyBasicTexture*>(GetResource(tex_id));
+			if (tex_data == NULL) 
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL,"Could not find the Texture ID: "+std::to_string(tex_id));
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture Resource", error_message);
+				return error_message;
+			}
+			return tex_data->GetResource(res_pointer);
+		};
+		inline PancystarEngine::EngineFailReason GetSRVDesc(const pancy_object_id &tex_id, D3D12_SHADER_RESOURCE_VIEW_DESC &SRV_desc)
+		{ 
+			PancyBasicTexture *tex_data = dynamic_cast<PancyBasicTexture*>(GetResource(tex_id));
+			if (tex_data == NULL)
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the Texture ID: " + std::to_string(tex_id));
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture Resource", error_message);
+				return error_message;
+			}
+			SRV_desc = tex_data->GetSRVDesc();
+			return PancystarEngine::succeed;
 		}
 	private:
 		PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out);
