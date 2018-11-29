@@ -560,6 +560,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWai
 	//¿ªÊ¼¿½±´
 	auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
 	UpdateSubresources(copy_render_list->GetCommandList().Get(), tex_data_res.Get(), copy_data_res.Get(),0,0, subresources.size(),subres);
+	copy_render_list->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(tex_data_res.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 	copy_render_list->UnlockPrepare();
 	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1,&copy_render_list_ID);
 	//²åÑÛ

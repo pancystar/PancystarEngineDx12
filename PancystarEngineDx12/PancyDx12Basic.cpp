@@ -5,6 +5,10 @@ PancyDx12DeviceBasic* PancyDx12DeviceBasic::d3dbasic_instance = NULL;
 PancyDx12DeviceBasic::PancyDx12DeviceBasic(HWND hwnd_window_in, uint32_t width_in, uint32_t height_in)
 {
 	FrameCount = 2;
+	for (uint32_t i = 0; i < FrameCount; ++i)
+	{
+		m_renderTargets.push_back(NULL);
+	}
 	width = width_in;
 	height = height_in;
 	hwnd_window = hwnd_window_in;
@@ -58,13 +62,30 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	{
 		return check_error;
 	}
-	//创建root signature draw
-	
-	//PancystarEngine::PancyBasicTexture *check = new PancystarEngine::PancyBasicTexture("data\\test222.dds",false,true);
-	//check_error = check->Create();
-	if (!check_error.CheckIfSucceed()) 
+	//创建一个资源堆
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.NumDescriptors = FrameCount;
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	hr = m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap));
+	if (FAILED(hr))
 	{
-		return check_error;
+		PancystarEngine::EngineFailReason error_message(hr, "Create DescriptorHeap Error When init D3D basic");
+		return error_message;
+
+	}
+	//获取资源堆的偏移大小
+	auto rtv_offset = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	//在资源堆上创建RTV 
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
+	for (UINT n = 0; n < FrameCount; n++)
+	{
+		hr = dx12_swapchain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n]));
+		D3D12_RENDER_TARGET_VIEW_DESC rtv_desc = {};
+		rtv_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		rtv_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+		m_device->CreateRenderTargetView(m_renderTargets[n].Get(), &rtv_desc, rtvHandle);
+		rtvHandle.Offset(1, rtv_offset);
 	}
 	//禁止alt+回车全屏
 	dxgi_factory->MakeWindowAssociation(hwnd_window, DXGI_MWA_NO_ALT_ENTER);

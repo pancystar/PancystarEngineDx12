@@ -1119,6 +1119,8 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildCBV(
 	D3D12_CONSTANT_BUFFER_VIEW_DESC  CBV_desc;
 	CBV_desc.BufferLocation = data_submemory->GetResource()->GetGPUVirtualAddress()+ resource_in.offset * resource_size;
 	CBV_desc.SizeInBytes = resource_size;
+
+
 	//´´½¨ÃèÊö·û
 	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());

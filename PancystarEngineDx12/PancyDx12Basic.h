@@ -20,9 +20,9 @@ class PancyDx12DeviceBasic
 	ComPtr<ID3D12CommandQueue> command_queue_direct;
 	ComPtr<ID3D12CommandQueue> command_queue_copy;
 	ComPtr<ID3D12CommandQueue> command_queue_compute;
-	//ROOTsignature
-	ComPtr<ID3D12RootSignature> root_signature_draw;
-	
+	//默认的渲染目标
+	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
+	std::vector<ComPtr<ID3D12Resource>> m_renderTargets;
 private:
 	PancyDx12DeviceBasic(HWND hwnd_window, uint32_t width_in, uint32_t height_in);
 public:
@@ -66,6 +66,14 @@ public:
 	inline ComPtr<IDXGISwapChain3> GetSwapchain()
 	{
 		return dx12_swapchain;
+	}
+	inline ComPtr<ID3D12Resource> GetBackBuffer(CD3DX12_CPU_DESCRIPTOR_HANDLE &heap_handle) 
+	{
+		auto now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetCurrentBackBufferIndex();
+		auto rtv_offset = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), now_frame_use, rtv_offset);
+		heap_handle = rtvHandle;
+		return m_renderTargets[now_frame_use];
 	}
 	//获取帧数字
 	inline UINT GetFrameNum()
