@@ -4,15 +4,35 @@
 #include"PancyShaderDx12.h"
 #include"PancyTextureDx12.h"
 #include"PancyThreadBasic.h"
-#include"PancySceneDesign.h"
-class PancyModelBasic : public PancystarEngine::PancyBasicVirtualResource
+
+enum SwapChainBitDepth
 {
-	PancystarEngine::GeometryBasic *model_resource;
-	int32_t per_tex_pack_size;
-	std::vector<pancy_object_id> texture_use;
-public:
-	PancyModelBasic(const std::string &desc_file_in);
+	_8 = 0,
+	_10,
+	_16,
+	SwapChainBitDepthCount
 };
+class scene_root
+{
+protected:
+	DirectX::XMFLOAT3         scene_center_pos;//场景中心
+	float                     time_game;       //游戏时间
+public:
+	scene_root();
+	virtual PancystarEngine::EngineFailReason Create(int32_t width_in, int32_t height_in) = 0;
+	virtual void Display() = 0;
+	virtual void DisplayNopost() = 0;
+	virtual void DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix) = 0;
+	virtual void Update(float delta_time) = 0;
+	virtual ~scene_root() 
+	{
+	};
+};
+scene_root::scene_root()
+{
+	time_game = 0;
+	scene_center_pos = DirectX::XMFLOAT3(0, 0, 0);
+}
 class scene_test_simple : public scene_root
 {
 	//管线状态
@@ -190,8 +210,7 @@ void scene_test_simple::PopulateCommandList()
 	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &test_model->GetVertexBufferView());
-	m_commandList->GetCommandList()->IASetIndexBuffer(&test_model->GetIndexBufferView());
-	m_commandList->GetCommandList()->DrawIndexedInstanced(3, 1, 0, 0,0);
+	m_commandList->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
@@ -209,6 +228,7 @@ scene_test_simple::~scene_test_simple()
 	WaitForPreviousFrame();
 	delete test_model;
 }
+
 class engine_windows_main
 {
 	HWND         hwnd;                                                  //指向windows类的句柄。
@@ -361,18 +381,6 @@ WPARAM engine_windows_main::game_end()
 {
 	delete new_scene;
 	delete PancyDx12DeviceBasic::GetInstance();
-	PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
-	delete PancystarEngine::EngineFailLog::GetInstance();
-	delete ThreadPoolGPUControl::GetInstance();
-	delete PancyShaderControl::GetInstance();
-	delete PancyRootSignatureControl::GetInstance();
-	delete PancyEffectGraphic::GetInstance();
-	delete PancyJsonTool::GetInstance();
-	delete MemoryHeapGpuControl::GetInstance();
-	delete PancyDescriptorHeapControl::GetInstance();
-	delete PancystarEngine::PancyTextureControl::GetInstance();
-	delete SubresourceControl::GetInstance();
-	delete PancystarEngine::FileBuildRepeatCheck::GetInstance();
 	return msg.wParam;
 }
 //windows函数的入口
@@ -388,8 +396,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	}
 	engine_main->game_loop();
 	auto msg_end = engine_main->game_end();
+	PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 	delete engine_main;
-	
+	delete PancystarEngine::EngineFailLog::GetInstance();
+	delete ThreadPoolGPUControl::GetInstance();
+	delete PancyShaderControl::GetInstance();
+	delete PancyRootSignatureControl::GetInstance();
+	delete PancyEffectGraphic::GetInstance();
+	delete PancyJsonTool::GetInstance();
+	delete MemoryHeapGpuControl::GetInstance();
+	delete PancyDescriptorHeapControl::GetInstance();
+	delete PancystarEngine::PancyTextureControl::GetInstance();
+	delete SubresourceControl::GetInstance();
+	delete PancystarEngine::FileBuildRepeatCheck::GetInstance();
 	if (InputLayoutDesc::GetInstance() != NULL)
 	{
 		delete InputLayoutDesc::GetInstance();

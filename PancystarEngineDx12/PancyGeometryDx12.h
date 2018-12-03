@@ -3,6 +3,7 @@
 #include"PancyDx12Basic.h"
 #include"PancyMemoryBasic.h"
 #include"PancyThreadBasic.h"
+#define IndexType uint32_t
 namespace PancystarEngine
 {
 	//2D顶点格式
@@ -12,6 +13,12 @@ namespace PancystarEngine
 		DirectX::XMFLOAT4 tex_color;  //用于采样的坐标
 		//DirectX::XMFLOAT4 tex_range;  //用于限制采样矩形的坐标
 	};
+	struct PointUI
+	{
+		DirectX::XMFLOAT4 position;
+		DirectX::XMFLOAT4 tex_color;  //用于采样的坐标
+		DirectX::XMUINT4  tex_id;     //UI的ID号
+	};
 	//标准3D顶点格式
 	struct PointCommon
 	{
@@ -19,8 +26,7 @@ namespace PancystarEngine
 		DirectX::XMFLOAT3 normal;     //法线
 		DirectX::XMFLOAT3 tangent;    //切线
 		DirectX::XMUINT4  tex_id;     //使用的纹理ID号
-		DirectX::XMFLOAT4 tex_color;  //用于采样的坐标
-		DirectX::XMFLOAT4 tex_range;  //用于限制采样矩形的坐标
+		DirectX::XMFLOAT4 tex_uv;     //用于采样的坐标
 	};
 	//带骨骼的顶点格式
 	struct PointSkinCommon
@@ -29,8 +35,7 @@ namespace PancystarEngine
 		DirectX::XMFLOAT3 normal;     //法线
 		DirectX::XMFLOAT3 tangent;    //切线
 		DirectX::XMUINT4  tex_id;     //使用的纹理ID号
-		DirectX::XMFLOAT4 tex_color;  //用于采样的坐标
-		DirectX::XMFLOAT4 tex_range;  //用于限制采样矩形的坐标
+		DirectX::XMFLOAT4 tex_uv;     //用于采样的坐标
 		DirectX::XMUINT4  bone_id;    //骨骼ID号
 		DirectX::XMFLOAT4 bone_weight;//骨骼权重
 	};
@@ -439,7 +444,22 @@ namespace PancystarEngine
 		all_vertex_need = all_model_vertex;
 		all_index_need = all_model_index;
 		const UINT VertexBufferSize = all_vertex_need * sizeof(T);
-		const UINT IndexBufferSize = all_index_need * sizeof(UINT);
+		UINT IndexBufferSize;
+		if (sizeof(IndexType) == sizeof(UINT)) 
+		{
+			IndexBufferSize = all_index_need * sizeof(UINT);
+		}
+		else if (sizeof(IndexType) == sizeof(uint16_t))
+		{
+			IndexBufferSize = all_index_need * sizeof(uint16_t);
+		}
+		else 
+		{
+			IndexBufferSize = 0;
+			PancystarEngine::EngineFailReason check_error(E_FAIL,"unsurpported index buffer type: "+std::to_string(sizeof(IndexType)));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build geometry data ", check_error);
+			return check_error;
+		}
 		
 		//创建顶点缓冲区
 		if (vertex_data != NULL) 
@@ -491,12 +511,24 @@ namespace PancystarEngine
 		{
 		}
 		int64_t res_size;
-		
+		//创建顶点缓存视图
 		auto res_vert_data = SubresourceControl::GetInstance()->GetResourceData(geometry_vertex_buffer_in, res_size)->GetResource();
 		geometry_vertex_buffer_view_in.BufferLocation = res_vert_data->GetGPUVirtualAddress() + geometry_vertex_buffer_in.offset * res_size;
 		geometry_vertex_buffer_view_in.StrideInBytes = sizeof(T);
 		geometry_vertex_buffer_view_in.SizeInBytes = res_size;
+		//创建索引缓存视图
 		
+		auto res_index_data = SubresourceControl::GetInstance()->GetResourceData(geometry_index_buffer_in, res_size)->GetResource();
+		geometry_index_buffer_view_in.BufferLocation = res_index_data->GetGPUVirtualAddress() + geometry_index_buffer_in.offset * res_size;
+		geometry_index_buffer_view_in.SizeInBytes = res_size;
+		if (sizeof(IndexType) == sizeof(UINT))
+		{
+			geometry_index_buffer_view_in.Format = DXGI_FORMAT_R32_UINT;
+		}
+		else if (sizeof(IndexType) == sizeof(uint16_t))
+		{
+			geometry_index_buffer_view_in.Format = DXGI_FORMAT_R16_UINT;
+		}
 		return PancystarEngine::succeed;
 	}
 	class ModelResourceBasic 
