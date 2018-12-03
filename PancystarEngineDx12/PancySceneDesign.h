@@ -1,5 +1,10 @@
 #pragma once
 #include"PancystarEngineBasicDx12.h"
+#include"PancyDx12Basic.h"
+#include"PancyGeometryDx12.h"
+#include"PancyShaderDx12.h"
+#include"PancyTextureDx12.h"
+#include"PancyThreadBasic.h"
 class scene_root
 {
 protected:
@@ -15,4 +20,23 @@ public:
 	virtual ~scene_root()
 	{
 	};
+};
+class engine_windows_main
+{
+	HWND         hwnd;                                                  //指向windows类的句柄。
+	MSG          msg;                                                   //存储消息的结构。
+	WNDCLASS     wndclass;
+	int32_t      window_width;
+	int32_t      window_height;
+	HINSTANCE    hInstance;
+	HINSTANCE    hPrevInstance;
+	PSTR         szCmdLine;
+	int32_t      iCmdShow;
+	scene_root   *new_scene;
+public:
+	engine_windows_main(HINSTANCE hInstance_need, HINSTANCE hPrevInstance_need, PSTR szCmdLine_need, int iCmdShow_need);
+	HRESULT game_create(scene_root   *new_scene_in);
+	HRESULT game_loop();
+	WPARAM game_end();
+	static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 };

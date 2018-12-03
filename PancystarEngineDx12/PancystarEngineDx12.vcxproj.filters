@@ -13,12 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="shader">
-      <UniqueIdentifier>{6a7e44c0-3932-4266-b948-4cdfe73143c1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="json">
-      <UniqueIdentifier>{b9bad99b-57c3-4cf7-bceb-fa8474e21f1b}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="d3dx12.h">
@@ -56,9 +50,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="PancyDx12Basic.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -86,27 +77,8 @@
     <ClCompile Include="PancySceneDesign.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="shader\testcolor.hlsl">
-      <Filter>shader</Filter>
-    </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="json\pipline_state_object\pso_test.json">
-      <Filter>json</Filter>
-    </None>
-    <None Include="json\root_signature\test_root_signature.json">
-      <Filter>json</Filter>
-    </None>
-    <None Include="json\resource_heap\heap_vertex.json">
-      <Filter>json</Filter>
-    </None>
-    <None Include="data\test222.json">
-      <Filter>json</Filter>
-    </None>
-    <None Include="json\resource_heap\tex_512_512_4_singlemip.json">
-      <Filter>json</Filter>
-    </None>
+    <ClCompile Include="PancyGeometryDx12.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

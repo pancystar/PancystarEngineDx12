@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PancystarEngineDx12", "PancystarEngineDx12\PancystarEngineDx12.vcxproj", "{5A030335-669A-4D99-A982-9770027CCA50}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SceneTestSample", "SceneTestSample\SceneTestSample.vcxproj", "{47384432-A248-4437-9953-49060DE3F96D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5A030335-669A-4D99-A982-9770027CCA50} = {5A030335-669A-4D99-A982-9770027CCA50}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
