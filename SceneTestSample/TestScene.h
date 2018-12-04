@@ -1,11 +1,15 @@
 #pragma once
-#include"PancySceneDesign.h"
+#include"..\\PancystarEngineDx12\\PancySceneDesign.h"
 #include <assimp/Importer.hpp>      // 导入器在该头文件中定义
 #include <assimp/scene.h>           // 读取到的模型数据都放在scene中
 #include <assimp/postprocess.h>     // 该头文件中包含后处理的标志位定义
 #include <assimp/matrix4x4.h>
 #include <assimp/matrix3x3.h>
-
+#ifdef _DEBUG
+#pragma comment(lib,"..\\x64\\Debug\\PancystarEngineDx12.lib")
+#else
+#pragma comment(lib,"..\\x64\\Release\\PancystarEngineDx12.lib")
+#endif
 class scene_test_simple : public scene_root
 {
 	//管线状态

@@ -45,7 +45,7 @@ void PancyModelBasic::GetRootPath(const std::string &desc_file_in)
 PancystarEngine::EngineFailReason PancyModelBasic::InitResource(const std::string &resource_desc_file) 
 {
 	PancystarEngine::EngineFailReason check_error;
-	check_error = LoadModel(resource_desc_file,&model_resource, per_tex_pack_size, texture_use);
+	check_error = LoadModel(resource_desc_file, model_resource_list, material_list, texture_list);
 	if (!check_error.CheckIfSucceed()) 
 	{
 		return check_error;
