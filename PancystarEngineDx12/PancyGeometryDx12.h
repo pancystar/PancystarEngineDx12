@@ -137,7 +137,7 @@ namespace PancystarEngine
 	class GeometryCommonModel : public GeometryBasic
 	{
 		T *vertex_data;
-		UINT *index_data;
+		IndexType *index_data;
 		bool if_save_CPU_data;//是否保留cpu备份
 		
 		//模型的基本数据
@@ -147,8 +147,8 @@ namespace PancystarEngine
 		
 	public:
 		GeometryCommonModel(
-			T *vertex_data_in,
-			UINT *index_data_in,
+			const T *vertex_data_in,
+			const IndexType *index_data_in,
 			const uint32_t &input_vert_num,
 			const uint32_t &input_index_num,
 			bool if_adj_in = false,
@@ -172,8 +172,8 @@ namespace PancystarEngine
 	};
 	template<typename T>
 	GeometryCommonModel<T>::GeometryCommonModel(
-		T *vertex_data_in,
-		UINT *index_data_in,
+		const T *vertex_data_in,
+		const IndexType *index_data_in,
 		const uint32_t &input_vert_num,
 		const uint32_t &input_index_num,
 		bool if_adj_in,
@@ -192,8 +192,8 @@ namespace PancystarEngine
 		if (input_index_num != 0) 
 		{
 			all_model_index = input_index_num;
-			index_data = new UINT[input_index_num];
-			memcpy(index_data, index_data_in, input_index_num * sizeof(UINT));
+			index_data = new IndexType[input_index_num];
+			memcpy(index_data, index_data_in, input_index_num * sizeof(IndexType));
 		}
 		if_save_CPU_data = if_save_cpu_data_in;
 		if_model_adj = if_adj_in;

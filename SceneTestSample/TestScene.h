@@ -10,6 +10,79 @@
 #else
 #pragma comment(lib,"..\\x64\\Release\\PancystarEngineDx12.lib")
 #endif
+enum TexType
+{
+	tex_diffuse = 0,
+	tex_normal,
+	tex_metallic_roughness,
+	tex_specular,
+	tex_ambient
+};
+class PancySubModel
+{
+	PancystarEngine::GeometryBasic *model_mesh;
+	pancy_object_id material_use;
+public:
+	PancySubModel();
+	~PancySubModel();
+	template<typename T>
+	PancystarEngine::EngineFailReason Create(const T* vertex_need, const IndexType* index_need, const int32_t &vert_num, const int32_t &index_num, const pancy_object_id& material_id)
+	{
+		model_mesh = new PancystarEngine::GeometryCommonModel<T>(vertex_need, index_need, vert_num, index_num);
+		auto check_error = model_mesh->Create();
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		material_use = material_id;
+		return PancystarEngine::succeed;
+	}
+};
+class PancyModelBasic : public PancystarEngine::PancyBasicVirtualResource
+{
+	std::vector<PancySubModel*> model_resource_list;     //模型的每个子部件
+	std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> material_list;
+	std::vector<pancy_object_id> texture_list;
+protected:
+	std::string model_root_path;
+public:
+	PancyModelBasic(const std::string &desc_file_in);
+	virtual ~PancyModelBasic();
+private:
+	PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
+	virtual PancystarEngine::EngineFailReason LoadModel(
+		const std::string &resource_desc_file,
+		std::vector<PancySubModel*> &model_resource,
+		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
+		std::vector<pancy_object_id> &texture_use
+	) = 0;
+	void GetRootPath(const std::string &desc_file_in);
+};
+class PancyModelJson : public PancyModelBasic
+{
+public:
+	PancyModelJson(const std::string &desc_file_in);
+
+};
+class PancyModelAssimp : public PancyModelBasic
+{
+	//临时渲染变量(模型处理工具中不做view化处理，正式使用会有view化处理)
+	std::string pso_use;                  //pso
+	std::vector<SubMemoryPointer> cbuffer;//常量缓冲区
+	std::vector<ResourceViewPointer> table_offset;//每个shader外部变量的位置
+	//模型加载变量
+	Assimp::Importer importer;
+	const aiScene *model_need;//assimp模型备份
+public:
+	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
+private:
+	PancystarEngine::EngineFailReason LoadModel(
+		const std::string &resource_desc_file,
+		std::vector<PancySubModel*> &model_resource,
+		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
+		std::vector<pancy_object_id> &texture_use
+	);
+};
 class scene_test_simple : public scene_root
 {
 	//管线状态
@@ -24,6 +97,8 @@ class scene_test_simple : public scene_root
 	PancyFenceIdGPU broken_fence_id;
 	//资源绑定测试
 	ResourceViewPointer table_offset[3];
+	//模型资源
+	PancyModelBasic *new_res;
 public:
 	scene_test_simple()
 	{

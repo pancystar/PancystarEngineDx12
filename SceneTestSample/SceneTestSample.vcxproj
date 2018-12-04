@@ -148,6 +148,17 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TestScene.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="json\pipline_state_object\pso_test.json" />
+    <None Include="json\root_signature\test_root_signature.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="shader\testcolor.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VSMain</EntryPointName>
+    </FxCompile>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -1,30 +1,18 @@
 #include"TestScene.h"
-class PancySubModel 
+
+PancySubModel::PancySubModel()
 {
-	PancystarEngine::GeometryBasic *model_mesh;
-	pancy_object_id material_use;
-public:
-	PancySubModel();
-};
-class PancyModelBasic : public PancystarEngine::PancyBasicVirtualResource
+	model_mesh = NULL;
+	material_use = 0;
+
+}
+PancySubModel::~PancySubModel()
 {
-	std::vector<PancySubModel*> model_resource_list;     //模型的每个子部件
-	std::unordered_map<pancy_object_id,std::vector<pancy_object_id>> material_list;
-	std::vector<pancy_object_id> texture_list;
-protected:
-	std::string model_root_path;
-public:
-	PancyModelBasic(const std::string &desc_file_in);
-private:
-	PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
-	virtual PancystarEngine::EngineFailReason LoadModel(
-		const std::string &resource_desc_file,
-		std::vector<PancySubModel*> model_resource,
-		std::unordered_map<pancy_object_id, std::vector<pancy_object_id>> &material_list,
-		std::vector<pancy_object_id> &texture_use
-		) = 0;
-	void GetRootPath(const std::string &desc_file_in);
-};
+	if (model_mesh != NULL) 
+	{
+		delete model_mesh;
+	}
+}
 PancyModelBasic::PancyModelBasic(const std::string &desc_file_in) :PancystarEngine::PancyBasicVirtualResource(desc_file_in)
 {
 	GetRootPath(desc_file_in);
@@ -52,36 +40,30 @@ PancystarEngine::EngineFailReason PancyModelBasic::InitResource(const std::strin
 	}
 	return PancystarEngine::succeed;
 }
-class PancyModelJson : public PancyModelBasic
+PancyModelBasic::~PancyModelBasic()
 {
-public:
-	PancyModelJson(const std::string &desc_file_in);
-
-};
-class PancyModelAssimp : public PancyModelBasic
+	for (auto data_submodel = model_resource_list.begin(); data_submodel != model_resource_list.end(); ++data_submodel) 
+	{
+		delete *data_submodel;
+	}
+	model_resource_list.clear();
+	material_list.clear();
+	for (auto id_tex = texture_list.begin(); id_tex != texture_list.end(); ++id_tex)
+	{
+		PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(*id_tex);
+	}
+}
+PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in) :PancyModelBasic(desc_file_in)
 {
-	Assimp::Importer importer;
-	const aiScene *model_need;//assimp模型备份
-public:
-	PancyModelAssimp(const std::string &desc_file_in);
-private:
-	PancystarEngine::EngineFailReason LoadModel(
-		const std::string &resource_desc_file,
-		std::vector<PancySubModel*> model_resource,
-		std::unordered_map<pancy_object_id, std::vector<pancy_object_id>> &material_list,
-		std::vector<pancy_object_id> &texture_use
-	);
-};
-PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in) :PancyModelBasic(desc_file_in)
-{
-
+	pso_use = pso_in;
 }
 PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	const std::string &resource_desc_file,
-	std::vector<PancySubModel*> model_resource,
-	std::unordered_map<pancy_object_id, std::vector<pancy_object_id>> &material_list,
+	std::vector<PancySubModel*> &model_resource,
+	std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
 	std::vector<pancy_object_id> &texture_use
 ){
+	PancystarEngine::EngineFailReason check_error;
 	model_need = importer.ReadFile(resource_desc_file,
 		aiProcess_MakeLeftHanded |
 		aiProcess_FlipWindingOrder |
@@ -94,31 +76,245 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
 		return error_message;
 	}
+	bool use_skin_mesh = false;
+	bool use_point_anim = false;
 	for (unsigned int i = 0; i < model_need->mNumMaterials; ++i)
 	{
+		std::unordered_map<TexType, pancy_object_id> mat_tex_list;
+		
 		const aiMaterial* pMaterial = model_need->mMaterials[i];
 		aiString Path;
+		//漫反射纹理
 		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0 && pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 		{
 			pancy_object_id id_need;
-			auto check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(),id_need);
+			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(),id_need);
 			if (!check_error.CheckIfSucceed()) 
 			{
 				return check_error;
 			}
+			//将纹理数据加载到材质表
+			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse,texture_use.size()));
 			texture_use.push_back(id_need);
 		}
+		//法线纹理
 		if (pMaterial->GetTextureCount(aiTextureType_HEIGHT) > 0 && pMaterial->GetTexture(aiTextureType_HEIGHT, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 		{
+			pancy_object_id id_need;
+			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			//将纹理数据加载到材质表
+			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, texture_use.size()));
+			texture_use.push_back(id_need);
 		}
 		else if (pMaterial->GetTextureCount(aiTextureType_NORMALS) > 0 && pMaterial->GetTexture(aiTextureType_NORMALS, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 		{
+			pancy_object_id id_need;
+			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			//将纹理数据加载到材质表
+			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, texture_use.size()));
+			texture_use.push_back(id_need);
+		}
+		//ao纹理
+		if (pMaterial->GetTextureCount(aiTextureType_AMBIENT) > 0 && pMaterial->GetTexture(aiTextureType_AMBIENT, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
+		{
+			pancy_object_id id_need;
+			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			//将纹理数据加载到材质表
+			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_ambient, texture_use.size()));
+			texture_use.push_back(id_need);
+		}
+		material_list.insert(std::pair<pancy_object_id, std::unordered_map<TexType, pancy_object_id>>(i, mat_tex_list));
+	}
+	for (int i = 0; i < model_need->mNumMeshes; i++)
+	{
+		//获取模型的第i个模块
+		const aiMesh* paiMesh = model_need->mMeshes[i];
+		//获取模型的材质编号
+		pancy_object_id material_use = paiMesh->mMaterialIndex;
+		auto mat_list_now = material_list.find(material_use);
+		if (mat_list_now == material_list.end()) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "havn't load the material id: "+std::to_string(material_use)+"in model:" + resource_desc_file);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+			return error_message;
+		}
+		//创建索引缓冲区
+		IndexType *index_need = new IndexType[paiMesh->mNumFaces * 3];
+		for (unsigned int j = 0; j < paiMesh->mNumFaces; j++)
+		{
+			if (paiMesh->mFaces[j].mNumIndices == 3)
+			{
+				index_need[j] = static_cast<IndexType>(paiMesh->mFaces[j].mIndices[0]);
+				index_need[j] = static_cast<IndexType>(paiMesh->mFaces[j].mIndices[1]);
+				index_need[j] = static_cast<IndexType>(paiMesh->mFaces[j].mIndices[2]);
+			}
+			else
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "model" + resource_desc_file + "find no triangle face");
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+				return error_message;
+			}
+		}
+		//创建顶点缓冲区
+		if (use_skin_mesh)
+		{
+		}
+		else if (use_point_anim)
+		{
+		}
+		else 
+		{
+			PancystarEngine::PointCommon *point_need = new PancystarEngine::PointCommon[paiMesh->mNumVertices];
+			for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
+			{
+				//从assimp中读取的数据
+				point_need[j].position.x = paiMesh->mVertices[j].x;
+				point_need[j].position.y = paiMesh->mVertices[j].y;
+				point_need[j].position.z = paiMesh->mVertices[j].z;
+
+				point_need[j].normal.x = paiMesh->mNormals[j].x;
+				point_need[j].normal.y = paiMesh->mNormals[j].y;
+				point_need[j].normal.z = paiMesh->mNormals[j].z;
+
+				if (paiMesh->HasTextureCoords(0))
+				{
+					point_need[j].tex_uv.x = paiMesh->mTextureCoords[0][j].x;
+					point_need[j].tex_uv.y = paiMesh->mTextureCoords[0][j].y;
+					point_need[j].tex_uv.y = 1 - point_need[j].tex_uv.y;
+				}
+				else
+				{
+					point_need[j].tex_uv.x = 0.0f;
+					point_need[j].tex_uv.y = 0.0f;
+				}
+				if (paiMesh->mTangents != NULL)
+				{
+					point_need[j].tangent.x = paiMesh->mTangents[j].x;
+					point_need[j].tangent.y = paiMesh->mTangents[j].y;
+					point_need[j].tangent.z = paiMesh->mTangents[j].z;
+				}
+				else
+				{
+					point_need[j].tangent.x = 0.0f;
+					point_need[j].tangent.y = 0.0f;
+					point_need[j].tangent.z = 0.0f;
+				}
+				//生成纹理使用数据
+				//使用漫反射纹理作为第一个纹理的偏移量,uvid的y通量记录纹理数量
+				point_need[j].tex_id.x = mat_list_now->second.find(TexType::tex_diffuse)->second;
+				point_need[j].tex_id.y = mat_list_now->second.size();
+			}
+			PancySubModel *new_submodel = new PancySubModel();
+			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces*3, material_use);
+			if (!check_error.CheckIfSucceed()) 
+			{
+				return check_error;
+			}
+			model_resource.push_back(new_submodel);
+			delete[] point_need;
+		}
+		delete[] index_need;
+	}
+
+	//加载临时的渲染规则
+	
+	//创建cbuffer
+	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
+	PancyEffectGraphic::GetInstance()->GetPSO(pso_use)->GetCbufferHeapName(Cbuffer_Heap_desc);
+	std::vector<DescriptorTableDesc> descriptor_use_data;
+	PancyEffectGraphic::GetInstance()->GetPSO(pso_use)->GetDescriptorHeapUse(descriptor_use_data);
+	
+	for (auto cbuffer_data = Cbuffer_Heap_desc.begin(); cbuffer_data != Cbuffer_Heap_desc.end(); ++cbuffer_data)
+	{
+		SubMemoryPointer cbuffer_use;
+		check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(cbuffer_data->second, cbuffer_use);
+		cbuffer.push_back(cbuffer_use);
+	}
+	ResourceViewPack globel_var;
+	ResourceViewPointer new_res_view;
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[0].descriptor_heap_name, globel_var);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	new_res_view.resource_view_pack_id = globel_var;
+	new_res_view.resource_view_offset_id = descriptor_use_data[0].table_offset[0];
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_res_view, cbuffer[0]);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	table_offset.push_back(new_res_view);
+	new_res_view.resource_view_pack_id = globel_var;
+	new_res_view.resource_view_offset_id = descriptor_use_data[0].table_offset[1];
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_res_view, cbuffer[1]);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	table_offset.push_back(new_res_view);
+	//创建纹理访问器
+	for (int i = 0; i < texture_use.size(); ++i) 
+	{
+		//加载一张纹理
+		SubMemoryPointer texture_need;
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(texture_use[i], texture_need);
+		new_res_view.resource_view_pack_id = globel_var;
+		new_res_view.resource_view_offset_id = descriptor_use_data[0].table_offset[2]+i;
+		D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(texture_use[i], SRV_desc);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_res_view, texture_need, SRV_desc);
+		if (!check_error.CheckIfSucceed()) 
+		{
+			return check_error;
+		}
+		if (i == 0) 
+		{
+			table_offset.push_back(new_res_view);
 		}
 	}
 
 
+	return PancystarEngine::succeed;
 
 }
+/*
+class PancyModelControl : public PancystarEngine::PancyBasicResourceControl
+{
+private:
+	PancyModelControl(const std::string &resource_type_name_in);
+public:
+	static PancyModelControl* GetInstance()
+	{
+		static PancyModelControl* this_instance;
+		if (this_instance == NULL)
+		{
+			this_instance = new PancyModelControl("Model Resource Control");
+		}
+		return this_instance;
+	}
+private:
+	PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancystarEngine::PancyBasicVirtualResource** resource_out);
+};
+PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancystarEngine::PancyBasicVirtualResource** resource_out) 
+{
+
+}
+*/
+
+
 PancystarEngine::EngineFailReason scene_test_simple::ResetScreen(int32_t width_in, int32_t height_in)
 {
 	view_port.TopLeftX = 0;
@@ -136,14 +332,6 @@ PancystarEngine::EngineFailReason scene_test_simple::ResetScreen(int32_t width_i
 PancystarEngine::EngineFailReason scene_test_simple::Create(int32_t width_in, int32_t height_in)
 {
 	PancystarEngine::EngineFailReason check_error;
-	PancyModelBasic *new_res = new PancyModelAssimp("model\\ball\\ball.obj");
-	new_res->Create();
-	check_error = ResetScreen(width_in, height_in);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-
 	//创建临时测试
 	PancystarEngine::Point2D point[3];
 	point[0].position = DirectX::XMFLOAT4(0.0f, 0.25f * 1.77f, 0.0f, 1);
@@ -160,6 +348,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Create(int32_t width_in, in
 	{
 		return check_error;
 	}
+	
 	//加载一个pso
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_test.json");
 	if (!check_error.CheckIfSucceed())
@@ -167,6 +356,14 @@ PancystarEngine::EngineFailReason scene_test_simple::Create(int32_t width_in, in
 		return check_error;
 	}
 
+	//模型加载测试
+	new_res = new PancyModelAssimp("model\\ball\\ball.obj", "json\\pipline_state_object\\pso_test.json");
+	new_res->Create();
+	check_error = ResetScreen(width_in, height_in);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	//创建一个cbuffer
 	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetCbufferHeapName(Cbuffer_Heap_desc);
@@ -283,4 +480,5 @@ scene_test_simple::~scene_test_simple()
 {
 	WaitForPreviousFrame();
 	delete test_model;
+	delete new_res;
 }

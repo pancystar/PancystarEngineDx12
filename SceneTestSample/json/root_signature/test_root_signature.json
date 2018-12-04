@@ -20,7 +20,7 @@
     },
     {
       "RangeType": "D3D12_DESCRIPTOR_RANGE_TYPE_SRV",
-      "NumDescriptors": 1,
+      "NumDescriptors": 64,
       "BaseShaderRegister": 0,
       "RegisterSpace": 0,
       "flags": "D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC",

@@ -54,6 +54,7 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(const 
 	auto check_data = resource_name_list.find(desc_file_in);
 	if (check_data != resource_name_list.end()) 
 	{
+		id_need = check_data->second;
 		PancystarEngine::EngineFailReason error_message(E_FAIL,"repeat load resource : " + desc_file_in,PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Resource", error_message);
 		return error_message;
