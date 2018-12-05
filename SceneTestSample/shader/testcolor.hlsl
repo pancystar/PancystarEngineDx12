@@ -33,7 +33,7 @@ PSInput VSMain(VSInput vinput)
 {
 	PSInput result;
 
-	result.position = float4(vinput.position,1.0f);
+	result.position = mul(float4(vinput.position,1.0f), WVP_matrix);
 	result.color = float4(vinput.normal,1.0f);
 	result.pos_out = mul(float4(vinput.position, 1.0), world_matrix);
 	result.pos_out = mul(result.pos_out, view_matrix);
@@ -43,6 +43,6 @@ PSInput VSMain(VSInput vinput)
 }
 float4 PSMain(PSInput input) : SV_TARGET
 {
-	//float4 color_1 = texture_test[0].Sample(g_sampler, input.tex_uv.xy);
-	return float4(1,0,0,1);
+	float4 color_1 = texture_test[0].Sample(g_sampler, input.tex_uv.xy);
+	return color_1;
 }
