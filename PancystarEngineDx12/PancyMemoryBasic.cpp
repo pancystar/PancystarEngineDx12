@@ -2,11 +2,82 @@
 //GPU资源块
 MemoryBlockGpu::MemoryBlockGpu(
 	const uint64_t &memory_size_in,
-	ComPtr<ID3D12Resource> resource_data_in
+	ComPtr<ID3D12Resource> resource_data_in,
+	D3D12_HEAP_TYPE resource_usage_in
 )
 {
 	memory_size = memory_size_in;
 	resource_data = resource_data_in;
+	resource_usage = resource_usage_in;
+	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD || resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
+	{
+		CD3DX12_RANGE readRange(0, 0);
+		HRESULT hr = resource_data->Map(0, &readRange, reinterpret_cast<void**>(&map_pointer));
+		if (FAILED(hr)) 
+		{
+			PancystarEngine::EngineFailReason error_message(hr,"map dynamic buffer to cpu error");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build memory block gpu", error_message);
+		}
+	}
+	else 
+	{
+		map_pointer = NULL;
+	}
+}
+PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(const int32_t &pointer_offset, const void* copy_data, const int32_t data_size)
+{
+	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("copy CPU resource to memory block gpu", error_message);
+		return error_message;
+	}
+	memcpy(map_pointer + pointer_offset, copy_data, data_size);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(
+	const int32_t &pointer_offset, 
+	std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+	UINT64* pRowSizesInBytes,
+	UINT* pNumRows
+)
+{
+	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("copy CPU resource to memory block gpu", error_message);
+		return error_message;
+	}
+	//获取待拷贝指针
+	UINT8* pData = map_pointer + pointer_offset;
+	//获取subresource
+	D3D12_SUBRESOURCE_DATA *pSrcData = &subresources[0];
+	UINT subres_size = static_cast<UINT>(subresources.size());
+	for (UINT i = 0; i < subres_size; ++i)
+	{
+		D3D12_MEMCPY_DEST DestData = { pData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, pLayouts[i].Footprint.RowPitch * pNumRows[i] };
+		MemcpySubresource(&DestData, &pSrcData[i], (SIZE_T)pRowSizesInBytes[i], pNumRows[i], pLayouts[i].Footprint.Depth);
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason MemoryBlockGpu::ReadFromBufferToCpu(const int32_t &pointer_offset, void* copy_data, const int32_t data_size)
+{
+	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not readback, could not read data back");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("read memory block gpu to CPU", error_message);
+		return error_message;
+	}
+	return PancystarEngine::succeed;
+	//todo: 回读GPU数据
+}
+MemoryBlockGpu::~MemoryBlockGpu()
+{
+	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD || resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
+	{
+		resource_data->Unmap(0,NULL);
+	}
 }
 //GPU资源堆
 MemoryHeapGpu::MemoryHeapGpu(const std::string &heap_type_name_in)
@@ -88,7 +159,8 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::BuildMemoryResource(
 	}
 	memory_block_ID = *rand_free_memory;
 	empty_memory_block.erase(rand_free_memory);
-	MemoryBlockGpu *new_memory_block_data = new MemoryBlockGpu(size_per_block, ppvResourc);
+	MemoryBlockGpu *new_memory_block_data;
+	new_memory_block_data = new MemoryBlockGpu(size_per_block, ppvResourc, check_desc.Properties.Type);
 	memory_heap_block.insert(std::pair<pancy_resource_id, MemoryBlockGpu*>(memory_block_ID, new_memory_block_data));
 	return PancystarEngine::succeed;
 }
@@ -302,7 +374,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResourceCommit(
 			return check_error;
 		}
 	}
-	MemoryBlockGpu *new_block = new MemoryBlockGpu(virtual_pointer.memory_resource_id, ppvResourc);
+	MemoryBlockGpu *new_block = new MemoryBlockGpu(virtual_pointer.memory_resource_id, ppvResourc, heap_type_in);
 	resource_memory_list.insert(std::pair<pancy_object_id, MemoryBlockGpu *>(virtual_pointer.memory_resource_id, new_block));
 	return PancystarEngine::succeed;
 }

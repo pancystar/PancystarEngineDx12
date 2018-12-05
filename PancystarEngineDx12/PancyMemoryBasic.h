@@ -22,11 +22,15 @@ class MemoryBlockGpu
 {
 	uint64_t memory_size;//存储块的大小
 	ComPtr<ID3D12Resource> resource_data;//存储块的数据
+	D3D12_HEAP_TYPE resource_usage;
+	UINT8* map_pointer;
 public:
 	MemoryBlockGpu(
 		const uint64_t &memory_size_in,
-		ComPtr<ID3D12Resource> resource_data_in
+		ComPtr<ID3D12Resource> resource_data_in,
+		D3D12_HEAP_TYPE resource_usage_in
 	);
+	~MemoryBlockGpu();
 	inline ComPtr<ID3D12Resource> GetResource() 
 	{
 		return resource_data;
@@ -35,6 +39,15 @@ public:
 	{
 		return memory_size;
 	}
+	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(const int32_t &pointer_offset, const void* copy_data, const int32_t data_size);
+	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(
+		const int32_t &pointer_offset, 
+		std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+		UINT64* pRowSizesInBytes,
+		UINT* pNumRows
+	);
+	PancystarEngine::EngineFailReason ReadFromBufferToCpu(const int32_t &pointer_offset, void* copy_data, const int32_t data_size);
 };
 //保留显存堆
 class MemoryHeapGpu

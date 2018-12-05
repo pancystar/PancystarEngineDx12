@@ -176,7 +176,8 @@ PancystarEngine::EngineFailReason GeometryBasic::BuildDefaultBuffer(
 	int64_t per_memory_size;
 	auto dest_res = SubresourceControl::GetInstance()->GetResourceData(default_buffer, per_memory_size);
 	auto copy_res = SubresourceControl::GetInstance()->GetResourceData(upload_buffer, per_memory_size);
-	//先将cpu上的数据拷贝到上传缓冲区
+	
+	/*
 	BYTE* pDataBegin;
 	hr = copy_res->GetResource()->Map(0, NULL, reinterpret_cast<void**>(&pDataBegin));
 	if (FAILED(hr))
@@ -188,6 +189,13 @@ PancystarEngine::EngineFailReason GeometryBasic::BuildDefaultBuffer(
 	memcpy(pDataBegin + upload_buffer.offset*per_memory_size, initData, BufferSize);
 	//todo:此处不调用unmap会导致程序不可调试，同类型的commitresource则不受影响，原因不明
 	copy_res->GetResource()->Unmap(0, NULL);
+	*/
+	//先将cpu上的数据拷贝到上传缓冲区
+	check_error = copy_res->WriteFromCpuToBuffer(upload_buffer.offset*per_memory_size, initData, BufferSize);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	//将上传缓冲区的数据拷贝到显存缓冲区
 	cmdList->CopyBufferRegion(dest_res->GetResource().Get(), default_buffer.offset * per_memory_size, copy_res->GetResource().Get(), upload_buffer.offset*per_memory_size, buffer_block_size);
 	//修改缓冲区格式

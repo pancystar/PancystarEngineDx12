@@ -37,6 +37,22 @@ public:
 		material_use = material_id;
 		return PancystarEngine::succeed;
 	}
+	inline D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()
+	{
+		return model_mesh->GetVertexBufferView();
+	};
+	inline D3D12_INDEX_BUFFER_VIEW GetIndexBufferView()
+	{
+		return model_mesh->GetIndexBufferView();
+	};
+	inline int32_t GetVertexNum() 
+	{
+		return model_mesh->GetVetexNum();
+	}
+	inline int32_t GetIndexNum()
+	{
+		return model_mesh->GetIndexNum();
+	}
 };
 class PancyModelBasic : public PancystarEngine::PancyBasicVirtualResource
 {
@@ -47,6 +63,7 @@ protected:
 	std::string model_root_path;
 public:
 	PancyModelBasic(const std::string &desc_file_in);
+	void GetRenderMesh(std::vector<PancySubModel*> &render_mesh);
 	virtual ~PancyModelBasic();
 private:
 	PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
@@ -57,6 +74,7 @@ private:
 		std::vector<pancy_object_id> &texture_use
 	) = 0;
 	void GetRootPath(const std::string &desc_file_in);
+	
 };
 class PancyModelJson : public PancyModelBasic
 {
@@ -75,6 +93,14 @@ class PancyModelAssimp : public PancyModelBasic
 	const aiScene *model_need;//assimp模型备份
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
+	inline PancyPiplineStateObjectGraph* GetPso() 
+	{
+		return PancyEffectGraphic::GetInstance()->GetPSO(pso_use);
+	}
+	inline std::vector<ResourceViewPointer> GetDescriptorHeap() 
+	{
+		return table_offset;
+	}
 private:
 	PancystarEngine::EngineFailReason LoadModel(
 		const std::string &resource_desc_file,

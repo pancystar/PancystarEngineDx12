@@ -79,6 +79,14 @@ namespace PancystarEngine
 			int64_t res_size;
 			return SubresourceControl::GetInstance()->GetResourceData(geometry_adjindex_buffer, res_size)->GetResource();
 		};
+		inline uint32_t GetVetexNum()
+		{
+			return all_vertex;
+		}
+		inline uint32_t GetIndexNum()
+		{
+			return all_index;
+		}
 		inline D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()
 		{
 			return geometry_vertex_buffer_view;

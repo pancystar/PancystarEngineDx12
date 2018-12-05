@@ -550,19 +550,59 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWait(std::vector<D3D12_SUBRESOURCE_DATA> &subresources)
 {
+	PancystarEngine::EngineFailReason check_error;
 	D3D12_SUBRESOURCE_DATA *subres = &subresources[0];
 	UINT subres_size = static_cast<UINT>(subresources.size());
 	int64_t res_size;
-	ComPtr<ID3D12Resource> tex_data_res = SubresourceControl::GetInstance()->GetResourceData(tex_data, res_size)->GetResource();
-	ComPtr<ID3D12Resource> copy_data_res = SubresourceControl::GetInstance()->GetResourceData(update_tex_data, res_size)->GetResource();
+	auto tex_data_res = SubresourceControl::GetInstance()->GetResourceData(tex_data, res_size);
+	auto copy_data_res = SubresourceControl::GetInstance()->GetResourceData(update_tex_data, res_size);
 	PancyRenderCommandList *copy_render_list;
 	PancyThreadIdGPU copy_render_list_ID;
 	//开始拷贝
-	auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
-	UpdateSubresources(copy_render_list->GetCommandList().Get(), tex_data_res.Get(), copy_data_res.Get(),0,0, subresources.size(),subres);
-	copy_render_list->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(tex_data_res.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+	
+	//获取拷贝所用的commandlist
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//先将数据从内存拷贝到上传缓冲区
+	UINT64 RequiredSize = 0;
+	UINT64 MemToAlloc = static_cast<UINT64>(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64)) * subres_size;
+	if (MemToAlloc > SIZE_MAX)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "subresource size is bigger than max_size");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("copy CPU resource to update texture", error_message);
+		return error_message;
+	}
+	void* pMem = HeapAlloc(GetProcessHeap(), 0, static_cast<SIZE_T>(MemToAlloc));
+	if (pMem == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "alloc heap for write resource failed");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("copy CPU resource to update texture", error_message);
+		return error_message;
+	}
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts = reinterpret_cast<D3D12_PLACED_SUBRESOURCE_FOOTPRINT*>(pMem);
+	UINT64* pRowSizesInBytes = reinterpret_cast<UINT64*>(pLayouts + subres_size);
+	UINT* pNumRows = reinterpret_cast<UINT*>(pRowSizesInBytes + subres_size);
+	D3D12_RESOURCE_DESC Desc = tex_data_res->GetResource()->GetDesc();
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&Desc, 0, subres_size, 0, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
+	check_error = copy_data_res->WriteFromCpuToBuffer(0, subresources, pLayouts, pRowSizesInBytes, pNumRows);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	//再将数据从上传缓冲区拷贝至显存
+	for (UINT i = 0; i < subres_size; ++i)
+	{
+		CD3DX12_TEXTURE_COPY_LOCATION Dst(tex_data_res->GetResource().Get(), i + 0);
+		CD3DX12_TEXTURE_COPY_LOCATION Src(copy_data_res->GetResource().Get(), pLayouts[i]);
+		copy_render_list->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
+	}
+	copy_render_list->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(tex_data_res->GetResource().Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 	copy_render_list->UnlockPrepare();
 	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1,&copy_render_list_ID);
+	HeapFree(GetProcessHeap(), 0, pMem);
 	//插眼
 	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(copy_broken_fence);
 	//等待

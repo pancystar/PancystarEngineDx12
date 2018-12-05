@@ -152,6 +152,10 @@ public:
 	{
 		return pso_data;
 	}
+	inline PancyRootSignature* GetRootSignature() 
+	{
+		return PancyRootSignatureControl::GetInstance()->GetRootSignature(root_signature_name.GetAsciiString());
+	}
 	void GetDescriptorHeapUse(std::vector<DescriptorTableDesc> &descriptor_heap_id);
 	void GetCbufferHeapName(std::unordered_map<std::string, std::string> &Cbuffer_Heap_desc);
 };

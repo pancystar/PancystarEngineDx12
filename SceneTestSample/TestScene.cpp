@@ -30,6 +30,13 @@ void PancyModelBasic::GetRootPath(const std::string &desc_file_in)
 	}
 	model_root_path = desc_file_in.substr(0, end);
 }
+void PancyModelBasic::GetRenderMesh(std::vector<PancySubModel*> &render_mesh)
+{
+	for (auto sub_mesh_data = model_resource_list.begin(); sub_mesh_data < model_resource_list.end(); ++sub_mesh_data) 
+	{
+		render_mesh.push_back(*sub_mesh_data);
+	}
+}
 PancystarEngine::EngineFailReason PancyModelBasic::InitResource(const std::string &resource_desc_file) 
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -285,8 +292,27 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			table_offset.push_back(new_res_view);
 		}
 	}
+	//Ìî³äcbuffer
+	int64_t per_memory_size;
+	auto data_submemory = SubresourceControl::GetInstance()->GetResourceData(cbuffer[0], per_memory_size);
+	DirectX::XMFLOAT4X4 world_mat[2];
+	DirectX::XMStoreFloat4x4(&world_mat[0], DirectX::XMMatrixIdentity());
 
 
+	DirectX::XMFLOAT3 pos = DirectX::XMFLOAT3(0, 0, -10);
+	DirectX::XMFLOAT3 look = DirectX::XMFLOAT3(0, 0, 1);
+	DirectX::XMFLOAT3 up = DirectX::XMFLOAT3(0, 1, 0);
+
+	
+	DirectX::XMStoreFloat4x4(&world_mat[1], DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&pos), DirectX::XMLoadFloat3(&look), DirectX::XMLoadFloat3(&up)) * DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4,1280/800, 0.1f, 1000.0f));
+	//DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, DirectX::XM_PIDIV4, 0.1f, 1000.0f);
+	CD3DX12_RANGE readRange(0, 0);
+	UINT8* m_pCbvDataBegin;
+	check_error =data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, &world_mat, sizeof(world_mat));
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 
 }
@@ -396,6 +422,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Create(int32_t width_in, in
 	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_id, SRV_desc);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(table_offset[2], texture_need, SRV_desc);
 	//Ìî³äcbuffer
+	/*
 	int64_t per_memory_size;
 	auto data_submemory = SubresourceControl::GetInstance()->GetResourceData(cbuffer[0], per_memory_size);
 	DirectX::XMFLOAT4X4 world_mat[2];
@@ -407,6 +434,8 @@ PancystarEngine::EngineFailReason scene_test_simple::Create(int32_t width_in, in
 	memcpy(m_pCbvDataBegin + (cbuffer[0].offset* per_memory_size), &world_mat, sizeof(world_mat));
 	DirectX::XMFLOAT4X4 *p = reinterpret_cast<DirectX::XMFLOAT4X4*>(m_pCbvDataBegin);
 	data_submemory->GetResource()->Unmap(0, NULL);
+	*/
+	
 	return PancystarEngine::succeed;
 }
 void scene_test_simple::Display()
@@ -421,6 +450,67 @@ void scene_test_simple::Display()
 void scene_test_simple::DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix)
 {
 }
+/*
+void scene_test_simple::PopulateCommandList()
+{
+	PancystarEngine::EngineFailReason check_error;
+
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->FreeAlloctor();
+	PancyRenderCommandList *m_commandList;
+	//auto pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetData();
+	PancyModelAssimp *render_object = dynamic_cast<PancyModelAssimp*>(new_res);
+
+	auto pso_data = render_object->GetPso()->GetData();
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data, &m_commandList, renderlist_ID);
+
+
+	m_commandList->GetCommandList()->RSSetViewports(1, &view_port);
+	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
+
+	//auto rootsignature_data = PancyRootSignatureControl::GetInstance()->GetRootSignature("json\\root_signature\\test_root_signature.json")->GetRootSignature();
+	auto rootsignature_data = render_object->GetPso()->GetRootSignature()->GetRootSignature();
+	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
+	//ÉèÖÃÃèÊö·û¶Ñ
+	ID3D12DescriptorHeap *heap_pointer;
+	//heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset[0].resource_view_pack_id.descriptor_heap_type_id).Get();
+	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(render_object->GetDescriptorHeap()[0].resource_view_pack_id.descriptor_heap_type_id).Get();
+	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
+	//ÉèÖÃÃèÊö·û¶ÑµÄÆ«ÒÆ
+	for (int i = 0; i < 3; ++i)
+	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
+		//CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(heap_pointer->GetGPUDescriptorHandleForHeapStart());
+		//auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(table_offset[i], srvHandle);
+		auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(render_object->GetDescriptorHeap()[i], srvHandle);
+		
+		//srvHandle.Offset(heap_offset);
+		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(i, srvHandle);
+	}
+	m_commandList->GetCommandList()->RSSetViewports(1, &view_port);
+	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+	ComPtr<ID3D12Resource> screen_rendertarget = PancyDx12DeviceBasic::GetInstance()->GetBackBuffer(rtvHandle);
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	std::vector<PancySubModel*> model_resource_list;
+	render_object->GetRenderMesh(model_resource_list);
+	for (int i = 0; i < model_resource_list.size(); ++i) 
+	{
+		m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &model_resource_list[i]->GetVertexBufferView());
+		m_commandList->GetCommandList()->IASetIndexBuffer(&model_resource_list[i]->GetIndexBufferView());
+		m_commandList->GetCommandList()->DrawIndexedInstanced(model_resource_list[i]->GetIndexNum(), 1, 0, 0, 0);
+	}
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	m_commandList->UnlockPrepare();
+}
+*/
 void scene_test_simple::PopulateCommandList()
 {
 	PancystarEngine::EngineFailReason check_error;
