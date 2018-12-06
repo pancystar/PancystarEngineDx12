@@ -92,6 +92,8 @@ HRESULT engine_windows_main::game_create(scene_root   *new_scene_in)
 	PancyDescriptorHeapControl::GetInstance();
 	MemoryHeapGpuControl::GetInstance();
 	SubresourceControl::GetInstance();
+	PancyInput::SingleCreate(hwnd, hInstance);
+	PancyCamera::GetInstance();
 	//创建线程池管理
 	check_error = ThreadPoolGPUControl::SingleCreate();
 	if (!check_error.CheckIfSucceed())
@@ -149,5 +151,7 @@ WPARAM engine_windows_main::game_end()
 	delete PancystarEngine::PancyTextureControl::GetInstance();
 	delete SubresourceControl::GetInstance();
 	delete PancystarEngine::FileBuildRepeatCheck::GetInstance();
+	delete PancyInput::GetInstance();
+	delete PancyCamera::GetInstance();
 	return msg.wParam;
 }

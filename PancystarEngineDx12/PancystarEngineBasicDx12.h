@@ -3,6 +3,7 @@
 #include<Windows.h>
 #include<d3d12.h>
 #include<DirectXMath.h>
+#include<Dinput.h>
 //#include<d3d12shader.h>
 #include<d3dcompiler.h>
 #include"d3dx12.h"
@@ -11,6 +12,7 @@
 #include <wrl/client.h>
 #include<comdef.h>
 #pragma comment(lib, "Shcore.lib")
+#pragma comment(lib, "Dinput8.lib") 
 using Microsoft::WRL::ComPtr;
 // C 运行时头文件
 #include <stdlib.h>
