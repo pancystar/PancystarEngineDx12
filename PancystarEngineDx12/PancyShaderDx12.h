@@ -95,7 +95,7 @@ class PancyRootSignature
 	ComPtr<ID3D12RootSignature> root_signature_data;
 public:
 	PancyRootSignature(const std::string &file_name);
-	inline ComPtr<ID3D12RootSignature> GetRootSignature() 
+	inline ComPtr<ID3D12RootSignature> GetResource() 
 	{
 		return root_signature_data;
 	};

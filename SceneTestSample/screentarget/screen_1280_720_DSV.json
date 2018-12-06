@@ -1,0 +1,8 @@
+{
+  "IfFromFile": 0,
+  "IFSRV": 0,
+  "IfRTV": 0,
+  "IFUAV": 0,
+  "IFDSV": 1,
+  "SubResourceFile":"Subtex_1280_720_D24S8_singlemip.json"
+}

@@ -890,7 +890,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 		}
 	}
 	auto root_signature_use = PancyRootSignatureControl::GetInstance()->GetRootSignature(now_value.string_value);
-	desc_out.pRootSignature = root_signature_use->GetRootSignature().Get();
+	desc_out.pRootSignature = root_signature_use->GetResource().Get();
 	//获取着色器
 	std::string shader_version[] =
 	{

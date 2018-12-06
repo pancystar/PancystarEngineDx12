@@ -5,6 +5,8 @@
 #include"PancyShaderDx12.h"
 #include"PancyTextureDx12.h"
 #include"PancyThreadBasic.h"
+#include"PancyInput.h"
+#include"PancyCamera.h"
 class scene_root
 {
 protected:

@@ -69,7 +69,7 @@ public:
 	}
 	inline ComPtr<ID3D12Resource> GetBackBuffer(CD3DX12_CPU_DESCRIPTOR_HANDLE &heap_handle) 
 	{
-		auto now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->GetCurrentBackBufferIndex();
+		auto now_frame_use = dx12_swapchain->GetCurrentBackBufferIndex();
 		auto rtv_offset = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), now_frame_use, rtv_offset);
 		heap_handle = rtvHandle;

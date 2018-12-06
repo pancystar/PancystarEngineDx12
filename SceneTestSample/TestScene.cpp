@@ -163,9 +163,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		{
 			if (paiMesh->mFaces[j].mNumIndices == 3)
 			{
-				index_need[j] = static_cast<IndexType>(paiMesh->mFaces[j].mIndices[0]);
-				index_need[j] = static_cast<IndexType>(paiMesh->mFaces[j].mIndices[1]);
-				index_need[j] = static_cast<IndexType>(paiMesh->mFaces[j].mIndices[2]);
+				index_need[j * 3 + 0] = static_cast<IndexType>(paiMesh->mFaces[j].mIndices[0]);
+				index_need[j * 3 + 1] = static_cast<IndexType>(paiMesh->mFaces[j].mIndices[1]);
+				index_need[j * 3 + 2] = static_cast<IndexType>(paiMesh->mFaces[j].mIndices[2]);
 			}
 			else
 			{
@@ -238,6 +238,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	//加载临时的渲染规则
 	
 	//创建cbuffer
+	
 	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
 	PancyEffectGraphic::GetInstance()->GetPSO(pso_use)->GetCbufferHeapName(Cbuffer_Heap_desc);
 	std::vector<DescriptorTableDesc> descriptor_use_data;
@@ -293,28 +294,89 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		}
 	}
 	//填充cbuffer
+	/*
 	int64_t per_memory_size;
 	auto data_submemory = SubresourceControl::GetInstance()->GetResourceData(cbuffer[0], per_memory_size);
 	DirectX::XMFLOAT4X4 world_mat[2];
 	DirectX::XMStoreFloat4x4(&world_mat[0], DirectX::XMMatrixIdentity());
 
 
-	DirectX::XMFLOAT3 pos = DirectX::XMFLOAT3(0, 0, -10);
-	DirectX::XMFLOAT3 look = DirectX::XMFLOAT3(0, 0, 1);
+	DirectX::XMFLOAT3 pos = DirectX::XMFLOAT3(0, 2, -5);
+	DirectX::XMFLOAT3 look = DirectX::XMFLOAT3(0, 2, -4);
 	DirectX::XMFLOAT3 up = DirectX::XMFLOAT3(0, 1, 0);
-
-	
-	DirectX::XMStoreFloat4x4(&world_mat[1], DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&pos), DirectX::XMLoadFloat3(&look), DirectX::XMLoadFloat3(&up)) * DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4,1280/800, 0.1f, 1000.0f));
+	DirectX::XMFLOAT4X4 matrix_view;
+	DirectX::XMStoreFloat4x4(&matrix_view, DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&pos), DirectX::XMLoadFloat3(&look), DirectX::XMLoadFloat3(&up)));
+	DirectX::XMStoreFloat4x4(&world_mat[1],  DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&pos), DirectX::XMLoadFloat3(&look), DirectX::XMLoadFloat3(&up)) * DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, 1280.0f / 720.0f, 0.1f, 1000.0f));
 	//DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, DirectX::XM_PIDIV4, 0.1f, 1000.0f);
-	CD3DX12_RANGE readRange(0, 0);
-	UINT8* m_pCbvDataBegin;
-	check_error =data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, &world_mat, sizeof(world_mat));
+	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, &world_mat, sizeof(world_mat));
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
-	}
+	}*/
 	return PancystarEngine::succeed;
 
+}
+void PancyModelAssimp::update(DirectX::XMFLOAT4X4 world_matrix, float delta_time)
+{
+	
+	PancystarEngine::EngineFailReason check_error;
+	updateinput(delta_time);
+	DirectX::XMFLOAT4X4 view_mat;
+	PancyCamera::GetInstance()->CountViewMatrix(&view_mat);
+	//填充cbuffer
+	int64_t per_memory_size;
+	auto data_submemory = SubresourceControl::GetInstance()->GetResourceData(cbuffer[0], per_memory_size);
+	DirectX::XMFLOAT4X4 world_mat[2];
+	DirectX::XMStoreFloat4x4(&world_mat[0], DirectX::XMMatrixIdentity());
+	DirectX::XMMATRIX proj_mat = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, 1280.0f / 720.0f, 0.1f, 1000.0f);
+
+	DirectX::XMStoreFloat4x4(&world_mat[1], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&world_matrix) * DirectX::XMLoadFloat4x4(&view_mat) * proj_mat));
+	//DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, DirectX::XM_PIDIV4, 0.1f, 1000.0f);
+	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, &world_mat, sizeof(world_mat));
+}
+void PancyModelAssimp::updateinput(float delta_time)
+{
+	float move_speed = 0.15f;
+	auto user_input = PancyInput::GetInstance();
+	auto scene_camera = PancyCamera::GetInstance();
+	user_input->GetInput();
+	if (user_input->CheckKeyboard(DIK_A))
+	{
+		scene_camera->WalkRight(-move_speed);
+	}
+	if (user_input->CheckKeyboard(DIK_W))
+	{
+		scene_camera->WalkFront(move_speed);
+	}
+	if (user_input->CheckKeyboard(DIK_R))
+	{
+		scene_camera->WalkUp(move_speed);
+	}
+	if (user_input->CheckKeyboard(DIK_D))
+	{
+		scene_camera->WalkRight(move_speed);
+	}
+	if (user_input->CheckKeyboard(DIK_S))
+	{
+		scene_camera->WalkFront(-move_speed);
+	}
+	if (user_input->CheckKeyboard(DIK_F))
+	{
+		scene_camera->WalkUp(-move_speed);
+	}
+	if (user_input->CheckKeyboard(DIK_Q))
+	{
+		scene_camera->RotationLook(0.001f);
+	}
+	if (user_input->CheckKeyboard(DIK_E))
+	{
+		scene_camera->RotationLook(-0.001f);
+	}
+	if (user_input->CheckMouseDown(1))
+	{
+		scene_camera->RotationUp(user_input->MouseMove_X() * 0.001f);
+		scene_camera->RotationRight(user_input->MouseMove_Y() * 0.001f);
+	}
 }
 /*
 class PancyModelControl : public PancystarEngine::PancyBasicResourceControl
@@ -359,16 +421,28 @@ PancystarEngine::EngineFailReason scene_test_simple::Create(int32_t width_in, in
 {
 	PancystarEngine::EngineFailReason check_error;
 	//创建临时测试
-	PancystarEngine::Point2D point[3];
-	point[0].position = DirectX::XMFLOAT4(0.0f, 0.25f * 1.77f, 0.0f, 1);
-	point[1].position = DirectX::XMFLOAT4(0.25f, -0.25f * 1.77f, 0.0f, 1);
-	point[2].position = DirectX::XMFLOAT4(-0.25f, -0.25f * 1.77f, 0.0f, 1);
+	PancystarEngine::PointCommon point[3];
+	point[0].position = DirectX::XMFLOAT3(0.0f, 0.25f * 1.77f, 0.0f);
+	point[1].position = DirectX::XMFLOAT3(0.25f, -0.25f * 1.77f, 0.0f);
+	point[2].position = DirectX::XMFLOAT3(-0.25f, -0.25f * 1.77f, 0.0f);
 
-	point[0].tex_color = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);
-	point[1].tex_color = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
-	point[2].tex_color = DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
+	point[0].normal = DirectX::XMFLOAT3(0.0f, 0, 1.0f);
+	point[1].normal = DirectX::XMFLOAT3(0.0f, 0, 1.0f);
+	point[2].normal = DirectX::XMFLOAT3(-0.0f, 0, 1.0f);
+
+	point[0].tangent = DirectX::XMFLOAT3(0.0f, 0, 1.0f);
+	point[1].tangent = DirectX::XMFLOAT3(0.0f, 0, 1.0f);
+	point[2].tangent = DirectX::XMFLOAT3(-0.0f, 0, 1.0f);
+
+	point[0].tex_id = DirectX::XMUINT4(0, 0, 0, 0);
+	point[1].tex_id = DirectX::XMUINT4(0, 0, 0, 0);
+	point[2].tex_id = DirectX::XMUINT4(0, 0, 0, 0);
+
+	point[0].tex_uv = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f,0.0f);
+	point[1].tex_uv = DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+	point[2].tex_uv = DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 0.0f);
 	UINT index[3] = { 0,1,2 };
-	test_model = new PancystarEngine::GeometryCommonModel<PancystarEngine::Point2D>(point, index, 3, 3);
+	test_model = new PancystarEngine::GeometryCommonModel<PancystarEngine::PointCommon>(point, index, 3, 3);
 	check_error = test_model->Create();
 	if (!check_error.CheckIfSucceed())
 	{
@@ -383,14 +457,27 @@ PancystarEngine::EngineFailReason scene_test_simple::Create(int32_t width_in, in
 	}
 
 	//模型加载测试
-	new_res = new PancyModelAssimp("model\\ball\\ball.obj", "json\\pipline_state_object\\pso_test.json");
-	new_res->Create();
+	model_sky = new PancyModelAssimp("model\\ball\\ball.obj", "json\\pipline_state_object\\pso_test.json");
+	check_error = model_sky->Create();
+	
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	model_cube = new PancyModelAssimp("model\\ball\\square.obj", "json\\pipline_state_object\\pso_test.json");
+	check_error = model_cube->Create();
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//重设视口变换
 	check_error = ResetScreen(width_in, height_in);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//创建一个cbuffer
+	
 	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetCbufferHeapName(Cbuffer_Heap_desc);
 	std::vector<DescriptorTableDesc> descriptor_use_data;
@@ -422,7 +509,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Create(int32_t width_in, in
 	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_id, SRV_desc);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(table_offset[2], texture_need, SRV_desc);
 	//填充cbuffer
-	/*
+	
 	int64_t per_memory_size;
 	auto data_submemory = SubresourceControl::GetInstance()->GetResourceData(cbuffer[0], per_memory_size);
 	DirectX::XMFLOAT4X4 world_mat[2];
@@ -430,19 +517,24 @@ PancystarEngine::EngineFailReason scene_test_simple::Create(int32_t width_in, in
 	DirectX::XMStoreFloat4x4(&world_mat[1], DirectX::XMMatrixTranslation(0.2, 0.2, 0));
 	CD3DX12_RANGE readRange(0, 0);
 	UINT8* m_pCbvDataBegin;
-	data_submemory->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBegin));
-	memcpy(m_pCbvDataBegin + (cbuffer[0].offset* per_memory_size), &world_mat, sizeof(world_mat));
-	DirectX::XMFLOAT4X4 *p = reinterpret_cast<DirectX::XMFLOAT4X4*>(m_pCbvDataBegin);
-	data_submemory->GetResource()->Unmap(0, NULL);
-	*/
+	data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, &world_mat, sizeof(world_mat));
+	//data_submemory->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBegin));
+	//memcpy(m_pCbvDataBegin + (cbuffer[0].offset* per_memory_size), &world_mat, sizeof(world_mat));
+	//DirectX::XMFLOAT4X4 *p = reinterpret_cast<DirectX::XMFLOAT4X4*>(m_pCbvDataBegin);
+	//data_submemory->GetResource()->Unmap(0, NULL);
+	
 	
 	return PancystarEngine::succeed;
 }
 void scene_test_simple::Display()
 {
 	HRESULT hr;
-	PopulateCommandList();
-	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &renderlist_ID);
+	renderlist_ID.clear();
+	auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->FreeAlloctor();
+	ClearScreen();
+	PopulateCommandList(model_sky);
+	PopulateCommandList(model_cube);
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(renderlist_ID.size(), &renderlist_ID[0]);
 	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(broken_fence_id);
 	hr = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->Present(1, 0);
 	WaitForPreviousFrame();
@@ -450,45 +542,13 @@ void scene_test_simple::Display()
 void scene_test_simple::DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix)
 {
 }
-/*
-void scene_test_simple::PopulateCommandList()
+void scene_test_simple::ClearScreen()
 {
-	PancystarEngine::EngineFailReason check_error;
-
-	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->FreeAlloctor();
 	PancyRenderCommandList *m_commandList;
-	//auto pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json")->GetData();
-	PancyModelAssimp *render_object = dynamic_cast<PancyModelAssimp*>(new_res);
-
-	auto pso_data = render_object->GetPso()->GetData();
-	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data, &m_commandList, renderlist_ID);
-
-
+	PancyThreadIdGPU commdlist_id_use;
+	auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &m_commandList, commdlist_id_use);
 	m_commandList->GetCommandList()->RSSetViewports(1, &view_port);
 	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
-
-	//auto rootsignature_data = PancyRootSignatureControl::GetInstance()->GetRootSignature("json\\root_signature\\test_root_signature.json")->GetRootSignature();
-	auto rootsignature_data = render_object->GetPso()->GetRootSignature()->GetRootSignature();
-	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
-	//设置描述符堆
-	ID3D12DescriptorHeap *heap_pointer;
-	//heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset[0].resource_view_pack_id.descriptor_heap_type_id).Get();
-	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(render_object->GetDescriptorHeap()[0].resource_view_pack_id.descriptor_heap_type_id).Get();
-	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
-	//设置描述符堆的偏移
-	for (int i = 0; i < 3; ++i)
-	{
-		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
-		//CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(heap_pointer->GetGPUDescriptorHandleForHeapStart());
-		//auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(table_offset[i], srvHandle);
-		auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(render_object->GetDescriptorHeap()[i], srvHandle);
-		
-		//srvHandle.Offset(heap_offset);
-		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(i, srvHandle);
-	}
-	m_commandList->GetCommandList()->RSSetViewports(1, &view_port);
-	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
-
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	ComPtr<ID3D12Resource> screen_rendertarget = PancyDx12DeviceBasic::GetInstance()->GetBackBuffer(rtvHandle);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -497,6 +557,45 @@ void scene_test_simple::PopulateCommandList()
 
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	m_commandList->UnlockPrepare();
+	renderlist_ID.push_back(commdlist_id_use);
+}
+void scene_test_simple::PopulateCommandList(PancyModelBasic *now_res)
+{
+	PancystarEngine::EngineFailReason check_error;
+	
+	PancyRenderCommandList *m_commandList;
+	PancyModelAssimp *render_object = dynamic_cast<PancyModelAssimp*>(now_res);
+	auto pso_data = render_object->GetPso()->GetData();
+	PancyThreadIdGPU commdlist_id_use;
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data, &m_commandList, commdlist_id_use);
+	renderlist_ID.push_back(commdlist_id_use);
+	m_commandList->GetCommandList()->RSSetViewports(1, &view_port);
+	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
+	auto rootsignature_data = render_object->GetPso()->GetRootSignature()->GetResource();
+	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
+	//设置描述符堆
+	ID3D12DescriptorHeap *heap_pointer;
+	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(render_object->GetDescriptorHeap()[0].resource_view_pack_id.descriptor_heap_type_id).Get();
+	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
+	//设置描述符堆的偏移
+	for (int i = 0; i < 3; ++i)
+	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
+		auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(render_object->GetDescriptorHeap()[i], srvHandle);
+		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(i, srvHandle);
+	}
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+	ComPtr<ID3D12Resource> screen_rendertarget = PancyDx12DeviceBasic::GetInstance()->GetBackBuffer(rtvHandle);
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+	//const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	//m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	std::vector<PancySubModel*> model_resource_list;
 	render_object->GetRenderMesh(model_resource_list);
@@ -510,7 +609,8 @@ void scene_test_simple::PopulateCommandList()
 
 	m_commandList->UnlockPrepare();
 }
-*/
+
+/*
 void scene_test_simple::PopulateCommandList()
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -559,16 +659,27 @@ void scene_test_simple::PopulateCommandList()
 
 	m_commandList->UnlockPrepare();
 }
+*/
 void scene_test_simple::WaitForPreviousFrame()
 {
 	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(broken_fence_id);
 }
 void scene_test_simple::Update(float delta_time)
 {
+	DirectX::XMFLOAT4X4 world_mat;
+	DirectX::XMStoreFloat4x4(&world_mat,DirectX::XMMatrixIdentity());
+	PancyModelAssimp *render_object_sky = dynamic_cast<PancyModelAssimp*>(model_sky);
+	render_object_sky->update(world_mat, delta_time);
+
+	DirectX::XMStoreFloat4x4(&world_mat, DirectX::XMMatrixTranslation(0,0,0));
+	PancyModelAssimp *render_object_cube = dynamic_cast<PancyModelAssimp*>(model_cube);
+	render_object_cube->update(world_mat, delta_time);
+	int a = 0;
 }
 scene_test_simple::~scene_test_simple()
 {
 	WaitForPreviousFrame();
 	delete test_model;
-	delete new_res;
+	delete model_cube;
+	delete model_sky;
 }
