@@ -47,10 +47,11 @@ PancystarEngine::EngineFailReason PancyShaderBasic::Create()
 	UINT compileFlags = 0 | D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 #endif
 	//±àÒëshaderÎÄ¼þ
-	ID3D10Blob *error_message;
+	ID3D10Blob *error_message = NULL;
 	HRESULT hr = D3DCompileFromFile(shader_file_name.GetUnicodeString().c_str(), nullptr, nullptr, shader_entry_point_name.GetAsciiString().c_str(), shader_type_name.GetAsciiString().c_str(), compileFlags, 0, &shader_memory_pointer, &error_message);
 	if (FAILED(hr))
 	{
+		
 		char data[1000];
 		if (error_message != NULL)
 		{

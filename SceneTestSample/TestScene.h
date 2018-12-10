@@ -101,9 +101,9 @@ public:
 	{
 		return table_offset;
 	}
-	void update(DirectX::XMFLOAT4X4 world_matrix,float delta_time);
+	void update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT4X4 uv_matrix,float delta_time);
 private:
-	void updateinput(float delta_time);
+	
 	PancystarEngine::EngineFailReason LoadModel(
 		const std::string &resource_desc_file,
 		std::vector<PancySubModel*> &model_resource,
@@ -111,7 +111,7 @@ private:
 		std::vector<pancy_object_id> &texture_use
 	);
 };
-class scene_test_simple : public scene_root
+class scene_test_simple : public SceneRoot
 {
 	//管线状态
 	ComPtr<ID3D12PipelineState> m_pipelineState;
@@ -123,28 +123,44 @@ class scene_test_simple : public scene_root
 	CD3DX12_RECT view_rect;
 	//帧等待fence号码
 	PancyFenceIdGPU broken_fence_id;
-	//资源绑定测试
+	//资源绑定(天空盒)
 	ResourceViewPointer table_offset[3];
+	SubMemoryPointer cbuffer[2];
+	//资源绑定(待处理模型)
+	ResourceViewPointer table_offset_model[6];
+	/*
+	cbuffer_per_object
+	cbuffer_per_view
+	diffuse
+	normal
+	metallic/specular
+	roughness/smoothness
+	*/
+	SubMemoryPointer cbuffer_model[2];
 	//模型资源
 	PancyModelBasic *model_sky;
 	PancyModelBasic *model_cube;
 	PancyModelBasic *model_deal;
+
 public:
 	scene_test_simple()
 	{
 		renderlist_ID.clear();
 	}
 	~scene_test_simple();
-	PancystarEngine::EngineFailReason Create(int32_t width_in, int32_t height_in);
-	PancystarEngine::EngineFailReason ResetScreen(int32_t width_in, int32_t height_in);
+	
 	void Display();
 	void DisplayNopost() {};
 	void DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix);
 	void Update(float delta_time);
 private:
+	PancystarEngine::EngineFailReason Init();
+	PancystarEngine::EngineFailReason ScreenChange();
 	void PopulateCommandList(PancyModelBasic *now_res);
+	void PopulateCommandListSky();
 	void ClearScreen();
 	void WaitForPreviousFrame();
+	void updateinput(float delta_time);
 	inline int ComputeIntersectionArea(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2)
 	{
 		return max(0, min(ax2, bx2) - max(ax1, bx1)) * max(0, min(ay2, by2) - max(ay1, by1));

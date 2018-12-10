@@ -352,6 +352,11 @@ public:
 		const SubMemoryPointer &resource_in,
 		const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
 	);
+	PancystarEngine::EngineFailReason BuildDSV(
+		const pancy_object_id &self_offset,
+		const SubMemoryPointer &resource_in,
+		const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
+	);
 };
 //资源描述符管理堆
 class PancyDescriptorHeap 
@@ -392,6 +397,14 @@ public:
 		descriptor_table = srvHandle;
 		return id_offset;
 	}
+	inline pancy_object_id GetOffsetNum(pancy_resource_id heap_offset, pancy_object_id self_offset, CD3DX12_CPU_DESCRIPTOR_HANDLE &descriptor_table)
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
+		pancy_object_id id_offset = static_cast<pancy_object_id>(heap_offset) * heap_block_size * per_offset_size + self_offset * per_offset_size;
+		srvHandle.Offset(id_offset);
+		descriptor_table = srvHandle;
+		return id_offset;
+	}
 	//创建资源视图
 	PancystarEngine::EngineFailReason BuildSRV(
 		const pancy_object_id &descriptor_block_id, 
@@ -415,6 +428,12 @@ public:
 		const pancy_object_id &self_offset, 
 		const SubMemoryPointer &resource_in,
 		const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
+	);
+	PancystarEngine::EngineFailReason BuildDSV(
+		const pancy_object_id &descriptor_block_id,
+		const pancy_object_id &self_offset,
+		const SubMemoryPointer &resource_in,
+		const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
 	);
 private:
 	PancyResourceView* GetHeapBlock(const pancy_resource_id &resource_view_ID,PancystarEngine::EngineFailReason &check_error);
@@ -466,6 +485,17 @@ public:
 		}
 		return heap_data->second->GetOffsetNum(heap_pointer.resource_view_pack_id.descriptor_heap_offset, heap_pointer.resource_view_offset_id, descriptor_table);
 	}
+	inline pancy_object_id GetOffsetNum(ResourceViewPointer heap_pointer, CD3DX12_CPU_DESCRIPTOR_HANDLE &descriptor_table)
+	{
+		auto heap_data = resource_heap_list.find(heap_pointer.resource_view_pack_id.descriptor_heap_type_id);
+		if (heap_data == resource_heap_list.end())
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap ID: " + std::to_string(heap_pointer.resource_view_pack_id.descriptor_heap_type_id));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor heap offset", error_message);
+			return NULL;
+		}
+		return heap_data->second->GetOffsetNum(heap_pointer.resource_view_pack_id.descriptor_heap_offset, heap_pointer.resource_view_offset_id, descriptor_table);
+	}
 	//创建资源视图
 	PancystarEngine::EngineFailReason BuildSRV(
 		const ResourceViewPointer &RSV_point,
@@ -485,6 +515,11 @@ public:
 		const ResourceViewPointer &RSV_point,
 		const SubMemoryPointer &resource_in,
 		const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
+	);
+	PancystarEngine::EngineFailReason BuildDSV(
+		const ResourceViewPointer &RSV_point,
+		const SubMemoryPointer &resource_in,
+		const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
 	);
 	~PancyDescriptorHeapControl();
 private:

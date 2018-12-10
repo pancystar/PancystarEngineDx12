@@ -11,6 +11,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	HRESULT hr = engine_main->game_create(new_scene);
 	if (FAILED(hr))
 	{
+		PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 		return 0;
 	}
 	engine_main->game_loop();

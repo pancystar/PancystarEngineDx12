@@ -31,12 +31,12 @@
   "NumStaticSamplers": 1,
   "D3D12_STATIC_SAMPLER_DESC": [
     {
-      "Filter": "D3D12_FILTER_MIN_MAG_MIP_POINT",
-      "AddressU": "D3D12_TEXTURE_ADDRESS_MODE_BORDER",
-      "AddressV": "D3D12_TEXTURE_ADDRESS_MODE_BORDER",
+      "Filter": "D3D12_FILTER_ANISOTROPIC",
+      "AddressU": "D3D12_TEXTURE_ADDRESS_MODE_WRAP",
+      "AddressV": "D3D12_TEXTURE_ADDRESS_MODE_WRAP",
       "AddressW": "D3D12_TEXTURE_ADDRESS_MODE_BORDER",
       "MipLODBias": 0.0,
-      "MaxAnisotropy": 0,
+      "MaxAnisotropy": 8,
       "ComparisonFunc": "D3D12_COMPARISON_FUNC_NEVER",
       "BorderColor": "D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK",
       "MinLOD": 0.0,

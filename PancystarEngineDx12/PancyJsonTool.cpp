@@ -138,7 +138,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 		{
 			int now_type_name = static_cast<int32_t>(enum_type_value.type());
 			//json数据对应的类型不是整数类型
-			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable NumDescriptors need int but find " + name_value_type[now_type_name]);
+			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable " + member_name + " need int but find " + name_value_type[now_type_name]);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 			return error_mesage;
 		}

@@ -21,20 +21,6 @@ PancystarEngine::EngineFailReason PancyInput::Init(HWND hwnd, HINSTANCE hinst)
 }
 PancyInput::~PancyInput()
 {
-	if(dinput_keyboard != NULL)
-	{
-		dinput_keyboard->Unacquire();
-		dinput_keyboard->Release();
-	}
-	if(dinput_mouse != NULL)
-	{
-		dinput_mouse->Unacquire();
-		dinput_mouse->Release();
-	}
-	if(pancy_dinput != NULL)
-	{
-		pancy_dinput->Release();
-	}
 }
 PancystarEngine::EngineFailReason PancyInput::DinputClear(HWND hwnd,DWORD keyboardCoopFlags, DWORD mouseCoopFlags)
 {
