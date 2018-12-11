@@ -40,9 +40,36 @@
     <None Include="json\root_signature\test_root_signature.json">
       <Filter>json</Filter>
     </None>
+    <None Include="json\pipline_state_object\pso_sky.json">
+      <Filter>json</Filter>
+    </None>
+    <None Include="json\root_signature\sky_root_signature.json">
+      <Filter>json</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_pbr.json">
+      <Filter>json</Filter>
+    </None>
+    <None Include="json\root_signature\pbr_root_signature.json">
+      <Filter>json</Filter>
+    </None>
+    <None Include="json\root_signature\brdfgen_root_signature.json">
+      <Filter>json</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_brdfgen.json">
+      <Filter>json</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\testcolor.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\CubeMap.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\pbr_lighting.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\BrdfGen.hlsl">
       <Filter>shader</Filter>
     </FxCompile>
   </ItemGroup>

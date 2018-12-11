@@ -36,6 +36,8 @@ namespace PancystarEngine
 		int                              max_size;      //纹理最大大小
 		D3D12_RESOURCE_DESC              texture_desc;  //纹理格式
 		D3D12_SHADER_RESOURCE_VIEW_DESC  tex_srv_desc = {};  //纹理访问格式
+		D3D12_DEPTH_STENCIL_VIEW_DESC    tex_dsv_desc = {};  //深度模板缓冲格式
+		D3D12_RENDER_TARGET_VIEW_DESC    tex_rtv_desc = {};  //渲染目标格式
 		//VirtualMemoryPointer             tex_data;      //纹理数据指针
 		//todo：纹理拷贝
 		bool                             if_copy_finish;       //纹理上传gpu是否完成
@@ -70,6 +72,14 @@ namespace PancystarEngine
 		{
 			return tex_srv_desc;
 		}
+		inline D3D12_DEPTH_STENCIL_VIEW_DESC   GetDSVDesc()
+		{
+			return tex_dsv_desc;
+		}
+		inline D3D12_RENDER_TARGET_VIEW_DESC   GetRTVDesc()
+		{
+			return tex_rtv_desc;
+		}
 	private:
 		PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
 		PancystarEngine::EngineFailReason LoadPictureFromFile(const std::string &picture_path_file);
@@ -84,7 +94,8 @@ namespace PancystarEngine
 			const size_t &arraySize,
 			DXGI_FORMAT &format,
 			const D3D12_RESOURCE_FLAGS &resFlags,
-			const unsigned int &loadFlags
+			const unsigned int &loadFlags,
+			const int32_t &subresources_num
 		);
 		PancystarEngine::EngineFailReason UpdateTextureResourceAndWait(std::vector<D3D12_SUBRESOURCE_DATA> &subresources);
 		bool CheckIfJson(const std::string &path_name);
@@ -132,10 +143,34 @@ namespace PancystarEngine
 			if (tex_data == NULL)
 			{
 				PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the Texture ID: " + std::to_string(tex_id));
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture Resource", error_message);
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture SRV desc", error_message);
 				return error_message;
 			}
 			SRV_desc = tex_data->GetSRVDesc();
+			return PancystarEngine::succeed;
+		}
+		inline PancystarEngine::EngineFailReason GetDSVDesc(const pancy_object_id &tex_id, D3D12_DEPTH_STENCIL_VIEW_DESC &DSV_desc)
+		{
+			PancyBasicTexture *tex_data = dynamic_cast<PancyBasicTexture*>(GetResource(tex_id));
+			if (tex_data == NULL)
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the Texture ID: " + std::to_string(tex_id));
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture DSV desc", error_message);
+				return error_message;
+			}
+			DSV_desc = tex_data->GetDSVDesc();
+			return PancystarEngine::succeed;
+		}
+		inline PancystarEngine::EngineFailReason GetRTVDesc(const pancy_object_id &tex_id, D3D12_RENDER_TARGET_VIEW_DESC &RTV_desc)
+		{
+			PancyBasicTexture *tex_data = dynamic_cast<PancyBasicTexture*>(GetResource(tex_id));
+			if (tex_data == NULL)
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the Texture ID: " + std::to_string(tex_id));
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture RTV desc", error_message);
+				return error_message;
+			}
+			RTV_desc = tex_data->GetRTVDesc();
 			return PancystarEngine::succeed;
 		}
 	private:

@@ -75,10 +75,15 @@ public:
 		heap_handle = rtvHandle;
 		return m_renderTargets[now_frame_use];
 	}
+
 	//»ñÈ¡Ö¡Êý×Ö
 	inline UINT GetFrameNum()
 	{
 		return FrameCount;
+	}
+	inline UINT GetNowFrame()
+	{
+		return dx12_swapchain->GetCurrentBackBufferIndex();
 	}
 private:
 	void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);
