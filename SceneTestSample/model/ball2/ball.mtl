@@ -12,5 +12,5 @@ newmtl 07___Default
 	Kd 0.5882 0.5882 0.5882
 	Ks 0.0000 0.0000 0.0000
 	Ke 0.0000 0.0000 0.0000
-	map_Kd Sphere002_albedo.dds
-	map_bump Sphere002_normal.dds
+	map_Kd Sphere002_albedo.json
+	map_bump Sphere002_normal.json

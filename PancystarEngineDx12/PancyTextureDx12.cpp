@@ -896,6 +896,12 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const std
 	}
 	tex_dsv_desc.ViewDimension = static_cast<D3D12_DSV_DIMENSION>(rec_value.int_value);
 	
+	tex_rtv_desc.Format = tex_dsv_desc.Format;
+	tex_rtv_desc.Texture2D.MipSlice = 0;
+
+	tex_srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	tex_srv_desc.Format = tex_dsv_desc.Format;
+	tex_srv_desc.Texture2D.MipLevels = 1;
 	//空纹理不需要拷贝操作
 	if_copy_finish = true;
 	return PancystarEngine::succeed;

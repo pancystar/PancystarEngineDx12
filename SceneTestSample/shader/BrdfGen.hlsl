@@ -82,8 +82,8 @@ float2 IntegrateBRDF(float Roughness, float NoV)
 
 struct VertexIn
 {
-	float3	pos 	: POSITION;     //顶点位置
-	float2  tex1    : TEXCOORD;     //顶点纹理坐标
+	float4	pos 	: POSITION;     //顶点位置
+	float4  tex1    : TEXCOORD;     //顶点纹理坐标
 };
 struct VertexOut
 {
@@ -93,9 +93,8 @@ struct VertexOut
 VertexOut VSMain(VertexIn vin)
 {
 	VertexOut vout;
-	float3 now_pos;
-	vout.PosH = float4(vin.pos, 1.0f);
-	vout.Tex = vin.tex1;
+	vout.PosH = vin.pos;
+	vout.Tex = vin.tex1.xy;
 	return vout;
 }
 float4 PSMain(VertexOut pin) : SV_Target

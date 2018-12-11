@@ -141,7 +141,8 @@ class scene_test_simple : public SceneRoot
 	PancyModelBasic *model_sky;
 	PancyModelBasic *model_cube;
 	PancyModelBasic *model_deal;
-
+	//brdfŒ∆¿Ì
+	pancy_object_id tex_brdf_id;
 public:
 	scene_test_simple()
 	{
@@ -158,6 +159,7 @@ private:
 	PancystarEngine::EngineFailReason ScreenChange();
 	void PopulateCommandList(PancyModelBasic *now_res);
 	void PopulateCommandListSky();
+	PancystarEngine::EngineFailReason PretreatBrdf();
 	void ClearScreen();
 	void WaitForPreviousFrame();
 	void updateinput(float delta_time);
