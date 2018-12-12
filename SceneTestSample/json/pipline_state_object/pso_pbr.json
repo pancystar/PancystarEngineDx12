@@ -1,8 +1,8 @@
 {
-  "RootSignature": "json\\root_signature\\sky_root_signature.json",
+  "RootSignature": "json\\root_signature\\pbr_root_signature.json",
   "VertexShader": "shader\\pbr_lighting.hlsl",
   "VertexShaderFunc": "VSMain",
-  "PixelShader": "shader\\CubeMap.hlsl",
+  "PixelShader": "shader\\pbr_lighting.hlsl",
   "PixelShaderFunc": "PSMain",
   "GeometryShader": "0",
   "GeometryShaderFunc": "0",

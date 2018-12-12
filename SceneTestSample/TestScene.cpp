@@ -418,6 +418,109 @@ PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 	view_rect.bottom = Scene_height;
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
+{
+	PancystarEngine::EngineFailReason check_error;
+	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
+	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr.json")->GetCbufferHeapName(Cbuffer_Heap_desc);
+	std::vector<DescriptorTableDesc> descriptor_use_data;
+	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr.json")->GetDescriptorHeapUse(descriptor_use_data);
+	int count = 0;
+	for (auto cbuffer_data = Cbuffer_Heap_desc.begin(); cbuffer_data != Cbuffer_Heap_desc.end(); ++cbuffer_data)
+	{
+		check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(cbuffer_data->second, cbuffer_model[count]);
+		count += 1;
+	}
+	ResourceViewPack globel_var;
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[0].descriptor_heap_name, globel_var);
+	//先创建两个cbufferview
+	table_offset_model[0].resource_view_pack_id = globel_var;
+	table_offset_model[0].resource_view_offset_id = descriptor_use_data[0].table_offset[0];
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(table_offset_model[0], cbuffer_model[0]);
+	table_offset_model[1].resource_view_pack_id = globel_var;
+	table_offset_model[1].resource_view_offset_id = descriptor_use_data[0].table_offset[1];
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(table_offset_model[1], cbuffer_model[1]);
+	//创建纹理srv
+	SubMemoryPointer texture_need;
+	//tex_id = tex_brdf_id;
+	table_offset_model[2].resource_view_pack_id = globel_var;
+	table_offset_model[2].resource_view_offset_id = descriptor_use_data[0].table_offset[2];
+	ResourceViewPointer new_rvp = table_offset_model[2];
+	D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
+	//镜面反射环境光
+	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_ibl_spec_id, texture_need);
+	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_ibl_spec_id, SRV_desc);
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//漫反射环境光
+	new_rvp.resource_view_offset_id += 1;
+	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_ibl_diffuse_id, texture_need);
+	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_ibl_diffuse_id, SRV_desc);
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//brdf预处理纹理
+	new_rvp.resource_view_offset_id += 1;
+	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_brdf_id, texture_need);
+	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_brdf_id, SRV_desc);
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//模型自身的纹理
+	table_offset_model[3].resource_view_pack_id = globel_var;
+	table_offset_model[3].resource_view_offset_id = descriptor_use_data[0].table_offset[3];
+	new_rvp = table_offset_model[3];
+	for (int i = 0; i < model_deal->GetSubModelNum(); ++i) 
+	{
+		pancy_object_id now_tex_id = model_deal->GetSubModelTexture(i,TexType::tex_diffuse);
+		//漫反射纹理
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		new_rvp.resource_view_offset_id += 1;
+		//法线纹理
+		now_tex_id = model_deal->GetSubModelTexture(i, TexType::tex_normal);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		new_rvp.resource_view_offset_id += 1;
+		//金属度纹理
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_metallic_id, texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_metallic_id, SRV_desc);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		new_rvp.resource_view_offset_id += 1;
+		//粗糙度纹理
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_roughness_id, texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_roughness_id, SRV_desc);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	
+	return PancystarEngine::succeed;
+
+}
 PancystarEngine::EngineFailReason scene_test_simple::Init()
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -462,7 +565,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 		return check_error;
 	}
 	
-	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_test.json");
+	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_pbr.json");
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -485,7 +588,6 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_sky.json")->GetCbufferHeapName(Cbuffer_Heap_desc);
 	std::vector<DescriptorTableDesc> descriptor_use_data;
 	PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_sky.json")->GetDescriptorHeapUse(descriptor_use_data);
-	
 	int count = 0;
 	for (auto cbuffer_data = Cbuffer_Heap_desc.begin(); cbuffer_data != Cbuffer_Heap_desc.end(); ++cbuffer_data)
 	{
@@ -502,28 +604,52 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	table_offset[1].resource_view_offset_id = descriptor_use_data[0].table_offset[1];
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(table_offset[1], cbuffer[1]);
 	//预处理brdf
-
 	check_error = PretreatBrdf();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 
-	//加载一张纹理
-	pancy_object_id tex_id;
-	SubMemoryPointer texture_need;
-	//tex_id = tex_brdf_id;
-	
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Cubemap.json", tex_id);
+	//加载需要的pbr纹理
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Cubemap.json", tex_ibl_spec_id);
 	if (!check_error.CheckIfSucceed()) 
 	{
 		return check_error;
 	}
-	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_id, texture_need);
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\IrradianceMap.json", tex_ibl_diffuse_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Sphere002_metallic.json", tex_metallic_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Sphere002_roughness.json", tex_roughness_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//为pbr模型的渲染创建descriptor
+	check_error = PretreatPbrDescriptor();
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	
+
+
+
+	SubMemoryPointer texture_need;
+	//tex_id = tex_brdf_id;
+	
+	
+	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_ibl_spec_id, texture_need);
 	table_offset[2].resource_view_pack_id = globel_var;
 	table_offset[2].resource_view_offset_id = descriptor_use_data[0].table_offset[2];
 	D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
-	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_id, SRV_desc);
+	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_ibl_spec_id, SRV_desc);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(table_offset[2], texture_need, SRV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -874,4 +1000,5 @@ scene_test_simple::~scene_test_simple()
 	delete test_model;
 	delete model_cube;
 	delete model_sky;
+	delete model_deal;
 }

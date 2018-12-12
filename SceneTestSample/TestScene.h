@@ -37,6 +37,10 @@ public:
 		material_use = material_id;
 		return PancystarEngine::succeed;
 	}
+	inline pancy_object_id GetMaterial() 
+	{
+		return material_use;
+	}
 	inline D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()
 	{
 		return model_mesh->GetVertexBufferView();
@@ -64,8 +68,26 @@ protected:
 public:
 	PancyModelBasic(const std::string &desc_file_in);
 	void GetRenderMesh(std::vector<PancySubModel*> &render_mesh);
+	inline pancy_object_id GetSubModelNum()
+	{
+		return model_resource_list.size();
+	};
+	inline pancy_object_id GetSubModelTexture(pancy_object_id submodel_id, TexType texture_type) 
+	{
+		if (submodel_id > model_resource_list.size()) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL,"submodel id:"+std::to_string(submodel_id)+" bigger than the submodel num:"+std::to_string(model_resource_list.size())+" of model: " +resource_name);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find submodel from model ", error_message);
+			return 0;
+		}
+		pancy_object_id mat_use = model_resource_list[submodel_id]->GetMaterial();
+		auto material_data = material_list.find(mat_use);
+		auto texture_data = material_data->second.find(texture_type)->second;
+		return texture_data;
+	}
 	virtual ~PancyModelBasic();
 private:
+	
 	PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
 	virtual PancystarEngine::EngineFailReason LoadModel(
 		const std::string &resource_desc_file,
@@ -74,7 +96,6 @@ private:
 		std::vector<pancy_object_id> &texture_use
 	) = 0;
 	void GetRootPath(const std::string &desc_file_in);
-	
 };
 class PancyModelJson : public PancyModelBasic
 {
@@ -127,7 +148,7 @@ class scene_test_simple : public SceneRoot
 	ResourceViewPointer table_offset[3];
 	SubMemoryPointer cbuffer[2];
 	//资源绑定(待处理模型)
-	ResourceViewPointer table_offset_model[6];
+	ResourceViewPointer table_offset_model[4];
 	/*
 	cbuffer_per_object
 	cbuffer_per_view
@@ -141,8 +162,12 @@ class scene_test_simple : public SceneRoot
 	PancyModelBasic *model_sky;
 	PancyModelBasic *model_cube;
 	PancyModelBasic *model_deal;
-	//brdf纹理
+	//pbr纹理
 	pancy_object_id tex_brdf_id;
+	pancy_object_id tex_metallic_id;
+	pancy_object_id tex_roughness_id;
+	pancy_object_id tex_ibl_spec_id;
+	pancy_object_id tex_ibl_diffuse_id;
 public:
 	scene_test_simple()
 	{
@@ -160,6 +185,7 @@ private:
 	void PopulateCommandList(PancyModelBasic *now_res);
 	void PopulateCommandListSky();
 	PancystarEngine::EngineFailReason PretreatBrdf();
+	PancystarEngine::EngineFailReason PretreatPbrDescriptor();
 	void ClearScreen();
 	void WaitForPreviousFrame();
 	void updateinput(float delta_time);
