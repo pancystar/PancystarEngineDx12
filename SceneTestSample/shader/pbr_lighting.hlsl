@@ -210,9 +210,9 @@ float3 count_pbr_environment(
 
 	float3 specular_out = F0 * EnvBRDF.x + EnvBRDF.y;
 	float3 diffuse_out = realAlbedo / PI;
-	float3 ambient_diffuse = tex_ao * color_diffuse.xyz * (diffuse_out)*(1- specular_out);
-	float3 ambient_specular = tex_ao * enviornment_color.xyz * (F0 * EnvBRDF.x + EnvBRDF.y);
-	return ambient_diffuse + ambient_specular;
+	float3 ambient_diffuse = tex_ao * color_diffuse.xyz * (diffuse_out) * (1.0f- specular_out);
+	float3 ambient_specular = tex_ao * enviornment_color.xyz * (specular_out);
+	return ambient_specular + ambient_diffuse;
 }
 float4 PSMain(PSInput pin) : SV_TARGET
 {
@@ -233,18 +233,17 @@ float4 PSMain(PSInput pin) : SV_TARGET
 	float3 real_normal = 2 * normal_color.rgb - 1;
 	real_normal = normalize(mul(real_normal, T2W));
 	//虚拟方向光光源
-	float3 light_color = float3(0.5, 0.5, 0.5);
+	float3 light_color = float3(1.0, 1.0, 1.0);
 	float3 light_dir = normalize(float3(1,1,0));
 	//计算直接光照所需的pbr参数
 	float3 view_dir = normalize(view_position.xyz - pin.pos_out.xyz);
 	float3 realAlbedo = diffuse_color.rgb - diffuse_color.rgb * metallic_color.r;
 	float3 F0 = lerp(0.03f, diffuse_color.rgb, metallic_color.r);
 	float alpha = roughness_color.r*roughness_color.r;
-	float diffuse_angle = dot(real_normal, light_dir);
+	float diffuse_angle = max(0.0f,dot(real_normal, light_dir));
 	float3 reflect_dir = normalize(reflect(-view_dir, real_normal));
 	float NoV = dot(real_normal, view_dir);
-
-	float3 dir_light_color = count_pbr_reflect(
+	float3 dir_light_color = max(0.0f, count_pbr_reflect(
 		light_color,
 		realAlbedo,
 		F0,
@@ -254,7 +253,7 @@ float4 PSMain(PSInput pin) : SV_TARGET
 		view_dir,
 		diffuse_angle,
 		reflect_dir
-	);
+	));
 	float3 environment_light_color = count_pbr_environment(
 		roughness_color.r,
 		NoV,
@@ -263,5 +262,6 @@ float4 PSMain(PSInput pin) : SV_TARGET
 		F0,
 		1.0f
 	);
+	//return float4(environment_light_color, 1.0f);
 	return float4(dir_light_color + environment_light_color,1.0f);
 }

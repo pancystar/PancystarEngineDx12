@@ -221,7 +221,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				//生成纹理使用数据
 				//使用漫反射纹理作为第一个纹理的偏移量,uvid的y通量记录纹理数量
 				point_need[j].tex_id.x = mat_list_now->second.find(TexType::tex_diffuse)->second;
-				point_need[j].tex_id.y = mat_list_now->second.size();
+				point_need[j].tex_id.y = mat_list_now->second.size()+2;//金属度及粗糙度
 			}
 			PancySubModel *new_submodel = new PancySubModel();
 			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces*3, material_use);

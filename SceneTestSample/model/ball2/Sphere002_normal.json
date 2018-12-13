@@ -2,6 +2,6 @@
   "IfFromFile": 1,
   "FileName": "model\\ball2\\Sphere002_normal.dds",
   "IfAutoBuildMipMap": 0,
-  "IfForceSrgb": 1,
+  "IfForceSrgb": 0,
   "MaxSize": 0
 }
