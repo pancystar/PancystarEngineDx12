@@ -10,6 +10,13 @@
 #else
 #pragma comment(lib,"..\\x64\\Release\\PancystarEngineDx12.lib")
 #endif
+struct per_view_pack 
+{
+	DirectX::XMFLOAT4X4 view_matrix;
+	DirectX::XMFLOAT4X4 projectmatrix;
+	DirectX::XMFLOAT4X4 invview_matrix;
+	DirectX::XMFLOAT4 view_position;
+};
 enum TexType
 {
 	tex_diffuse = 0,
@@ -83,7 +90,7 @@ public:
 		pancy_object_id mat_use = model_resource_list[submodel_id]->GetMaterial();
 		auto material_data = material_list.find(mat_use);
 		auto texture_data = material_data->second.find(texture_type)->second;
-		return texture_data;
+		return texture_list[texture_data];
 	}
 	virtual ~PancyModelBasic();
 private:
@@ -184,6 +191,7 @@ private:
 	PancystarEngine::EngineFailReason ScreenChange();
 	void PopulateCommandList(PancyModelBasic *now_res);
 	void PopulateCommandListSky();
+	void PopulateCommandListModelDeal();
 	PancystarEngine::EngineFailReason PretreatBrdf();
 	PancystarEngine::EngineFailReason PretreatPbrDescriptor();
 	void ClearScreen();

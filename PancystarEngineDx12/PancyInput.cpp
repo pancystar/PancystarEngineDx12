@@ -21,6 +21,9 @@ PancystarEngine::EngineFailReason PancyInput::Init(HWND hwnd, HINSTANCE hinst)
 }
 PancyInput::~PancyInput()
 {
+	pancy_dinput->Release();
+	dinput_keyboard->Release();
+	dinput_mouse->Release();
 }
 PancystarEngine::EngineFailReason PancyInput::DinputClear(HWND hwnd,DWORD keyboardCoopFlags, DWORD mouseCoopFlags)
 {

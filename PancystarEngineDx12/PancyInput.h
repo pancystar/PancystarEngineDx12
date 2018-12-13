@@ -3,9 +3,9 @@
 using namespace std;
 class PancyInput
 {
-	ComPtr<IDirectInput8> pancy_dinput;           //DirectInput的设备接口
-	ComPtr<IDirectInputDevice8> dinput_keyboard;  //键盘设备接口
-	ComPtr<IDirectInputDevice8> dinput_mouse;     //鼠标设备接口
+	IDirectInput8 *pancy_dinput;           //DirectInput的设备接口
+	IDirectInputDevice8 *dinput_keyboard;  //键盘设备接口
+	IDirectInputDevice8 *dinput_mouse;     //鼠标设备接口
 	char                       key_buffer[256];   //键盘按键信息的缓存
 	DIMOUSESTATE               mouse_buffer;      //鼠标控制信息的缓存
 private:
