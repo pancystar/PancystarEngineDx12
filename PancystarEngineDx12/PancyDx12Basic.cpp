@@ -56,6 +56,7 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
 		return error_message;
 	}
+	command_queue_direct->SetName(PancystarEngine::PancyString("direct queue").GetUnicodeString().c_str());
 	//´´½¨ÆÁÄ»
 	check_error = ResetScreen(width, height);
 	if (!check_error.CheckIfSucceed())

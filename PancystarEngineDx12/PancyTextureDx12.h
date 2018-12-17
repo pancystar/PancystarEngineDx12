@@ -54,7 +54,7 @@ namespace PancystarEngine
 		{
 			if (!if_copy_finish) 
 			{
-				if (!ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->CheckGpuBrokenFence(copy_broken_fence))
+				if (!ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->CheckGpuBrokenFence(copy_broken_fence))
 				{
 					PancystarEngine::EngineFailReason error_message(E_FAIL,"The Texture haven't been copy finished to GPU, call WaitThreadPool to wait until it finished copy");
 					PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture Resource", error_message);

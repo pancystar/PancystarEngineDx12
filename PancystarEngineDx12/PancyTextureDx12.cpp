@@ -562,7 +562,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWai
 	//开始拷贝
 	
 	//获取拷贝所用的commandlist
-	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -602,12 +602,12 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWai
 	}
 	copy_render_list->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(tex_data_res->GetResource().Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 	copy_render_list->UnlockPrepare();
-	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1,&copy_render_list_ID);
+	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1,&copy_render_list_ID);
 	HeapFree(GetProcessHeap(), 0, pMem);
 	//插眼
-	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(copy_broken_fence);
+	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(copy_broken_fence);
 	//等待
-	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->WaitGpuBrokenFence(copy_broken_fence);
+	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(copy_broken_fence);
 	//释放资源
 	SubresourceControl::GetInstance()->FreeSubResource(update_tex_data);
 	if_copy_finish = true;
