@@ -115,6 +115,7 @@
     </QtRcc>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="222.cpp" />
     <ClCompile Include="Dx12Widget.cpp" />
     <ClCompile Include="EngineModelDesign.cpp" />
     <ClCompile Include="main.cpp" />
