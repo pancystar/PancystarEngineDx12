@@ -175,13 +175,34 @@ class scene_test_simple : public SceneRoot
 	pancy_object_id tex_roughness_id;
 	pancy_object_id tex_ibl_spec_id;
 	pancy_object_id tex_ibl_diffuse_id;
+	//∆¡ƒªø’º‰ªÿ∂¡Œ∆¿Ì
+	bool if_readback_build;
+	int32_t texture_size;
+	pancy_object_id tex_uint_save[2];
+	pancy_object_id read_back_buffer[2];
+	pancy_object_id depth_stencil_mask[2];
+	ResourceViewPointer rtv_mask[2];
+	ResourceViewPointer dsv_mask[2];
+	D3D12_TEXTURE_COPY_LOCATION dst_loc;
+	D3D12_TEXTURE_COPY_LOCATION src_loc;
+	int32_t x_point;
+	int32_t y_point;
+	bool if_pointed;
+	uint8_t now_point_answer;
 public:
 	scene_test_simple()
 	{
 		renderlist_ID.clear();
+		if_readback_build = false;
+		if_pointed = false;
 	}
 	~scene_test_simple();
-	
+	inline void PointWindow(int32_t x_pos, int32_t y_pos) 
+	{
+		if_pointed = true;
+		x_point = x_pos;
+		y_point = y_pos;
+	}
 	void Display();
 	void DisplayNopost() {};
 	void DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix);
@@ -192,11 +213,13 @@ private:
 	void PopulateCommandList(PancyModelBasic *now_res);
 	void PopulateCommandListSky();
 	void PopulateCommandListModelDeal();
+	void PopulateCommandListReadBack();
 	PancystarEngine::EngineFailReason PretreatBrdf();
 	PancystarEngine::EngineFailReason PretreatPbrDescriptor();
 	void ClearScreen();
 	void WaitForPreviousFrame();
 	void updateinput(float delta_time);
+	void ReadBackData(int x_mouse, int y_mouse);
 	inline int ComputeIntersectionArea(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2)
 	{
 		return max(0, min(ax2, bx2) - max(ax1, bx1)) * max(0, min(ay2, by2) - max(ay1, by1));

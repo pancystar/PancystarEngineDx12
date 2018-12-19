@@ -12,9 +12,8 @@ cbuffer per_frame : register(b1)
 	float4 view_position;
 }
 texture2D texture_test[] : register(t0);
-//texture2D texture_test : register(t0);
 SamplerState g_sampler : register(s0);
-struct VSInput 
+struct VSInput
 {
 	float3 position : POSITION;
 	float3 normal   : NORMAL;
@@ -33,18 +32,18 @@ struct PSInput
 PSInput VSMain(VSInput vinput)
 {
 	PSInput result;
-
-	result.position = mul(float4(vinput.position,1.0f), WVP_matrix);
-	result.color = float4(vinput.normal,1.0f);
+	result.position = mul(float4(vinput.position, 1.0f), WVP_matrix);
+	result.color = float4(vinput.normal, 1.0f);
 	result.pos_out = mul(float4(vinput.position, 1.0), world_matrix);
 	result.pos_out = mul(result.pos_out, view_matrix);
 	result.tex_id = vinput.tex_id;
-	result.tex_uv.xy = mul(float4(vinput.tex_uv.xy,0,0), UV_matrix).xy;
+	result.tex_uv.xy = mul(float4(vinput.tex_uv.xy, 0, 0), UV_matrix).xy;
 	result.tex_uv.zw = mul(float4(vinput.tex_uv.zw, 0, 0), UV_matrix).zw;
 	return result;
 }
-float4 PSMain(PSInput input) : SV_TARGET
+uint4 PSMain(PSInput input) : SV_TARGET
 {
-	float4 color_1 = texture_test[0].Sample(g_sampler, input.tex_uv.xy);
-	return color_1;
+	uint4 index_out;
+	index_out.r = input.tex_id.x;
+	return index_out;
 }

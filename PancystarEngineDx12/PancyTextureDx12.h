@@ -4,6 +4,8 @@
 #include<LoaderHelpers.h>
 #include<DDSTextureLoader.h>
 #include<WICTextureLoader.h>
+#define TextureHeapAliaze 16777216
+#define BufferHeapAliaze 4194304
 namespace PancystarEngine
 {
 	uint32_t MyCountMips(uint32_t width, uint32_t height);
@@ -173,6 +175,13 @@ namespace PancystarEngine
 			RTV_desc = tex_data->GetRTVDesc();
 			return PancystarEngine::succeed;
 		}
+		PancystarEngine::EngineFailReason BuildTextureTypeJson(
+			const D3D12_RESOURCE_DESC &subresource_desc,
+			int32_t resource_num,
+			D3D12_HEAP_TYPE heap_type,
+			const std::vector<D3D12_HEAP_FLAGS> &heap_flags,
+			D3D12_RESOURCE_STATES res_state,
+			std::string &subresource_desc_name);
 	private:
 		PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out);
 	};

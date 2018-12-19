@@ -8,7 +8,7 @@ PancySubModel::PancySubModel()
 }
 PancySubModel::~PancySubModel()
 {
-	if (model_mesh != NULL) 
+	if (model_mesh != NULL)
 	{
 		delete model_mesh;
 	}
@@ -20,11 +20,11 @@ PancyModelBasic::PancyModelBasic(const std::string &desc_file_in) :PancystarEngi
 void PancyModelBasic::GetRootPath(const std::string &desc_file_in)
 {
 	int end = 0;
-	for (int32_t i = desc_file_in.size()-1; i >= 0; --i) 
+	for (int32_t i = desc_file_in.size() - 1; i >= 0; --i)
 	{
-		if (desc_file_in[i] == '\\') 
+		if (desc_file_in[i] == '\\')
 		{
-			end = i+1;
+			end = i + 1;
 			break;
 		}
 	}
@@ -32,16 +32,16 @@ void PancyModelBasic::GetRootPath(const std::string &desc_file_in)
 }
 void PancyModelBasic::GetRenderMesh(std::vector<PancySubModel*> &render_mesh)
 {
-	for (auto sub_mesh_data = model_resource_list.begin(); sub_mesh_data < model_resource_list.end(); ++sub_mesh_data) 
+	for (auto sub_mesh_data = model_resource_list.begin(); sub_mesh_data < model_resource_list.end(); ++sub_mesh_data)
 	{
 		render_mesh.push_back(*sub_mesh_data);
 	}
 }
-PancystarEngine::EngineFailReason PancyModelBasic::InitResource(const std::string &resource_desc_file) 
+PancystarEngine::EngineFailReason PancyModelBasic::InitResource(const std::string &resource_desc_file)
 {
 	PancystarEngine::EngineFailReason check_error;
 	check_error = LoadModel(resource_desc_file, model_resource_list, material_list, texture_list);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
@@ -49,7 +49,7 @@ PancystarEngine::EngineFailReason PancyModelBasic::InitResource(const std::strin
 }
 PancyModelBasic::~PancyModelBasic()
 {
-	for (auto data_submodel = model_resource_list.begin(); data_submodel != model_resource_list.end(); ++data_submodel) 
+	for (auto data_submodel = model_resource_list.begin(); data_submodel != model_resource_list.end(); ++data_submodel)
 	{
 		delete *data_submodel;
 	}
@@ -69,7 +69,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	std::vector<PancySubModel*> &model_resource,
 	std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
 	std::vector<pancy_object_id> &texture_use
-){
+) {
 	PancystarEngine::EngineFailReason check_error;
 	model_need = importer.ReadFile(resource_desc_file,
 		aiProcess_MakeLeftHanded |
@@ -88,20 +88,20 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	for (unsigned int i = 0; i < model_need->mNumMaterials; ++i)
 	{
 		std::unordered_map<TexType, pancy_object_id> mat_tex_list;
-		
+
 		const aiMaterial* pMaterial = model_need->mMaterials[i];
 		aiString Path;
 		//漫反射纹理
 		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0 && pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 		{
 			pancy_object_id id_need;
-			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(),id_need);
-			if (!check_error.CheckIfSucceed()) 
+			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
+			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
 			//将纹理数据加载到材质表
-			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse,texture_use.size()));
+			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, texture_use.size()));
 			texture_use.push_back(id_need);
 		}
 		//法线纹理
@@ -151,9 +151,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		//获取模型的材质编号
 		pancy_object_id material_use = paiMesh->mMaterialIndex;
 		auto mat_list_now = material_list.find(material_use);
-		if (mat_list_now == material_list.end()) 
+		if (mat_list_now == material_list.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "havn't load the material id: "+std::to_string(material_use)+"in model:" + resource_desc_file);
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "havn't load the material id: " + std::to_string(material_use) + "in model:" + resource_desc_file);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
 			return error_message;
 		}
@@ -181,7 +181,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		else if (use_point_anim)
 		{
 		}
-		else 
+		else
 		{
 			PancystarEngine::PointCommon *point_need = new PancystarEngine::PointCommon[paiMesh->mNumVertices];
 			for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
@@ -221,11 +221,11 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				//生成纹理使用数据
 				//使用漫反射纹理作为第一个纹理的偏移量,uvid的y通量记录纹理数量
 				point_need[j].tex_id.x = mat_list_now->second.find(TexType::tex_diffuse)->second;
-				point_need[j].tex_id.y = mat_list_now->second.size()+2;//金属度及粗糙度
+				point_need[j].tex_id.y = mat_list_now->second.size() + 2;//金属度及粗糙度
 			}
 			PancySubModel *new_submodel = new PancySubModel();
-			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces*3, material_use);
-			if (!check_error.CheckIfSucceed()) 
+			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
+			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
@@ -236,14 +236,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	}
 
 	//加载临时的渲染规则
-	
+
 	//创建cbuffer
-	
+
 	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
 	PancyEffectGraphic::GetInstance()->GetPSO(pso_use)->GetCbufferHeapName(Cbuffer_Heap_desc);
 	std::vector<DescriptorTableDesc> descriptor_use_data;
 	PancyEffectGraphic::GetInstance()->GetPSO(pso_use)->GetDescriptorHeapUse(descriptor_use_data);
-	
+
 	for (auto cbuffer_data = Cbuffer_Heap_desc.begin(); cbuffer_data != Cbuffer_Heap_desc.end(); ++cbuffer_data)
 	{
 		SubMemoryPointer cbuffer_use;
@@ -275,21 +275,21 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	table_offset.push_back(new_res_view);
 
 	//创建纹理访问器
-	for (int i = 0; i < texture_use.size(); ++i) 
+	for (int i = 0; i < texture_use.size(); ++i)
 	{
 		//加载一张纹理
 		SubMemoryPointer texture_need;
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(texture_use[i], texture_need);
 		new_res_view.resource_view_pack_id = globel_var;
-		new_res_view.resource_view_offset_id = descriptor_use_data[0].table_offset[2]+i;
+		new_res_view.resource_view_offset_id = descriptor_use_data[0].table_offset[2] + i;
 		D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
 		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(texture_use[i], SRV_desc);
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_res_view, texture_need, SRV_desc);
-		if (!check_error.CheckIfSucceed()) 
+		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		if (i == 0) 
+		if (i == 0)
 		{
 			table_offset.push_back(new_res_view);
 		}
@@ -317,11 +317,11 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	return PancystarEngine::succeed;
 
 }
-void PancyModelAssimp::update(DirectX::XMFLOAT4X4 world_matrix,DirectX::XMFLOAT4X4 uv_matrix, float delta_time)
+void PancyModelAssimp::update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT4X4 uv_matrix, float delta_time)
 {
-	
+
 	PancystarEngine::EngineFailReason check_error;
-	
+
 	DirectX::XMFLOAT4X4 view_mat;
 	PancyCamera::GetInstance()->CountViewMatrix(&view_mat);
 	//填充cbuffer
@@ -397,7 +397,7 @@ public:
 private:
 	PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancystarEngine::PancyBasicVirtualResource** resource_out);
 };
-PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancystarEngine::PancyBasicVirtualResource** resource_out) 
+PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancystarEngine::PancyBasicVirtualResource** resource_out)
 {
 
 }
@@ -406,6 +406,7 @@ PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in,
 
 PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 {
+	PancystarEngine::EngineFailReason check_error;
 	view_port.TopLeftX = 0;
 	view_port.TopLeftY = 0;
 	view_port.Width = static_cast<FLOAT>(Scene_width);
@@ -416,6 +417,191 @@ PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 	view_rect.top = 0;
 	view_rect.right = Scene_width;
 	view_rect.bottom = Scene_height;
+	//创建两个离屏缓冲区，用于渲染以及数据回读
+	std::vector<D3D12_HEAP_FLAGS> heap_flags;
+	//创建屏幕空间uint4渲染目标格式
+	D3D12_RESOURCE_DESC uint_tex_desc;
+	uint_tex_desc.Alignment = 0;
+	uint_tex_desc.DepthOrArraySize = 1;
+	uint_tex_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	uint_tex_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	uint_tex_desc.Format = DXGI_FORMAT_R8G8B8A8_UINT;
+	uint_tex_desc.Height = Scene_height;
+	uint_tex_desc.Width = Scene_width;
+	uint_tex_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	uint_tex_desc.MipLevels = 1;
+	uint_tex_desc.SampleDesc.Count = 1;
+	uint_tex_desc.SampleDesc.Quality = 0;
+	std::string subres_name;
+	heap_flags.clear();
+	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_BUFFERS);
+	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES);
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(uint_tex_desc, 1, D3D12_HEAP_TYPE_DEFAULT, heap_flags, D3D12_RESOURCE_STATE_COMMON, subres_name);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	std::string RGB8uint_file_data = "screentarget\\screen_" + std::to_string(Scene_width) + "_" + std::to_string(Scene_height) + "_RGBA8UINT.json";
+	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(RGB8uint_file_data))
+	{
+		Json::Value json_data_out;
+		//填充资源格式
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
+		//写入文件并标记为已创建
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, RGB8uint_file_data);
+		//将文件标记为已经创建
+		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(RGB8uint_file_data);
+	}
+	//创建屏幕空间readback缓冲区
+	uint64_t subresources_size;
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&uint_tex_desc, 0, 1, 0, nullptr, nullptr, nullptr, &subresources_size);
+	if (subresources_size % 65536 != 0)
+	{
+		//65536对齐
+		subresources_size = (subresources_size + 65536) & ~65535;
+	}
+	texture_size = subresources_size;
+	D3D12_RESOURCE_DESC default_tex_readback;
+	default_tex_readback.Alignment = 0;
+	default_tex_readback.DepthOrArraySize = 1;
+	default_tex_readback.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	default_tex_readback.Flags = D3D12_RESOURCE_FLAG_NONE;
+	default_tex_readback.Format = DXGI_FORMAT_UNKNOWN;
+	default_tex_readback.Height = 1;
+	default_tex_readback.Width = subresources_size;
+	default_tex_readback.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	default_tex_readback.MipLevels = 1;
+	default_tex_readback.SampleDesc.Count = 1;
+	default_tex_readback.SampleDesc.Quality = 0;
+	heap_flags.clear();
+	heap_flags.push_back(D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(default_tex_readback, 1, D3D12_HEAP_TYPE_READBACK, heap_flags, D3D12_RESOURCE_STATE_COPY_DEST, subres_name);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	std::string readback_data = "screentarget\\screen_" + std::to_string(Scene_width) + "_" + std::to_string(Scene_height) + "_RGBA8_readback.json";
+	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(readback_data))
+	{
+		Json::Value json_data_out;
+		//填充资源格式
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
+		//写入文件并标记为已创建
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, readback_data);
+		//将文件标记为已经创建
+		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(readback_data);
+	}
+	for (int i = 0; i < 2; ++i)
+	{
+		//根据新生成的格式创建两个离屏缓冲区
+		if (if_readback_build)
+		{
+			//之前已经生成了离屏数据，删除之前的备份
+			check_error = PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(tex_uint_save[i]);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			check_error = PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(read_back_buffer[i]);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			if_readback_build = false;
+		}
+		check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(RGB8uint_file_data, tex_uint_save[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(readback_data, read_back_buffer[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//创建一个额外的深度缓冲区
+		std::string depth_stencil_use = "screentarget\\screen_" + std::to_string(Scene_width) + "_" + std::to_string(Scene_height) + "_DSV.json";
+		auto check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(depth_stencil_use, depth_stencil_mask[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//创建深度模板缓冲区描述符
+		SubMemoryPointer tex_resource_data;
+		D3D12_DEPTH_STENCIL_VIEW_DESC DSV_desc;
+		check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(depth_stencil_mask[i], tex_resource_data);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetDSVDesc(depth_stencil_mask[i], DSV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		std::string dsv_descriptor_name = "json\\descriptor_heap\\DSV_1_descriptor_heap.json";
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, dsv_mask[i].resource_view_pack_id);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		dsv_mask[i].resource_view_offset_id = 0;
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildDSV(dsv_mask[i], tex_resource_data, DSV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//创建渲染目标
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_uint_save[i], tex_resource_data);
+		D3D12_RENDER_TARGET_VIEW_DESC RTV_desc;
+		PancystarEngine::PancyTextureControl::GetInstance()->GetRTVDesc(tex_uint_save[i], RTV_desc);
+		RTV_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+		std::string rtv_descriptor_name = "json\\descriptor_heap\\RTV_1_descriptor_heap.json";
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(rtv_descriptor_name, rtv_mask[i].resource_view_pack_id);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		rtv_mask[i].resource_view_offset_id = 0;
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildRTV(rtv_mask[i], tex_resource_data, RTV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//创建渲染回读数据的拷贝格式
+		int64_t per_memory_size;
+		SubMemoryPointer sub_res_rtv;
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_uint_save[i], sub_res_rtv);
+		auto memory_rtv_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_rtv, per_memory_size);
+		SubMemoryPointer sub_res_read_back;
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(read_back_buffer[i], sub_res_read_back);
+		auto memory_read_back_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_read_back, per_memory_size);
+
+		UINT64 MemToAlloc = static_cast<UINT64>(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64));
+		void* pMem = HeapAlloc(GetProcessHeap(), 0, static_cast<SIZE_T>(MemToAlloc));
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts = reinterpret_cast<D3D12_PLACED_SUBRESOURCE_FOOTPRINT*>(pMem);
+		UINT64* pRowSizesInBytes = reinterpret_cast<UINT64*>(pLayouts + 1);
+		UINT* pNumRows = reinterpret_cast<UINT*>(pRowSizesInBytes + 1);
+		D3D12_RESOURCE_DESC Desc = memory_rtv_data->GetResource()->GetDesc();
+		UINT64 RequiredSize = 0;
+		PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&Desc, 0, 1, 0, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
+		CD3DX12_TEXTURE_COPY_LOCATION dst_loc_desc(memory_read_back_data->GetResource().Get(), pLayouts[0]);
+		CD3DX12_TEXTURE_COPY_LOCATION src_loc_desc(memory_rtv_data->GetResource().Get(), 0);
+		dst_loc = dst_loc_desc;
+		src_loc = src_loc_desc;
+		HeapFree(GetProcessHeap(), 0, pMem);
+	}
+
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
@@ -478,9 +664,9 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 	table_offset_model[3].resource_view_pack_id = globel_var;
 	table_offset_model[3].resource_view_offset_id = descriptor_use_data[0].table_offset[3];
 	new_rvp = table_offset_model[3];
-	for (int i = 0; i < model_deal->GetSubModelNum(); ++i) 
+	for (int i = 0; i < model_deal->GetSubModelNum(); ++i)
 	{
-		pancy_object_id now_tex_id = model_deal->GetSubModelTexture(i,TexType::tex_diffuse);
+		pancy_object_id now_tex_id = model_deal->GetSubModelTexture(i, TexType::tex_diffuse);
 		//漫反射纹理
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
 		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
@@ -533,14 +719,14 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	point[1].tex_color = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	point[2].tex_color = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
 	point[3].tex_color = DirectX::XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
-	UINT index[] = { 0,1,2 ,0,2,3};
+	UINT index[] = { 0,1,2 ,0,2,3 };
 	test_model = new PancystarEngine::GeometryCommonModel<PancystarEngine::Point2D>(point, index, 4, 6);
 	check_error = test_model->Create();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	
+
 	//加载一个pso
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_test.json");
 	if (!check_error.CheckIfSucceed())
@@ -551,8 +737,8 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	//模型加载测试
 	model_sky = new PancyModelAssimp("model\\ball\\ball.obj", "json\\pipline_state_object\\pso_test.json");
 	check_error = model_sky->Create();
-	
-	
+
+
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -563,8 +749,13 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	
+
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_pbr.json");
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_screenmask.json");
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -611,7 +802,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 
 	//加载需要的pbr纹理
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Cubemap.json", tex_ibl_spec_id);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
@@ -636,14 +827,14 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	
+
 
 
 
 	SubMemoryPointer texture_need;
 	//tex_id = tex_brdf_id;
-	
-	
+
+
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_ibl_spec_id, texture_need);
 	table_offset[2].resource_view_pack_id = globel_var;
 	table_offset[2].resource_view_offset_id = descriptor_use_data[0].table_offset[2];
@@ -654,7 +845,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	
+
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
@@ -721,7 +912,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	ComPtr<ID3D12Resource> screen_rendertarget = rtv_res_data->GetResource();
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(RTV_pointer, rtvHandle);
-	
+
 	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, NULL);
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
@@ -730,7 +921,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &test_model->GetVertexBufferView());
 	m_commandList->GetCommandList()->IASetIndexBuffer(&test_model->GetIndexBufferView());
 	m_commandList->GetCommandList()->DrawIndexedInstanced(test_model->GetIndexNum(), 1, 0, 0, 0);
-	
+
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 	m_commandList->UnlockPrepare();
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_use);
@@ -739,6 +930,19 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 		return check_error;
 	}
 	return PancystarEngine::succeed;
+}
+void scene_test_simple::ReadBackData(int x_mouse,int y_mouse) 
+{
+	int64_t per_memory_size;
+	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+	SubMemoryPointer sub_res_read_back;
+	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(read_back_buffer[now_render_num], sub_res_read_back);
+	auto memory_read_back_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_read_back, per_memory_size);
+	uint8_t* read_back_data;
+	CD3DX12_RANGE readRange(0, 0);
+	memory_read_back_data->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&read_back_data));
+	now_point_answer = read_back_data[y_mouse *Scene_width*4 + x_mouse*4 + 0];
+	memory_read_back_data->GetResource()->Unmap(0, &readRange);
 }
 void scene_test_simple::Display()
 {
@@ -750,7 +954,8 @@ void scene_test_simple::Display()
 	PopulateCommandList(model_cube);
 	PopulateCommandListSky();
 	PopulateCommandListModelDeal();
-	if(renderlist_ID.size() >0)
+	PopulateCommandListReadBack();
+	if (renderlist_ID.size() > 0)
 	{
 		check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(renderlist_ID.size(), &renderlist_ID[0]);
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(broken_fence_id);
@@ -758,7 +963,12 @@ void scene_test_simple::Display()
 		WaitForPreviousFrame();
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(broken_fence_id);
 	}
-
+	//回读GPU数据
+	if (if_pointed) 
+	{
+		ReadBackData(x_point, y_point);
+		if_pointed = false;
+	}
 }
 void scene_test_simple::DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix)
 {
@@ -788,7 +998,7 @@ void scene_test_simple::ClearScreen()
 
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	m_commandList->GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH| D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	m_commandList->GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_data->GetResource().Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PRESENT));
 	m_commandList->UnlockPrepare();
@@ -797,7 +1007,7 @@ void scene_test_simple::ClearScreen()
 void scene_test_simple::PopulateCommandListSky()
 {
 	PancystarEngine::EngineFailReason check_error;
-	
+
 	PancyRenderCommandList *m_commandList;
 	PancyModelAssimp *render_object = dynamic_cast<PancyModelAssimp*>(model_sky);
 	auto pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_sky.json");
@@ -822,13 +1032,13 @@ void scene_test_simple::PopulateCommandListSky()
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	ComPtr<ID3D12Resource> screen_rendertarget = PancyDx12DeviceBasic::GetInstance()->GetBackBuffer(rtvHandle);
-	
+
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-	
+
 	//修改资源格式为dsv
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	screen_rendertarget->SetName(PancystarEngine::PancyString("back_buffer"+std::to_string(now_render_num)).GetUnicodeString().c_str());
+	screen_rendertarget->SetName(PancystarEngine::PancyString("back_buffer" + std::to_string(now_render_num)).GetUnicodeString().c_str());
 	SubMemoryPointer sub_res_dsv;
 	int64_t per_memory_size;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
@@ -839,13 +1049,13 @@ void scene_test_simple::PopulateCommandListSky()
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(Default_depthstencil_view[now_render_num], dsvHandle);
 
 	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-	
+
 	//const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	//m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	std::vector<PancySubModel*> model_resource_list;
 	render_object->GetRenderMesh(model_resource_list);
-	for (int i = 0; i < model_resource_list.size(); ++i) 
+	for (int i = 0; i < model_resource_list.size(); ++i)
 	{
 		m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &model_resource_list[i]->GetVertexBufferView());
 		m_commandList->GetCommandList()->IASetIndexBuffer(&model_resource_list[i]->GetIndexBufferView());
@@ -855,8 +1065,82 @@ void scene_test_simple::PopulateCommandListSky()
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_data->GetResource().Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PRESENT));
 	m_commandList->UnlockPrepare();
 }
+void scene_test_simple::PopulateCommandListReadBack()
+{
+	PancystarEngine::EngineFailReason check_error;
+	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+	PancyRenderCommandList *m_commandList;
+	PancyModelAssimp *render_object = dynamic_cast<PancyModelAssimp*>(model_deal);
+	auto pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_screenmask.json");
+	PancyThreadIdGPU commdlist_id_use;
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data->GetData(), &m_commandList, commdlist_id_use);
+	renderlist_ID.push_back(commdlist_id_use);
+	m_commandList->GetCommandList()->RSSetViewports(1, &view_port);
+	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
+	auto rootsignature_data = pso_data->GetRootSignature()->GetResource();
+	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
+	//设置描述符堆
+	ID3D12DescriptorHeap *heap_pointer;
+	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset_model[0].resource_view_pack_id.descriptor_heap_type_id).Get();
+	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
+	//设置描述符堆的偏移
+	for (int i = 0; i < 2; ++i)
+	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
+		auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(table_offset_model[i], srvHandle);
+		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(i, srvHandle);
+	}
+	//bindless texture
+	CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
+	auto heap_offset_bindless = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(table_offset_model[3], srvHandle);
+	m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(2, srvHandle);
+	//渲染目标
+	int64_t per_memory_size;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+	SubMemoryPointer sub_res_rtv;
+	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_uint_save[now_render_num], sub_res_rtv);
+	auto memory_rtv_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_rtv, per_memory_size);
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_rtv_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(rtv_mask[now_render_num], rtvHandle);
+	//修改资源格式为dsv
+	
+	SubMemoryPointer sub_res_dsv;
+	
+	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(depth_stencil_mask[now_render_num], sub_res_dsv);
+	auto memory_dsv_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_dsv, per_memory_size);
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_dsv_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+	//获取深度缓冲区
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(dsv_mask[now_render_num], dsvHandle);
+
+	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+	const float clearColor[] = { 255.0f, 255.0f, 255.0f, 255.0f };
+	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	m_commandList->GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	std::vector<PancySubModel*> model_resource_list;
+	render_object->GetRenderMesh(model_resource_list);
+	for (int i = 0; i < model_resource_list.size(); ++i)
+	{
+		m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &model_resource_list[i]->GetVertexBufferView());
+		m_commandList->GetCommandList()->IASetIndexBuffer(&model_resource_list[i]->GetIndexBufferView());
+		m_commandList->GetCommandList()->DrawIndexedInstanced(model_resource_list[i]->GetIndexNum(), 1, 0, 0, 0);
+	}
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_rtv_data->GetResource().Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	SubMemoryPointer sub_res_read_back;
+	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(read_back_buffer[now_render_num], sub_res_read_back);
+	auto memory_read_back_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_read_back, per_memory_size);
+
+	//CD3DX12_TEXTURE_COPY_LOCATION Dst(tex_data_res->GetResource().Get(), i + 0);
+	//CD3DX12_TEXTURE_COPY_LOCATION Src(copy_data_res->GetResource().Get(), pLayouts[i]);
+	m_commandList->GetCommandList()->CopyTextureRegion(&dst_loc,0,0,0, &src_loc, nullptr);
+	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_dsv_data->GetResource().Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PRESENT));
+	m_commandList->UnlockPrepare();
+}
 void scene_test_simple::PopulateCommandListModelDeal()
 {
+	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	PancystarEngine::EngineFailReason check_error;
 
 	PancyRenderCommandList *m_commandList;
@@ -887,7 +1171,7 @@ void scene_test_simple::PopulateCommandListModelDeal()
 
 
 	//修改资源格式为dsv
-	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+	
 	SubMemoryPointer sub_res_dsv;
 	int64_t per_memory_size;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
@@ -1030,14 +1314,14 @@ void scene_test_simple::Update(float delta_time)
 {
 	PancystarEngine::EngineFailReason check_error;
 	updateinput(delta_time);
-	DirectX::XMFLOAT4X4 world_mat,uv_mat;
-	DirectX::XMStoreFloat4x4(&uv_mat,DirectX::XMMatrixIdentity());
-	DirectX::XMStoreFloat4x4(&world_mat,DirectX::XMMatrixIdentity());
+	DirectX::XMFLOAT4X4 world_mat, uv_mat;
+	DirectX::XMStoreFloat4x4(&uv_mat, DirectX::XMMatrixIdentity());
+	DirectX::XMStoreFloat4x4(&world_mat, DirectX::XMMatrixIdentity());
 	PancyModelAssimp *render_object_sky = dynamic_cast<PancyModelAssimp*>(model_sky);
 	render_object_sky->update(world_mat, uv_mat, delta_time);
 
-	DirectX::XMStoreFloat4x4(&uv_mat,  DirectX::XMMatrixScaling(1000,1000,0));
-	DirectX::XMStoreFloat4x4(&world_mat, DirectX::XMMatrixScaling(100,2,100)*DirectX::XMMatrixTranslation(0, -5, 0));
+	DirectX::XMStoreFloat4x4(&uv_mat, DirectX::XMMatrixScaling(1000, 1000, 0));
+	DirectX::XMStoreFloat4x4(&world_mat, DirectX::XMMatrixScaling(100, 2, 100)*DirectX::XMMatrixTranslation(0, -5, 0));
 	PancyModelAssimp *render_object_cube = dynamic_cast<PancyModelAssimp*>(model_cube);
 	render_object_cube->update(world_mat, uv_mat, delta_time);
 
@@ -1051,7 +1335,7 @@ void scene_test_simple::Update(float delta_time)
 	PancyCamera::GetInstance()->CountInvviewMatrix(&inv_view_mat);
 	//填充天空cbuffer
 	DirectX::XMMATRIX proj_mat = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, 1280.0f / 720.0f, 0.1f, 1000.0f);
-	DirectX::XMStoreFloat4x4(&sky_world_mat[0], DirectX::XMMatrixTranspose(DirectX::XMMatrixScaling(100,100,100)));
+	DirectX::XMStoreFloat4x4(&sky_world_mat[0], DirectX::XMMatrixTranspose(DirectX::XMMatrixScaling(100, 100, 100)));
 	DirectX::XMStoreFloat4x4(&sky_world_mat[1], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&sky_world_mat[0]) * DirectX::XMLoadFloat4x4(&view_mat) * proj_mat));
 	DirectX::XMStoreFloat4x4(&sky_world_mat[2], DirectX::XMMatrixIdentity());
 	DirectX::XMVECTOR x_delta;

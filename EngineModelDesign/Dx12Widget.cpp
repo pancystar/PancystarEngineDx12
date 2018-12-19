@@ -1,11 +1,9 @@
 #include "Dx12Widget.h"
 D3d12RenderWidget::D3d12RenderWidget(QWidget *parent) : QWidget(parent)
 {
-
-	//设置窗口属性，关键步骤，否则D3D绘制出问题
 	setAttribute(Qt::WA_PaintOnScreen, true);
 	setAttribute(Qt::WA_NativeWindow, true);
-	//在这里初始化D3D和场景
+	if_build = false;
 }
 
 D3d12RenderWidget::~D3d12RenderWidget()
@@ -68,31 +66,23 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::Create(SceneRoot *new_scene
 	{
 		return check_error;
 	}
+	if_build = true;
 	return PancystarEngine::succeed;
+}
+void D3d12RenderWidget::mouseDoubleClickEvent(QMouseEvent *event_need)
+{
+	//click_pos_x = event_need->x();
+	//click_pos_y = event_need->y();
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->PointWindow(event_need->x(), event_need->y());
+	int a = 0;
 }
 void D3d12RenderWidget::paintEvent(QPaintEvent *event)
 {
-	//计算fps
-	//frameCount++;
-	//if (getTime() > 1.0f)
-	//{
-	//	fps = frameCount;
-	//	frameCount = 0;
-	//	startFPStimer();
-		//设置父窗口标题显示fps值
-	//	parentWidget()->setWindowTitle("FPS: " + QString::number(fps));
-	//}
-	//frameTime = getFrameTime();
-	//更新场景和渲染场景
-	//UpdateScene(frameTime);
-	//RenderScene();
-	//保证此函数体每一帧都调用
-	static int check = 0;
-	if (check == 0) 
+	if (if_build) 
 	{
 		new_scene->Update(0);
 		new_scene->Display();
 	}
-	
 	update();
 }

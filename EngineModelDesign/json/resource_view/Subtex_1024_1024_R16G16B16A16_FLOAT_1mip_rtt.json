@@ -15,6 +15,6 @@
     "Width": 1024
   },
   "D3D12_RESOURCE_STATES": "D3D12_RESOURCE_STATE_COMMON",
-  "ResourceType": "json\\resource_heap\\tex_1024_1024_R16G16B16A16_FLOAT_1mip.json",
+  "ResourceType": "json\\resource_heap\\tex_1024_1024_R16G16B16A16_FLOAT_1mip_rtt.json",
   "per_block_size": 8388608
 }

@@ -33,10 +33,128 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	PancystarEngine::EngineFailReason check_error;
 	Scene_width = width_in;
 	Scene_height = height_in;
-	//删除旧的深度模板缓冲区
-	if (If_dsv_loaded) 
+	std::vector<D3D12_HEAP_FLAGS> heap_flags;
+	//创建新的屏幕空间纹理格式
+	D3D12_RESOURCE_DESC default_tex_RGB_desc;
+	D3D12_RESOURCE_DESC default_tex_SRGB_desc;
+	D3D12_RESOURCE_DESC default_tex_float_desc;
+	D3D12_RESOURCE_DESC depth_stencil_desc;
+	default_tex_RGB_desc.Alignment = 0;
+	default_tex_RGB_desc.DepthOrArraySize = 1;
+	default_tex_RGB_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	default_tex_RGB_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	default_tex_RGB_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	default_tex_RGB_desc.Height = Scene_height;
+	default_tex_RGB_desc.Width = Scene_width;
+	default_tex_RGB_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	default_tex_RGB_desc.MipLevels = 1;
+	default_tex_RGB_desc.SampleDesc.Count = 1;
+	default_tex_RGB_desc.SampleDesc.Quality = 0;
+	std::string subres_name;
+	//创建rgb8类型的窗口大小纹理格式
+	heap_flags.clear();
+	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_BUFFERS);
+	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES);
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(default_tex_RGB_desc, 1, D3D12_HEAP_TYPE_DEFAULT,heap_flags, D3D12_RESOURCE_STATE_COMMON, subres_name);
+	if (!check_error.CheckIfSucceed())
 	{
-		for (int i = 0; i < back_buffer_num; ++i) 
+		return check_error;
+	}
+	std::string RGB8_file_data = "screentarget\\screen_" + std::to_string(width_in) + "_" + std::to_string(height_in) + "_RGB8.json";
+	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(RGB8_file_data))
+	{
+		Json::Value json_data_out;
+		//填充资源格式
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
+		//写入文件并标记为已创建
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, RGB8_file_data);
+		//将文件标记为已经创建
+		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(RGB8_file_data);
+	}
+	//创建srgb8类型的窗口大小纹理格式
+	default_tex_SRGB_desc = default_tex_RGB_desc;
+	default_tex_SRGB_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(default_tex_SRGB_desc, 1, D3D12_HEAP_TYPE_DEFAULT, heap_flags, D3D12_RESOURCE_STATE_COMMON, subres_name);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	std::string SRGB8_file_data = "screentarget\\screen_" + std::to_string(width_in) + "_" + std::to_string(height_in) + "_SRGB8.json";
+	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(SRGB8_file_data))
+	{
+		Json::Value json_data_out;
+		//填充资源格式
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
+		//写入文件并标记为已创建
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, SRGB8_file_data);
+		//将文件标记为已经创建
+		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(SRGB8_file_data);
+	}
+	//创建rgb16类型的窗口大小纹理格式
+	default_tex_float_desc = default_tex_RGB_desc;
+	default_tex_float_desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(default_tex_float_desc, 1, D3D12_HEAP_TYPE_DEFAULT, heap_flags, D3D12_RESOURCE_STATE_COMMON, subres_name);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	std::string RGB16_file_data = "screentarget\\screen_" + std::to_string(width_in) + "_" + std::to_string(height_in) + "_RGB16.json";
+	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(RGB16_file_data))
+	{
+		Json::Value json_data_out;
+		//填充资源格式
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
+		//写入文件并标记为已创建
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, RGB16_file_data);
+		//将文件标记为已经创建
+		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(RGB16_file_data);
+	}
+	//创建深度模板缓冲区
+	depth_stencil_desc = default_tex_RGB_desc;
+	depth_stencil_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	depth_stencil_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	heap_flags.clear();
+	heap_flags.push_back(D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES);
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(depth_stencil_desc, 1, D3D12_HEAP_TYPE_DEFAULT, heap_flags, D3D12_RESOURCE_STATE_COMMON, subres_name);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	std::string d24s8_file_data = "screentarget\\screen_" + std::to_string(width_in) + "_" + std::to_string(height_in) + "_DSV.json";
+	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(d24s8_file_data))
+	{
+		Json::Value json_data_out;
+		//填充资源格式
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
+		//写入文件并标记为已创建
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, d24s8_file_data);
+		//将文件标记为已经创建
+		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(d24s8_file_data);
+	}
+	//删除旧的深度模板缓冲区
+	if (If_dsv_loaded)
+	{
+		for (int i = 0; i < back_buffer_num; ++i)
 		{
 			PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(Default_depthstencil_buffer[i]);
 		}
@@ -46,7 +164,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 		//加载深度模板缓冲区
 		std::string depth_stencil_use = "screentarget\\screen_" + std::to_string(width_in) + "_" + std::to_string(height_in) + "_DSV.json";
 		auto check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(depth_stencil_use, Default_depthstencil_buffer[i]);
-		if (!check_error.CheckIfSucceed()) 
+		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
@@ -63,7 +181,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 		{
 			return check_error;
 		}
-		std::string dsv_descriptor_name = "json\\descriptor_heap\\DSV_"+std::to_string(width_in)+"_"+std::to_string(height_in)+"_descriptor_heap.json";
+		std::string dsv_descriptor_name = "json\\descriptor_heap\\DSV_1_descriptor_heap.json";
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, Default_depthstencil_view[i].resource_view_pack_id);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -76,15 +194,13 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 			return check_error;
 		}
 	}
-	
+
 	//D3D12_DESCRIPTOR_HEAP_TYPE_DSV
 	check_error = ScreenChange();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	
-
 	return PancystarEngine::succeed;
 }
 
@@ -187,7 +303,7 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	//创建场景
 	new_scene = new_scene_in;
 	//new_scene = new scene_test_simple();
-	
+
 	check_error = new_scene->Create(window_width, window_height);
 	if (!check_error.CheckIfSucceed())
 	{

@@ -212,7 +212,7 @@ std::string PancyBasicTexture::GetFileTile(const std::string &data_input)
 		{
 			out_pre += data_input[i];
 		}
-		else 
+		else
 		{
 			break;
 		}
@@ -502,7 +502,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 			//修改纹理大小限制重新加载
 			if (!check_error.CheckIfSucceed())
 			{
-				if (!max_size && (mipCount > 1)) 
+				if (!max_size && (mipCount > 1))
 				{
 					subresources.clear();
 
@@ -532,7 +532,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 						return error_message;
 					}
 				}
-				else 
+				else
 				{
 					return check_error;
 				}
@@ -546,7 +546,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 			return error_message;
 		}
 	}
-	
+
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWait(std::vector<D3D12_SUBRESOURCE_DATA> &subresources)
@@ -560,7 +560,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWai
 	PancyRenderCommandList *copy_render_list;
 	PancyThreadIdGPU copy_render_list_ID;
 	//开始拷贝
-	
+
 	//获取拷贝所用的commandlist
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
 	if (!check_error.CheckIfSucceed())
@@ -589,7 +589,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWai
 	D3D12_RESOURCE_DESC Desc = tex_data_res->GetResource()->GetDesc();
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&Desc, 0, subres_size, 0, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
 	check_error = copy_data_res->WriteFromCpuToBuffer(0, subresources, pLayouts, pRowSizesInBytes, pNumRows);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
@@ -602,7 +602,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWai
 	}
 	copy_render_list->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(tex_data_res->GetResource().Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 	copy_render_list->UnlockPrepare();
-	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1,&copy_render_list_ID);
+	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &copy_render_list_ID);
 	HeapFree(GetProcessHeap(), 0, pMem);
 	//插眼
 	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(copy_broken_fence);
@@ -657,13 +657,13 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	{
 		tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
 	}
-	else if (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE2D) 
+	else if (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE2D)
 	{
-		if (!if_cube_map) 
+		if (!if_cube_map)
 		{
 			tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		}
-		else 
+		else
 		{
 			tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 		}
@@ -684,14 +684,14 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	bufferblock_file_name += std::to_string(desc.Width);
 	bufferblock_file_name += "_";
 	bufferblock_file_name += std::to_string(desc.Height);
-	
+
 	string dxgi_name = PancyJsonTool::GetInstance()->GetEnumName(typeid(tex_srv_desc.Format).name(), tex_srv_desc.Format);
 	string sub_dxgi_name = dxgi_name.substr(12, dxgi_name.size() - 12);
-	heap_name += "_"+sub_dxgi_name;
+	heap_name += "_" + sub_dxgi_name;
 	bufferblock_file_name += "_" + sub_dxgi_name;
-	heap_name += "_" + std::to_string(desc.MipLevels)+"mip";
+	heap_name += "_" + std::to_string(desc.MipLevels) + "mip";
 	bufferblock_file_name += "_" + std::to_string(desc.MipLevels) + "mip";
-	if (if_cube_map) 
+	if (if_cube_map)
 	{
 		heap_name += "_cube";
 		bufferblock_file_name += "_cube";
@@ -717,8 +717,8 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	{
 		//更新格式文件
 		Json::Value json_data_out;
-		UINT resource_block_num = (16777216*4) / subresources_size;
-		UINT copy_resource_block_num = (16777216) / subresources_size;
+		UINT resource_block_num = (TextureHeapAliaze * 4) / subresources_size;
+		UINT copy_resource_block_num = (TextureHeapAliaze) / subresources_size;
 		if (resource_block_num < 1)
 		{
 			resource_block_num = 1;
@@ -794,7 +794,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	{
 		//更新格式文件
 		Json::Value json_data_out;
-		UINT resource_block_num = (4194304 * 5) / uploadSize;
+		UINT resource_block_num = (BufferHeapAliaze * 5) / uploadSize;
 		if (resource_block_num < 1)
 		{
 			resource_block_num = 1;
@@ -895,7 +895,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const std
 		return check_error;
 	}
 	tex_dsv_desc.ViewDimension = static_cast<D3D12_DSV_DIMENSION>(rec_value.int_value);
-	
+
 	tex_rtv_desc.Format = tex_dsv_desc.Format;
 	tex_rtv_desc.Texture2D.MipSlice = 0;
 
@@ -908,11 +908,11 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const std
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::string &resource_desc_file)
 {
-	if (!CheckIfJson(resource_desc_file)) 
+	if (!CheckIfJson(resource_desc_file))
 	{
 		return LoadPictureFromFile(resource_desc_file);
 	}
-	else 
+	else
 	{
 		return BuildEmptyPicture(resource_desc_file);
 	}
@@ -985,5 +985,115 @@ PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::
 	{
 		*resource_out = new PancyBasicTexture(desc_file_in);
 	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyTextureControl::BuildTextureTypeJson(
+	const D3D12_RESOURCE_DESC &subresource_desc, 
+	int32_t resource_num,
+	D3D12_HEAP_TYPE heap_type,
+	const std::vector<D3D12_HEAP_FLAGS> &heap_flags,
+	D3D12_RESOURCE_STATES res_state,
+	std::string &subresource_desc_name)
+{
+	uint64_t subresources_size;
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&subresource_desc, 0, resource_num, 0, nullptr, nullptr, nullptr, &subresources_size);
+	if (subresources_size % 65536 != 0)
+	{
+		subresources_size = (subresources_size + 65536) & ~65535;
+	}
+	//计算存储堆和存储单元的名称
+	std::string bufferblock_file_name = "json\\resource_view\\Subtex_";
+	std::string heap_name = "json\\resource_heap\\tex_";
+
+	heap_name += std::to_string(subresource_desc.Width);
+	heap_name += "_";
+	heap_name += std::to_string(subresource_desc.Height);
+
+	bufferblock_file_name += std::to_string(subresource_desc.Width);
+	bufferblock_file_name += "_";
+	bufferblock_file_name += std::to_string(subresource_desc.Height);
+
+	string dxgi_name = PancyJsonTool::GetInstance()->GetEnumName(typeid(subresource_desc.Format).name(), subresource_desc.Format);
+	string sub_dxgi_name = dxgi_name.substr(12, dxgi_name.size() - 12);
+	heap_name += "_" + sub_dxgi_name;
+	bufferblock_file_name += "_" + sub_dxgi_name;
+	heap_name += "_" + std::to_string(subresource_desc.MipLevels) + "mip";
+	bufferblock_file_name += "_" + std::to_string(subresource_desc.MipLevels) + "mip";
+	heap_name += ".json";
+	bufferblock_file_name += ".json";
+	//检查并创建资源存储堆
+	if (!FileBuildRepeatCheck::GetInstance()->CheckIfCreated(heap_name))
+	{
+		//文件未创建，创建文件
+		Json::Value json_data_out;
+		UINT resource_block_num = (TextureHeapAliaze * 4) / subresources_size;
+		UINT copy_resource_block_num = (TextureHeapAliaze) / subresources_size;
+		if (resource_block_num < 1)
+		{
+			resource_block_num = 1;
+		}
+		if (resource_block_num > 32)
+		{
+			resource_block_num = 32;
+		}
+		if (copy_resource_block_num < 1)
+		{
+			copy_resource_block_num = 1;
+		}
+		if (copy_resource_block_num > 16)
+		{
+			copy_resource_block_num = 16;
+		}
+		//填充资源格式
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "commit_block_num", resource_block_num);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "per_block_size", subresources_size);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_type_in", PancyJsonTool::GetInstance()->GetEnumName(typeid(heap_type).name(), heap_type));
+		for (int i = 0; i < heap_flags.size(); ++i) 
+		{
+			PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_out, "heap_flag_in", PancyJsonTool::GetInstance()->GetEnumName(typeid(heap_flags[i]).name(), heap_flags[i]));
+		}
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, heap_name);
+		//将文件标记为已经创建
+		FileBuildRepeatCheck::GetInstance()->AddFileName(heap_name);
+	}
+	else 
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "repeat load json file: " + heap_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+		return error_message;
+	}
+	if (!FileBuildRepeatCheck::GetInstance()->CheckIfCreated(bufferblock_file_name))
+	{
+		//更新格式文件
+		Json::Value json_data_resourceview;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "ResourceType", heap_name);
+		Json::Value json_data_res_desc;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Dimension", PancyJsonTool::GetInstance()->GetEnumName(typeid(subresource_desc.Dimension).name(), subresource_desc.Dimension));
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Alignment", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Width", subresource_desc.Width);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Height", subresource_desc.Height);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "DepthOrArraySize", subresource_desc.DepthOrArraySize);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "MipLevels", subresource_desc.MipLevels);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Format", PancyJsonTool::GetInstance()->GetEnumName(typeid(subresource_desc.Format).name(), subresource_desc.Format));
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Layout", PancyJsonTool::GetInstance()->GetEnumName(typeid(subresource_desc.Layout).name(), subresource_desc.Layout));
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Flags", PancyJsonTool::GetInstance()->GetEnumName(typeid(subresource_desc.Flags).name(), subresource_desc.Flags));
+		Json::Value json_data_sample_desc;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Count", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Quality", 0);
+		//递归回调
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "SampleDesc", json_data_sample_desc);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_DESC", json_data_res_desc);
+		//继续填充主干
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_STATES", PancyJsonTool::GetInstance()->GetEnumName(typeid(res_state).name(), res_state));
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "per_block_size", subresources_size);
+		//写入文件并标记为已创建
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_resourceview, bufferblock_file_name);
+		FileBuildRepeatCheck::GetInstance()->AddFileName(bufferblock_file_name);
+	}
+	else
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "repeat load json file: " + bufferblock_file_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+		return error_message;
+	}
+	subresource_desc_name = bufferblock_file_name;
 	return PancystarEngine::succeed;
 }
