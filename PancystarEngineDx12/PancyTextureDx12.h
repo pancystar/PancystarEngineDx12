@@ -184,6 +184,8 @@ namespace PancystarEngine
 			std::string &subresource_desc_name);
 	private:
 		PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out);
+		void RebuildTextureDataPath(const std::string &json_file_name,std::string &tex_data_file_name);
+		void GetJsonFilePath(const std::string &json_file_name,std::string &file_path_out);
 	};
 
 	

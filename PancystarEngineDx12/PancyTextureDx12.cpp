@@ -921,6 +921,44 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::str
 PancyTextureControl::PancyTextureControl(const std::string &resource_type_name_in) :PancystarEngine::PancyBasicResourceControl(resource_type_name_in)
 {
 }
+void PancyTextureControl::RebuildTextureDataPath(const std::string &json_file_name, std::string &tex_data_file_name)
+{
+	bool if_change_path = true;
+	//先检查纹理数据路径是否为相对路径
+	for (int i = 0; i < tex_data_file_name.size(); ++i)
+	{
+		if (tex_data_file_name[i] == '\\')
+		{
+			//路径是绝对路径，不做修改
+			if_change_path = false;
+			break;
+		}
+	}
+	if (if_change_path) 
+	{
+		//路径是相对路径，需要手动添加绝对路径位置
+		string path_file;
+		GetJsonFilePath(json_file_name, path_file);
+		tex_data_file_name = path_file + tex_data_file_name;
+	}
+}
+void PancyTextureControl::GetJsonFilePath(const std::string &json_file_name, std::string &file_path_out) 
+{
+	file_path_out = "";
+	int32_t copy_size = json_file_name.size();
+	for (int i = json_file_name.size()-1; i >= 0; --i)
+	{
+		if (json_file_name[i] != '\\') 
+		{
+			copy_size -= 1;
+		}
+		else 
+		{
+			break;
+		}
+	}
+	file_path_out = json_file_name.substr(0, copy_size);
+}
 PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out)
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -948,6 +986,8 @@ PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::
 			return check_error;
 		}
 		tex_file_name = rec_value.string_value;
+		//根据路径格式决定是否修改为绝对路径
+		RebuildTextureDataPath(desc_file_in, tex_file_name);
 		//是否自动创建mipmap
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "IfAutoBuildMipMap", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())

@@ -220,7 +220,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				}
 				//生成纹理使用数据
 				//使用漫反射纹理作为第一个纹理的偏移量,uvid的y通量记录纹理数量
-				point_need[j].tex_id.x = mat_list_now->second.find(TexType::tex_diffuse)->second;
+				point_need[j].tex_id.x = material_use;
 				point_need[j].tex_id.y = mat_list_now->second.size() + 2;//金属度及粗糙度
 			}
 			PancySubModel *new_submodel = new PancySubModel();
@@ -687,8 +687,8 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 		}
 		new_rvp.resource_view_offset_id += 1;
 		//金属度纹理
-		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_metallic_id, texture_need);
-		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_metallic_id, SRV_desc);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_metallic_id[i], texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_metallic_id[i], SRV_desc);
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -696,14 +696,118 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 		}
 		new_rvp.resource_view_offset_id += 1;
 		//粗糙度纹理
-		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_roughness_id, texture_need);
-		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_roughness_id, SRV_desc);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_roughness_id[i], texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_roughness_id[i], SRV_desc);
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
+{
+	PancystarEngine::EngineFailReason check_error;
+	ResourceViewPointer new_rvp = table_offset_model[3];
+	SubMemoryPointer texture_need;
+	D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
+	for (int i = 0; i < model_deal->GetMaterialNum(); ++i)
+	{
+		pancy_object_id now_tex_id = model_deal->GetMateriaTexture(i, TexType::tex_diffuse);
+		//漫反射纹理
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		new_rvp.resource_view_offset_id += 1;
+		//法线纹理
+		now_tex_id = model_deal->GetMateriaTexture(i, TexType::tex_normal);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		new_rvp.resource_view_offset_id += 1;
+		//金属度纹理
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_metallic_id[i], texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_metallic_id[i], SRV_desc);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		new_rvp.resource_view_offset_id += 1;
+		//粗糙度纹理
+		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_roughness_id[i], texture_need);
+		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_roughness_id[i], SRV_desc);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(std::string file_name)
+{
+	PancystarEngine::EngineFailReason check_error;
+	if (if_load_model) 
+	{
+		//有已经加载的模型，先删除模型的备份
+		delete model_deal;
+		model_deal = NULL;
+		for (int i = 0; i < tex_metallic_id.size(); ++i) 
+		{
+			if (tex_metallic_id[i] != pic_empty_white_id) 
+			{
+				PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(tex_metallic_id[i]);
+			}
+		}
+		tex_metallic_id.clear();
+		for (int i = 0; i < tex_roughness_id.size(); ++i)
+		{
+			if (tex_roughness_id[i] != pic_empty_white_id)
+			{
+				PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(tex_roughness_id[i]);
+			}
+		}
+		tex_roughness_id.clear();
+		if_load_model = false;
+	}
+	//加载模型
+	model_deal = new PancyModelAssimp(file_name, "json\\pipline_state_object\\pso_pbr.json");
+	check_error = model_deal->Create();
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//预加载金属度/粗糙度数据
+	//todo:引用计数更新纹理
+	//更新模型的纹理数据到descriptor_heap
+	if (!if_build_descriptor) 
+	{
+		check_error = PretreatPbrDescriptor();
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		if_build_descriptor = true;
+	}
+	else 
+	{
+		check_error = UpdatePbrDescriptor();
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	if_load_model = true;
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason scene_test_simple::Init()
@@ -760,13 +864,14 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
+	/*
 	model_deal = new PancyModelAssimp("model\\ball2\\ball.obj", "json\\pipline_state_object\\pso_pbr.json");
 	check_error = model_deal->Create();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-
+	*/
 	//创建一个cbuffer
 	//加载一个pso
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_sky.json");
@@ -811,25 +916,24 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Sphere002_metallic.json", tex_metallic_id);
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Sphere002_metallic.json", pic_empty_white_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	/*
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Sphere002_roughness.json", tex_roughness_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	*/
 	//为pbr模型的渲染创建descriptor
 	check_error = PretreatPbrDescriptor();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-
-
-
 
 	SubMemoryPointer texture_need;
 	//tex_id = tex_brdf_id;

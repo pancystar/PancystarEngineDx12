@@ -9,7 +9,35 @@ EngineModelDesign::EngineModelDesign(QWidget *parent)
 	widget->move(QPoint(0, 100));
 	auto new_scene = new scene_test_simple();
 	PancystarEngine::EngineFailReason check_error = widget->Create(new_scene);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
+	}
 	//widget->width = 1280;
 	//setCentralWidget(widget);
 	
+}
+void EngineModelDesign::on_actionopen_triggered()
+{
+	int a = 0;
+}
+void EngineModelDesign::on_actionsave_triggered()
+{
+	int a = 0;
+}
+void EngineModelDesign::on_actionexportanimation_triggered()
+{
+	int a = 0;
+}
+void EngineModelDesign::on_actionadd_metallic_triggered() 
+{
+	int a = 0;
+}
+void EngineModelDesign::on_actionadd_roughness_triggered() 
+{
+	int a = 0;
+}
+void EngineModelDesign::on_actionadd_ao_triggered() 
+{
+	int a = 0;
 }

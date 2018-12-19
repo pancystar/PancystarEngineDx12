@@ -92,6 +92,22 @@ public:
 		auto texture_data = material_data->second.find(texture_type)->second;
 		return texture_list[texture_data];
 	}
+	inline size_t GetMaterialNum()
+	{
+		return material_list.size();
+	}
+	inline pancy_object_id GetMateriaTexture(const pancy_object_id &material_id, const TexType &texture_type)
+	{
+		if (material_id > material_list.size())
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "material id:" + std::to_string(material_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: " + resource_name);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find submodel from model ", error_message);
+			return 0;
+		}
+		auto material_data = material_list.find(material_id);
+		auto texture_data = material_data->second.find(texture_type)->second;
+		return texture_list[texture_data];
+	}
 	virtual ~PancyModelBasic();
 private:
 	
@@ -168,11 +184,15 @@ class scene_test_simple : public SceneRoot
 	//模型资源
 	PancyModelBasic *model_sky;
 	PancyModelBasic *model_cube;
+	//待处理的模型资源
+	bool if_load_model;
+	bool if_build_descriptor;
 	PancyModelBasic *model_deal;
 	//pbr纹理
+	pancy_object_id pic_empty_white_id;//空白纹理，标记为未加载
 	pancy_object_id tex_brdf_id;
-	pancy_object_id tex_metallic_id;
-	pancy_object_id tex_roughness_id;
+	std::vector<pancy_object_id> tex_metallic_id;
+	std::vector<pancy_object_id> tex_roughness_id;
 	pancy_object_id tex_ibl_spec_id;
 	pancy_object_id tex_ibl_diffuse_id;
 	//屏幕空间回读纹理
@@ -193,8 +213,11 @@ public:
 	scene_test_simple()
 	{
 		renderlist_ID.clear();
+		model_deal = NULL;
 		if_readback_build = false;
 		if_pointed = false;
+		if_load_model = false;
+		if_build_descriptor = false;
 	}
 	~scene_test_simple();
 	inline void PointWindow(int32_t x_pos, int32_t y_pos) 
@@ -207,6 +230,7 @@ public:
 	void DisplayNopost() {};
 	void DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix);
 	void Update(float delta_time);
+	PancystarEngine::EngineFailReason LoadDealModel(std::string file_name);
 private:
 	PancystarEngine::EngineFailReason Init();
 	PancystarEngine::EngineFailReason ScreenChange();
@@ -216,6 +240,7 @@ private:
 	void PopulateCommandListReadBack();
 	PancystarEngine::EngineFailReason PretreatBrdf();
 	PancystarEngine::EngineFailReason PretreatPbrDescriptor();
+	PancystarEngine::EngineFailReason UpdatePbrDescriptor();
 	void ClearScreen();
 	void WaitForPreviousFrame();
 	void updateinput(float delta_time);
