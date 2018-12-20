@@ -69,13 +69,17 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::Create(SceneRoot *new_scene
 	if_build = true;
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason D3d12RenderWidget::LoadModel(std::string file_name)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	return scene_son->LoadDealModel(file_name);
+}
 void D3d12RenderWidget::mouseDoubleClickEvent(QMouseEvent *event_need)
 {
 	//click_pos_x = event_need->x();
 	//click_pos_y = event_need->y();
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	scene_son->PointWindow(event_need->x(), event_need->y());
-	int a = 0;
 }
 void D3d12RenderWidget::paintEvent(QPaintEvent *event)
 {

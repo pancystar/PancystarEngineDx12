@@ -74,7 +74,7 @@ PancystarEngine::EngineFailReason MemoryBlockGpu::ReadFromBufferToCpu(const int3
 }
 MemoryBlockGpu::~MemoryBlockGpu()
 {
-	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD || resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
+	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 	{
 		resource_data->Unmap(0,NULL);
 	}

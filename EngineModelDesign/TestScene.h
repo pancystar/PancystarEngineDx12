@@ -96,17 +96,24 @@ public:
 	{
 		return material_list.size();
 	}
-	inline pancy_object_id GetMateriaTexture(const pancy_object_id &material_id, const TexType &texture_type)
+	inline PancystarEngine::EngineFailReason GetMateriaTexture(const pancy_object_id &material_id, const TexType &texture_type, pancy_object_id &texture_id)
 	{
 		if (material_id > material_list.size())
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "material id:" + std::to_string(material_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: " + resource_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find submodel from model ", error_message);
-			return 0;
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find texture from model ", error_message);
+			return error_message;
 		}
 		auto material_data = material_list.find(material_id);
-		auto texture_data = material_data->second.find(texture_type)->second;
-		return texture_list[texture_data];
+		auto texture_data = material_data->second.find(texture_type);
+		if (texture_data == material_data->second.end()) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the texture id:"+std::to_string(texture_type)+" in material id:" + std::to_string(material_id) +"in model "+resource_name);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find texture from model ", error_message);
+			return error_message;
+		}
+		texture_id = texture_list[texture_data->second];
+		return PancystarEngine::succeed;
 	}
 	virtual ~PancyModelBasic();
 private:
@@ -137,6 +144,7 @@ class PancyModelAssimp : public PancyModelBasic
 	const aiScene *model_need;//assimp模型备份
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
+	~PancyModelAssimp();
 	inline PancyPiplineStateObjectGraph* GetPso() 
 	{
 		return PancyEffectGraphic::GetInstance()->GetPSO(pso_use);
@@ -186,7 +194,6 @@ class scene_test_simple : public SceneRoot
 	PancyModelBasic *model_cube;
 	//待处理的模型资源
 	bool if_load_model;
-	bool if_build_descriptor;
 	PancyModelBasic *model_deal;
 	//pbr纹理
 	pancy_object_id pic_empty_white_id;//空白纹理，标记为未加载
@@ -217,7 +224,6 @@ public:
 		if_readback_build = false;
 		if_pointed = false;
 		if_load_model = false;
-		if_build_descriptor = false;
 	}
 	~scene_test_simple();
 	inline void PointWindow(int32_t x_pos, int32_t y_pos) 

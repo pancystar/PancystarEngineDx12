@@ -22,7 +22,7 @@ void PancyModelBasic::GetRootPath(const std::string &desc_file_in)
 	int end = 0;
 	for (int32_t i = desc_file_in.size() - 1; i >= 0; --i)
 	{
-		if (desc_file_in[i] == '\\')
+		if (desc_file_in[i] == '\\' || desc_file_in[i] == '/')
 		{
 			end = i + 1;
 			break;
@@ -64,6 +64,15 @@ PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::s
 {
 	pso_use = pso_in;
 }
+PancyModelAssimp::~PancyModelAssimp()
+{
+	std::vector<SubMemoryPointer> cbuffer;//常量缓冲区
+	for (int i = 0; i < cbuffer.size(); ++i) 
+	{
+		SubresourceControl::GetInstance()->FreeSubResource(cbuffer[i]);
+	}
+	//todo:删除描述符
+}
 PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	const std::string &resource_desc_file,
 	std::vector<PancySubModel*> &model_resource,
@@ -85,15 +94,18 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	}
 	bool use_skin_mesh = false;
 	bool use_point_anim = false;
+	std::unordered_map<pancy_object_id, pancy_object_id> real_material_list;//舍弃不合理材质后的材质编号与之前的编号对比
+	int32_t real_material_num = 0;
 	for (unsigned int i = 0; i < model_need->mNumMaterials; ++i)
 	{
+		bool chekc_material = false;//检验是否是无效材质
 		std::unordered_map<TexType, pancy_object_id> mat_tex_list;
-
 		const aiMaterial* pMaterial = model_need->mMaterials[i];
 		aiString Path;
 		//漫反射纹理
 		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0 && pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 		{
+			chekc_material = true;
 			pancy_object_id id_need;
 			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
 			if (!check_error.CheckIfSucceed())
@@ -104,52 +116,65 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, texture_use.size()));
 			texture_use.push_back(id_need);
 		}
-		//法线纹理
-		if (pMaterial->GetTextureCount(aiTextureType_HEIGHT) > 0 && pMaterial->GetTexture(aiTextureType_HEIGHT, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
+		//舍弃不含基础颜色贴图的无效材质
+		if (chekc_material)
 		{
-			pancy_object_id id_need;
-			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
-			if (!check_error.CheckIfSucceed())
+			//法线纹理
+			if (pMaterial->GetTextureCount(aiTextureType_HEIGHT) > 0 && pMaterial->GetTexture(aiTextureType_HEIGHT, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 			{
-				return check_error;
+				pancy_object_id id_need;
+				check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
+				if (!check_error.CheckIfSucceed())
+				{
+					return check_error;
+				}
+				//将纹理数据加载到材质表
+				mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, texture_use.size()));
+				texture_use.push_back(id_need);
 			}
-			//将纹理数据加载到材质表
-			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, texture_use.size()));
-			texture_use.push_back(id_need);
-		}
-		else if (pMaterial->GetTextureCount(aiTextureType_NORMALS) > 0 && pMaterial->GetTexture(aiTextureType_NORMALS, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
-		{
-			pancy_object_id id_need;
-			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
-			if (!check_error.CheckIfSucceed())
+			else if (pMaterial->GetTextureCount(aiTextureType_NORMALS) > 0 && pMaterial->GetTexture(aiTextureType_NORMALS, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 			{
-				return check_error;
+				pancy_object_id id_need;
+				check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
+				if (!check_error.CheckIfSucceed())
+				{
+					return check_error;
+				}
+				//将纹理数据加载到材质表
+				mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, texture_use.size()));
+				texture_use.push_back(id_need);
 			}
-			//将纹理数据加载到材质表
-			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, texture_use.size()));
-			texture_use.push_back(id_need);
-		}
-		//ao纹理
-		if (pMaterial->GetTextureCount(aiTextureType_AMBIENT) > 0 && pMaterial->GetTexture(aiTextureType_AMBIENT, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
-		{
-			pancy_object_id id_need;
-			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
-			if (!check_error.CheckIfSucceed())
+			//ao纹理
+			if (pMaterial->GetTextureCount(aiTextureType_AMBIENT) > 0 && pMaterial->GetTexture(aiTextureType_AMBIENT, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 			{
-				return check_error;
+				pancy_object_id id_need;
+				check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + Path.C_Str(), id_need);
+				if (!check_error.CheckIfSucceed())
+				{
+					return check_error;
+				}
+				//将纹理数据加载到材质表
+				mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_ambient, texture_use.size()));
+				texture_use.push_back(id_need);
 			}
-			//将纹理数据加载到材质表
-			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_ambient, texture_use.size()));
-			texture_use.push_back(id_need);
+			material_list.insert(std::pair<pancy_object_id, std::unordered_map<TexType, pancy_object_id>>(real_material_num, mat_tex_list));
+			real_material_list.insert(std::pair<pancy_object_id, pancy_object_id>(i, real_material_num));
+			real_material_num += 1;
 		}
-		material_list.insert(std::pair<pancy_object_id, std::unordered_map<TexType, pancy_object_id>>(i, mat_tex_list));
 	}
 	for (int i = 0; i < model_need->mNumMeshes; i++)
 	{
 		//获取模型的第i个模块
 		const aiMesh* paiMesh = model_need->mMeshes[i];
 		//获取模型的材质编号
-		pancy_object_id material_use = paiMesh->mMaterialIndex;
+		auto real_material_find = real_material_list.find(paiMesh->mMaterialIndex);
+		if (real_material_find == real_material_list.end()) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL,"the material id: "+std::to_string(paiMesh->mMaterialIndex)+" of model "+ resource_desc_file+" have been delete(do not have diffuse map)");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+			return error_message;
+		}
+		pancy_object_id material_use = real_material_find->second;
 		auto mat_list_now = material_list.find(material_use);
 		if (mat_list_now == material_list.end())
 		{
@@ -660,9 +685,10 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 	{
 		return check_error;
 	}
-	//模型自身的纹理
 	table_offset_model[3].resource_view_pack_id = globel_var;
 	table_offset_model[3].resource_view_offset_id = descriptor_use_data[0].table_offset[3];
+	/*
+	//模型自身的纹理
 	new_rvp = table_offset_model[3];
 	for (int i = 0; i < model_deal->GetSubModelNum(); ++i)
 	{
@@ -704,6 +730,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 			return check_error;
 		}
 	}
+	*/
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
@@ -714,8 +741,13 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 	D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
 	for (int i = 0; i < model_deal->GetMaterialNum(); ++i)
 	{
-		pancy_object_id now_tex_id = model_deal->GetMateriaTexture(i, TexType::tex_diffuse);
+		pancy_object_id now_tex_id;
 		//漫反射纹理
+		check_error = model_deal->GetMateriaTexture(i, TexType::tex_diffuse, now_tex_id);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
 		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
@@ -725,7 +757,11 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 		}
 		new_rvp.resource_view_offset_id += 1;
 		//法线纹理
-		now_tex_id = model_deal->GetMateriaTexture(i, TexType::tex_normal);
+		check_error = model_deal->GetMateriaTexture(i, TexType::tex_normal, now_tex_id);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
 		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
@@ -757,14 +793,14 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(std::string file_name)
 {
 	PancystarEngine::EngineFailReason check_error;
-	if (if_load_model) 
+	if (if_load_model)
 	{
 		//有已经加载的模型，先删除模型的备份
 		delete model_deal;
 		model_deal = NULL;
-		for (int i = 0; i < tex_metallic_id.size(); ++i) 
+		for (int i = 0; i < tex_metallic_id.size(); ++i)
 		{
-			if (tex_metallic_id[i] != pic_empty_white_id) 
+			if (tex_metallic_id[i] != pic_empty_white_id)
 			{
 				PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(tex_metallic_id[i]);
 			}
@@ -788,24 +824,16 @@ PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(std::string f
 		return check_error;
 	}
 	//预加载金属度/粗糙度数据
-	//todo:引用计数更新纹理
-	//更新模型的纹理数据到descriptor_heap
-	if (!if_build_descriptor) 
+	for (int i = 0; i < model_deal->GetMaterialNum(); ++i)
 	{
-		check_error = PretreatPbrDescriptor();
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		if_build_descriptor = true;
+		tex_metallic_id.push_back(pic_empty_white_id);
+		tex_roughness_id.push_back(pic_empty_white_id);
 	}
-	else 
+	//更新模型的纹理数据到descriptor_heap
+	check_error = UpdatePbrDescriptor();
+	if (!check_error.CheckIfSucceed())
 	{
-		check_error = UpdatePbrDescriptor();
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
+		return check_error;
 	}
 	if_load_model = true;
 	return PancystarEngine::succeed;
@@ -916,7 +944,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Sphere002_metallic.json", pic_empty_white_id);
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\white.json", pic_empty_white_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -936,9 +964,6 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	}
 
 	SubMemoryPointer texture_need;
-	//tex_id = tex_brdf_id;
-
-
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_ibl_spec_id, texture_need);
 	table_offset[2].resource_view_pack_id = globel_var;
 	table_offset[2].resource_view_offset_id = descriptor_use_data[0].table_offset[2];
@@ -1035,7 +1060,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	}
 	return PancystarEngine::succeed;
 }
-void scene_test_simple::ReadBackData(int x_mouse,int y_mouse) 
+void scene_test_simple::ReadBackData(int x_mouse, int y_mouse)
 {
 	int64_t per_memory_size;
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
@@ -1045,7 +1070,7 @@ void scene_test_simple::ReadBackData(int x_mouse,int y_mouse)
 	uint8_t* read_back_data;
 	CD3DX12_RANGE readRange(0, 0);
 	memory_read_back_data->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&read_back_data));
-	now_point_answer = read_back_data[y_mouse *Scene_width*4 + x_mouse*4 + 0];
+	now_point_answer = read_back_data[y_mouse *Scene_width * 4 + x_mouse * 4 + 0];
 	memory_read_back_data->GetResource()->Unmap(0, &readRange);
 }
 void scene_test_simple::Display()
@@ -1057,8 +1082,11 @@ void scene_test_simple::Display()
 	//PopulateCommandList(model_sky);
 	PopulateCommandList(model_cube);
 	PopulateCommandListSky();
-	PopulateCommandListModelDeal();
-	PopulateCommandListReadBack();
+	if (if_load_model)
+	{
+		PopulateCommandListModelDeal();
+		PopulateCommandListReadBack();
+	}
 	if (renderlist_ID.size() > 0)
 	{
 		check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(renderlist_ID.size(), &renderlist_ID[0]);
@@ -1068,7 +1096,7 @@ void scene_test_simple::Display()
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(broken_fence_id);
 	}
 	//回读GPU数据
-	if (if_pointed) 
+	if (if_pointed && if_load_model)
 	{
 		ReadBackData(x_point, y_point);
 		if_pointed = false;
@@ -1207,9 +1235,9 @@ void scene_test_simple::PopulateCommandListReadBack()
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_rtv_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(rtv_mask[now_render_num], rtvHandle);
 	//修改资源格式为dsv
-	
+
 	SubMemoryPointer sub_res_dsv;
-	
+
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(depth_stencil_mask[now_render_num], sub_res_dsv);
 	auto memory_dsv_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_dsv, per_memory_size);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_dsv_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE));
@@ -1238,7 +1266,7 @@ void scene_test_simple::PopulateCommandListReadBack()
 
 	//CD3DX12_TEXTURE_COPY_LOCATION Dst(tex_data_res->GetResource().Get(), i + 0);
 	//CD3DX12_TEXTURE_COPY_LOCATION Src(copy_data_res->GetResource().Get(), pLayouts[i]);
-	m_commandList->GetCommandList()->CopyTextureRegion(&dst_loc,0,0,0, &src_loc, nullptr);
+	m_commandList->GetCommandList()->CopyTextureRegion(&dst_loc, 0, 0, 0, &src_loc, nullptr);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_dsv_data->GetResource().Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PRESENT));
 	m_commandList->UnlockPrepare();
 }
@@ -1275,7 +1303,7 @@ void scene_test_simple::PopulateCommandListModelDeal()
 
 
 	//修改资源格式为dsv
-	
+
 	SubMemoryPointer sub_res_dsv;
 	int64_t per_memory_size;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
@@ -1473,5 +1501,8 @@ scene_test_simple::~scene_test_simple()
 	delete test_model;
 	delete model_cube;
 	delete model_sky;
-	delete model_deal;
+	if (if_load_model)
+	{
+		delete model_deal;
+	}
 }

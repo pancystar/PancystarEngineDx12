@@ -16,6 +16,7 @@ public:
 		return NULL;
 	}
 	PancystarEngine::EngineFailReason Create(SceneRoot *new_scene_in);
+	PancystarEngine::EngineFailReason LoadModel(std::string file_name);
 private:
 	bool if_build;
 	SceneRoot   *new_scene;

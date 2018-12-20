@@ -19,7 +19,8 @@ EngineModelDesign::EngineModelDesign(QWidget *parent)
 }
 void EngineModelDesign::on_actionopen_triggered()
 {
-	int a = 0;
+	QString file_name = QFileDialog::getOpenFileName(0,"load model", "./", "OBJ model(*.obj);;FBX Files(*.fbx)",0, QFileDialog::Option::ReadOnly);
+	widget->LoadModel(file_name.toStdString());
 }
 void EngineModelDesign::on_actionsave_triggered()
 {

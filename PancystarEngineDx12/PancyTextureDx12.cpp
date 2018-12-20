@@ -948,7 +948,7 @@ void PancyTextureControl::GetJsonFilePath(const std::string &json_file_name, std
 	int32_t copy_size = json_file_name.size();
 	for (int i = json_file_name.size()-1; i >= 0; --i)
 	{
-		if (json_file_name[i] != '\\') 
+		if (json_file_name[i] != '\\' && json_file_name[i] != '/')
 		{
 			copy_size -= 1;
 		}

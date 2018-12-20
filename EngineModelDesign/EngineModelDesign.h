@@ -2,6 +2,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_EngineModelDesign.h"
+#include "QFileDialog"
 #include "Dx12Widget.h"
 class EngineModelDesign : public QMainWindow
 {
