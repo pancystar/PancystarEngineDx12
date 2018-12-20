@@ -28,6 +28,15 @@
       <Extensions>moc;h;cpp</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="shader">
+      <UniqueIdentifier>{6783a4d3-f738-48fc-9eed-61bf9a2642c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pso">
+      <UniqueIdentifier>{eef5b47c-3fa9-469c-b4b2-ba8e09a5377d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rootsignature">
+      <UniqueIdentifier>{55a03c01-58a3-4c67-8ea1-345c5fefa1bd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -68,5 +77,51 @@
     <ClInclude Include="TestScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="shader\BrdfGen.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\CubeMap.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\pbr_lighting.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\testcolor.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\ScreenMask.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="json\pipline_state_object\pso_brdfgen.json">
+      <Filter>pso</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_pbr.json">
+      <Filter>pso</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_sky.json">
+      <Filter>pso</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_test.json">
+      <Filter>pso</Filter>
+    </None>
+    <None Include="json\root_signature\brdfgen_root_signature.json">
+      <Filter>rootsignature</Filter>
+    </None>
+    <None Include="json\root_signature\pbr_root_signature.json">
+      <Filter>rootsignature</Filter>
+    </None>
+    <None Include="json\root_signature\sky_root_signature.json">
+      <Filter>rootsignature</Filter>
+    </None>
+    <None Include="json\root_signature\test_root_signature.json">
+      <Filter>rootsignature</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_screenmask.json">
+      <Filter>pso</Filter>
+    </None>
   </ItemGroup>
 </Project>

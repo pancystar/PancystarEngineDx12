@@ -9,7 +9,7 @@ MemoryBlockGpu::MemoryBlockGpu(
 	memory_size = memory_size_in;
 	resource_data = resource_data_in;
 	resource_usage = resource_usage_in;
-	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD || resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
+	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 	{
 		CD3DX12_RANGE readRange(0, 0);
 		HRESULT hr = resource_data->Map(0, &readRange, reinterpret_cast<void**>(&map_pointer));
@@ -74,7 +74,7 @@ PancystarEngine::EngineFailReason MemoryBlockGpu::ReadFromBufferToCpu(const int3
 }
 MemoryBlockGpu::~MemoryBlockGpu()
 {
-	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD || resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
+	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 	{
 		resource_data->Unmap(0,NULL);
 	}
@@ -160,8 +160,32 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::BuildMemoryResource(
 			IID_PPV_ARGS(&ppvResourc)
 		);
 	}
+	else if(resource_desc.Format == DXGI_FORMAT_R8G8B8A8_UINT)
+	{
+		D3D12_CLEAR_VALUE clearValue;
+		clearValue.Format = resource_desc.Format;
+		clearValue.Color[0] = 255.0f;
+		clearValue.Color[1] = 255.0f;
+		clearValue.Color[2] = 255.0f;
+		clearValue.Color[3] = 255.0f;
+		hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreatePlacedResource(
+			heap_data.Get(),
+			(*rand_free_memory) * size_per_block,
+			&resource_desc,
+			resource_state,
+			&clearValue,
+			IID_PPV_ARGS(&ppvResourc)
+		);
+	}
 	else 
 	{
+		D3D12_CLEAR_VALUE clearValue;
+		clearValue.Format = resource_desc.Format;
+		clearValue.Color[0] = 0.0f;
+		clearValue.Color[0] = 0.0f;
+		clearValue.Color[0] = 0.0f;
+		clearValue.Color[0] = 0.0f;
+		clearValue.DepthStencil.Stencil = 0;
 		hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreatePlacedResource(
 			heap_data.Get(),
 			(*rand_free_memory) * size_per_block,

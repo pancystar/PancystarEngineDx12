@@ -25,7 +25,7 @@ struct VSInput
 struct PSInput
 {
 	float4 position : SV_POSITION;
-	float4 pos_out  :POSITION;
+	float4 pos_out  : POSITION;
 	float4 color    : COLOR;
 	uint4  tex_id   : TEXID;
 	float4 tex_uv   : TEXUV;

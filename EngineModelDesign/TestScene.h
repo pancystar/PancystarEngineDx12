@@ -92,6 +92,29 @@ public:
 		auto texture_data = material_data->second.find(texture_type)->second;
 		return texture_list[texture_data];
 	}
+	inline size_t GetMaterialNum()
+	{
+		return material_list.size();
+	}
+	inline PancystarEngine::EngineFailReason GetMateriaTexture(const pancy_object_id &material_id, const TexType &texture_type, pancy_object_id &texture_id)
+	{
+		if (material_id > material_list.size())
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "material id:" + std::to_string(material_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: " + resource_name);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find texture from model ", error_message);
+			return error_message;
+		}
+		auto material_data = material_list.find(material_id);
+		auto texture_data = material_data->second.find(texture_type);
+		if (texture_data == material_data->second.end()) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the texture id:"+std::to_string(texture_type)+" in material id:" + std::to_string(material_id) +"in model "+resource_name);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find texture from model ", error_message);
+			return error_message;
+		}
+		texture_id = texture_list[texture_data->second];
+		return PancystarEngine::succeed;
+	}
 	virtual ~PancyModelBasic();
 private:
 	
@@ -121,6 +144,7 @@ class PancyModelAssimp : public PancyModelBasic
 	const aiScene *model_need;//assimp模型备份
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
+	~PancyModelAssimp();
 	inline PancyPiplineStateObjectGraph* GetPso() 
 	{
 		return PancyEffectGraphic::GetInstance()->GetPSO(pso_use);
@@ -168,35 +192,65 @@ class scene_test_simple : public SceneRoot
 	//模型资源
 	PancyModelBasic *model_sky;
 	PancyModelBasic *model_cube;
+	//待处理的模型资源
+	bool if_load_model;
 	PancyModelBasic *model_deal;
 	//pbr纹理
+	pancy_object_id pic_empty_white_id;//空白纹理，标记为未加载
 	pancy_object_id tex_brdf_id;
-	pancy_object_id tex_metallic_id;
-	pancy_object_id tex_roughness_id;
+	std::vector<pancy_object_id> tex_metallic_id;
+	std::vector<pancy_object_id> tex_roughness_id;
 	pancy_object_id tex_ibl_spec_id;
 	pancy_object_id tex_ibl_diffuse_id;
+	//屏幕空间回读纹理
+	bool if_readback_build;
+	int32_t texture_size;
+	pancy_object_id tex_uint_save[2];
+	pancy_object_id read_back_buffer[2];
+	pancy_object_id depth_stencil_mask[2];
+	ResourceViewPointer rtv_mask[2];
+	ResourceViewPointer dsv_mask[2];
+	D3D12_TEXTURE_COPY_LOCATION dst_loc;
+	D3D12_TEXTURE_COPY_LOCATION src_loc;
+	int32_t x_point;
+	int32_t y_point;
+	bool if_pointed;
+	uint8_t now_point_answer;
 public:
 	scene_test_simple()
 	{
 		renderlist_ID.clear();
+		model_deal = NULL;
+		if_readback_build = false;
+		if_pointed = false;
+		if_load_model = false;
 	}
 	~scene_test_simple();
-	
+	inline void PointWindow(int32_t x_pos, int32_t y_pos) 
+	{
+		if_pointed = true;
+		x_point = x_pos;
+		y_point = y_pos;
+	}
 	void Display();
 	void DisplayNopost() {};
 	void DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix);
 	void Update(float delta_time);
+	PancystarEngine::EngineFailReason LoadDealModel(std::string file_name);
 private:
 	PancystarEngine::EngineFailReason Init();
 	PancystarEngine::EngineFailReason ScreenChange();
 	void PopulateCommandList(PancyModelBasic *now_res);
 	void PopulateCommandListSky();
 	void PopulateCommandListModelDeal();
+	void PopulateCommandListReadBack();
 	PancystarEngine::EngineFailReason PretreatBrdf();
 	PancystarEngine::EngineFailReason PretreatPbrDescriptor();
+	PancystarEngine::EngineFailReason UpdatePbrDescriptor();
 	void ClearScreen();
 	void WaitForPreviousFrame();
 	void updateinput(float delta_time);
+	void ReadBackData(int x_mouse, int y_mouse);
 	inline int ComputeIntersectionArea(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2)
 	{
 		return max(0, min(ax2, bx2) - max(ax1, bx1)) * max(0, min(ay2, by2) - max(ay1, by1));
