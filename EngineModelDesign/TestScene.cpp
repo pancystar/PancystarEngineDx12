@@ -72,6 +72,7 @@ PancyModelAssimp::~PancyModelAssimp()
 		SubresourceControl::GetInstance()->FreeSubResource(cbuffer[i]);
 	}
 	//todo:É¾³ýÃèÊö·û
+	PancyDescriptorHeapControl::GetInstance()->FreeResourceView(table_offset[0].resource_view_pack_id);
 }
 PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	const std::string &resource_desc_file,

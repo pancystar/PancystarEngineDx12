@@ -460,6 +460,22 @@ public:
 		const std::string &file_name,
 		ResourceViewPack &RSV_pack_id
 	);
+	inline PancystarEngine::EngineFailReason FreeResourceView(const ResourceViewPack &RSV_pack_id) 
+	{
+		auto heap_data = resource_heap_list.find(RSV_pack_id.descriptor_heap_type_id);
+		if (heap_data == resource_heap_list.end()) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find resource view type:"+std::to_string(RSV_pack_id.descriptor_heap_type_id));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free Resource View from descriptor heap",error_message);
+			return error_message;
+		}
+		PancystarEngine::EngineFailReason check_error = heap_data->second->FreeHeapBlock(RSV_pack_id.descriptor_heap_offset);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		return PancystarEngine::succeed;
+	}
 	PancystarEngine::EngineFailReason FreeDescriptorHeap(
 		pancy_resource_id &descriptor_heap_id
 	);
