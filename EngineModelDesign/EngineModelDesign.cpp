@@ -13,6 +13,7 @@ EngineModelDesign::EngineModelDesign(QWidget *parent)
 	{
 		PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 	}
+	setFocusPolicy(Qt::ClickFocus);
 	//widget->width = 1280;
 	//setCentralWidget(widget);
 	

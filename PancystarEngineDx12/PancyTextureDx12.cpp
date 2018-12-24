@@ -194,11 +194,11 @@ HRESULT PancystarEngine::MyFillInitData(_In_ size_t width,
 
 	return initData.empty() ? E_FAIL : S_OK;
 }
-PancyBasicTexture::PancyBasicTexture(std::string desc_file_in, bool if_gen_mipmap_in, bool if_force_srgb_in, int max_size_in) : PancystarEngine::PancyBasicVirtualResource(desc_file_in)
+PancyBasicTexture::PancyBasicTexture(std::string desc_file_in) : PancystarEngine::PancyBasicVirtualResource(desc_file_in)
 {
-	if_force_srgb = if_force_srgb_in;
-	if_gen_mipmap = if_gen_mipmap_in;
-	max_size = max_size_in;
+	if_force_srgb = false;
+	if_gen_mipmap = false;
+	max_size = 0;
 	if_cube_map = false;
 	if_copy_finish = false;
 }
@@ -906,22 +906,24 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const std
 	if_copy_finish = true;
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::string &resource_desc_file)
+void PancyBasicTexture::GetJsonFilePath(const std::string &json_file_name, std::string &file_path_out)
 {
-	if (!CheckIfJson(resource_desc_file))
+	file_path_out = "";
+	int32_t copy_size = json_file_name.size();
+	for (int i = json_file_name.size() - 1; i >= 0; --i)
 	{
-		return LoadPictureFromFile(resource_desc_file);
+		if (json_file_name[i] != '\\' && json_file_name[i] != '/')
+		{
+			copy_size -= 1;
+		}
+		else
+		{
+			break;
+		}
 	}
-	else
-	{
-		return BuildEmptyPicture(resource_desc_file);
-	}
+	file_path_out = json_file_name.substr(0, copy_size);
 }
-//纹理管理器
-PancyTextureControl::PancyTextureControl(const std::string &resource_type_name_in) :PancystarEngine::PancyBasicResourceControl(resource_type_name_in)
-{
-}
-void PancyTextureControl::RebuildTextureDataPath(const std::string &json_file_name, std::string &tex_data_file_name)
+void PancyBasicTexture::RebuildTextureDataPath(const std::string &json_file_name, std::string &tex_data_file_name)
 {
 	bool if_change_path = true;
 	//先检查纹理数据路径是否为相对路径
@@ -934,7 +936,7 @@ void PancyTextureControl::RebuildTextureDataPath(const std::string &json_file_na
 			break;
 		}
 	}
-	if (if_change_path) 
+	if (if_change_path)
 	{
 		//路径是相对路径，需要手动添加绝对路径位置
 		string path_file;
@@ -942,34 +944,17 @@ void PancyTextureControl::RebuildTextureDataPath(const std::string &json_file_na
 		tex_data_file_name = path_file + tex_data_file_name;
 	}
 }
-void PancyTextureControl::GetJsonFilePath(const std::string &json_file_name, std::string &file_path_out) 
-{
-	file_path_out = "";
-	int32_t copy_size = json_file_name.size();
-	for (int i = json_file_name.size()-1; i >= 0; --i)
-	{
-		if (json_file_name[i] != '\\' && json_file_name[i] != '/')
-		{
-			copy_size -= 1;
-		}
-		else 
-		{
-			break;
-		}
-	}
-	file_path_out = json_file_name.substr(0, copy_size);
-}
-PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out)
+PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::string &resource_desc_file)
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_json_value rec_value;
 	Json::Value root_value;
-	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(desc_file_in, root_value);
+	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_desc_file, root_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "IfFromFile", pancy_json_data_type::json_data_int, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfFromFile", pancy_json_data_type::json_data_int, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -977,33 +962,30 @@ PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::
 	if (rec_value.int_value == 1)
 	{
 		std::string tex_file_name;
-		bool if_auto_mipmap;
-		bool if_force_srgb;
-		int32_t max_size;
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "FileName", pancy_json_data_type::json_data_string, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "FileName", pancy_json_data_type::json_data_string, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		tex_file_name = rec_value.string_value;
 		//根据路径格式决定是否修改为绝对路径
-		RebuildTextureDataPath(desc_file_in, tex_file_name);
+		RebuildTextureDataPath(resource_desc_file, tex_file_name);
 		//是否自动创建mipmap
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "IfAutoBuildMipMap", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfAutoBuildMipMap", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		if (rec_value.int_value == 1)
 		{
-			if_auto_mipmap = true;
+			if_gen_mipmap = true;
 		}
 		else
 		{
-			if_auto_mipmap = false;
+			if_gen_mipmap = false;
 		}
 		//是否强制转换为srgb
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "IfForceSrgb", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfForceSrgb", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -1017,13 +999,129 @@ PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::
 			if_force_srgb = false;
 		}
 		//最大内存大小
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(desc_file_in, root_value, "MaxSize", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "MaxSize", pancy_json_data_type::json_data_int, rec_value);
 		max_size = rec_value.int_value;
-		*resource_out = new PancyBasicTexture(tex_file_name, if_auto_mipmap, if_force_srgb, max_size);
+		return LoadPictureFromFile(tex_file_name);
 	}
 	else
 	{
-		*resource_out = new PancyBasicTexture(desc_file_in);
+		return BuildEmptyPicture(resource_desc_file);
+	}
+}
+PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
+	const std::string &file_name,
+	bool if_automip,
+	bool if_compress,
+	TextureCompressType compress_type
+)
+{
+	int64_t per_memory_size;
+	auto res_data = SubresourceControl::GetInstance()->GetResourceData(tex_data,per_memory_size);
+	DirectX::ScratchImage *new_image = NULL,*mipmap_image = NULL,*compress_image = NULL;
+	bool if_mip_gen = false, if_compress_gen = false;
+	new_image = new DirectX::ScratchImage();
+	//将纹理数据拍摄到图片中
+	DirectX::CaptureTexture(
+		PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect().Get(),
+		res_data->GetResource().Get(), 
+		if_cube_map, 
+		*new_image,
+		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
+	auto texture_desc = res_data->GetResource()->GetDesc();
+	//为纹理创建mipmap
+	if (if_automip && texture_desc.MipLevels == 1)
+	{
+		int32_t mipmap_level = MyCountMips(texture_desc.Width, texture_desc.Height);
+		mipmap_image = new DirectX::ScratchImage();
+		DirectX::GenerateMipMaps(*new_image->GetImages(), TEX_FILTER_DEFAULT | TEX_FILTER_FORCE_NON_WIC, mipmap_level, *mipmap_image);
+		if_mip_gen = true;
+	}
+	else 
+	{
+		mipmap_image = new_image;
+	}
+	//为纹理创建压缩格式(等microsoft更新/手动使用dx11版本)
+	/*
+	暂时不支持自带纹理压缩
+	if (if_compress) 
+	{
+		if (compress_type == TextureCompressType::TEXTURE_COMPRESS_BC7) 
+		{
+			
+			TexMetadata new_meta = {};
+			new_meta.width = texture_desc.Width;
+			new_meta.height = texture_desc.Height;
+			if (!if_cube_map) 
+			{
+				new_meta.depth = texture_desc.DepthOrArraySize;
+			}
+			else 
+			{
+				new_meta.miscFlags = TEX_MISC_TEXTURECUBE;
+				new_meta.arraySize = texture_desc.DepthOrArraySize;
+			}
+			new_meta.format = texture_desc.Format;
+			if (texture_desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE1D) 
+			{
+				new_meta.dimension = TEX_DIMENSION_TEXTURE1D;
+			}
+			else if (texture_desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				new_meta.dimension = TEX_DIMENSION_TEXTURE2D;
+			}
+			else if (texture_desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
+			{
+				new_meta.dimension = TEX_DIMENSION_TEXTURE3D;
+			}
+			DirectX::Compress(mipmap_image->GetImages(), mipmap_image->GetImageCount(), new_meta,);
+		}
+	}
+	*/
+	compress_image = mipmap_image;
+	PancystarEngine::PancyString file_name_sacii(file_name);
+	DirectX::SaveToDDSFile(compress_image->GetImages(), compress_image->GetImageCount(), compress_image->GetMetadata(), DDS_FLAGS_NONE, file_name_sacii.GetUnicodeString().c_str());
+	delete new_image;
+	if (if_mip_gen) 
+	{
+		delete mipmap_image;
+	}
+	if (if_compress_gen) 
+	{
+		delete compress_image;
+	}
+	return PancystarEngine::succeed;
+}
+//纹理管理器
+PancyTextureControl::PancyTextureControl(const std::string &resource_type_name_in) :PancystarEngine::PancyBasicResourceControl(resource_type_name_in)
+{
+}
+PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out)
+{
+	*resource_out = new PancyBasicTexture(desc_file_in);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyTextureControl::SaveTextureToFile(
+	pancy_object_id texture_id,
+	const std::string &file_name,
+	bool if_automip,
+	bool if_compress,
+	TextureCompressType compress_type
+)
+{
+	auto tex_res_data = GetResource(texture_id);
+	if (tex_res_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the texture resource: " + std::to_string(texture_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Save texture file:" + file_name, error_message);
+		return error_message;
+	}
+	PancyBasicTexture *tex_data = dynamic_cast<PancyBasicTexture*>(tex_res_data);
+	PancystarEngine::EngineFailReason check_error = tex_data->SaveTextureToFile(file_name, if_automip, if_compress, compress_type);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
 	}
 	return PancystarEngine::succeed;
 }

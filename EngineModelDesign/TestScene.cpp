@@ -66,7 +66,6 @@ PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::s
 }
 PancyModelAssimp::~PancyModelAssimp()
 {
-	std::vector<SubMemoryPointer> cbuffer;//常量缓冲区
 	for (int i = 0; i < cbuffer.size(); ++i) 
 	{
 		SubresourceControl::GetInstance()->FreeSubResource(cbuffer[i]);
@@ -113,6 +112,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			{
 				return check_error;
 			}
+			
 			//将纹理数据加载到材质表
 			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, texture_use.size()));
 			texture_use.push_back(id_need);

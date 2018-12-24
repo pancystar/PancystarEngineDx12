@@ -1,11 +1,23 @@
 #pragma once
 #include"PancyResourceBasic.h"
 #include"PancyThreadBasic.h"
+#include<DirectXTex.h>
 #include<LoaderHelpers.h>
 #include<DDSTextureLoader.h>
 #include<WICTextureLoader.h>
 #define TextureHeapAliaze 16777216
 #define BufferHeapAliaze 4194304
+enum TextureCompressType 
+{
+	TEXTURE_COMPRESS_NONE = 0,
+	TEXTURE_COMPRESS_BC1,
+	TEXTURE_COMPRESS_BC2,
+	TEXTURE_COMPRESS_BC3,
+	TEXTURE_COMPRESS_BC4,
+	TEXTURE_COMPRESS_BC5,
+	TEXTURE_COMPRESS_BC6,
+	TEXTURE_COMPRESS_BC7
+};
 namespace PancystarEngine
 {
 	uint32_t MyCountMips(uint32_t width, uint32_t height);
@@ -36,7 +48,7 @@ namespace PancystarEngine
 		bool                             if_gen_mipmap; //是否为无mipmap的纹理创建mipmap
 		bool                             if_force_srgb; //是否强制转换为线性空间纹理
 		int                              max_size;      //纹理最大大小
-		D3D12_RESOURCE_DESC              texture_desc;  //纹理格式
+		//D3D12_RESOURCE_DESC              texture_desc;  //纹理格式
 		D3D12_SHADER_RESOURCE_VIEW_DESC  tex_srv_desc = {};  //纹理访问格式
 		D3D12_DEPTH_STENCIL_VIEW_DESC    tex_dsv_desc = {};  //深度模板缓冲格式
 		D3D12_RENDER_TARGET_VIEW_DESC    tex_rtv_desc = {};  //渲染目标格式
@@ -48,10 +60,8 @@ namespace PancystarEngine
 		PancyFenceIdGPU                  copy_broken_fence;
 	public:
 		PancyBasicTexture(
-			std::string desc_file_in,
-			bool if_gen_mipmap_in = false,
-			bool if_force_srgb_in = false,
-			int max_size_in = 0);
+			std::string desc_file_in
+		);
 		PancystarEngine::EngineFailReason GetResource(SubMemoryPointer &resource)
 		{
 			if (!if_copy_finish) 
@@ -70,6 +80,12 @@ namespace PancystarEngine
 			resource = tex_data;
 			return PancystarEngine::succeed;
 		}
+		PancystarEngine::EngineFailReason SaveTextureToFile(
+			const std::string &file_name,
+			bool if_automip = false,
+			bool if_compress = false, 
+			TextureCompressType compress_type = TEXTURE_COMPRESS_NONE
+		);
 		inline D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc() 
 		{
 			return tex_srv_desc;
@@ -86,6 +102,7 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
 		PancystarEngine::EngineFailReason LoadPictureFromFile(const std::string &picture_path_file);
 		PancystarEngine::EngineFailReason BuildEmptyPicture(const std::string &picture_desc_file);
+		
 		std::string GetFileTile(const std::string &data_input);
 		PancystarEngine::EngineFailReason BuildTextureResource(
 			const D3D12_RESOURCE_DIMENSION &resDim,
@@ -109,6 +126,8 @@ namespace PancystarEngine
 			}
 			return false;
 		}
+		void RebuildTextureDataPath(const std::string &json_file_name, std::string &tex_data_file_name);
+		void GetJsonFilePath(const std::string &json_file_name, std::string &file_path_out);
 	};
 
 
@@ -181,12 +200,17 @@ namespace PancystarEngine
 			D3D12_HEAP_TYPE heap_type,
 			const std::vector<D3D12_HEAP_FLAGS> &heap_flags,
 			D3D12_RESOURCE_STATES res_state,
-			std::string &subresource_desc_name);
+			std::string &subresource_desc_name
+		);
+		PancystarEngine::EngineFailReason SaveTextureToFile(
+			pancy_object_id texture_id,
+			const std::string &file_name,
+			bool if_automip = false,
+			bool if_compress = false,
+			TextureCompressType compress_type = TEXTURE_COMPRESS_NONE
+		);
 	private:
 		PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out);
-		void RebuildTextureDataPath(const std::string &json_file_name,std::string &tex_data_file_name);
-		void GetJsonFilePath(const std::string &json_file_name,std::string &file_path_out);
 	};
-
 	
 }

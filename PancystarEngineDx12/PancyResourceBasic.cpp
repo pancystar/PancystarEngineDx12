@@ -76,6 +76,7 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(const 
 	if (free_id_list.size() > 0) 
 	{
 		id_now = *free_id_list.begin();
+		free_id_list.erase(id_now);
 	}
 	else 
 	{

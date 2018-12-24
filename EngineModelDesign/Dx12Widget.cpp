@@ -3,6 +3,7 @@ D3d12RenderWidget::D3d12RenderWidget(QWidget *parent) : QWidget(parent)
 {
 	setAttribute(Qt::WA_PaintOnScreen, true);
 	setAttribute(Qt::WA_NativeWindow, true);
+	setFocusPolicy(Qt::ClickFocus);
 	if_build = false;
 }
 
@@ -85,8 +86,12 @@ void D3d12RenderWidget::paintEvent(QPaintEvent *event)
 {
 	if (if_build) 
 	{
-		new_scene->Update(0);
-		new_scene->Display();
+		//bool check = hasFocus();
+		//if (check)
+		//{
+			new_scene->Update(0);
+			new_scene->Display();
+		//}
 	}
 	update();
 }

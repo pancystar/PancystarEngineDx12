@@ -216,6 +216,8 @@ class scene_test_simple : public SceneRoot
 	int32_t y_point;
 	bool if_pointed;
 	uint8_t now_point_answer;
+	//UIøÿ÷∆–≈œ¢
+	bool if_focus;
 public:
 	scene_test_simple()
 	{
@@ -224,6 +226,7 @@ public:
 		if_readback_build = false;
 		if_pointed = false;
 		if_load_model = false;
+		if_focus = false;
 	}
 	~scene_test_simple();
 	inline void PointWindow(int32_t x_pos, int32_t y_pos) 
@@ -236,6 +239,10 @@ public:
 	void DisplayNopost() {};
 	void DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix);
 	void Update(float delta_time);
+	inline void SetFocus(const bool &if_focus_in)
+	{
+		if_focus = if_focus_in;
+	}
 	PancystarEngine::EngineFailReason LoadDealModel(std::string file_name);
 private:
 	PancystarEngine::EngineFailReason Init();

@@ -75,8 +75,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\vs2017_library\json\Include;D:\vs2017_library\dx12\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\vs2017_library\json\Debug;D:\vs2017_library\dx12\lib_debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\vs2017_library\json\Include;D:\vs2017_library\dx12\include;D:\vs2017_library\dxtexture\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\vs2017_library\json\Debug;D:\vs2017_library\dx12\lib_debug;D:\vs2017_library\dxtexture\lib\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
