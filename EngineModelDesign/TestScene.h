@@ -10,6 +10,7 @@
 #else
 #pragma comment(lib,"..\\x64\\Release\\PancystarEngineDx12.lib")
 #endif
+
 struct per_view_pack 
 {
 	DirectX::XMFLOAT4X4 view_matrix;
@@ -142,6 +143,7 @@ class PancyModelAssimp : public PancyModelBasic
 	//模型加载变量
 	Assimp::Importer importer;
 	const aiScene *model_need;//assimp模型备份
+	std::unordered_map<pancy_object_id, std::string> material_name_list;
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
 	~PancyModelAssimp();
@@ -154,9 +156,24 @@ public:
 		return table_offset;
 	}
 	void update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT4X4 uv_matrix,float delta_time);
+	inline std::string GetMaterialName(pancy_object_id mat_id)
+	{
+		auto mat_data = material_name_list.find(mat_id);
+		if (mat_data != material_name_list.end()) 
+		{
+			return mat_data->second;
+		}
+		return "";
+	}
 private:
-	
 	PancystarEngine::EngineFailReason LoadModel(
+		const std::string &resource_desc_file,
+		std::vector<PancySubModel*> &model_resource,
+		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
+		std::vector<pancy_object_id> &texture_use
+	);
+	PancystarEngine::EngineFailReason BuildTextureRes(std::string tex_name,const int &if_force_srgb, pancy_object_id &id_tex);
+	PancystarEngine::EngineFailReason SaveModel(
 		const std::string &resource_desc_file,
 		std::vector<PancySubModel*> &model_resource,
 		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
@@ -165,6 +182,8 @@ private:
 };
 class scene_test_simple : public SceneRoot
 {
+	ID3D11Device* device_pancy;
+	ID3D11DeviceContext *contex_pancy;
 	//管线状态
 	ComPtr<ID3D12PipelineState> m_pipelineState;
 	std::vector<PancyThreadIdGPU> renderlist_ID;
@@ -221,6 +240,8 @@ class scene_test_simple : public SceneRoot
 public:
 	scene_test_simple()
 	{
+		device_pancy = NULL;
+		contex_pancy = NULL;
 		renderlist_ID.clear();
 		model_deal = NULL;
 		if_readback_build = false;

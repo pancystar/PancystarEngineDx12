@@ -1,7 +1,7 @@
 {
-  "IfFromFile": 1,
-  "FileName": "Sphere002_metallic.dds",
-  "IfAutoBuildMipMap": 0,
-  "IfForceSrgb": 1,
-  "MaxSize": 0
+	"FileName" : "Sphere002_Metallic.dds",
+	"IfAutoBuildMipMap" : 0,
+	"IfForceSrgb" : 0,
+	"IfFromFile" : 1,
+	"MaxSize" : 0
 }

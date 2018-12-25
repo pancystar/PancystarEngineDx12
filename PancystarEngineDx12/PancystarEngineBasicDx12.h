@@ -1,4 +1,6 @@
 #pragma once
+//临时的dx11头文件(纹理压缩)
+#include<d3d11.h>
 //windows头文件
 #include<Windows.h>
 #include<d3d12.h>

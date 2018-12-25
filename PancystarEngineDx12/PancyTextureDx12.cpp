@@ -546,7 +546,12 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 			return error_message;
 		}
 	}
-
+	else 
+	{
+		PancystarEngine::EngineFailReason error_message(ERROR_INVALID_DATA, "un supported texture type:" + picture_path_file);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+		return error_message;
+	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResourceAndWait(std::vector<D3D12_SUBRESOURCE_DATA> &subresources)
@@ -1009,6 +1014,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::str
 	}
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
+	ID3D11Device* pDevice,
 	const std::string &file_name,
 	bool if_automip,
 	bool if_compress
@@ -1061,13 +1067,13 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Save texture file:" + file_name, error_message);
 			return error_message;
 		}
-		hr = DirectX::Compress(
+		hr = DirectX::Compress(pDevice,
 			mipmap_image->GetImages(),
 			mipmap_image->GetImageCount(),
 			mipmap_image->GetMetadata(),
 			compress_type,
-			TEX_COMPRESS_PARALLEL,
-			0,
+			TEXTURE_COMPRESS_BC7,
+			1,
 			*compress_image
 		);
 		if_compress_gen = true;
@@ -1099,6 +1105,7 @@ PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyTextureControl::SaveTextureToFile(
+	ID3D11Device* pDevice,
 	pancy_object_id texture_id,
 	const std::string &file_name,
 	bool if_automip,
@@ -1113,7 +1120,7 @@ PancystarEngine::EngineFailReason PancyTextureControl::SaveTextureToFile(
 		return error_message;
 	}
 	PancyBasicTexture *tex_data = dynamic_cast<PancyBasicTexture*>(tex_res_data);
-	PancystarEngine::EngineFailReason check_error = tex_data->SaveTextureToFile(file_name, if_automip, if_compress);
+	PancystarEngine::EngineFailReason check_error = tex_data->SaveTextureToFile(pDevice,file_name, if_automip, if_compress);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;

@@ -81,6 +81,7 @@ namespace PancystarEngine
 			return PancystarEngine::succeed;
 		}
 		PancystarEngine::EngineFailReason SaveTextureToFile(
+			ID3D11Device* pDevice,
 			const std::string &file_name,
 			bool if_automip = false,
 			bool if_compress = false
@@ -202,6 +203,7 @@ namespace PancystarEngine
 			std::string &subresource_desc_name
 		);
 		PancystarEngine::EngineFailReason SaveTextureToFile(
+			ID3D11Device* pDevice,
 			pancy_object_id texture_id,
 			const std::string &file_name,
 			bool if_automip = false,
