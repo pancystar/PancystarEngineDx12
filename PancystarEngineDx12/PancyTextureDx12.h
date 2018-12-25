@@ -83,8 +83,7 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason SaveTextureToFile(
 			const std::string &file_name,
 			bool if_automip = false,
-			bool if_compress = false, 
-			TextureCompressType compress_type = TEXTURE_COMPRESS_NONE
+			bool if_compress = false
 		);
 		inline D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc() 
 		{
@@ -206,8 +205,7 @@ namespace PancystarEngine
 			pancy_object_id texture_id,
 			const std::string &file_name,
 			bool if_automip = false,
-			bool if_compress = false,
-			TextureCompressType compress_type = TEXTURE_COMPRESS_NONE
+			bool if_compress = false
 		);
 	private:
 		PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out);

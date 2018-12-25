@@ -1011,20 +1011,20 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::str
 PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 	const std::string &file_name,
 	bool if_automip,
-	bool if_compress,
-	TextureCompressType compress_type
+	bool if_compress
 )
 {
+	HRESULT hr;
 	int64_t per_memory_size;
-	auto res_data = SubresourceControl::GetInstance()->GetResourceData(tex_data,per_memory_size);
-	DirectX::ScratchImage *new_image = NULL,*mipmap_image = NULL,*compress_image = NULL;
+	auto res_data = SubresourceControl::GetInstance()->GetResourceData(tex_data, per_memory_size);
+	DirectX::ScratchImage *new_image = NULL, *mipmap_image = NULL, *compress_image = NULL;
 	bool if_mip_gen = false, if_compress_gen = false;
 	new_image = new DirectX::ScratchImage();
 	//将纹理数据拍摄到图片中
 	DirectX::CaptureTexture(
 		PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect().Get(),
-		res_data->GetResource().Get(), 
-		if_cube_map, 
+		res_data->GetResource().Get(),
+		if_cube_map,
 		*new_image,
 		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
@@ -1038,56 +1038,52 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 		DirectX::GenerateMipMaps(*new_image->GetImages(), TEX_FILTER_DEFAULT | TEX_FILTER_FORCE_NON_WIC, mipmap_level, *mipmap_image);
 		if_mip_gen = true;
 	}
-	else 
+	else
 	{
 		mipmap_image = new_image;
 	}
 	//为纹理创建压缩格式(等microsoft更新/手动使用dx11版本)
-	/*
-	暂时不支持自带纹理压缩
-	if (if_compress) 
+	if (if_compress)
 	{
-		if (compress_type == TextureCompressType::TEXTURE_COMPRESS_BC7) 
+		compress_image = new DirectX::ScratchImage();
+		DXGI_FORMAT compress_type;
+		if (texture_desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || texture_desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB || texture_desc.Format == DXGI_FORMAT_B8G8R8X8_UNORM_SRGB)
 		{
-			
-			TexMetadata new_meta = {};
-			new_meta.width = texture_desc.Width;
-			new_meta.height = texture_desc.Height;
-			if (!if_cube_map) 
-			{
-				new_meta.depth = texture_desc.DepthOrArraySize;
-			}
-			else 
-			{
-				new_meta.miscFlags = TEX_MISC_TEXTURECUBE;
-				new_meta.arraySize = texture_desc.DepthOrArraySize;
-			}
-			new_meta.format = texture_desc.Format;
-			if (texture_desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE1D) 
-			{
-				new_meta.dimension = TEX_DIMENSION_TEXTURE1D;
-			}
-			else if (texture_desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D)
-			{
-				new_meta.dimension = TEX_DIMENSION_TEXTURE2D;
-			}
-			else if (texture_desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
-			{
-				new_meta.dimension = TEX_DIMENSION_TEXTURE3D;
-			}
-			DirectX::Compress(mipmap_image->GetImages(), mipmap_image->GetImageCount(), new_meta,);
+			compress_type = DXGI_FORMAT_BC7_UNORM_SRGB;
 		}
+		else if (texture_desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || texture_desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || texture_desc.Format == DXGI_FORMAT_B8G8R8X8_UNORM)
+		{
+			compress_type = DXGI_FORMAT_BC7_UNORM;
+		}
+		else 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "compress format could not recognize: " + std::to_string(texture_desc.Format));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Save texture file:" + file_name, error_message);
+			return error_message;
+		}
+		hr = DirectX::Compress(
+			mipmap_image->GetImages(),
+			mipmap_image->GetImageCount(),
+			mipmap_image->GetMetadata(),
+			compress_type,
+			TEX_COMPRESS_PARALLEL,
+			0,
+			*compress_image
+		);
+		if_compress_gen = true;
 	}
-	*/
-	compress_image = mipmap_image;
+	else
+	{
+		compress_image = mipmap_image;
+	}
 	PancystarEngine::PancyString file_name_sacii(file_name);
 	DirectX::SaveToDDSFile(compress_image->GetImages(), compress_image->GetImageCount(), compress_image->GetMetadata(), DDS_FLAGS_NONE, file_name_sacii.GetUnicodeString().c_str());
 	delete new_image;
-	if (if_mip_gen) 
+	if (if_mip_gen)
 	{
 		delete mipmap_image;
 	}
-	if (if_compress_gen) 
+	if (if_compress_gen)
 	{
 		delete compress_image;
 	}
@@ -1106,8 +1102,7 @@ PancystarEngine::EngineFailReason PancyTextureControl::SaveTextureToFile(
 	pancy_object_id texture_id,
 	const std::string &file_name,
 	bool if_automip,
-	bool if_compress,
-	TextureCompressType compress_type
+	bool if_compress
 )
 {
 	auto tex_res_data = GetResource(texture_id);
@@ -1118,7 +1113,7 @@ PancystarEngine::EngineFailReason PancyTextureControl::SaveTextureToFile(
 		return error_message;
 	}
 	PancyBasicTexture *tex_data = dynamic_cast<PancyBasicTexture*>(tex_res_data);
-	PancystarEngine::EngineFailReason check_error = tex_data->SaveTextureToFile(file_name, if_automip, if_compress, compress_type);
+	PancystarEngine::EngineFailReason check_error = tex_data->SaveTextureToFile(file_name, if_automip, if_compress);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -1126,7 +1121,7 @@ PancystarEngine::EngineFailReason PancyTextureControl::SaveTextureToFile(
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyTextureControl::BuildTextureTypeJson(
-	const D3D12_RESOURCE_DESC &subresource_desc, 
+	const D3D12_RESOURCE_DESC &subresource_desc,
 	int32_t resource_num,
 	D3D12_HEAP_TYPE heap_type,
 	const std::vector<D3D12_HEAP_FLAGS> &heap_flags,
@@ -1186,7 +1181,7 @@ PancystarEngine::EngineFailReason PancyTextureControl::BuildTextureTypeJson(
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "commit_block_num", resource_block_num);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "per_block_size", subresources_size);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_type_in", PancyJsonTool::GetInstance()->GetEnumName(typeid(heap_type).name(), heap_type));
-		for (int i = 0; i < heap_flags.size(); ++i) 
+		for (int i = 0; i < heap_flags.size(); ++i)
 		{
 			PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_out, "heap_flag_in", PancyJsonTool::GetInstance()->GetEnumName(typeid(heap_flags[i]).name(), heap_flags[i]));
 		}
@@ -1194,7 +1189,7 @@ PancystarEngine::EngineFailReason PancyTextureControl::BuildTextureTypeJson(
 		//将文件标记为已经创建
 		FileBuildRepeatCheck::GetInstance()->AddFileName(heap_name);
 	}
-	else 
+	else
 	{
 		PancystarEngine::EngineFailReason error_message(S_OK, "repeat load json file: " + heap_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
 		return error_message;

@@ -112,7 +112,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			{
 				return check_error;
 			}
-			
+			PancystarEngine::PancyTextureControl::GetInstance()->SaveTextureToFile(id_need,"111.dds",true);
 			//将纹理数据加载到材质表
 			mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, texture_use.size()));
 			texture_use.push_back(id_need);
