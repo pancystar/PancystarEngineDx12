@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineModelDesign", "Engine
 		{5A030335-669A-4D99-A982-9770027CCA50} = {5A030335-669A-4D99-A982-9770027CCA50}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ExchangeTextureToDDS", "ExchangeTextureToDDS\ExchangeTextureToDDS.vcxproj", "{4DCB5ED7-CCF2-4A39-8E39-B72786238DAC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -45,6 +47,14 @@ Global
 		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x64.ActiveCfg = Release|x64
 		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x64.Build.0 = Release|x64
 		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x86.ActiveCfg = Release|x64
+		{4DCB5ED7-CCF2-4A39-8E39-B72786238DAC}.Debug|x64.ActiveCfg = Debug|x64
+		{4DCB5ED7-CCF2-4A39-8E39-B72786238DAC}.Debug|x64.Build.0 = Debug|x64
+		{4DCB5ED7-CCF2-4A39-8E39-B72786238DAC}.Debug|x86.ActiveCfg = Debug|Win32
+		{4DCB5ED7-CCF2-4A39-8E39-B72786238DAC}.Debug|x86.Build.0 = Debug|Win32
+		{4DCB5ED7-CCF2-4A39-8E39-B72786238DAC}.Release|x64.ActiveCfg = Release|x64
+		{4DCB5ED7-CCF2-4A39-8E39-B72786238DAC}.Release|x64.Build.0 = Release|x64
+		{4DCB5ED7-CCF2-4A39-8E39-B72786238DAC}.Release|x86.ActiveCfg = Release|Win32
+		{4DCB5ED7-CCF2-4A39-8E39-B72786238DAC}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

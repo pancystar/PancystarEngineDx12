@@ -261,3 +261,7 @@ __pycache__/
 *.pyc
 *.dll
 *.bmp
+/EngineModelDesign/model/ball2/ball/bakes/Sphere002_Curvature.png
+*.png
+*.dds
+/EngineModelDesign/model

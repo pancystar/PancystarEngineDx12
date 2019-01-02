@@ -20,7 +20,7 @@ public slots:
 	void on_actionadd_metallic_triggered();
 	void on_actionadd_roughness_triggered();
 	void on_actionadd_ao_triggered();
-
-
+	void ModelSizeChange(int size_now);
+	void ModelSIzeComplete(QString size_string);
 
 };

@@ -848,6 +848,7 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 		{
 			return check_error;
 		}
+		new_rvp.resource_view_offset_id += 1;
 	}
 	return PancystarEngine::succeed;
 }

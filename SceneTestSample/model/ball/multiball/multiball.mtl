@@ -12,8 +12,8 @@ newmtl 02___Default
 	Kd 0.5882 0.5882 0.5882
 	Ks 0.0000 0.0000 0.0000
 	Ke 0.0000 0.0000 0.0000
-	map_Ka ÌùÍ¼__2_RGB Tint.bmp
-	map_Kd ÌùÍ¼__2_RGB Tint.bmp
+	map_Kd multiball_02___Default_BaseColor.dds
+	map_bump multiball_02___Default_Normal.dds
 
 newmtl 03___Default
 	Ns 10.0000
@@ -26,8 +26,8 @@ newmtl 03___Default
 	Kd 0.5882 0.5882 0.5882
 	Ks 0.0000 0.0000 0.0000
 	Ke 0.0000 0.0000 0.0000
-	map_Ka ÌùÍ¼__3_RGB Tint.bmp
-	map_Kd ÌùÍ¼__3_RGB Tint.bmp
+	map_Kd multiball_03___Default_BaseColor.dds
+	map_bump multiball_03___Default_Normal.dds
 
 newmtl 01___Default
 	Ns 10.0000
@@ -40,8 +40,8 @@ newmtl 01___Default
 	Kd 0.5882 0.5882 0.5882
 	Ks 0.0000 0.0000 0.0000
 	Ke 0.0000 0.0000 0.0000
-	map_Ka ÌùÍ¼__1_RGB Tint.bmp
-	map_Kd ÌùÍ¼__1_RGB Tint.bmp
+	map_Kd multiball_01___Default_BaseColor.dds
+	map_bump multiball_01___Default_Normal.dds
 
 newmtl 08___Default
 	Ns 10.0000
@@ -54,8 +54,8 @@ newmtl 08___Default
 	Kd 0.5882 0.5882 0.5882
 	Ks 0.0000 0.0000 0.0000
 	Ke 0.0000 0.0000 0.0000
-	map_Ka ÌùÍ¼__5_RGB Tint.bmp
-	map_Kd ÌùÍ¼__5_RGB Tint.bmp
+	map_Kd multiball_08___Default_BaseColor.dds
+	map_bump multiball_08___Default_Normal.dds
 
 newmtl 09___Default
 	Ns 10.0000
@@ -68,8 +68,8 @@ newmtl 09___Default
 	Kd 0.5882 0.5882 0.5882
 	Ks 0.0000 0.0000 0.0000
 	Ke 0.0000 0.0000 0.0000
-	map_Ka ÌùÍ¼__6_RGB Tint.bmp
-	map_Kd ÌùÍ¼__6_RGB Tint.bmp
+	map_Kd multiball_09___Default_BaseColor.dds
+	map_bump multiball_09___Default_Normal.dds
 
 newmtl 07___Default
 	Ns 10.0000
@@ -82,5 +82,5 @@ newmtl 07___Default
 	Kd 0.5882 0.5882 0.5882
 	Ks 0.0000 0.0000 0.0000
 	Ke 0.0000 0.0000 0.0000
-	map_Ka ÌùÍ¼__4_RGB Tint.bmp
-	map_Kd ÌùÍ¼__4_RGB Tint.bmp
+	map_Kd multiball_07___Default_BaseColor.dds
+	map_bump multiball_07___Default_Normal.dds

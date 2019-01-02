@@ -26,6 +26,11 @@ enum TexType
 	tex_specular,
 	tex_ambient
 };
+struct BoundingData
+{
+	DirectX::XMFLOAT3 min_box_pos;
+	DirectX::XMFLOAT3 max_box_pos;
+};
 class PancySubModel
 {
 	PancystarEngine::GeometryBasic *model_mesh;
@@ -144,6 +149,9 @@ class PancyModelAssimp : public PancyModelBasic
 	Assimp::Importer importer;
 	const aiScene *model_need;//assimp模型备份
 	std::unordered_map<pancy_object_id, std::string> material_name_list;
+	//模型的包围以及形变信息
+	BoundingData model_size;
+	DirectX::XMFLOAT4X4 model_translation;
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
 	~PancyModelAssimp();
