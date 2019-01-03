@@ -1,0 +1,1 @@
+描述符的内存堆做分级处理(64/32/16....)以减少bundless texture过少而对描述符内存的浪费(需要多个rootsignature)

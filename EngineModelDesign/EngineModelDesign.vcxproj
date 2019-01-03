@@ -141,6 +141,12 @@
     <ClInclude Include="TestScene.h" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="shader\boundbox.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VSMain</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+    </FxCompile>
     <FxCompile Include="shader\BrdfGen.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -165,11 +171,13 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="json\pipline_state_object\pso_boundbox.json" />
     <None Include="json\pipline_state_object\pso_brdfgen.json" />
     <None Include="json\pipline_state_object\pso_pbr.json" />
     <None Include="json\pipline_state_object\pso_screenmask.json" />
     <None Include="json\pipline_state_object\pso_sky.json" />
     <None Include="json\pipline_state_object\pso_test.json" />
+    <None Include="json\root_signature\boundbox_root_signature.json" />
     <None Include="json\root_signature\brdfgen_root_signature.json" />
     <None Include="json\root_signature\pbr_root_signature.json" />
     <None Include="json\root_signature\sky_root_signature.json" />

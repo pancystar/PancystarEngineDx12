@@ -230,7 +230,13 @@ public:
 
         retranslateUi(EngineModelDesignClass);
         QObject::connect(model_scal, SIGNAL(valueChanged(int)), EngineModelDesignClass, SLOT(ModelSizeChange(int)));
-        QObject::connect(scalling, SIGNAL(textChanged(QString)), EngineModelDesignClass, SLOT(ModelSIzeComplete(QString)));
+        QObject::connect(scalling, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelSIzeComplete()));
+        QObject::connect(translation_x, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelPositionChange()));
+        QObject::connect(translation_y, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelPositionChange()));
+        QObject::connect(translation_z, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelPositionChange()));
+        QObject::connect(rotation_x, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelRotationChange()));
+        QObject::connect(rotation_y, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelRotationChange()));
+        QObject::connect(rotation_z, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelRotationChange()));
 
         QMetaObject::connectSlotsByName(EngineModelDesignClass);
     } // setupUi

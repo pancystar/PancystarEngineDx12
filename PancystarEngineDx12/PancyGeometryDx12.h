@@ -6,6 +6,11 @@
 #define IndexType uint32_t
 namespace PancystarEngine
 {
+	//纯顶点格式(用于网格显示)
+	struct PointPositionSingle
+	{
+		DirectX::XMFLOAT4 position;
+	};
 	//2D顶点格式
 	struct Point2D
 	{

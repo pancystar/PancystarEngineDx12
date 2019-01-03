@@ -17,6 +17,9 @@ public:
 	}
 	PancystarEngine::EngineFailReason Create(SceneRoot *new_scene_in);
 	PancystarEngine::EngineFailReason LoadModel(std::string file_name);
+	PancystarEngine::EngineFailReason ChangeModelSize(float scal_size);
+	PancystarEngine::EngineFailReason ChangeModelPosition(float pos_x,float pos_y,float pos_z);
+	PancystarEngine::EngineFailReason ChangeModelRotation(float rot_x, float rot_y, float rot_z);
 private:
 	bool if_build;
 	SceneRoot   *new_scene;

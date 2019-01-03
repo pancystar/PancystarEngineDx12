@@ -141,7 +141,7 @@ public:
 };
 class PancyModelAssimp : public PancyModelBasic
 {
-	//临时渲染变量(模型处理工具中不做view化处理，正式使用会有view化处理)
+	//临时渲染变量(模型处理工具由于只处理一个模型，不做view化处理和renderobj封装，正式使用会有view化处理)
 	std::string pso_use;                  //pso
 	std::vector<SubMemoryPointer> cbuffer;//常量缓冲区
 	std::vector<ResourceViewPointer> table_offset;//每个shader外部变量的位置
@@ -152,6 +152,7 @@ class PancyModelAssimp : public PancyModelBasic
 	//模型的包围以及形变信息
 	BoundingData model_size;
 	DirectX::XMFLOAT4X4 model_translation;
+	PancystarEngine::GeometryBasic *model_boundbox;
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
 	~PancyModelAssimp();
@@ -172,6 +173,10 @@ public:
 			return mat_data->second;
 		}
 		return "";
+	}
+	inline PancystarEngine::GeometryBasic *GetBoundBox() 
+	{
+		return model_boundbox;
 	}
 private:
 	PancystarEngine::EngineFailReason LoadModel(
@@ -222,6 +227,10 @@ class scene_test_simple : public SceneRoot
 	//待处理的模型资源
 	bool if_load_model;
 	PancyModelBasic *model_deal;
+	//待处理模型的变换信息
+	float scale_size;
+	DirectX::XMFLOAT3 translation_pos;
+	DirectX::XMFLOAT3 rotation_angle;
 	//pbr纹理
 	pancy_object_id pic_empty_white_id;//空白纹理，标记为未加载
 	pancy_object_id tex_brdf_id;
@@ -256,6 +265,9 @@ public:
 		if_pointed = false;
 		if_load_model = false;
 		if_focus = false;
+		scale_size = 1.0f;
+		translation_pos = DirectX::XMFLOAT3(0,0,0);
+		rotation_angle = DirectX::XMFLOAT3(0, 0, 0);
 	}
 	~scene_test_simple();
 	inline void PointWindow(int32_t x_pos, int32_t y_pos) 
@@ -273,6 +285,22 @@ public:
 		if_focus = if_focus_in;
 	}
 	PancystarEngine::EngineFailReason LoadDealModel(std::string file_name);
+	inline void ResetDealModelScal(float scal_num) 
+	{
+		scale_size = scal_num;
+	}
+	inline void ResetDealModelTranslation(float x_value, float y_value, float z_value)
+	{
+		translation_pos.x = x_value;
+		translation_pos.y = y_value;
+		translation_pos.z = z_value;
+	}
+	inline void ResetDealModelRotaiton(float x_value, float y_value, float z_value) 
+	{
+		rotation_angle.x = x_value;
+		rotation_angle.y = y_value;
+		rotation_angle.z = z_value;
+	}
 private:
 	PancystarEngine::EngineFailReason Init();
 	PancystarEngine::EngineFailReason ScreenChange();
@@ -280,6 +308,7 @@ private:
 	void PopulateCommandListSky();
 	void PopulateCommandListModelDeal();
 	void PopulateCommandListReadBack();
+	void PopulateCommandListModelDealBound();
 	PancystarEngine::EngineFailReason PretreatBrdf();
 	PancystarEngine::EngineFailReason PretreatPbrDescriptor();
 	PancystarEngine::EngineFailReason UpdatePbrDescriptor();

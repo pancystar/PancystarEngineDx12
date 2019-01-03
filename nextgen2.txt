@@ -1,0 +1,49 @@
+修整部分：
+1，自定义字符串类，处理unicode及普通string
+2，自定义纹理管理类封装tex2d，RSV，RTV
+3，将纹理，材质与渲染状态作为装饰类与geometry resource类分离
+4，gamma校正
+5，灵活处理渲染到纹理以及场景切换：
+5.1，将纹理与算法剥离，,
+5.2，重建geometry类，取消几何体单例
+5.3，取消算法层对摄像机，视口，以及投影机的访问。
+6,将所有dx接口封装至底层(纹理，shader，几何体),通常开发尽量不再调用相关接口
+7，纹理压缩,BC6烘焙贴图,BC7法线&一般贴图
+8，考虑到预计算的ao，代替一部分ssao的计算
+9，植被叶子和树干分开，叶子双面渲染
+10，剥离create函数，高层类封装为智能指针(delete代替release)，全部类继承于一个基础类，重新启用构造函数和析构函数
+11，进一步制定pancymesh的材质和模型格式，严格指定pbr材质(albedo,metallic,roughness,normal,ambient,specular等)，如果有纹理缺失则使用内置的纹理替补。
+12，基础类处理vector，float3等格式，包括基本运算，联合体。
+展望部分:
+normal烘焙器，用于处理speedtree植被
+dx12资源解绑定机制
+Clustered Shading
+ssr重写，放弃全局反射，仅支持超短局部反射
+shader反射机制，简化shader类，添加shader脚本
+xml脚本支持
+视截体裁剪测试
+引用计数机制
+渲染状态重写
+快速光线追踪反射
+层级阴影重写,软阴影->dx11sdk&nvidasdk
+
+
+
+netease：
+ssr，仅计算局部夹角反射效果
+shader分离
+material分离
+视锥体裁剪光源
+视锥体裁剪物体
+场景管理
+资源管理，引用计数，模板资源控制类
+预设create多模板
+log 单例
+physx lab
+群组渲染批处理阴影
+gamma矫正后mipmap
+顶点结构父类
+宽高同步
+半透明
+网格化光源(debug)
+资源类对外map

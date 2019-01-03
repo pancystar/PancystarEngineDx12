@@ -91,6 +91,9 @@
     <FxCompile Include="shader\ScreenMask.hlsl">
       <Filter>shader</Filter>
     </FxCompile>
+    <FxCompile Include="shader\boundbox.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="json\pipline_state_object\pso_brdfgen.json">
@@ -119,6 +122,12 @@
     </None>
     <None Include="json\pipline_state_object\pso_screenmask.json">
       <Filter>pso</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_boundbox.json">
+      <Filter>pso</Filter>
+    </None>
+    <None Include="json\root_signature\boundbox_root_signature.json">
+      <Filter>rootsignature</Filter>
     </None>
   </ItemGroup>
 </Project>

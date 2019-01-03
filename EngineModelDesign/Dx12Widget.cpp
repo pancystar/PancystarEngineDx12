@@ -75,6 +75,24 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::LoadModel(std::string file_
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	return scene_son->LoadDealModel(file_name);
 }
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelSize(float scal_size)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelScal(scal_size);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelPosition(float pos_x, float pos_y, float pos_z)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelTranslation(pos_x, pos_y, pos_z);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelRotation(float rot_x, float rot_y, float rot_z) 
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelRotaiton(rot_x, rot_y, rot_z);
+	return PancystarEngine::succeed;
+}
 void D3d12RenderWidget::mouseDoubleClickEvent(QMouseEvent *event_need)
 {
 	//click_pos_x = event_need->x();

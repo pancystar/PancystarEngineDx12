@@ -13,6 +13,8 @@ public:
 private:
 	D3d12RenderWidget *widget;
 	Ui::EngineModelDesignClass ui;
+	std::unordered_set<char> number_check_list;
+	bool check_if_number(string str_in);
 public slots: 
 	void on_actionopen_triggered();
 	void on_actionsave_triggered();
@@ -21,6 +23,8 @@ public slots:
 	void on_actionadd_roughness_triggered();
 	void on_actionadd_ao_triggered();
 	void ModelSizeChange(int size_now);
-	void ModelSIzeComplete(QString size_string);
+	void ModelSIzeComplete();
+	void ModelPositionChange();
+	void ModelRotationChange();
 
 };
