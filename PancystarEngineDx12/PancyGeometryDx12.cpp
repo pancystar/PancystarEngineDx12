@@ -98,6 +98,18 @@ PancystarEngine::EngineFailReason GeometryBasic::BuildDefaultBuffer(
 	}
 	//创建存储单元的分区大小
 	UINT buffer_block_size = (BufferSize + memory_block_alignment_size) & ~(memory_block_alignment_size - 1);//128k对齐
+	if (alignment_buffer_size % buffer_block_size != 0) 
+	{
+		int32_t max_divide_size = alignment_buffer_size / buffer_block_size;
+		for (int32_t i = max_divide_size; i >= 0; --i) 
+		{
+			if (alignment_buffer_size % i == 0)
+			{
+				buffer_block_size = alignment_buffer_size / i;
+				break;
+			}
+		}
+	}
 	std::string bufferblock_file_name = "json\\resource_view\\PointBufferSub" + std::to_string(buffer_block_size) + ".json";
 	std::string dynamic_bufferblock_file_name = "json\\resource_view\\DynamicBufferSub" + std::to_string(buffer_block_size) + ".json";
 	//检验资源堆存储单元格式创建

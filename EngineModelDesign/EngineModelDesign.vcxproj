@@ -31,7 +31,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IncludePath>D:\vs2017_library\json\Include;D:\vs2017_library\dx12\include;D:\vs2017_library\assimp\include;D:\vs2017_library\dxtexture\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\vs2017_library\json\Debug;D:\vs2017_library\dx12\lib_debug;D:\vs2017_library\assimp\lib\debug;D:\vs2017_library\dxtexture\lib\debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>D:\vs2017_library\json\Debug;D:\vs2017_library\dx12\lib_debug;D:\vs2017_library\assimp\lib\release;D:\vs2017_library\dxtexture\lib\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>

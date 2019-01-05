@@ -93,6 +93,12 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelRotation(float r
 	scene_son->ResetDealModelRotaiton(rot_x, rot_y, rot_z);
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelBoundboxShow(bool if_show)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelBoundboxShow(if_show);
+	return PancystarEngine::succeed;
+}
 void D3d12RenderWidget::mouseDoubleClickEvent(QMouseEvent *event_need)
 {
 	//click_pos_x = event_need->x();

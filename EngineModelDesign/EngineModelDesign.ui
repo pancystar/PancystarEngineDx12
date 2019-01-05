@@ -667,11 +667,28 @@ p, li { white-space: pre-wrap; }
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>CheckIfBoundBox</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>EngineModelDesignClass</receiver>
+   <slot>ShowModelBounding()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1399</x>
+     <y>298</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1207</x>
+     <y>295</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>ModelSizeChange(int)</slot>
   <slot>ModelSIzeComplete()</slot>
   <slot>ModelPositionChange()</slot>
   <slot>ModelRotationChange()</slot>
+  <slot>ShowModelBounding()</slot>
  </slots>
 </ui>

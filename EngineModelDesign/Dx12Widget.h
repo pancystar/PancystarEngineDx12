@@ -20,6 +20,7 @@ public:
 	PancystarEngine::EngineFailReason ChangeModelSize(float scal_size);
 	PancystarEngine::EngineFailReason ChangeModelPosition(float pos_x,float pos_y,float pos_z);
 	PancystarEngine::EngineFailReason ChangeModelRotation(float rot_x, float rot_y, float rot_z);
+	PancystarEngine::EngineFailReason ChangeModelBoundboxShow(bool if_show);
 private:
 	bool if_build;
 	SceneRoot   *new_scene;

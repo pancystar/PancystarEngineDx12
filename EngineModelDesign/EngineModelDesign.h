@@ -26,5 +26,5 @@ public slots:
 	void ModelSIzeComplete();
 	void ModelPositionChange();
 	void ModelRotationChange();
-
+	void ShowModelBounding();
 };

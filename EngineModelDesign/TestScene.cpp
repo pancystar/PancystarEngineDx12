@@ -158,6 +158,21 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		std::unordered_map<TexType, pancy_object_id> mat_tex_list;
 		const aiMaterial* pMaterial = model_need->mMaterials[i];
 		aiString Path;
+		/*
+		pMaterial->mNumProperties;
+		for (unsigned int i = 0; i < pMaterial->mNumProperties; ++i) {
+			aiMaterialProperty* prop = pMaterial->mProperties[i];
+			if (prop)
+			{
+				strcmp(prop->mKey.data, _AI_MATKEY_TEXTURE_BASE);
+				if (true) 
+				{
+					auto check_a = prop->mSemantic;
+					int a = 0;
+				}
+			}
+		}
+		*/
 		//Âþ·´ÉäÎÆÀí
 		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0 && pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 		{
@@ -1353,7 +1368,10 @@ void scene_test_simple::Display()
 	if (if_load_model)
 	{
 		PopulateCommandListModelDeal();
-		PopulateCommandListModelDealBound();
+		if (if_show_boundbox) 
+		{
+			PopulateCommandListModelDealBound();
+		}
 		PopulateCommandListReadBack();
 	}
 	if (renderlist_ID.size() > 0)

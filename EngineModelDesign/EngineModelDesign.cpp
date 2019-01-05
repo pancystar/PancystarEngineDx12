@@ -110,6 +110,10 @@ void EngineModelDesign::ModelRotationChange()
 	z_pos = ui.rotation_z->text().toFloat();
 	widget->ChangeModelRotation(x_pos, y_pos, z_pos);
 }
+void EngineModelDesign::ShowModelBounding()
+{
+	widget->ChangeModelBoundboxShow(ui.CheckIfBoundBox->isChecked());
+}
 void EngineModelDesign::on_actionsave_triggered()
 {
 	int a = 0;

@@ -237,6 +237,7 @@ public:
         QObject::connect(rotation_x, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelRotationChange()));
         QObject::connect(rotation_y, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelRotationChange()));
         QObject::connect(rotation_z, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelRotationChange()));
+        QObject::connect(CheckIfBoundBox, SIGNAL(stateChanged(int)), EngineModelDesignClass, SLOT(ShowModelBounding()));
 
         QMetaObject::connectSlotsByName(EngineModelDesignClass);
     } // setupUi

@@ -227,6 +227,7 @@ class scene_test_simple : public SceneRoot
 	//待处理的模型资源
 	bool if_load_model;
 	PancyModelBasic *model_deal;
+	bool if_show_boundbox;
 	//待处理模型的变换信息
 	float scale_size;
 	DirectX::XMFLOAT3 translation_pos;
@@ -268,6 +269,7 @@ public:
 		scale_size = 1.0f;
 		translation_pos = DirectX::XMFLOAT3(0,0,0);
 		rotation_angle = DirectX::XMFLOAT3(0, 0, 0);
+		if_show_boundbox = false;
 	}
 	~scene_test_simple();
 	inline void PointWindow(int32_t x_pos, int32_t y_pos) 
@@ -300,6 +302,10 @@ public:
 		rotation_angle.x = x_value;
 		rotation_angle.y = y_value;
 		rotation_angle.z = z_value;
+	}
+	inline void ResetDealModelBoundboxShow(bool if_show)
+	{
+		if_show_boundbox = if_show;
 	}
 private:
 	PancystarEngine::EngineFailReason Init();
