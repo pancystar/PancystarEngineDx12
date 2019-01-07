@@ -27,4 +27,6 @@ public slots:
 	void ModelPositionChange();
 	void ModelRotationChange();
 	void ShowModelBounding();
+	void CheckIfModelRenderPart();
+	void ChangeModelRenderPart();
 };

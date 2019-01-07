@@ -14,11 +14,11 @@
    <string>EngineModelDesign</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QComboBox" name="comboBox">
+   <widget class="QComboBox" name="meshpart">
     <property name="geometry">
      <rect>
-      <x>100</x>
-      <y>20</y>
+      <x>120</x>
+      <y>40</y>
       <width>121</width>
       <height>22</height>
      </rect>
@@ -27,8 +27,8 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>20</y>
+      <x>30</x>
+      <y>40</y>
       <width>91</width>
       <height>16</height>
      </rect>
@@ -465,6 +465,19 @@ p, li { white-space: pre-wrap; }
      <string>1.0</string>
     </property>
    </widget>
+   <widget class="QCheckBox" name="ShowModelPart">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>10</y>
+      <width>151</width>
+      <height>19</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>只显示部分模型</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -683,6 +696,38 @@ p, li { white-space: pre-wrap; }
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>ShowModelPart</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>EngineModelDesignClass</receiver>
+   <slot>CheckIfModelRenderPart()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>86</x>
+     <y>60</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>350</x>
+     <y>66</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>meshpart</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>EngineModelDesignClass</receiver>
+   <slot>ChangeModelRenderPart()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>183</x>
+     <y>88</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>355</x>
+     <y>152</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>ModelSizeChange(int)</slot>
@@ -690,5 +735,7 @@ p, li { white-space: pre-wrap; }
   <slot>ModelPositionChange()</slot>
   <slot>ModelRotationChange()</slot>
   <slot>ShowModelBounding()</slot>
+  <slot>CheckIfModelRenderPart()</slot>
+  <slot>ChangeModelRenderPart()</slot>
  </slots>
 </ui>

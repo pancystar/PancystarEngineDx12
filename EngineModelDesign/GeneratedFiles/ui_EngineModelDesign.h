@@ -38,7 +38,7 @@ public:
     QAction *actionadd_roughness;
     QAction *actionadd_ao;
     QWidget *centralWidget;
-    QComboBox *comboBox;
+    QComboBox *meshpart;
     QLabel *label;
     QSlider *model_scal;
     QLabel *label_1;
@@ -72,6 +72,7 @@ public:
     QLabel *label_16;
     QLineEdit *rotation_x;
     QLineEdit *scalling;
+    QCheckBox *ShowModelPart;
     QMenuBar *menuBar;
     QMenu *menu_file;
     QMenu *menu_edit;
@@ -97,12 +98,12 @@ public:
         actionadd_ao->setObjectName(QStringLiteral("actionadd_ao"));
         centralWidget = new QWidget(EngineModelDesignClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
-        comboBox = new QComboBox(centralWidget);
-        comboBox->setObjectName(QStringLiteral("comboBox"));
-        comboBox->setGeometry(QRect(100, 20, 121, 22));
+        meshpart = new QComboBox(centralWidget);
+        meshpart->setObjectName(QStringLiteral("meshpart"));
+        meshpart->setGeometry(QRect(120, 40, 121, 22));
         label = new QLabel(centralWidget);
         label->setObjectName(QStringLiteral("label"));
-        label->setGeometry(QRect(0, 20, 91, 16));
+        label->setGeometry(QRect(30, 40, 91, 16));
         model_scal = new QSlider(centralWidget);
         model_scal->setObjectName(QStringLiteral("model_scal"));
         model_scal->setGeometry(QRect(1390, 60, 160, 22));
@@ -203,6 +204,9 @@ public:
         scalling = new QLineEdit(centralWidget);
         scalling->setObjectName(QStringLiteral("scalling"));
         scalling->setGeometry(QRect(1450, 30, 41, 21));
+        ShowModelPart = new QCheckBox(centralWidget);
+        ShowModelPart->setObjectName(QStringLiteral("ShowModelPart"));
+        ShowModelPart->setGeometry(QRect(0, 10, 151, 19));
         EngineModelDesignClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(EngineModelDesignClass);
         menuBar->setObjectName(QStringLiteral("menuBar"));
@@ -238,6 +242,8 @@ public:
         QObject::connect(rotation_y, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelRotationChange()));
         QObject::connect(rotation_z, SIGNAL(editingFinished()), EngineModelDesignClass, SLOT(ModelRotationChange()));
         QObject::connect(CheckIfBoundBox, SIGNAL(stateChanged(int)), EngineModelDesignClass, SLOT(ShowModelBounding()));
+        QObject::connect(ShowModelPart, SIGNAL(stateChanged(int)), EngineModelDesignClass, SLOT(CheckIfModelRenderPart()));
+        QObject::connect(meshpart, SIGNAL(currentIndexChanged(int)), EngineModelDesignClass, SLOT(ChangeModelRenderPart()));
 
         QMetaObject::connectSlotsByName(EngineModelDesignClass);
     } // setupUi
@@ -288,6 +294,7 @@ public:
         label_16->setText(QApplication::translate("EngineModelDesignClass", "Z:", nullptr));
         rotation_x->setText(QApplication::translate("EngineModelDesignClass", "0.0", nullptr));
         scalling->setText(QApplication::translate("EngineModelDesignClass", "1.0", nullptr));
+        ShowModelPart->setText(QApplication::translate("EngineModelDesignClass", "\345\217\252\346\230\276\347\244\272\351\203\250\345\210\206\346\250\241\345\236\213", nullptr));
         menu_file->setTitle(QApplication::translate("EngineModelDesignClass", "\346\226\207\344\273\266", nullptr));
         menu_edit->setTitle(QApplication::translate("EngineModelDesignClass", "\347\274\226\350\276\221", nullptr));
     } // retranslateUi

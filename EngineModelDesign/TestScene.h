@@ -23,7 +23,9 @@ enum TexType
 	tex_diffuse = 0,
 	tex_normal,
 	tex_metallic_roughness,
-	tex_specular,
+	tex_metallic,
+	tex_roughness,
+	tex_specular_smoothness,
 	tex_ambient
 };
 struct BoundingData
@@ -139,6 +141,11 @@ public:
 	PancyModelJson(const std::string &desc_file_in);
 
 };
+enum PbrMaterialType 
+{
+	PbrType_MetallicRoughness = 0,
+	PbrType_SpecularSmoothness
+};
 class PancyModelAssimp : public PancyModelBasic
 {
 	//临时渲染变量(模型处理工具由于只处理一个模型，不做view化处理和renderobj封装，正式使用会有view化处理)
@@ -153,6 +160,11 @@ class PancyModelAssimp : public PancyModelBasic
 	BoundingData model_size;
 	DirectX::XMFLOAT4X4 model_translation;
 	PancystarEngine::GeometryBasic *model_boundbox;
+	//模型的动画信息
+	bool if_skinmesh;
+	bool if_pointmesh;
+	//模型的pbr格式
+	PbrMaterialType moedl_pbr_type;
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
 	~PancyModelAssimp();
@@ -192,6 +204,18 @@ private:
 		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
 		std::vector<pancy_object_id> &texture_use
 	);
+	inline bool CheckIFJson(const std::string &file_name) 
+	{
+		if (file_name.size() >= 4) 
+		{
+			string check_file = file_name.substr(file_name.size() - 4, 4);
+			if (check_file == "json") 
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 };
 class scene_test_simple : public SceneRoot
 {
@@ -228,6 +252,8 @@ class scene_test_simple : public SceneRoot
 	bool if_load_model;
 	PancyModelBasic *model_deal;
 	bool if_show_boundbox;
+	bool if_only_show_part;
+	int32_t now_show_part;
 	//待处理模型的变换信息
 	float scale_size;
 	DirectX::XMFLOAT3 translation_pos;
@@ -270,6 +296,10 @@ public:
 		translation_pos = DirectX::XMFLOAT3(0,0,0);
 		rotation_angle = DirectX::XMFLOAT3(0, 0, 0);
 		if_show_boundbox = false;
+		if_only_show_part = false;
+		now_show_part = 0;
+		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_MetallicRoughness", static_cast<int32_t>(PbrType_MetallicRoughness), typeid(PbrType_MetallicRoughness).name());
+		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_SpecularSmoothness", static_cast<int32_t>(PbrType_SpecularSmoothness), typeid(PbrType_SpecularSmoothness).name());
 	}
 	~scene_test_simple();
 	inline void PointWindow(int32_t x_pos, int32_t y_pos) 
@@ -286,7 +316,7 @@ public:
 	{
 		if_focus = if_focus_in;
 	}
-	PancystarEngine::EngineFailReason LoadDealModel(std::string file_name);
+	PancystarEngine::EngineFailReason LoadDealModel(std::string file_name,int32_t &model_part_num);
 	inline void ResetDealModelScal(float scal_num) 
 	{
 		scale_size = scal_num;
@@ -306,6 +336,14 @@ public:
 	inline void ResetDealModelBoundboxShow(bool if_show)
 	{
 		if_show_boundbox = if_show;
+	}
+	inline void ResetDealModelIfPartShow(bool if_part_show) 
+	{
+		if_only_show_part = if_part_show;
+	}
+	inline void ResetDealModelNowShowPart(int32_t part_id)
+	{
+		now_show_part = part_id;
 	}
 private:
 	PancystarEngine::EngineFailReason Init();

@@ -6,7 +6,7 @@ EngineModelDesign::EngineModelDesign(QWidget *parent)
 	ui.setupUi(this);
 	widget = new D3d12RenderWidget(this);
 	widget->resize(1280, 720);
-	widget->move(QPoint(0, 100));
+	widget->move(QPoint(0, 150));
 	auto new_scene = new scene_test_simple();
 	PancystarEngine::EngineFailReason check_error = widget->Create(new_scene);
 	if (!check_error.CheckIfSucceed()) 
@@ -30,8 +30,18 @@ EngineModelDesign::EngineModelDesign(QWidget *parent)
 }
 void EngineModelDesign::on_actionopen_triggered()
 {
-	QString file_name = QFileDialog::getOpenFileName(0,"load model", "./", "OBJ model(*.obj);;FBX Files(*.fbx)",0, QFileDialog::Option::ReadOnly);
-	widget->LoadModel(file_name.toStdString());
+	QString file_name = QFileDialog::getOpenFileName(0,"load model", "./", "JSON File(*.json)",0, QFileDialog::Option::ReadOnly);
+	PancystarEngine::EngineFailReason check_error = widget->LoadModel(file_name.toStdString());
+	if (check_error.CheckIfSucceed()) 
+	{
+		for (int i = 0; i < widget->GetRenderMeshNum(); ++i) 
+		{
+			string num = "";
+			num += '0' + i;
+			ui.meshpart->addItem(tr(num.c_str()));
+		}
+		
+	}
 }
 void EngineModelDesign::ModelSizeChange(int size_now)
 {
@@ -113,6 +123,14 @@ void EngineModelDesign::ModelRotationChange()
 void EngineModelDesign::ShowModelBounding()
 {
 	widget->ChangeModelBoundboxShow(ui.CheckIfBoundBox->isChecked());
+}
+void EngineModelDesign::CheckIfModelRenderPart()
+{
+	widget->ChangeModelIfShowPart(ui.ShowModelPart->isChecked());
+}
+void EngineModelDesign::ChangeModelRenderPart() 
+{
+	widget->ChangeModelNowShowPart(ui.meshpart->currentText().toInt());
 }
 void EngineModelDesign::on_actionsave_triggered()
 {

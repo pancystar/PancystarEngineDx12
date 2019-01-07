@@ -5,6 +5,7 @@ D3d12RenderWidget::D3d12RenderWidget(QWidget *parent) : QWidget(parent)
 	setAttribute(Qt::WA_NativeWindow, true);
 	setFocusPolicy(Qt::ClickFocus);
 	if_build = false;
+	render_mesh_num = 0;
 }
 
 D3d12RenderWidget::~D3d12RenderWidget()
@@ -73,7 +74,7 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::Create(SceneRoot *new_scene
 PancystarEngine::EngineFailReason D3d12RenderWidget::LoadModel(std::string file_name)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
-	return scene_son->LoadDealModel(file_name);
+	return scene_son->LoadDealModel(file_name, render_mesh_num);
 }
 PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelSize(float scal_size)
 {
@@ -99,6 +100,19 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelBoundboxShow(boo
 	scene_son->ResetDealModelBoundboxShow(if_show);
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelIfShowPart(bool if_show_part)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelIfPartShow(if_show_part);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelNowShowPart(int32_t now_show_part)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelNowShowPart(now_show_part);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason ChangeModelNowShowPart(int32_t now_show_part);
 void D3d12RenderWidget::mouseDoubleClickEvent(QMouseEvent *event_need)
 {
 	//click_pos_x = event_need->x();
