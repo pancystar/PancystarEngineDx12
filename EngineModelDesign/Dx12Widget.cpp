@@ -74,7 +74,7 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::Create(SceneRoot *new_scene
 PancystarEngine::EngineFailReason D3d12RenderWidget::LoadModel(std::string file_name)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
-	return scene_son->LoadDealModel(file_name, render_mesh_num);
+	return scene_son->LoadDealModel(file_name, render_mesh_num, model_lod);
 }
 PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelSize(float scal_size)
 {
@@ -106,10 +106,16 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelIfShowPart(bool 
 	scene_son->ResetDealModelIfPartShow(if_show_part);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelNowShowPart(int32_t now_show_part)
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelNowShowPart(std::vector<int32_t> now_show_part)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	scene_son->ResetDealModelNowShowPart(now_show_part);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelNowShowLod(int32_t now_show_lod)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelNowShowPart(model_lod[now_show_lod]);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason ChangeModelNowShowPart(int32_t now_show_part);

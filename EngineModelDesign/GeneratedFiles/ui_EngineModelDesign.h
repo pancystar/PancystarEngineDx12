@@ -19,6 +19,7 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QSlider>
 #include <QtWidgets/QStatusBar>
@@ -73,6 +74,12 @@ public:
     QLineEdit *rotation_x;
     QLineEdit *scalling;
     QCheckBox *ShowModelPart;
+    QLabel *label_9;
+    QCheckBox *ShowModelLOD;
+    QComboBox *MeshLod;
+    QComboBox *ChooseAnimation;
+    QLabel *label_10;
+    QPushButton *LoadAnimation;
     QMenuBar *menuBar;
     QMenu *menu_file;
     QMenu *menu_edit;
@@ -114,51 +121,51 @@ public:
         label_1->setGeometry(QRect(1321, 60, 81, 21));
         CheckIfBoundBox = new QCheckBox(centralWidget);
         CheckIfBoundBox->setObjectName(QStringLiteral("CheckIfBoundBox"));
-        CheckIfBoundBox->setGeometry(QRect(1330, 250, 101, 19));
+        CheckIfBoundBox->setGeometry(QRect(1331, 330, 101, 19));
         label_4 = new QLabel(centralWidget);
         label_4->setObjectName(QStringLiteral("label_4"));
-        label_4->setGeometry(QRect(1321, 190, 81, 21));
+        label_4->setGeometry(QRect(1331, 260, 81, 21));
         model_animation = new QSlider(centralWidget);
         model_animation->setObjectName(QStringLiteral("model_animation"));
-        model_animation->setGeometry(QRect(1390, 190, 160, 22));
+        model_animation->setGeometry(QRect(1400, 260, 160, 21));
         model_animation->setValue(0);
         model_animation->setOrientation(Qt::Horizontal);
         label_model_animation = new QLabel(centralWidget);
         label_model_animation->setObjectName(QStringLiteral("label_model_animation"));
-        label_model_animation->setGeometry(QRect(1450, 170, 51, 16));
+        label_model_animation->setGeometry(QRect(1460, 240, 51, 16));
         show_normal_vertex = new QRadioButton(centralWidget);
         show_normal_vertex->setObjectName(QStringLiteral("show_normal_vertex"));
-        show_normal_vertex->setGeometry(QRect(1350, 320, 115, 19));
+        show_normal_vertex->setGeometry(QRect(1351, 400, 115, 19));
         show_normal_face = new QRadioButton(centralWidget);
         show_normal_face->setObjectName(QStringLiteral("show_normal_face"));
-        show_normal_face->setGeometry(QRect(1350, 350, 115, 19));
+        show_normal_face->setGeometry(QRect(1351, 430, 115, 19));
         CheckIfShowNormal = new QCheckBox(centralWidget);
         CheckIfShowNormal->setObjectName(QStringLiteral("CheckIfShowNormal"));
-        CheckIfShowNormal->setGeometry(QRect(1330, 290, 91, 16));
+        CheckIfShowNormal->setGeometry(QRect(1331, 370, 91, 16));
         label_now_face = new QLabel(centralWidget);
         label_now_face->setObjectName(QStringLiteral("label_now_face"));
-        label_now_face->setGeometry(QRect(1490, 380, 81, 20));
+        label_now_face->setGeometry(QRect(1491, 460, 81, 20));
         label_2 = new QLabel(centralWidget);
         label_2->setObjectName(QStringLiteral("label_2"));
-        label_2->setGeometry(QRect(1370, 380, 101, 21));
+        label_2->setGeometry(QRect(1371, 460, 101, 21));
         label_3 = new QLabel(centralWidget);
         label_3->setObjectName(QStringLiteral("label_3"));
-        label_3->setGeometry(QRect(1370, 410, 151, 16));
+        label_3->setGeometry(QRect(1371, 490, 151, 16));
         face_point_message = new QTextBrowser(centralWidget);
         face_point_message->setObjectName(QStringLiteral("face_point_message"));
-        face_point_message->setGeometry(QRect(1370, 430, 211, 61));
+        face_point_message->setGeometry(QRect(1371, 510, 211, 61));
         label_5 = new QLabel(centralWidget);
         label_5->setObjectName(QStringLiteral("label_5"));
-        label_5->setGeometry(QRect(1370, 500, 121, 16));
+        label_5->setGeometry(QRect(1371, 580, 121, 16));
         label_face_normal = new QLabel(centralWidget);
         label_face_normal->setObjectName(QStringLiteral("label_face_normal"));
-        label_face_normal->setGeometry(QRect(1490, 500, 91, 16));
+        label_face_normal->setGeometry(QRect(1491, 580, 91, 16));
         label_animation_type = new QLabel(centralWidget);
         label_animation_type->setObjectName(QStringLiteral("label_animation_type"));
-        label_animation_type->setGeometry(QRect(1490, 220, 61, 20));
+        label_animation_type->setGeometry(QRect(1500, 290, 61, 20));
         label_6 = new QLabel(centralWidget);
         label_6->setObjectName(QStringLiteral("label_6"));
-        label_6->setGeometry(QRect(1410, 220, 71, 21));
+        label_6->setGeometry(QRect(1420, 290, 71, 21));
         label_7 = new QLabel(centralWidget);
         label_7->setObjectName(QStringLiteral("label_7"));
         label_7->setGeometry(QRect(1290, 100, 61, 21));
@@ -207,6 +214,24 @@ public:
         ShowModelPart = new QCheckBox(centralWidget);
         ShowModelPart->setObjectName(QStringLiteral("ShowModelPart"));
         ShowModelPart->setGeometry(QRect(0, 10, 151, 19));
+        label_9 = new QLabel(centralWidget);
+        label_9->setObjectName(QStringLiteral("label_9"));
+        label_9->setGeometry(QRect(320, 40, 61, 21));
+        ShowModelLOD = new QCheckBox(centralWidget);
+        ShowModelLOD->setObjectName(QStringLiteral("ShowModelLOD"));
+        ShowModelLOD->setGeometry(QRect(290, 10, 151, 19));
+        MeshLod = new QComboBox(centralWidget);
+        MeshLod->setObjectName(QStringLiteral("MeshLod"));
+        MeshLod->setGeometry(QRect(390, 40, 121, 22));
+        ChooseAnimation = new QComboBox(centralWidget);
+        ChooseAnimation->setObjectName(QStringLiteral("ChooseAnimation"));
+        ChooseAnimation->setGeometry(QRect(1360, 210, 121, 22));
+        label_10 = new QLabel(centralWidget);
+        label_10->setObjectName(QStringLiteral("label_10"));
+        label_10->setGeometry(QRect(1290, 210, 61, 21));
+        LoadAnimation = new QPushButton(centralWidget);
+        LoadAnimation->setObjectName(QStringLiteral("LoadAnimation"));
+        LoadAnimation->setGeometry(QRect(1490, 210, 93, 28));
         EngineModelDesignClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(EngineModelDesignClass);
         menuBar->setObjectName(QStringLiteral("menuBar"));
@@ -244,6 +269,8 @@ public:
         QObject::connect(CheckIfBoundBox, SIGNAL(stateChanged(int)), EngineModelDesignClass, SLOT(ShowModelBounding()));
         QObject::connect(ShowModelPart, SIGNAL(stateChanged(int)), EngineModelDesignClass, SLOT(CheckIfModelRenderPart()));
         QObject::connect(meshpart, SIGNAL(currentIndexChanged(int)), EngineModelDesignClass, SLOT(ChangeModelRenderPart()));
+        QObject::connect(ShowModelLOD, SIGNAL(stateChanged(int)), EngineModelDesignClass, SLOT(CheckIfModelRenderLod()));
+        QObject::connect(MeshLod, SIGNAL(currentIndexChanged(int)), EngineModelDesignClass, SLOT(ChangeModelRenderLod()));
 
         QMetaObject::connectSlotsByName(EngineModelDesignClass);
     } // setupUi
@@ -295,6 +322,10 @@ public:
         rotation_x->setText(QApplication::translate("EngineModelDesignClass", "0.0", nullptr));
         scalling->setText(QApplication::translate("EngineModelDesignClass", "1.0", nullptr));
         ShowModelPart->setText(QApplication::translate("EngineModelDesignClass", "\345\217\252\346\230\276\347\244\272\351\203\250\345\210\206\346\250\241\345\236\213", nullptr));
+        label_9->setText(QApplication::translate("EngineModelDesignClass", "\351\200\211\346\213\251LOD", nullptr));
+        ShowModelLOD->setText(QApplication::translate("EngineModelDesignClass", "\345\217\252\346\230\276\347\244\272LOD\346\250\241\345\236\213", nullptr));
+        label_10->setText(QApplication::translate("EngineModelDesignClass", "\351\200\211\346\213\251\345\212\250\347\224\273", nullptr));
+        LoadAnimation->setText(QApplication::translate("EngineModelDesignClass", "\345\212\240\350\275\275\345\212\250\347\224\273", nullptr));
         menu_file->setTitle(QApplication::translate("EngineModelDesignClass", "\346\226\207\344\273\266", nullptr));
         menu_edit->setTitle(QApplication::translate("EngineModelDesignClass", "\347\274\226\350\276\221", nullptr));
     } // retranslateUi

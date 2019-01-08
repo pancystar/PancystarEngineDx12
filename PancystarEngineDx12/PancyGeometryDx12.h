@@ -33,8 +33,8 @@ namespace PancystarEngine
 		DirectX::XMUINT4  tex_id;     //使用的纹理ID号
 		DirectX::XMFLOAT4 tex_uv;     //用于采样的坐标
 	};
-	//带骨骼的顶点格式
-	struct PointSkinCommon
+	//带骨骼的顶点格式(最大支持单顶点4骨骼)
+	struct PointSkinCommon4
 	{
 		DirectX::XMFLOAT3 position;   //位置
 		DirectX::XMFLOAT3 normal;     //法线
@@ -44,7 +44,18 @@ namespace PancystarEngine
 		DirectX::XMUINT4  bone_id;    //骨骼ID号
 		DirectX::XMFLOAT4 bone_weight;//骨骼权重
 	};
-	
+	//带骨骼的顶点格式(最大支持单顶点8骨骼)
+	struct PointSkinCommon8
+	{
+		DirectX::XMFLOAT3 position;     //位置
+		DirectX::XMFLOAT3 normal;       //法线
+		DirectX::XMFLOAT3 tangent;      //切线
+		DirectX::XMUINT4  tex_id;       //使用的纹理ID号
+		DirectX::XMFLOAT4 tex_uv;       //用于采样的坐标
+		DirectX::XMUINT4  bone_id;      //骨骼ID号
+		DirectX::XMFLOAT4 bone_weight0; //骨骼权重
+		DirectX::XMFLOAT4 bone_weight1; //骨骼权重
+	};
 	
 	//几何体基础类型
 	class GeometryBasic
@@ -256,6 +267,7 @@ namespace PancystarEngine
 		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
 		all_vertex_need = all_model_vertex;
 		all_index_need = all_model_index;
+
 		const UINT VertexBufferSize = all_vertex_need * sizeof(T);
 		UINT IndexBufferSize;
 		if (sizeof(IndexType) == sizeof(UINT)) 

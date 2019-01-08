@@ -10,8 +10,9 @@
 #else
 #pragma comment(lib,"..\\x64\\Release\\PancystarEngineDx12.lib")
 #endif
-
-struct per_view_pack 
+#define MaxBoneNum 100
+#define NouseAssimpStruct -12138
+struct per_view_pack
 {
 	DirectX::XMFLOAT4X4 view_matrix;
 	DirectX::XMFLOAT4X4 projectmatrix;
@@ -33,6 +34,51 @@ struct BoundingData
 	DirectX::XMFLOAT3 min_box_pos;
 	DirectX::XMFLOAT3 max_box_pos;
 };
+struct skin_tree
+{
+	char bone_ID[128];
+	int bone_number;
+	DirectX::XMFLOAT4X4 basic_matrix;
+	DirectX::XMFLOAT4X4 animation_matrix;
+	DirectX::XMFLOAT4X4 now_matrix;
+	skin_tree *brother;
+	skin_tree *son;
+	skin_tree()
+	{
+		bone_ID[0] = '\0';
+		bone_number = NouseAssimpStruct;
+		brother = NULL;
+		son = NULL;
+		DirectX::XMStoreFloat4x4(&basic_matrix, DirectX::XMMatrixIdentity());
+		DirectX::XMStoreFloat4x4(&animation_matrix, DirectX::XMMatrixIdentity());
+		DirectX::XMStoreFloat4x4(&now_matrix, DirectX::XMMatrixIdentity());
+	}
+};
+//变换向量
+struct vector_animation
+{
+	float time;               //帧时间
+	float main_key[3];        //帧数据
+};
+//变换四元数
+struct quaternion_animation
+{
+	float time;               //帧时间
+	float main_key[4];        //帧数据
+};
+struct animation_data
+{
+	std::string bone_name;                              //本次变换数据对应的骨骼名称
+	skin_tree *bone_point;                              //本次变换数据对应的骨骼的指针
+	std::vector<vector_animation> translation_key;      //各个平移变换数据
+	std::vector<vector_animation> scaling_key;          //各个放缩变换数据
+	std::vector<quaternion_animation> rotation_key;     //各个旋转变换的数据
+};
+struct animation_set
+{
+	float animation_length;                             //动画的长度
+	std::vector<animation_data> data_animition;         //该动画的数据
+};
 class PancySubModel
 {
 	PancystarEngine::GeometryBasic *model_mesh;
@@ -52,7 +98,7 @@ public:
 		material_use = material_id;
 		return PancystarEngine::succeed;
 	}
-	inline pancy_object_id GetMaterial() 
+	inline pancy_object_id GetMaterial()
 	{
 		return material_use;
 	}
@@ -64,7 +110,7 @@ public:
 	{
 		return model_mesh->GetIndexBufferView();
 	};
-	inline int32_t GetVertexNum() 
+	inline int32_t GetVertexNum()
 	{
 		return model_mesh->GetVetexNum();
 	}
@@ -79,6 +125,8 @@ class PancyModelBasic : public PancystarEngine::PancyBasicVirtualResource
 	std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> material_list;
 	std::vector<pancy_object_id> texture_list;
 protected:
+	//模型的LOD信息
+	std::vector<std::vector<int32_t>> model_lod_divide;
 	std::string model_root_path;
 public:
 	PancyModelBasic(const std::string &desc_file_in);
@@ -87,11 +135,11 @@ public:
 	{
 		return model_resource_list.size();
 	};
-	inline pancy_object_id GetSubModelTexture(pancy_object_id submodel_id, TexType texture_type) 
+	inline pancy_object_id GetSubModelTexture(pancy_object_id submodel_id, TexType texture_type)
 	{
-		if (submodel_id > model_resource_list.size()) 
+		if (submodel_id > model_resource_list.size())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL,"submodel id:"+std::to_string(submodel_id)+" bigger than the submodel num:"+std::to_string(model_resource_list.size())+" of model: " +resource_name);
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "submodel id:" + std::to_string(submodel_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: " + resource_name);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find submodel from model ", error_message);
 			return 0;
 		}
@@ -114,18 +162,22 @@ public:
 		}
 		auto material_data = material_list.find(material_id);
 		auto texture_data = material_data->second.find(texture_type);
-		if (texture_data == material_data->second.end()) 
+		if (texture_data == material_data->second.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the texture id:"+std::to_string(texture_type)+" in material id:" + std::to_string(material_id) +"in model "+resource_name);
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the texture id:" + std::to_string(texture_type) + " in material id:" + std::to_string(material_id) + "in model " + resource_name);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find texture from model ", error_message);
 			return error_message;
 		}
 		texture_id = texture_list[texture_data->second];
 		return PancystarEngine::succeed;
 	}
+	inline void GetModelLod(std::vector<std::vector<int32_t>> &Lod_out)
+	{
+		Lod_out = model_lod_divide;
+	}
 	virtual ~PancyModelBasic();
 private:
-	
+
 	PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
 	virtual PancystarEngine::EngineFailReason LoadModel(
 		const std::string &resource_desc_file,
@@ -141,7 +193,7 @@ public:
 	PancyModelJson(const std::string &desc_file_in);
 
 };
-enum PbrMaterialType 
+enum PbrMaterialType
 {
 	PbrType_MetallicRoughness = 0,
 	PbrType_SpecularSmoothness
@@ -163,59 +215,159 @@ class PancyModelAssimp : public PancyModelBasic
 	//模型的动画信息
 	bool if_skinmesh;
 	bool if_pointmesh;
+	//骨骼动画信息
+	skin_tree *pretreat_root_skin;
+	skin_tree *root_skin;
+	int bone_num;
+	int root_bone_num = 0;
+	DirectX::XMFLOAT4X4 bone_matrix_array[MaxBoneNum];
+	DirectX::XMFLOAT4X4 offset_matrix_array[MaxBoneNum];
+	DirectX::XMFLOAT4X4 final_matrix_array[MaxBoneNum];
+	int tree_node_num[MaxBoneNum][MaxBoneNum];
+	std::unordered_map<std::string, animation_set> skin_animation_map;
 	//模型的pbr格式
 	PbrMaterialType moedl_pbr_type;
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
 	~PancyModelAssimp();
-	inline PancyPiplineStateObjectGraph* GetPso() 
+	inline PancyPiplineStateObjectGraph* GetPso()
 	{
 		return PancyEffectGraphic::GetInstance()->GetPSO(pso_use);
 	}
-	inline std::vector<ResourceViewPointer> GetDescriptorHeap() 
+	inline std::vector<ResourceViewPointer> GetDescriptorHeap()
 	{
 		return table_offset;
 	}
-	void update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT4X4 uv_matrix,float delta_time);
+	void update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT4X4 uv_matrix, float delta_time);
 	inline std::string GetMaterialName(pancy_object_id mat_id)
 	{
 		auto mat_data = material_name_list.find(mat_id);
-		if (mat_data != material_name_list.end()) 
+		if (mat_data != material_name_list.end())
 		{
 			return mat_data->second;
 		}
 		return "";
 	}
-	inline PancystarEngine::GeometryBasic *GetBoundBox() 
+	inline PancystarEngine::GeometryBasic *GetBoundBox()
 	{
 		return model_boundbox;
 	}
+
 private:
 	PancystarEngine::EngineFailReason LoadModel(
 		const std::string &resource_desc_file,
 		std::vector<PancySubModel*> &model_resource,
-		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
+		std::unordered_map<pancy_object_id,
+		std::unordered_map<TexType, pancy_object_id>> &material_list,
 		std::vector<pancy_object_id> &texture_use
 	);
-	PancystarEngine::EngineFailReason BuildTextureRes(std::string tex_name,const int &if_force_srgb, pancy_object_id &id_tex);
+	template<typename T>
+	PancystarEngine::EngineFailReason BuildModelData(
+		T *point_need,
+		const aiMesh* paiMesh,
+		int32_t per_mat_size,
+		int32_t material_use
+	)
+	{
+		//创建顶点缓冲区
+		//point_need = new T[paiMesh->mNumVertices];
+		for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
+		{
+			//从assimp中读取的数据
+			point_need[j].position.x = paiMesh->mVertices[j].x;
+			point_need[j].position.y = paiMesh->mVertices[j].y;
+			point_need[j].position.z = paiMesh->mVertices[j].z;
+			//更新AABB包围盒
+			if (point_need[j].position.x > model_size.max_box_pos.x)
+			{
+				model_size.max_box_pos.x = point_need[j].position.x;
+			}
+			if (point_need[j].position.x < model_size.min_box_pos.x)
+			{
+				model_size.min_box_pos.x = point_need[j].position.x;
+			}
+			if (point_need[j].position.y > model_size.max_box_pos.y)
+			{
+				model_size.max_box_pos.y = point_need[j].position.y;
+			}
+			if (point_need[j].position.y < model_size.min_box_pos.y)
+			{
+				model_size.min_box_pos.y = point_need[j].position.y;
+			}
+			if (point_need[j].position.z > model_size.max_box_pos.z)
+			{
+				model_size.max_box_pos.z = point_need[j].position.z;
+			}
+			if (point_need[j].position.z < model_size.min_box_pos.z)
+			{
+				model_size.min_box_pos.z = point_need[j].position.z;
+			}
+			point_need[j].normal.x = paiMesh->mNormals[j].x;
+			point_need[j].normal.y = paiMesh->mNormals[j].y;
+			point_need[j].normal.z = paiMesh->mNormals[j].z;
+
+			if (paiMesh->HasTextureCoords(0))
+			{
+				point_need[j].tex_uv.x = paiMesh->mTextureCoords[0][j].x;
+				point_need[j].tex_uv.y = paiMesh->mTextureCoords[0][j].y;
+				point_need[j].tex_uv.y = 1 - point_need[j].tex_uv.y;
+			}
+			else
+			{
+				point_need[j].tex_uv.x = 0.0f;
+				point_need[j].tex_uv.y = 0.0f;
+			}
+			if (paiMesh->mTangents != NULL)
+			{
+				point_need[j].tangent.x = paiMesh->mTangents[j].x;
+				point_need[j].tangent.y = paiMesh->mTangents[j].y;
+				point_need[j].tangent.z = paiMesh->mTangents[j].z;
+			}
+			else
+			{
+				point_need[j].tangent.x = 0.0f;
+				point_need[j].tangent.y = 0.0f;
+				point_need[j].tangent.z = 0.0f;
+			}
+			//生成纹理使用数据
+			//使用漫反射纹理作为第一个纹理的偏移量,uvid的y通量记录纹理数量
+			point_need[j].tex_id.x = material_use;
+			point_need[j].tex_id.y = per_mat_size + 2;//金属度及粗糙度
+			
+		}
+		
+		return PancystarEngine::succeed;
+	};
+	PancystarEngine::EngineFailReason BuildTextureRes(std::string tex_name, const int &if_force_srgb, pancy_object_id &id_tex);
 	PancystarEngine::EngineFailReason SaveModel(
 		const std::string &resource_desc_file,
 		std::vector<PancySubModel*> &model_resource,
 		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
 		std::vector<pancy_object_id> &texture_use
 	);
-	inline bool CheckIFJson(const std::string &file_name) 
+	inline bool CheckIFJson(const std::string &file_name)
 	{
-		if (file_name.size() >= 4) 
+		if (file_name.size() >= 4)
 		{
 			string check_file = file_name.substr(file_name.size() - 4, 4);
-			if (check_file == "json") 
+			if (check_file == "json")
 			{
 				return true;
 			}
 		}
 		return false;
 	}
+	//骨骼动画计算
+	skin_tree* find_tree(skin_tree* p, char name[]);
+	skin_tree* find_tree(skin_tree* p, int num);
+	bool check_ifsame(char a[], char b[]);
+	PancystarEngine::EngineFailReason build_skintree(aiNode *now_node, skin_tree *now_root);
+	PancystarEngine::EngineFailReason rebuild_skintree(skin_tree *dst_root, skin_tree *src_node, skin_tree *parent_node);
+	void set_matrix(DirectX::XMFLOAT4X4 &out, aiMatrix4x4 *in);
+	void check_son_num(skin_tree *input,int &count);
+	void update_root(skin_tree *root, DirectX::XMFLOAT4X4 matrix_parent);
+	void update_mesh_offset();
+	PancystarEngine::EngineFailReason build_animation_list();
 };
 class scene_test_simple : public SceneRoot
 {
@@ -253,7 +405,7 @@ class scene_test_simple : public SceneRoot
 	PancyModelBasic *model_deal;
 	bool if_show_boundbox;
 	bool if_only_show_part;
-	int32_t now_show_part;
+	std::vector<int32_t> now_show_part;
 	//待处理模型的变换信息
 	float scale_size;
 	DirectX::XMFLOAT3 translation_pos;
@@ -293,16 +445,16 @@ public:
 		if_load_model = false;
 		if_focus = false;
 		scale_size = 1.0f;
-		translation_pos = DirectX::XMFLOAT3(0,0,0);
+		translation_pos = DirectX::XMFLOAT3(0, 0, 0);
 		rotation_angle = DirectX::XMFLOAT3(0, 0, 0);
 		if_show_boundbox = false;
 		if_only_show_part = false;
-		now_show_part = 0;
+		now_show_part.push_back(0);
 		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_MetallicRoughness", static_cast<int32_t>(PbrType_MetallicRoughness), typeid(PbrType_MetallicRoughness).name());
 		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_SpecularSmoothness", static_cast<int32_t>(PbrType_SpecularSmoothness), typeid(PbrType_SpecularSmoothness).name());
 	}
 	~scene_test_simple();
-	inline void PointWindow(int32_t x_pos, int32_t y_pos) 
+	inline void PointWindow(int32_t x_pos, int32_t y_pos)
 	{
 		if_pointed = true;
 		x_point = x_pos;
@@ -316,8 +468,8 @@ public:
 	{
 		if_focus = if_focus_in;
 	}
-	PancystarEngine::EngineFailReason LoadDealModel(std::string file_name,int32_t &model_part_num);
-	inline void ResetDealModelScal(float scal_num) 
+	PancystarEngine::EngineFailReason LoadDealModel(std::string file_name, int32_t &model_part_num, std::vector<std::vector<int32_t>> &Lod_out);
+	inline void ResetDealModelScal(float scal_num)
 	{
 		scale_size = scal_num;
 	}
@@ -327,7 +479,7 @@ public:
 		translation_pos.y = y_value;
 		translation_pos.z = z_value;
 	}
-	inline void ResetDealModelRotaiton(float x_value, float y_value, float z_value) 
+	inline void ResetDealModelRotaiton(float x_value, float y_value, float z_value)
 	{
 		rotation_angle.x = x_value;
 		rotation_angle.y = y_value;
@@ -337,15 +489,19 @@ public:
 	{
 		if_show_boundbox = if_show;
 	}
-	inline void ResetDealModelIfPartShow(bool if_part_show) 
+	inline void ResetDealModelIfPartShow(bool if_part_show)
 	{
 		if_only_show_part = if_part_show;
 	}
-	inline void ResetDealModelNowShowPart(int32_t part_id)
+	inline void ResetDealModelNowShowPart(std::vector<int32_t> part_id)
 	{
 		now_show_part = part_id;
 	}
 private:
+	inline void GetDealModelLodPart(std::vector<std::vector<int32_t>> &Lod_out)
+	{
+		model_deal->GetModelLod(Lod_out);
+	}
 	PancystarEngine::EngineFailReason Init();
 	PancystarEngine::EngineFailReason ScreenChange();
 	void PopulateCommandList(PancyModelBasic *now_res);

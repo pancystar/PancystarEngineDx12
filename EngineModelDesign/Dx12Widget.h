@@ -23,14 +23,20 @@ public:
 	PancystarEngine::EngineFailReason ChangeModelBoundboxShow(bool if_show);
 
 	PancystarEngine::EngineFailReason ChangeModelIfShowPart(bool if_show_part);
-	PancystarEngine::EngineFailReason ChangeModelNowShowPart(int32_t now_show_part);
+	PancystarEngine::EngineFailReason ChangeModelNowShowPart(std::vector<int32_t> now_show_part);
+	PancystarEngine::EngineFailReason ChangeModelNowShowLod(int32_t now_show_lod);
 	inline int32_t GetRenderMeshNum() 
 	{
 		return render_mesh_num;
 	};
+	inline int32_t GetLodNum()
+	{
+		return model_lod.size();
+	};
 private:
 	bool if_build;
 	int32_t render_mesh_num;
+	std::vector<std::vector<int32_t>> model_lod;
 	SceneRoot   *new_scene;
 	virtual void paintEvent(QPaintEvent *event);   //窗口绘制函数，用于render三维场景
 	virtual void mouseDoubleClickEvent(QMouseEvent *event_need);

@@ -75,6 +75,24 @@ PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::s
 	model_size.min_box_pos.x = 999999999.0f;
 	model_size.min_box_pos.y = 999999999.0f;
 	model_size.min_box_pos.z = 999999999.0f;
+	//骨骼数据
+	pretreat_root_skin = new skin_tree;
+	strcpy(pretreat_root_skin->bone_ID, "root_node");
+	pretreat_root_skin->son = new skin_tree;
+	bone_num = 0;
+	for (int i = 0; i < 100; ++i)
+	{
+		DirectX::XMStoreFloat4x4(&bone_matrix_array[i], DirectX::XMMatrixIdentity());
+		DirectX::XMStoreFloat4x4(&offset_matrix_array[i], DirectX::XMMatrixIdentity());
+		DirectX::XMStoreFloat4x4(&final_matrix_array[i], DirectX::XMMatrixIdentity());
+	}
+	for (int i = 0; i < 100; ++i)
+	{
+		for (int j = 0; j < 100; ++j)
+		{
+			tree_node_num[i][j] = 0;
+		}
+	}
 }
 PancyModelAssimp::~PancyModelAssimp()
 {
@@ -132,12 +150,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildTextureRes(std::string 
 	}
 	return PancystarEngine::succeed;
 }
+
 PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	const std::string &resource_desc_file,
 	std::vector<PancySubModel*> &model_resource,
 	std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> &material_list,
 	std::vector<pancy_object_id> &texture_use
-) {
+)
+{
 	PbrMaterialType pbr_type;
 	std::string model_name = resource_desc_file;
 	bool if_auto_material = false;
@@ -182,7 +202,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		}
 		if_skinmesh = rec_value.bool_value;
 		//模型是否包含顶点动画信息
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfHaveSkinAnimation", pancy_json_data_type::json_data_bool, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfHavePoinAnimation", pancy_json_data_type::json_data_bool, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -317,6 +337,27 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				material_list.insert(std::pair<pancy_object_id, std::unordered_map<TexType, pancy_object_id>>(i, mat_tex_list));
 			}
 		}
+		//预处理LOD数据
+		if (if_self_lod)
+		{
+			Json::Value Lod_value = root_value.get("LodDivide", Json::Value::null);
+			int num_lod_value = Lod_value.size();
+			for (int i = 0; i < num_lod_value; ++i)
+			{
+				int num_block_data = Lod_value[i].size();
+				std::vector<int32_t> Lod_block_list;
+				for (int j = 0; j < num_block_data; ++j)
+				{
+					check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, Lod_value[i], j, pancy_json_data_type::json_data_int, rec_value);
+					if (!check_error.CheckIfSucceed())
+					{
+						return check_error;
+					}
+					Lod_block_list.push_back(rec_value.int_value);
+				}
+				model_lod_divide.push_back(Lod_block_list);
+			}
+		}
 	}
 	//开始加载模型
 	PancystarEngine::EngineFailReason check_error;
@@ -332,9 +373,6 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
 		return error_message;
 	}
-	bool use_skin_mesh = false;
-	bool use_point_anim = false;
-
 	std::unordered_map<pancy_object_id, pancy_object_id> real_material_list;//舍弃不合理材质后的材质编号与之前的编号对比
 	if (!if_auto_material)
 	{
@@ -348,16 +386,16 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			/*
 			pMaterial->mNumProperties;
 			for (unsigned int i = 0; i < pMaterial->mNumProperties; ++i) {
-				aiMaterialProperty* prop = pMaterial->mProperties[i];
-				if (prop)
-				{
-					strcmp(prop->mKey.data, _AI_MATKEY_TEXTURE_BASE);
-					if (true)
-					{
-						auto check_a = prop->mSemantic;
-						int a = 0;
-					}
-				}
+			aiMaterialProperty* prop = pMaterial->mProperties[i];
+			if (prop)
+			{
+			strcmp(prop->mKey.data, _AI_MATKEY_TEXTURE_BASE);
+			if (true)
+			{
+			auto check_a = prop->mSemantic;
+			int a = 0;
+			}
+			}
 			}
 			*/
 			//漫反射纹理
@@ -437,6 +475,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	}
 	else
 	{
+		//只填充材质对应表，不读取材质信息
 		if (model_need->mNumMaterials == material_list.size())
 		{
 			for (int i = 0; i < material_list.size(); ++i)
@@ -457,9 +496,24 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 		}
 	}
+	if (model_lod_divide.size() == 0)
+	{
+		std::vector<int32_t> Lod_block_list;
+		for (int i = 0; i < model_need->mNumMeshes; i++)
+		{
+			Lod_block_list.push_back(i);
+		}
+		model_lod_divide.push_back(Lod_block_list);
+	}
+	//预加载骨骼信息
+	if (if_skinmesh)
+	{
+		build_skintree(model_need->mRootNode, pretreat_root_skin->son);
+	}
+	//填充几何体信息
+	int now_used_bone_num = 0;
 	for (int i = 0; i < model_need->mNumMeshes; i++)
 	{
-		//获取模型的第i个模块
 		const aiMesh* paiMesh = model_need->mMeshes[i];
 		//获取模型的材质编号
 		auto real_material_find = real_material_list.find(paiMesh->mMaterialIndex);
@@ -477,6 +531,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
 			return error_message;
 		}
+		int32_t per_mat_size = mat_list_now->second.size();
 		//创建索引缓冲区
 		IndexType *index_need = new IndexType[paiMesh->mNumFaces * 3];
 		for (unsigned int j = 0; j < paiMesh->mNumFaces; j++)
@@ -494,78 +549,175 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				return error_message;
 			}
 		}
-		//创建顶点缓冲区
-		if (use_skin_mesh)
+		//创建缓冲区
+		if (if_skinmesh || if_pointmesh)
 		{
-		}
-		else if (use_point_anim)
-		{
+			if (if_skinmesh)
+			{
+				PancystarEngine::PointSkinCommon8 *point_need = new PancystarEngine::PointSkinCommon8[paiMesh->mNumVertices];
+				check_error = BuildModelData(point_need, paiMesh, per_mat_size, material_use);
+				if (!check_error.CheckIfSucceed())
+				{
+					return check_error;
+				}
+				//填充动画数据
+				float *bone_removed_weight = new float[paiMesh->mNumVertices];
+				//清空骨骼蒙皮信息
+				for (int j = 0; j < paiMesh->mNumVertices; ++j)
+				{
+					point_need[j].bone_id.x = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
+					point_need[j].bone_id.y = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
+					point_need[j].bone_id.z = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
+					point_need[j].bone_id.w = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
+					point_need[j].bone_weight0.x = 0.0f;
+					point_need[j].bone_weight0.y = 0.0f;
+					point_need[j].bone_weight0.z = 0.0f;
+					point_need[j].bone_weight0.w = 0.0f;
+					point_need[j].bone_weight1.x = 0.0f;
+					point_need[j].bone_weight1.y = 0.0f;
+					point_need[j].bone_weight1.z = 0.0f;
+					point_need[j].bone_weight1.w = 0.0f;
+					bone_removed_weight[j] = 0.0f;
+				}
+				//预填充蒙皮信息
+				for (int j = 0; j < paiMesh->mNumBones; ++j)
+				{
+					skin_tree * now_node = find_tree(pretreat_root_skin, paiMesh->mBones[j]->mName.data);
+					if (now_node->bone_number == NouseAssimpStruct)
+					{
+						now_node->bone_number = now_used_bone_num++;
+						bone_num += 1;
+					}
+					tree_node_num[i][j] = now_node->bone_number;
+					for (int k = 0; k < paiMesh->mBones[j]->mNumWeights; ++k)
+					{
+						//先将8个骨骼的id和数据取出以备后续使用
+						uint32_t bone_id[8];
+						bone_id[0] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x / (MaxBoneNum + 100);
+						bone_id[1] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y / (MaxBoneNum + 100);
+						bone_id[2] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z / (MaxBoneNum + 100);
+						bone_id[3] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.w / (MaxBoneNum + 100);
+						bone_id[4] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x % (MaxBoneNum + 100);
+						bone_id[5] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y % (MaxBoneNum + 100);
+						bone_id[6] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z % (MaxBoneNum + 100);
+						bone_id[7] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.w % (MaxBoneNum + 100);
+						float bone_weight[8];
+						bone_weight[0] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.x;
+						bone_weight[1] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.y;
+						bone_weight[2] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.z;
+						bone_weight[3] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.w;
+						bone_weight[4] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.x;
+						bone_weight[5] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.y;
+						bone_weight[6] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.z;
+						bone_weight[7] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.w;
+						//挑选一个ID空闲的骨骼数据进行写入
+						bool if_success_load = false;
+						for (int i = 0; i < 8; ++i)
+						{
+							if (bone_id[i] == MaxBoneNum + 99)
+							{
+								bone_id[i] = now_node->bone_number;
+								bone_weight[i] = paiMesh->mBones[j]->mWeights[k].mWeight;
+								if_success_load = true;
+								break;
+							}
+						}
+						//如果8个骨骼被占满，则挑选一个权重最轻的骨骼，并比较是否需要更新
+						if (!if_success_load)
+						{
+							int min_id = 0;
+							float min_weight = 99.99;
+							for (int i = 0; i < 8; ++i)
+							{
+								if (min_weight > bone_weight[i])
+								{
+									min_id = i;
+									min_weight = bone_weight[i];
+								}
+							}
+							if (bone_weight[min_id] < paiMesh->mBones[j]->mWeights[k].mWeight)
+							{
+								//将被移除的骨骼权重保留，以备之后进行调和加权
+								bone_removed_weight[paiMesh->mBones[j]->mWeights[k].mVertexId] += bone_weight[min_id];
+								//使用新的骨骼代替之前权重较小的骨骼
+								bone_id[min_id] = now_node->bone_number;
+								bone_weight[min_id] = paiMesh->mBones[j]->mWeights[k].mWeight;
+							}
+							else
+							{
+								bone_removed_weight[paiMesh->mBones[j]->mWeights[k].mVertexId] += paiMesh->mBones[j]->mWeights[k].mWeight;
+							}
+						}
+						//将处理完毕的骨骼蒙皮信息还原到顶点
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x = bone_id[0] * (MaxBoneNum + 100) + bone_id[4];
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y = bone_id[1] * (MaxBoneNum + 100) + bone_id[5];
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z = bone_id[2] * (MaxBoneNum + 100) + bone_id[6];
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.w = bone_id[3] * (MaxBoneNum + 100) + bone_id[7];
+
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.x = bone_weight[0];
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.y = bone_weight[1];
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.z = bone_weight[2];
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.w = bone_weight[3];
+
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.x = bone_weight[4];
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.y = bone_weight[5];
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.z = bone_weight[6];
+						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.w = bone_weight[7];
+
+
+					}
+				}
+				//将被舍弃的蒙皮信息分配给已使用的骨骼
+				for (int j = 0; j < paiMesh->mNumVertices; ++j)
+				{
+					float now_bone_weight[8];
+					//将骨骼权重取出
+					now_bone_weight[0] = point_need[j].bone_weight0.x;
+					now_bone_weight[1] = point_need[j].bone_weight0.y;
+					now_bone_weight[2] = point_need[j].bone_weight0.z;
+					now_bone_weight[3] = point_need[j].bone_weight0.w;
+
+					now_bone_weight[4] = point_need[j].bone_weight1.x;
+					now_bone_weight[5] = point_need[j].bone_weight1.y;
+					now_bone_weight[6] = point_need[j].bone_weight1.z;
+					now_bone_weight[7] = point_need[j].bone_weight1.w;
+					float final_weight_use = 0.0f;
+					for (int k = 0; k < 8; ++k) 
+					{
+						final_weight_use += now_bone_weight[k];
+					}
+					for (int k = 0; k < 8; ++k)
+					{
+						now_bone_weight[k] += (now_bone_weight[k] / final_weight_use) * bone_removed_weight[j];
+					}
+					//将处理完的骨骼权重恢复
+					point_need[j].bone_weight0.x = now_bone_weight[0];
+					point_need[j].bone_weight0.y = now_bone_weight[1];
+					point_need[j].bone_weight0.z = now_bone_weight[2];
+					point_need[j].bone_weight0.w = now_bone_weight[3];
+					point_need[j].bone_weight1.x = now_bone_weight[4];
+					point_need[j].bone_weight1.y = now_bone_weight[5];
+					point_need[j].bone_weight1.z = now_bone_weight[6];
+					point_need[j].bone_weight1.w = now_bone_weight[7];
+				}
+				PancySubModel *new_submodel = new PancySubModel();
+				check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
+				if (!check_error.CheckIfSucceed())
+				{
+					return check_error;
+				}
+				model_resource.push_back(new_submodel);
+				delete[] point_need;
+				delete[] bone_removed_weight;
+			}
 		}
 		else
 		{
-			PancystarEngine::PointCommon *point_need = new PancystarEngine::PointCommon[paiMesh->mNumVertices];
-			for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
+			PancystarEngine::PointCommon *point_need = new PancystarEngine::PointCommon[paiMesh->mNumVertices];;
+			check_error = BuildModelData(point_need, paiMesh, per_mat_size, material_use);
+			if (!check_error.CheckIfSucceed())
 			{
-				//从assimp中读取的数据
-				point_need[j].position.x = paiMesh->mVertices[j].x;
-				point_need[j].position.y = paiMesh->mVertices[j].y;
-				point_need[j].position.z = paiMesh->mVertices[j].z;
-				//更新AABB包围盒
-				if (point_need[j].position.x > model_size.max_box_pos.x)
-				{
-					model_size.max_box_pos.x = point_need[j].position.x;
-				}
-				if (point_need[j].position.x < model_size.min_box_pos.x)
-				{
-					model_size.min_box_pos.x = point_need[j].position.x;
-				}
-				if (point_need[j].position.y > model_size.max_box_pos.y)
-				{
-					model_size.max_box_pos.y = point_need[j].position.y;
-				}
-				if (point_need[j].position.y < model_size.min_box_pos.y)
-				{
-					model_size.min_box_pos.y = point_need[j].position.y;
-				}
-				if (point_need[j].position.z > model_size.max_box_pos.z)
-				{
-					model_size.max_box_pos.z = point_need[j].position.z;
-				}
-				if (point_need[j].position.z < model_size.min_box_pos.z)
-				{
-					model_size.min_box_pos.z = point_need[j].position.z;
-				}
-				point_need[j].normal.x = paiMesh->mNormals[j].x;
-				point_need[j].normal.y = paiMesh->mNormals[j].y;
-				point_need[j].normal.z = paiMesh->mNormals[j].z;
-
-				if (paiMesh->HasTextureCoords(0))
-				{
-					point_need[j].tex_uv.x = paiMesh->mTextureCoords[0][j].x;
-					point_need[j].tex_uv.y = paiMesh->mTextureCoords[0][j].y;
-					point_need[j].tex_uv.y = 1 - point_need[j].tex_uv.y;
-				}
-				else
-				{
-					point_need[j].tex_uv.x = 0.0f;
-					point_need[j].tex_uv.y = 0.0f;
-				}
-				if (paiMesh->mTangents != NULL)
-				{
-					point_need[j].tangent.x = paiMesh->mTangents[j].x;
-					point_need[j].tangent.y = paiMesh->mTangents[j].y;
-					point_need[j].tangent.z = paiMesh->mTangents[j].z;
-				}
-				else
-				{
-					point_need[j].tangent.x = 0.0f;
-					point_need[j].tangent.y = 0.0f;
-					point_need[j].tangent.z = 0.0f;
-				}
-				//生成纹理使用数据
-				//使用漫反射纹理作为第一个纹理的偏移量,uvid的y通量记录纹理数量
-				point_need[j].tex_id.x = material_use;
-				point_need[j].tex_id.y = mat_list_now->second.size() + 2;//金属度及粗糙度
+				return check_error;
 			}
 			PancySubModel *new_submodel = new PancySubModel();
 			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
@@ -577,6 +729,37 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			delete[] point_need;
 		}
 		delete[] index_need;
+	}
+	
+	if (if_skinmesh)
+	{
+		//消去不需要的骨骼信息
+		root_bone_num = 0;
+		root_skin = new skin_tree;
+		strcpy(root_skin->bone_ID, "root_node");
+		root_skin->son = NULL;
+		rebuild_skintree(root_skin, pretreat_root_skin->son, pretreat_root_skin);
+		skin_tree *pre_root = root_skin;
+		root_skin = root_skin->son;
+		delete pre_root;
+		int32_t final_bone_num = 0;
+		check_son_num(root_skin, final_bone_num);
+		if (root_bone_num != 1)
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "Find more than 1 root_bone in model: " + resource_desc_file + "error");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+			return error_message;
+		}
+		if (final_bone_num != bone_num)
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "The bone used by model: " + resource_desc_file + " need: " + std::to_string(bone_num) + " but find: " + std::to_string(final_bone_num));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+			return error_message;
+		}
+		//计算偏移矩阵
+		update_mesh_offset();
+		//加载动画信息
+		build_animation_list();
 	}
 	//创建包围盒顶点
 	float center_pos_x = (model_size.max_box_pos.x + model_size.min_box_pos.x) / 2.0f;
@@ -703,10 +886,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, &world_mat, sizeof(world_mat));
 	if (!check_error.CheckIfSucceed())
 	{
-		return check_error;
+	return check_error;
 	}*/
 	return PancystarEngine::succeed;
-
 }
 void PancyModelAssimp::update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT4X4 uv_matrix, float delta_time)
 {
@@ -726,6 +908,261 @@ void PancyModelAssimp::update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT
 	//DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, DirectX::XM_PIDIV4, 0.1f, 1000.0f);
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, &world_mat, sizeof(world_mat));
 }
+//骨骼动画
+bool PancyModelAssimp::check_ifsame(char a[], char b[])
+{
+	int length = strlen(a);
+	if (strlen(a) != strlen(b))
+	{
+		return false;
+	}
+	for (int i = 0; i < length; ++i)
+	{
+		if (a[i] != b[i])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+skin_tree* PancyModelAssimp::find_tree(skin_tree* p, char name[])
+{
+	if (check_ifsame(p->bone_ID, name))
+	{
+		return p;
+	}
+	else
+	{
+		skin_tree* q;
+		if (p->brother != NULL)
+		{
+			q = find_tree(p->brother, name);
+			if (q != NULL)
+			{
+				return q;
+			}
+		}
+		if (p->son != NULL)
+		{
+			q = find_tree(p->son, name);
+			if (q != NULL)
+			{
+				return q;
+			}
+		}
+	}
+	return NULL;
+}
+skin_tree* PancyModelAssimp::find_tree(skin_tree* p, int num)
+{
+	if (p->bone_number == num)
+	{
+		return p;
+	}
+	else
+	{
+		skin_tree* q;
+		if (p->brother != NULL)
+		{
+			q = find_tree(p->brother, num);
+			if (q != NULL)
+			{
+				return q;
+			}
+		}
+		if (p->son != NULL)
+		{
+			q = find_tree(p->son, num);
+			if (q != NULL)
+			{
+				return q;
+			}
+		}
+	}
+	return NULL;
+}
+PancystarEngine::EngineFailReason PancyModelAssimp::build_skintree(aiNode *now_node, skin_tree *now_root)
+{
+	if (now_node != NULL)
+	{
+		strcpy(now_root->bone_ID, now_node->mName.data);
+		set_matrix(now_root->animation_matrix, &now_node->mTransformation);
+		now_root->bone_number = NouseAssimpStruct;
+		if (now_node->mNumChildren > 0)
+		{
+			//如果有至少一个儿子则建立儿子结点
+			now_root->son = new skin_tree();
+			build_skintree(now_node->mChildren[0], now_root->son);
+		}
+		skin_tree *p = now_root->son;
+		for (int i = 1; i < now_node->mNumChildren; ++i)
+		{
+			//建立所有的兄弟链
+			p->brother = new skin_tree();
+			build_skintree(now_node->mChildren[i], p->brother);
+			p = p->brother;
+		}
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyModelAssimp::rebuild_skintree(skin_tree *dst_root, skin_tree *src_node, skin_tree *parent_node)
+{
+	if (src_node != NULL)
+	{
+		if (parent_node->bone_number == NouseAssimpStruct && src_node->bone_number != NouseAssimpStruct)
+		{
+			if (dst_root->son == NULL)
+			{
+				dst_root->son = src_node;
+				root_bone_num += 1;
+			}
+		}
+		else
+		{
+			if (src_node->brother != NULL)
+			{
+				rebuild_skintree(dst_root, src_node->brother, parent_node);
+			}
+			if (src_node->son != NULL)
+			{
+				rebuild_skintree(dst_root, src_node->son, src_node);
+			}
+		}
+	}
+	return PancystarEngine::succeed;
+}
+void PancyModelAssimp::set_matrix(DirectX::XMFLOAT4X4 &out, aiMatrix4x4 *in)
+{
+	out._11 = in->a1;
+	out._21 = in->a2;
+	out._31 = in->a3;
+	out._41 = in->a4;
+
+	out._12 = in->b1;
+	out._22 = in->b2;
+	out._32 = in->b3;
+	out._42 = in->b4;
+
+	out._13 = in->c1;
+	out._23 = in->c2;
+	out._33 = in->c3;
+	out._43 = in->c4;
+
+	out._14 = in->d1;
+	out._24 = in->d2;
+	out._34 = in->d3;
+	out._44 = in->d4;
+}
+void PancyModelAssimp::check_son_num(skin_tree *input, int &count)
+{
+	if (input != NULL)
+	{
+		count += 1;
+		if (input->brother != NULL)
+		{
+			check_son_num(input->brother, count);
+		}
+		if (input->son != NULL)
+		{
+			check_son_num(input->son, count);
+		}
+	}
+}
+void PancyModelAssimp::update_mesh_offset()
+{
+	for (int i = 0; i < model_need->mNumMeshes; ++i)
+	{
+		for (int j = 0; j < model_need->mMeshes[i]->mNumBones; ++j)
+		{
+			set_matrix(offset_matrix_array[tree_node_num[i][j]], &model_need->mMeshes[i]->mBones[j]->mOffsetMatrix);
+		}
+	}
+}
+PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list()
+{
+	for (int i = 0; i < model_need->mNumAnimations; ++i)
+	{
+		std::string now_animation_name = model_need->mAnimations[i]->mName.data;
+		animation_set now_anim_set;
+		now_anim_set.animation_length = model_need->mAnimations[i]->mDuration;
+		int32_t number_used_bones = model_need->mAnimations[i]->mNumChannels;
+		for (int j = 0; j < number_used_bones; ++j)
+		{
+			animation_data now_bone_anim_data;
+			now_bone_anim_data.bone_name = model_need->mAnimations[i]->mChannels[j]->mNodeName.data;
+			now_bone_anim_data.bone_point = find_tree(root_skin, model_need->mAnimations[i]->mChannels[j]->mNodeName.data);
+			if (now_bone_anim_data.bone_point == NULL) 
+			{
+				//未发现骨骼，跳过处理
+				PancystarEngine::EngineFailReason error_message(E_FAIL,"Could not find the bone :" + now_bone_anim_data.bone_name +" from model:" + resource_name,PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load animation data From Model", error_message);
+				continue;
+			}
+			//旋转四元数
+			int32_t number_rotation = model_need->mAnimations[i]->mChannels[j]->mNumRotationKeys;
+			for (int k = 0; k < number_rotation; ++k)
+			{
+				quaternion_animation new_animation_rotate;
+				new_animation_rotate.time = model_need->mAnimations[i]->mChannels[j]->mRotationKeys[k].mTime;
+				new_animation_rotate.main_key[0] = model_need->mAnimations[i]->mChannels[j]->mRotationKeys[k].mValue.x;
+				new_animation_rotate.main_key[1] = model_need->mAnimations[i]->mChannels[j]->mRotationKeys[k].mValue.y;
+				new_animation_rotate.main_key[2] = model_need->mAnimations[i]->mChannels[j]->mRotationKeys[k].mValue.z;
+				new_animation_rotate.main_key[3] = model_need->mAnimations[i]->mChannels[j]->mRotationKeys[k].mValue.w;
+				now_bone_anim_data.rotation_key.push_back(new_animation_rotate);
+			}
+			//平移向量
+			int32_t number_translation = model_need->mAnimations[i]->mChannels[j]->mNumPositionKeys;
+			for (int k = 0; k < number_translation; ++k)
+			{
+				vector_animation new_animation_translate;
+				new_animation_translate.time = model_need->mAnimations[i]->mChannels[j]->mPositionKeys[k].mTime;
+				new_animation_translate.main_key[0] = model_need->mAnimations[i]->mChannels[j]->mPositionKeys[k].mValue.x;
+				new_animation_translate.main_key[1] = model_need->mAnimations[i]->mChannels[j]->mPositionKeys[k].mValue.y;
+				new_animation_translate.main_key[2] = model_need->mAnimations[i]->mChannels[j]->mPositionKeys[k].mValue.z;
+				now_bone_anim_data.translation_key.push_back(new_animation_translate);
+			}
+			//缩放向量
+			int32_t number_scaling = model_need->mAnimations[i]->mChannels[j]->mNumScalingKeys;
+			for (int k = 0; k < number_scaling; ++k)
+			{
+				vector_animation new_animation_scaling;
+				new_animation_scaling.time = model_need->mAnimations[i]->mChannels[j]->mScalingKeys[k].mTime;
+				new_animation_scaling.main_key[0] = model_need->mAnimations[i]->mChannels[j]->mScalingKeys[k].mValue.x;
+				new_animation_scaling.main_key[1] = model_need->mAnimations[i]->mChannels[j]->mScalingKeys[k].mValue.y;
+				new_animation_scaling.main_key[2] = model_need->mAnimations[i]->mChannels[j]->mScalingKeys[k].mValue.z;
+				now_bone_anim_data.scaling_key.push_back(new_animation_scaling);
+			}
+			//将该骨骼的动画添加至总动画
+			now_anim_set.data_animition.push_back(now_bone_anim_data);
+		}
+		skin_animation_map.insert(std::pair<string, animation_set>(now_animation_name, now_anim_set));
+	}
+	return PancystarEngine::succeed;
+}
+/*
+class PancyModelControl : public PancystarEngine::PancyBasicResourceControl
+{
+private:
+	PancyModelControl(const std::string &resource_type_name_in);
+public:
+	static PancyModelControl* GetInstance()
+	{
+		static PancyModelControl* this_instance;
+		if (this_instance == NULL)
+		{
+			this_instance = new PancyModelControl("Model Resource Control");
+		}
+		return this_instance;
+	}
+private:
+	PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancystarEngine::PancyBasicVirtualResource** resource_out);
+};
+PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancystarEngine::PancyBasicVirtualResource** resource_out)
+{
+
+}
+*/
+
 void scene_test_simple::updateinput(float delta_time)
 {
 	float move_speed = 0.15f;
@@ -770,31 +1207,6 @@ void scene_test_simple::updateinput(float delta_time)
 		scene_camera->RotationRight(user_input->MouseMove_Y() * 0.001f);
 	}
 }
-/*
-class PancyModelControl : public PancystarEngine::PancyBasicResourceControl
-{
-private:
-	PancyModelControl(const std::string &resource_type_name_in);
-public:
-	static PancyModelControl* GetInstance()
-	{
-		static PancyModelControl* this_instance;
-		if (this_instance == NULL)
-		{
-			this_instance = new PancyModelControl("Model Resource Control");
-		}
-		return this_instance;
-	}
-private:
-	PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancystarEngine::PancyBasicVirtualResource** resource_out);
-};
-PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancystarEngine::PancyBasicVirtualResource** resource_out)
-{
-
-}
-*/
-
-
 PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1157,7 +1569,7 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(std::string file_name,int32_t &model_part_num)
+PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(std::string file_name, int32_t &model_part_num, std::vector<std::vector<int32_t>> &Lod_out)
 {
 	PancystarEngine::EngineFailReason check_error;
 	if (if_load_model)
@@ -1306,6 +1718,7 @@ PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(std::string f
 	std::vector<PancySubModel*> model_resource_list;
 	model_deal->GetRenderMesh(model_resource_list);
 	model_part_num = model_resource_list.size();
+	GetDealModelLodPart(Lod_out);
 	//更新模型的纹理数据到descriptor_heap
 	check_error = UpdatePbrDescriptor();
 	if (!check_error.CheckIfSucceed())
@@ -1818,9 +2231,12 @@ void scene_test_simple::PopulateCommandListModelDeal()
 	render_object->GetRenderMesh(model_resource_list);
 	if (if_only_show_part)
 	{
-		m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &model_resource_list[now_show_part]->GetVertexBufferView());
-		m_commandList->GetCommandList()->IASetIndexBuffer(&model_resource_list[now_show_part]->GetIndexBufferView());
-		m_commandList->GetCommandList()->DrawIndexedInstanced(model_resource_list[now_show_part]->GetIndexNum(), 1, 0, 0, 0);
+		for (int i = 0; i < now_show_part.size(); ++i)
+		{
+			m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &model_resource_list[now_show_part[i]]->GetVertexBufferView());
+			m_commandList->GetCommandList()->IASetIndexBuffer(&model_resource_list[now_show_part[i]]->GetIndexBufferView());
+			m_commandList->GetCommandList()->DrawIndexedInstanced(model_resource_list[now_show_part[i]]->GetIndexNum(), 1, 0, 0, 0);
+		}
 	}
 	else
 	{
@@ -2079,3 +2495,4 @@ scene_test_simple::~scene_test_simple()
 	device_pancy->Release();
 	contex_pancy->Release();
 }
+

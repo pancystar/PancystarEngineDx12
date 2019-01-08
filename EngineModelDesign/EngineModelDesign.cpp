@@ -30,18 +30,29 @@ EngineModelDesign::EngineModelDesign(QWidget *parent)
 }
 void EngineModelDesign::on_actionopen_triggered()
 {
-	QString file_name = QFileDialog::getOpenFileName(0,"load model", "./", "JSON File(*.json)",0, QFileDialog::Option::ReadOnly);
-	PancystarEngine::EngineFailReason check_error = widget->LoadModel(file_name.toStdString());
-	if (check_error.CheckIfSucceed()) 
+	QString file_name = QFileDialog::getOpenFileName(0,"load model", "./", "JSON File(*.json);;OBJ model(*.obj);;FBX Files(*.fbx)",0, QFileDialog::Option::ReadOnly);
+	if (file_name.toStdString() != "") 
 	{
-		for (int i = 0; i < widget->GetRenderMeshNum(); ++i) 
+		PancystarEngine::EngineFailReason check_error = widget->LoadModel(file_name.toStdString());
+		if (check_error.CheckIfSucceed())
 		{
-			string num = "";
-			num += '0' + i;
-			ui.meshpart->addItem(tr(num.c_str()));
+			ui.meshpart->clear();
+			ui.MeshLod->clear();
+			for (int i = 0; i < widget->GetRenderMeshNum(); ++i)
+			{
+				string num = "";
+				num += '0' + i;
+				ui.meshpart->addItem(tr(num.c_str()));
+			}
+			for (int i = 0; i < widget->GetLodNum(); ++i)
+			{
+				string num = "";
+				num += '0' + i;
+				ui.MeshLod->addItem(tr(num.c_str()));
+			}
 		}
-		
 	}
+	
 }
 void EngineModelDesign::ModelSizeChange(int size_now)
 {
@@ -126,11 +137,37 @@ void EngineModelDesign::ShowModelBounding()
 }
 void EngineModelDesign::CheckIfModelRenderPart()
 {
+	if (ui.ShowModelPart->isChecked()) 
+	{
+		ui.ShowModelLOD->setCheckState(Qt::CheckState::Unchecked);
+		ChangeModelRenderPart();
+	}
 	widget->ChangeModelIfShowPart(ui.ShowModelPart->isChecked());
+}
+void EngineModelDesign::CheckIfModelRenderLod() 
+{
+	if (ui.ShowModelLOD->isChecked())
+	{
+		ui.ShowModelPart->setCheckState(Qt::CheckState::Unchecked);
+		ChangeModelRenderLod();
+	}
+	widget->ChangeModelIfShowPart(ui.ShowModelLOD->isChecked());
 }
 void EngineModelDesign::ChangeModelRenderPart() 
 {
-	widget->ChangeModelNowShowPart(ui.meshpart->currentText().toInt());
+	if (ui.ShowModelPart->isChecked()) 
+	{
+		std::vector<int32_t> show_list;
+		show_list.push_back(ui.meshpart->currentText().toInt());
+		widget->ChangeModelNowShowPart(show_list);
+	}
+}
+void EngineModelDesign::ChangeModelRenderLod()
+{
+	if (ui.ShowModelLOD->isChecked())
+	{
+		widget->ChangeModelNowShowLod(ui.MeshLod->currentText().toInt());
+	}
 }
 void EngineModelDesign::on_actionsave_triggered()
 {
