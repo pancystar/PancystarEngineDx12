@@ -16,15 +16,18 @@ public:
 		return NULL;
 	}
 	PancystarEngine::EngineFailReason Create(SceneRoot *new_scene_in);
-	PancystarEngine::EngineFailReason LoadModel(std::string file_name);
-	PancystarEngine::EngineFailReason ChangeModelSize(float scal_size);
-	PancystarEngine::EngineFailReason ChangeModelPosition(float pos_x,float pos_y,float pos_z);
-	PancystarEngine::EngineFailReason ChangeModelRotation(float rot_x, float rot_y, float rot_z);
-	PancystarEngine::EngineFailReason ChangeModelBoundboxShow(bool if_show);
+	PancystarEngine::EngineFailReason LoadModel(const std::string &file_name);
+	PancystarEngine::EngineFailReason ChangeModelSize(const float &scal_size);
+	PancystarEngine::EngineFailReason ChangeModelPosition(const float &pos_x,const float &pos_y, const float &pos_z);
+	PancystarEngine::EngineFailReason ChangeModelRotation(const float &rot_x, const float &rot_y, const float &rot_z);
+	PancystarEngine::EngineFailReason ChangeModelBoundboxShow(const bool &if_show);
 
-	PancystarEngine::EngineFailReason ChangeModelIfShowPart(bool if_show_part);
-	PancystarEngine::EngineFailReason ChangeModelNowShowPart(std::vector<int32_t> now_show_part);
-	PancystarEngine::EngineFailReason ChangeModelNowShowLod(int32_t now_show_lod);
+	PancystarEngine::EngineFailReason ChangeModelIfShowPart(const bool &if_show_part);
+	PancystarEngine::EngineFailReason ChangeModelNowShowPart(const std::vector<int32_t> &now_show_part);
+	PancystarEngine::EngineFailReason ChangeModelNowShowLod(const int32_t &now_show_lod);
+
+	PancystarEngine::EngineFailReason ChangeModelAnimationUsed(const std::string &animation_name);
+	PancystarEngine::EngineFailReason ChangeModelAnimationTime(const float &animation_time);
 	inline int32_t GetRenderMeshNum() 
 	{
 		return render_mesh_num;
@@ -33,10 +36,20 @@ public:
 	{
 		return model_lod.size();
 	};
+	inline bool CheckIfSkinMesh() 
+	{
+		return if_have_skinmesh;
+	};
+	inline std::vector<std::string> GetSkinAnimation() 
+	{
+		return animation_name;
+	}
 private:
 	bool if_build;
 	int32_t render_mesh_num;
 	std::vector<std::vector<int32_t>> model_lod;
+	bool if_have_skinmesh;
+	std::vector<std::string> animation_name;
 	SceneRoot   *new_scene;
 	virtual void paintEvent(QPaintEvent *event);   //窗口绘制函数，用于render三维场景
 	virtual void mouseDoubleClickEvent(QMouseEvent *event_need);

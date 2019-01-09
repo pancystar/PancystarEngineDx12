@@ -71,51 +71,66 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::Create(SceneRoot *new_scene
 	if_build = true;
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason D3d12RenderWidget::LoadModel(std::string file_name)
+PancystarEngine::EngineFailReason D3d12RenderWidget::LoadModel(const std::string &file_name)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
-	return scene_son->LoadDealModel(file_name, render_mesh_num, model_lod);
+	if_have_skinmesh = false;
+	return scene_son->LoadDealModel(file_name, render_mesh_num, model_lod, if_have_skinmesh, animation_name);
+
 }
-PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelSize(float scal_size)
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelSize(const float &scal_size)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	scene_son->ResetDealModelScal(scal_size);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelPosition(float pos_x, float pos_y, float pos_z)
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelPosition(const float &pos_x, const float &pos_y, const float &pos_z)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	scene_son->ResetDealModelTranslation(pos_x, pos_y, pos_z);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelRotation(float rot_x, float rot_y, float rot_z) 
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelRotation(const float &rot_x, const float &rot_y, const float &rot_z)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	scene_son->ResetDealModelRotaiton(rot_x, rot_y, rot_z);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelBoundboxShow(bool if_show)
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelBoundboxShow(const bool &if_show)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	scene_son->ResetDealModelBoundboxShow(if_show);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelIfShowPart(bool if_show_part)
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelIfShowPart(const bool &if_show_part)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	scene_son->ResetDealModelIfPartShow(if_show_part);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelNowShowPart(std::vector<int32_t> now_show_part)
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelNowShowPart(const std::vector<int32_t> &now_show_part)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	scene_son->ResetDealModelNowShowPart(now_show_part);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelNowShowLod(int32_t now_show_lod)
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelNowShowLod(const int32_t &now_show_lod)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
 	scene_son->ResetDealModelNowShowPart(model_lod[now_show_lod]);
+	return PancystarEngine::succeed;
+}
+
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelAnimationUsed(const std::string &animation_name) 
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelAnimation(animation_name);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelAnimationTime(const float &animation_time)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelAnimationTime(animation_time);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason ChangeModelNowShowPart(int32_t now_show_part);

@@ -63,6 +63,7 @@ PancyModelBasic::~PancyModelBasic()
 }
 PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in) :PancyModelBasic(desc_file_in)
 {
+	if_animation_choose = false;
 	moedl_pbr_type = PbrType_MetallicRoughness;
 	if_skinmesh = false;
 	if_pointmesh = false;
@@ -76,9 +77,9 @@ PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::s
 	model_size.min_box_pos.y = 999999999.0f;
 	model_size.min_box_pos.z = 999999999.0f;
 	//骨骼数据
-	pretreat_root_skin = new skin_tree;
-	strcpy(pretreat_root_skin->bone_ID, "root_node");
-	pretreat_root_skin->son = new skin_tree;
+	root_skin = new skin_tree;
+	strcpy(root_skin->bone_ID, "root_node");
+	root_skin->son = new skin_tree;
 	bone_num = 0;
 	for (int i = 0; i < 100; ++i)
 	{
@@ -158,6 +159,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	std::vector<pancy_object_id> &texture_use
 )
 {
+	PancystarEngine::EngineFailReason check_error;
 	PbrMaterialType pbr_type;
 	std::string model_name = resource_desc_file;
 	bool if_auto_material = false;
@@ -165,7 +167,6 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	//获取模型的格式
 	if (CheckIFJson(resource_desc_file))
 	{
-		PancystarEngine::EngineFailReason check_error;
 		pancy_json_value rec_value;
 		Json::Value root_value;
 		check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_desc_file, root_value);
@@ -360,14 +361,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		}
 	}
 	//开始加载模型
-	PancystarEngine::EngineFailReason check_error;
+	const aiScene *model_need;//assimp模型备份
 	model_need = importer.ReadFile(model_name,
 		aiProcess_MakeLeftHanded |
 		aiProcess_FlipWindingOrder |
 		aiProcess_CalcTangentSpace |
 		aiProcess_JoinIdenticalVertices
 	);//将不同图元放置到不同的模型中去，图片类型可能是点、直线、三角形等
-	if (!model_need)
+	if (model_need == NULL)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "read model" + resource_desc_file + "error");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
@@ -508,7 +509,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	//预加载骨骼信息
 	if (if_skinmesh)
 	{
-		build_skintree(model_need->mRootNode, pretreat_root_skin->son);
+		build_skintree(model_need->mRootNode, root_skin->son);
 	}
 	//填充几何体信息
 	int now_used_bone_num = 0;
@@ -582,7 +583,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				//预填充蒙皮信息
 				for (int j = 0; j < paiMesh->mNumBones; ++j)
 				{
-					skin_tree * now_node = find_tree(pretreat_root_skin, paiMesh->mBones[j]->mName.data);
+					skin_tree * now_node = find_tree(root_skin, paiMesh->mBones[j]->mName.data);
 					if (now_node->bone_number == NouseAssimpStruct)
 					{
 						now_node->bone_number = now_used_bone_num++;
@@ -682,7 +683,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 					now_bone_weight[6] = point_need[j].bone_weight1.z;
 					now_bone_weight[7] = point_need[j].bone_weight1.w;
 					float final_weight_use = 0.0f;
-					for (int k = 0; k < 8; ++k) 
+					for (int k = 0; k < 8; ++k)
 					{
 						final_weight_use += now_bone_weight[k];
 					}
@@ -730,37 +731,65 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		}
 		delete[] index_need;
 	}
-	
 	if (if_skinmesh)
 	{
-		//消去不需要的骨骼信息
-		root_bone_num = 0;
-		root_skin = new skin_tree;
-		strcpy(root_skin->bone_ID, "root_node");
-		root_skin->son = NULL;
-		rebuild_skintree(root_skin, pretreat_root_skin->son, pretreat_root_skin);
-		skin_tree *pre_root = root_skin;
-		root_skin = root_skin->son;
-		delete pre_root;
-		int32_t final_bone_num = 0;
-		check_son_num(root_skin, final_bone_num);
-		if (root_bone_num != 1)
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "Find more than 1 root_bone in model: " + resource_desc_file + "error");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
-			return error_message;
-		}
-		if (final_bone_num != bone_num)
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "The bone used by model: " + resource_desc_file + " need: " + std::to_string(bone_num) + " but find: " + std::to_string(final_bone_num));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
-			return error_message;
-		}
 		//计算偏移矩阵
-		update_mesh_offset();
+		update_mesh_offset(model_need);
 		//加载动画信息
-		build_animation_list();
+		build_animation_list(model_need,"Pancystar_LocalModel");
+		//加载额外的动画信息
+		if (CheckIFJson(resource_desc_file))
+		{
+			pancy_json_value rec_value;
+			Json::Value root_value;
+			check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_desc_file, root_value);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			Json::Value extra_animation_list = root_value.get("Extra_Animation", Json::Value::null);
+			if (extra_animation_list != Json::Value::null) 
+			{
+				int32_t num_extra_animation = extra_animation_list.size();
+				for (int32_t i = 0; i < num_extra_animation; ++i)
+				{
+					std::string animation_name;
+					std::string animation_file_name;
+					//动画名称
+					check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, extra_animation_list[i], "animation_name", pancy_json_data_type::json_data_string, rec_value);
+					if (!check_error.CheckIfSucceed())
+					{
+						return check_error;
+					}
+					animation_name = rec_value.string_value;
+					//动画文件名称
+					check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, extra_animation_list[i], "animation_file", pancy_json_data_type::json_data_string, rec_value);
+					if (!check_error.CheckIfSucceed())
+					{
+						return check_error;
+					}
+					animation_file_name = rec_value.string_value;
+					//加载动画
+					check_error = LoadAnimation(model_root_path + animation_file_name, animation_name);
+					if (!check_error.CheckIfSucceed())
+					{
+						return check_error;
+					}
+				}
+			}
+		}
+		//初始化动画播放信息
+		if (skin_animation_map.size() > 0) 
+		{
+			now_animation_use = skin_animation_map.begin()->second;
+			if_animation_choose = true;
+		}
+		now_animation_play_station = 0.0f;
 	}
+	//删除assimp内存
+	importer.FreeScene();
+	model_need = NULL;
+
 	//创建包围盒顶点
 	float center_pos_x = (model_size.max_box_pos.x + model_size.min_box_pos.x) / 2.0f;
 	float center_pos_y = (model_size.max_box_pos.y + model_size.min_box_pos.y) / 2.0f;
@@ -1005,32 +1034,6 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_skintree(aiNode *now_n
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyModelAssimp::rebuild_skintree(skin_tree *dst_root, skin_tree *src_node, skin_tree *parent_node)
-{
-	if (src_node != NULL)
-	{
-		if (parent_node->bone_number == NouseAssimpStruct && src_node->bone_number != NouseAssimpStruct)
-		{
-			if (dst_root->son == NULL)
-			{
-				dst_root->son = src_node;
-				root_bone_num += 1;
-			}
-		}
-		else
-		{
-			if (src_node->brother != NULL)
-			{
-				rebuild_skintree(dst_root, src_node->brother, parent_node);
-			}
-			if (src_node->son != NULL)
-			{
-				rebuild_skintree(dst_root, src_node->son, src_node);
-			}
-		}
-	}
-	return PancystarEngine::succeed;
-}
 void PancyModelAssimp::set_matrix(DirectX::XMFLOAT4X4 &out, aiMatrix4x4 *in)
 {
 	out._11 = in->a1;
@@ -1068,7 +1071,7 @@ void PancyModelAssimp::check_son_num(skin_tree *input, int &count)
 		}
 	}
 }
-void PancyModelAssimp::update_mesh_offset()
+void PancyModelAssimp::update_mesh_offset(const aiScene *model_need)
 {
 	for (int i = 0; i < model_need->mNumMeshes; ++i)
 	{
@@ -1078,11 +1081,20 @@ void PancyModelAssimp::update_mesh_offset()
 		}
 	}
 }
-PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list()
+PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list(const aiScene *model_need, const std::string animation_name_in)
 {
 	for (int i = 0; i < model_need->mNumAnimations; ++i)
 	{
-		std::string now_animation_name = model_need->mAnimations[i]->mName.data;
+		std::string now_animation_name = animation_name_in;
+		if (now_animation_name == "")
+		{
+			now_animation_name = model_need->mAnimations[i]->mName.data;
+		}
+		else 
+		{
+			now_animation_name += "::";
+			now_animation_name += model_need->mAnimations[i]->mName.data;
+		}
 		animation_set now_anim_set;
 		now_anim_set.animation_length = model_need->mAnimations[i]->mDuration;
 		int32_t number_used_bones = model_need->mAnimations[i]->mNumChannels;
@@ -1091,10 +1103,10 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list()
 			animation_data now_bone_anim_data;
 			now_bone_anim_data.bone_name = model_need->mAnimations[i]->mChannels[j]->mNodeName.data;
 			now_bone_anim_data.bone_point = find_tree(root_skin, model_need->mAnimations[i]->mChannels[j]->mNodeName.data);
-			if (now_bone_anim_data.bone_point == NULL) 
+			if (now_bone_anim_data.bone_point == NULL)
 			{
 				//未发现骨骼，跳过处理
-				PancystarEngine::EngineFailReason error_message(E_FAIL,"Could not find the bone :" + now_bone_anim_data.bone_name +" from model:" + resource_name,PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the bone :" + now_bone_anim_data.bone_name + " from model:" + resource_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load animation data From Model", error_message);
 				continue;
 			}
@@ -1135,9 +1147,54 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list()
 			//将该骨骼的动画添加至总动画
 			now_anim_set.data_animition.push_back(now_bone_anim_data);
 		}
-		skin_animation_map.insert(std::pair<string, animation_set>(now_animation_name, now_anim_set));
+		if (skin_animation_map.find(now_animation_name) != skin_animation_map.end())
+		{
+			//动画重复加载，跳过处理
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "repeat load the animation :" + now_animation_name + " from model:" + resource_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load animation data From Model", error_message);
+			continue;
+		}
+		else 
+		{
+			skin_animation_map.insert(std::pair<string, animation_set>(now_animation_name, now_anim_set));
+		}
 	}
 	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyModelAssimp::LoadAnimation(const std::string &resource_desc_file, const std::string &animation_name)
+{
+	PancystarEngine::EngineFailReason check_error;
+	//开始加载模型
+	const aiScene *model_need = NULL;//assimp模型备份
+	model_need = importer.ReadFile(resource_desc_file,
+		aiProcess_MakeLeftHanded |
+		aiProcess_FlipWindingOrder |
+		aiProcess_CalcTangentSpace |
+		aiProcess_JoinIdenticalVertices
+	);//将不同图元放置到不同的模型中去，图片类型可能是点、直线、三角形等
+	if (model_need == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "read model" + resource_desc_file + "error");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+		return error_message;
+	}
+	//加载动画数据
+	check_error = build_animation_list(model_need, animation_name);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	importer.FreeScene();
+	model_need = NULL;
+	return PancystarEngine::succeed;
+}
+void PancyModelAssimp::GetAnimationNameList(std::vector<std::string> &animation_name)
+{
+	animation_name.clear();
+	for (auto animation_data = skin_animation_map.begin(); animation_data != skin_animation_map.end(); ++animation_data)
+	{
+		animation_name.push_back(animation_data->first);
+	}
 }
 /*
 class PancyModelControl : public PancystarEngine::PancyBasicResourceControl
@@ -1569,7 +1626,13 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(std::string file_name, int32_t &model_part_num, std::vector<std::vector<int32_t>> &Lod_out)
+PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(
+	std::string file_name,
+	int32_t &model_part_num,
+	std::vector<std::vector<int32_t>> &Lod_out,
+	bool &if_skin_mesh,
+	std::vector<std::string> &animation_list
+)
 {
 	PancystarEngine::EngineFailReason check_error;
 	if (if_load_model)
@@ -1601,6 +1664,12 @@ PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(std::string f
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
+	}
+	if_skin_mesh = model_deal->CheckIfSkinMesh();
+	PancyModelAssimp *assimp_pointer = dynamic_cast<PancyModelAssimp*>(model_deal);
+	if (if_skin_mesh) 
+	{
+		assimp_pointer->GetAnimationNameList(animation_list);
 	}
 	//预加载金属度/粗糙度数据
 	for (int i = 0; i < model_deal->GetMaterialNum(); ++i)

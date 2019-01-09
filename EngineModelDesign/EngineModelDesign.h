@@ -31,4 +31,6 @@ public slots:
 	void CheckIfModelRenderLod();
 	void ChangeModelRenderPart();
 	void ChangeModelRenderLod();
+	void ModelAnimationChange();
+	void ModelAnimationTimeChange(int size_now);
 };

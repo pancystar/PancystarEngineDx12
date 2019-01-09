@@ -38,6 +38,7 @@ void EngineModelDesign::on_actionopen_triggered()
 		{
 			ui.meshpart->clear();
 			ui.MeshLod->clear();
+			ui.ChooseAnimation->clear();
 			for (int i = 0; i < widget->GetRenderMeshNum(); ++i)
 			{
 				string num = "";
@@ -49,6 +50,23 @@ void EngineModelDesign::on_actionopen_triggered()
 				string num = "";
 				num += '0' + i;
 				ui.MeshLod->addItem(tr(num.c_str()));
+			}
+			if (widget->CheckIfSkinMesh()) 
+			{
+				QString new_str;
+				new_str = QString::fromLocal8Bit("¹Ç÷À¶¯»­");
+				ui.label_animation_type->setText(new_str);
+				auto skin_anim_name = widget->GetSkinAnimation();
+				for (int i = 0; i < skin_anim_name.size(); ++i) 
+				{
+					ui.ChooseAnimation->addItem(tr(skin_anim_name[i].c_str()));
+				}
+			}
+			else 
+			{
+				QString new_str;
+				new_str = QString::fromLocal8Bit("ÎÞ¶¯»­");
+				ui.label_animation_type->setText(new_str);
 			}
 		}
 	}
@@ -188,4 +206,17 @@ void EngineModelDesign::on_actionadd_roughness_triggered()
 void EngineModelDesign::on_actionadd_ao_triggered() 
 {
 	int a = 0;
+}
+void EngineModelDesign::ModelAnimationChange()
+{
+	string animation_name = ui.ChooseAnimation->currentText().toStdString();
+	widget->ChangeModelAnimationUsed(animation_name);
+	ui.model_animation->setValue(0);
+}
+void EngineModelDesign::ModelAnimationTimeChange(int size_now)
+{
+	float now_percent = static_cast<float>(size_now) / 100.0f;
+	widget->ChangeModelAnimationTime(now_percent);
+	QString now_animation= QString::number(now_percent, 'g', 2);
+	ui.label_model_animation->setText(now_animation);
 }

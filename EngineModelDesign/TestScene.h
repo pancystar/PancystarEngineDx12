@@ -128,6 +128,9 @@ protected:
 	//模型的LOD信息
 	std::vector<std::vector<int32_t>> model_lod_divide;
 	std::string model_root_path;
+	//模型的动画信息
+	bool if_skinmesh;
+	bool if_pointmesh;
 public:
 	PancyModelBasic(const std::string &desc_file_in);
 	void GetRenderMesh(std::vector<PancySubModel*> &render_mesh);
@@ -175,6 +178,10 @@ public:
 	{
 		Lod_out = model_lod_divide;
 	}
+	inline bool CheckIfSkinMesh()
+	{
+		return if_skinmesh;
+	}
 	virtual ~PancyModelBasic();
 private:
 
@@ -206,17 +213,14 @@ class PancyModelAssimp : public PancyModelBasic
 	std::vector<ResourceViewPointer> table_offset;//每个shader外部变量的位置
 	//模型加载变量
 	Assimp::Importer importer;
-	const aiScene *model_need;//assimp模型备份
+	
 	std::unordered_map<pancy_object_id, std::string> material_name_list;
 	//模型的包围以及形变信息
 	BoundingData model_size;
 	DirectX::XMFLOAT4X4 model_translation;
 	PancystarEngine::GeometryBasic *model_boundbox;
-	//模型的动画信息
-	bool if_skinmesh;
-	bool if_pointmesh;
+	
 	//骨骼动画信息
-	skin_tree *pretreat_root_skin;
 	skin_tree *root_skin;
 	int bone_num;
 	int root_bone_num = 0;
@@ -225,6 +229,9 @@ class PancyModelAssimp : public PancyModelBasic
 	DirectX::XMFLOAT4X4 final_matrix_array[MaxBoneNum];
 	int tree_node_num[MaxBoneNum][MaxBoneNum];
 	std::unordered_map<std::string, animation_set> skin_animation_map;
+	animation_set now_animation_use;//当前正在使用的动画
+	float now_animation_play_station;//当前正在播放的动画
+	bool if_animation_choose;
 	//模型的pbr格式
 	PbrMaterialType moedl_pbr_type;
 public:
@@ -252,7 +259,25 @@ public:
 	{
 		return model_boundbox;
 	}
-
+	inline void SetAnimation(std::string animation_name) 
+	{
+		auto animation_find = skin_animation_map.find(animation_name);
+		if (animation_find != skin_animation_map.end()) 
+		{
+			now_animation_use = animation_find->second;
+			if_animation_choose = true;
+			now_animation_play_station = 0.0f;
+		}
+	}
+	inline void SetAnimationTime(float time) 
+	{
+		if (time > 0.0f && time < 1.0f) 
+		{
+			now_animation_play_station = time;
+		}
+	}
+	void GetAnimationNameList(std::vector<std::string> &animation_name);
+	void GetModelBoneData();
 private:
 	PancystarEngine::EngineFailReason LoadModel(
 		const std::string &resource_desc_file,
@@ -261,6 +286,7 @@ private:
 		std::unordered_map<TexType, pancy_object_id>> &material_list,
 		std::vector<pancy_object_id> &texture_use
 	);
+	PancystarEngine::EngineFailReason LoadAnimation(const std::string &resource_desc_file,const std::string &animation_name);
 	template<typename T>
 	PancystarEngine::EngineFailReason BuildModelData(
 		T *point_need,
@@ -362,12 +388,12 @@ private:
 	skin_tree* find_tree(skin_tree* p, int num);
 	bool check_ifsame(char a[], char b[]);
 	PancystarEngine::EngineFailReason build_skintree(aiNode *now_node, skin_tree *now_root);
-	PancystarEngine::EngineFailReason rebuild_skintree(skin_tree *dst_root, skin_tree *src_node, skin_tree *parent_node);
 	void set_matrix(DirectX::XMFLOAT4X4 &out, aiMatrix4x4 *in);
 	void check_son_num(skin_tree *input,int &count);
 	void update_root(skin_tree *root, DirectX::XMFLOAT4X4 matrix_parent);
-	void update_mesh_offset();
-	PancystarEngine::EngineFailReason build_animation_list();
+	void update_mesh_offset(const aiScene *model_need);
+	PancystarEngine::EngineFailReason build_animation_list(const aiScene *model_need, const std::string animation_name_in = "");
+
 };
 class scene_test_simple : public SceneRoot
 {
@@ -468,34 +494,62 @@ public:
 	{
 		if_focus = if_focus_in;
 	}
-	PancystarEngine::EngineFailReason LoadDealModel(std::string file_name, int32_t &model_part_num, std::vector<std::vector<int32_t>> &Lod_out);
-	inline void ResetDealModelScal(float scal_num)
+	PancystarEngine::EngineFailReason LoadDealModel(
+		std::string file_name,
+		int32_t &model_part_num,
+		std::vector<std::vector<int32_t>> &Lod_out,
+		bool &if_skin_mesh,
+		std::vector<std::string> &animation_list
+	);
+	inline void ResetDealModelScal(const float &scal_num)
 	{
 		scale_size = scal_num;
 	}
-	inline void ResetDealModelTranslation(float x_value, float y_value, float z_value)
+	inline void ResetDealModelTranslation(const float &x_value, const float &y_value, const float &z_value)
 	{
 		translation_pos.x = x_value;
 		translation_pos.y = y_value;
 		translation_pos.z = z_value;
 	}
-	inline void ResetDealModelRotaiton(float x_value, float y_value, float z_value)
+	inline void ResetDealModelRotaiton(const float &x_value, const float &y_value, const float &z_value)
 	{
 		rotation_angle.x = x_value;
 		rotation_angle.y = y_value;
 		rotation_angle.z = z_value;
 	}
-	inline void ResetDealModelBoundboxShow(bool if_show)
+	inline void ResetDealModelBoundboxShow(const bool &if_show)
 	{
 		if_show_boundbox = if_show;
 	}
-	inline void ResetDealModelIfPartShow(bool if_part_show)
+	inline void ResetDealModelIfPartShow(const bool &if_part_show)
 	{
 		if_only_show_part = if_part_show;
 	}
-	inline void ResetDealModelNowShowPart(std::vector<int32_t> part_id)
+	inline void ResetDealModelNowShowPart(const std::vector<int32_t> &part_id)
 	{
 		now_show_part = part_id;
+	}
+	inline void ResetDealModelAnimation(const std::string &animation_name)
+	{
+		if (if_load_model)
+		{
+			PancyModelAssimp *assimp_pointer = dynamic_cast<PancyModelAssimp*>(model_deal);
+			if (assimp_pointer->CheckIfSkinMesh())
+			{
+				assimp_pointer->SetAnimation(animation_name);
+			}
+		}
+	}
+	inline void ResetDealModelAnimationTime(const float &time)
+	{
+		if (if_load_model) 
+		{
+			PancyModelAssimp *assimp_pointer = dynamic_cast<PancyModelAssimp*>(model_deal);
+			if (assimp_pointer->CheckIfSkinMesh())
+			{
+				assimp_pointer->SetAnimationTime(time);
+			}
+		}
 	}
 private:
 	inline void GetDealModelLodPart(std::vector<std::vector<int32_t>> &Lod_out)

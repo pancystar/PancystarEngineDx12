@@ -19,7 +19,6 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
-#include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QSlider>
 #include <QtWidgets/QStatusBar>
@@ -79,7 +78,6 @@ public:
     QComboBox *MeshLod;
     QComboBox *ChooseAnimation;
     QLabel *label_10;
-    QPushButton *LoadAnimation;
     QMenuBar *menuBar;
     QMenu *menu_file;
     QMenu *menu_edit;
@@ -225,13 +223,10 @@ public:
         MeshLod->setGeometry(QRect(390, 40, 121, 22));
         ChooseAnimation = new QComboBox(centralWidget);
         ChooseAnimation->setObjectName(QStringLiteral("ChooseAnimation"));
-        ChooseAnimation->setGeometry(QRect(1360, 210, 121, 22));
+        ChooseAnimation->setGeometry(QRect(1320, 210, 261, 22));
         label_10 = new QLabel(centralWidget);
         label_10->setObjectName(QStringLiteral("label_10"));
-        label_10->setGeometry(QRect(1290, 210, 61, 21));
-        LoadAnimation = new QPushButton(centralWidget);
-        LoadAnimation->setObjectName(QStringLiteral("LoadAnimation"));
-        LoadAnimation->setGeometry(QRect(1490, 210, 93, 28));
+        label_10->setGeometry(QRect(1420, 180, 61, 21));
         EngineModelDesignClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(EngineModelDesignClass);
         menuBar->setObjectName(QStringLiteral("menuBar"));
@@ -271,6 +266,8 @@ public:
         QObject::connect(meshpart, SIGNAL(currentIndexChanged(int)), EngineModelDesignClass, SLOT(ChangeModelRenderPart()));
         QObject::connect(ShowModelLOD, SIGNAL(stateChanged(int)), EngineModelDesignClass, SLOT(CheckIfModelRenderLod()));
         QObject::connect(MeshLod, SIGNAL(currentIndexChanged(int)), EngineModelDesignClass, SLOT(ChangeModelRenderLod()));
+        QObject::connect(ChooseAnimation, SIGNAL(currentIndexChanged(int)), EngineModelDesignClass, SLOT(ModelAnimationChange()));
+        QObject::connect(model_animation, SIGNAL(valueChanged(int)), EngineModelDesignClass, SLOT(ModelAnimationTimeChange(int)));
 
         QMetaObject::connectSlotsByName(EngineModelDesignClass);
     } // setupUi
@@ -287,7 +284,7 @@ public:
         label->setText(QApplication::translate("EngineModelDesignClass", "\351\200\211\346\213\251\346\250\241\345\236\213\345\235\227", nullptr));
         label_1->setText(QApplication::translate("EngineModelDesignClass", "\346\250\241\345\236\213\347\274\251\346\224\276", nullptr));
         CheckIfBoundBox->setText(QApplication::translate("EngineModelDesignClass", "\346\230\276\347\244\272\345\214\205\345\233\264\347\233\222", nullptr));
-        label_4->setText(QApplication::translate("EngineModelDesignClass", "\346\250\241\345\236\213\345\212\250\347\224\273", nullptr));
+        label_4->setText(QApplication::translate("EngineModelDesignClass", "\346\222\255\346\224\276\345\212\250\347\224\273", nullptr));
         label_model_animation->setText(QApplication::translate("EngineModelDesignClass", "0.0", nullptr));
         show_normal_vertex->setText(QApplication::translate("EngineModelDesignClass", "\351\241\266\347\202\271\346\263\225\347\272\277", nullptr));
         show_normal_face->setText(QApplication::translate("EngineModelDesignClass", "\351\235\242\346\263\225\347\272\277", nullptr));
@@ -304,7 +301,7 @@ public:
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">point3:(0,0,0);</p></body></html>", nullptr));
         label_5->setText(QApplication::translate("EngineModelDesignClass", "\345\275\223\345\211\215\346\211\200\351\200\211\351\235\242\346\263\225\347\272\277:", nullptr));
         label_face_normal->setText(QApplication::translate("EngineModelDesignClass", "(0,0,0)", nullptr));
-        label_animation_type->setText(QApplication::translate("EngineModelDesignClass", "\351\252\250\351\252\274\345\212\250\347\224\273", nullptr));
+        label_animation_type->setText(QString());
         label_6->setText(QApplication::translate("EngineModelDesignClass", "\345\212\250\347\224\273\347\261\273\345\236\213\357\274\232", nullptr));
         label_7->setText(QApplication::translate("EngineModelDesignClass", "\346\250\241\345\236\213\345\271\263\347\247\273", nullptr));
         label_8->setText(QApplication::translate("EngineModelDesignClass", "\346\250\241\345\236\213\346\227\213\350\275\254", nullptr));
@@ -325,7 +322,6 @@ public:
         label_9->setText(QApplication::translate("EngineModelDesignClass", "\351\200\211\346\213\251LOD", nullptr));
         ShowModelLOD->setText(QApplication::translate("EngineModelDesignClass", "\345\217\252\346\230\276\347\244\272LOD\346\250\241\345\236\213", nullptr));
         label_10->setText(QApplication::translate("EngineModelDesignClass", "\351\200\211\346\213\251\345\212\250\347\224\273", nullptr));
-        LoadAnimation->setText(QApplication::translate("EngineModelDesignClass", "\345\212\240\350\275\275\345\212\250\347\224\273", nullptr));
         menu_file->setTitle(QApplication::translate("EngineModelDesignClass", "\346\226\207\344\273\266", nullptr));
         menu_edit->setTitle(QApplication::translate("EngineModelDesignClass", "\347\274\226\350\276\221", nullptr));
     } // retranslateUi
