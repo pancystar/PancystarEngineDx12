@@ -63,6 +63,7 @@ PancyModelBasic::~PancyModelBasic()
 }
 PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in) :PancyModelBasic(desc_file_in)
 {
+	model_move_skin = NULL;
 	if_animation_choose = false;
 	moedl_pbr_type = PbrType_MetallicRoughness;
 	if_skinmesh = false;
@@ -733,6 +734,8 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	}
 	if (if_skinmesh)
 	{
+		//查找用于确定骨骼位置的根骨骼
+		FindRootBone(root_skin);
 		//计算偏移矩阵
 		update_mesh_offset(model_need);
 		//加载动画信息
@@ -1034,6 +1037,24 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_skintree(aiNode *now_n
 	}
 	return PancystarEngine::succeed;
 }
+void PancyModelAssimp::FindRootBone(skin_tree *now_bone)
+{
+	if (now_bone->bone_number == NouseAssimpStruct && now_bone->son != NULL && now_bone->son->bone_number != NouseAssimpStruct) 
+	{
+		model_move_skin = now_bone;
+	}
+	else 
+	{
+		if (now_bone->brother != NULL) 
+		{
+			FindRootBone(now_bone->brother);
+		}
+		if (now_bone->son != NULL)
+		{
+			FindRootBone(now_bone->son);
+		}
+	}
+}
 void PancyModelAssimp::set_matrix(DirectX::XMFLOAT4X4 &out, aiMatrix4x4 *in)
 {
 	out._11 = in->a1;
@@ -1195,6 +1216,199 @@ void PancyModelAssimp::GetAnimationNameList(std::vector<std::string> &animation_
 	{
 		animation_name.push_back(animation_data->first);
 	}
+}
+void PancyModelAssimp::update_root(skin_tree *root, DirectX::XMFLOAT4X4 matrix_parent)
+{
+	if (root == NULL)
+	{
+		return;
+	}
+	DirectX::XMMATRIX rec = DirectX::XMLoadFloat4x4(&root->animation_matrix);
+	DirectX::XMStoreFloat4x4(&root->now_matrix, rec * DirectX::XMLoadFloat4x4(&matrix_parent));
+	if (root->bone_number >= 0)
+	{
+		bone_matrix_array[root->bone_number] = root->now_matrix;
+	}
+	update_root(root->brother, matrix_parent);
+	update_root(root->son, root->now_matrix);
+}
+void PancyModelAssimp::GetModelBoneData(DirectX::XMFLOAT4X4 *bone_matrix)
+{
+	//更新动画
+	update_anim_data();
+	//刷新骨骼动画树
+	DirectX::XMFLOAT4X4 matrix_identi;
+	DirectX::XMStoreFloat4x4(&matrix_identi, DirectX::XMMatrixIdentity());
+	update_root(root_skin, matrix_identi);
+	//将更新后的动画矩阵做偏移
+	for (int i = 0; i < MaxBoneNum; ++i)
+	{
+		DirectX::XMStoreFloat4x4(&final_matrix_array[i], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&offset_matrix_array[i]) * DirectX::XMLoadFloat4x4(&bone_matrix_array[i])));
+		bone_matrix[i] = final_matrix_array[i];
+	}
+}
+void PancyModelAssimp::update_anim_data()
+{
+	float input_time = now_animation_play_station * now_animation_use.animation_length;
+	for (int i = 0; i < now_animation_use.data_animition.size(); ++i) 
+	{
+		animation_data now = now_animation_use.data_animition[i];
+		DirectX::XMMATRIX rec_trans, rec_scal;
+		DirectX::XMFLOAT4X4 rec_rot;
+
+		int start_anim, end_anim;
+		find_anim_sted(input_time,start_anim, end_anim, now.rotation_key);
+		//四元数插值并寻找变换矩阵
+		quaternion_animation rotation_now;
+		if (start_anim == end_anim || end_anim >= now.rotation_key.size())
+		{
+			rotation_now = now.rotation_key[start_anim];
+		}
+		else
+		{
+			Interpolate(rotation_now, now.rotation_key[start_anim], now.rotation_key[end_anim], (input_time - now.rotation_key[start_anim].time) / (now.rotation_key[end_anim].time - now.rotation_key[start_anim].time));
+		}
+		Get_quatMatrix(rec_rot, rotation_now);
+		//缩放变换
+		find_anim_sted(input_time, start_anim, end_anim, now.scaling_key);
+		vector_animation scalling_now;
+		if (start_anim == end_anim)
+		{
+			scalling_now = now.scaling_key[start_anim];
+		}
+		else
+		{
+			Interpolate(scalling_now, now.scaling_key[start_anim], now.scaling_key[end_anim], (input_time - now.scaling_key[start_anim].time) / (now.scaling_key[end_anim].time - now.scaling_key[start_anim].time));
+		}
+		rec_scal = DirectX::XMMatrixScaling(scalling_now.main_key[0], scalling_now.main_key[1], scalling_now.main_key[2]);
+		//平移变换
+		find_anim_sted(input_time, start_anim, end_anim, now.translation_key);
+		vector_animation translation_now;
+		if (start_anim == end_anim)
+		{
+			translation_now = now.translation_key[start_anim];
+		}
+		else
+		{
+			Interpolate(translation_now, now.translation_key[start_anim], now.translation_key[end_anim], (input_time - now.translation_key[start_anim].time) / (now.translation_key[end_anim].time - now.translation_key[start_anim].time));
+		}
+		rec_trans = DirectX::XMMatrixTranslation(translation_now.main_key[0], translation_now.main_key[1], translation_now.main_key[2]);
+		//总变换
+		XMStoreFloat4x4(&now.bone_point->animation_matrix, rec_scal * XMLoadFloat4x4(&rec_rot) * rec_trans);
+	}
+}
+void PancyModelAssimp::Interpolate(quaternion_animation& pOut, const quaternion_animation &pStart, const quaternion_animation &pEnd, const float &pFactor)
+{
+	float cosom = pStart.main_key[0] * pEnd.main_key[0] + pStart.main_key[1] * pEnd.main_key[1] + pStart.main_key[2] * pEnd.main_key[2] + pStart.main_key[3] * pEnd.main_key[3];
+	quaternion_animation end = pEnd;
+	if (cosom < static_cast<float>(0.0))
+	{
+		cosom = -cosom;
+		end.main_key[0] = -end.main_key[0];
+		end.main_key[1] = -end.main_key[1];
+		end.main_key[2] = -end.main_key[2];
+		end.main_key[3] = -end.main_key[3];
+	}
+	float sclp, sclq;
+	if ((static_cast<float>(1.0) - cosom) > static_cast<float>(0.0001))
+	{
+		float omega, sinom;
+		omega = acos(cosom);
+		sinom = sin(omega);
+		sclp = sin((static_cast<float>(1.0) - pFactor) * omega) / sinom;
+		sclq = sin(pFactor * omega) / sinom;
+	}
+	else
+	{
+		sclp = static_cast<float>(1.0) - pFactor;
+		sclq = pFactor;
+	}
+
+	pOut.main_key[0] = sclp * pStart.main_key[0] + sclq * end.main_key[0];
+	pOut.main_key[1] = sclp * pStart.main_key[1] + sclq * end.main_key[1];
+	pOut.main_key[2] = sclp * pStart.main_key[2] + sclq * end.main_key[2];
+	pOut.main_key[3] = sclp * pStart.main_key[3] + sclq * end.main_key[3];
+}
+void PancyModelAssimp::Interpolate(vector_animation& pOut, const vector_animation &pStart, const vector_animation &pEnd, const float &pFactor)
+{
+	for (int i = 0; i < 3; ++i)
+	{
+		pOut.main_key[i] = pStart.main_key[i] + pFactor * (pEnd.main_key[i] - pStart.main_key[i]);
+	}
+}
+void PancyModelAssimp::find_anim_sted(const float &input_time, int &st, int &ed,const std::vector<quaternion_animation> &input)
+{
+	if (input_time < 0)
+	{
+		st = 0;
+		ed = 0;
+		return;
+	}
+	if (input_time > input[input.size() - 1].time)
+	{
+		st = input.size() - 1;
+		ed = input.size() - 1;
+		return;
+	}
+	for (int i = 0; i < input.size()-1; ++i)
+	{
+		if (input_time >= input[i].time && input_time <= input[i + 1].time)
+		{
+			st = i;
+			ed = i + 1;
+			return;
+		}
+	}
+	st = input.size() - 1;
+	ed = input.size() - 1;
+}
+void PancyModelAssimp::find_anim_sted(const float &input_time, int &st, int &ed, const std::vector<vector_animation> &input)
+{
+	if (input_time < 0)
+	{
+		st = 0;
+		ed = 0;
+		return;
+	}
+	if (input_time > input[input.size() - 1].time)
+	{
+		st = input.size() - 1;
+		ed = input.size() - 1;
+		return;
+	}
+	for (int i = 0; i < input.size() - 1; ++i)
+	{
+		if (input_time >= input[i].time && input_time <= input[i + 1].time)
+		{
+			st = i;
+			ed = i + 1;
+			return;
+		}
+	}
+	st = input.size() - 1;
+	ed = input.size() - 1;
+}
+void PancyModelAssimp::Get_quatMatrix(DirectX::XMFLOAT4X4 &resMatrix, const quaternion_animation& pOut)
+{
+	resMatrix._11 = static_cast<float>(1.0) - static_cast<float>(2.0) * (pOut.main_key[1] * pOut.main_key[1] + pOut.main_key[2] * pOut.main_key[2]);
+	resMatrix._21 = static_cast<float>(2.0) * (pOut.main_key[0] * pOut.main_key[1] - pOut.main_key[2] * pOut.main_key[3]);
+	resMatrix._31 = static_cast<float>(2.0) * (pOut.main_key[0] * pOut.main_key[2] + pOut.main_key[1] * pOut.main_key[3]);
+	resMatrix._41 = 0.0f;
+
+	resMatrix._12 = static_cast<float>(2.0) * (pOut.main_key[0] * pOut.main_key[1] + pOut.main_key[2] * pOut.main_key[3]);
+	resMatrix._22 = static_cast<float>(1.0) - static_cast<float>(2.0) * (pOut.main_key[0] * pOut.main_key[0] + pOut.main_key[2] * pOut.main_key[2]);
+	resMatrix._32 = static_cast<float>(2.0) * (pOut.main_key[1] * pOut.main_key[2] - pOut.main_key[0] * pOut.main_key[3]);
+	resMatrix._42 = 0.0f;
+
+	resMatrix._13 = static_cast<float>(2.0) * (pOut.main_key[0] * pOut.main_key[2] - pOut.main_key[1] * pOut.main_key[3]);
+	resMatrix._23 = static_cast<float>(2.0) * (pOut.main_key[1] * pOut.main_key[2] + pOut.main_key[0] * pOut.main_key[3]);
+	resMatrix._33 = static_cast<float>(1.0) - static_cast<float>(2.0) * (pOut.main_key[0] * pOut.main_key[0] + pOut.main_key[1] * pOut.main_key[1]);
+	resMatrix._43 = 0.0f;
+
+	resMatrix._14 = 0.0f;
+	resMatrix._24 = 0.0f;
+	resMatrix._34 = 0.0f;
+	resMatrix._44 = 1.0f;
 }
 /*
 class PancyModelControl : public PancystarEngine::PancyBasicResourceControl
@@ -1860,6 +2074,11 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
+	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_pbr_bone.json");
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_screenmask.json");
 	if (!check_error.CheckIfSucceed())
 	{
@@ -2259,7 +2478,15 @@ void scene_test_simple::PopulateCommandListModelDeal()
 
 	PancyRenderCommandList *m_commandList;
 	PancyModelAssimp *render_object = dynamic_cast<PancyModelAssimp*>(model_deal);
-	auto pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr.json");
+	PancyPiplineStateObjectGraph* pso_data;
+	if (render_object->CheckIfSkinMesh()) 
+	{
+		pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr_bone.json");
+	}
+	else 
+	{
+		pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr.json");
+	}
 	PancyThreadIdGPU commdlist_id_use;
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data->GetData(), &m_commandList, commdlist_id_use);
 	renderlist_ID.push_back(commdlist_id_use);
@@ -2537,7 +2764,24 @@ void scene_test_simple::Update(float delta_time)
 	mat_normal._44 = 0.0f;
 	DirectX::XMStoreFloat4x4(&pbr_world_mat[3], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&mat_normal)));
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[0].offset* per_memory_size, pbr_world_mat, sizeof(pbr_world_mat));
-
+	PancyModelAssimp *render_object_deal = dynamic_cast<PancyModelAssimp*>(model_deal);
+	if (render_object_deal != NULL)
+	{
+		if (render_object_deal->CheckIfSkinMesh()) 
+		{
+			DirectX::XMFLOAT4X4 bound_box_offset_mat = render_object_deal->GetModelAnimationOffset();
+			DirectX::XMFLOAT4X4 bone_mat[MaxBoneNum];
+			render_object_deal->GetModelBoneData(bone_mat);
+			check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[0].offset* per_memory_size + sizeof(pbr_world_mat), &bound_box_offset_mat, sizeof(bound_box_offset_mat));
+			check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[0].offset* per_memory_size + sizeof(pbr_world_mat) + sizeof(bound_box_offset_mat), bone_mat, sizeof(bone_mat));
+		}
+		else 
+		{
+			DirectX::XMFLOAT4X4 bound_box_offset_mat;
+			DirectX::XMStoreFloat4x4(&bound_box_offset_mat,DirectX::XMMatrixIdentity());
+			check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[0].offset* per_memory_size + sizeof(pbr_world_mat), &bound_box_offset_mat, sizeof(bound_box_offset_mat));
+		}
+	}
 	data_submemory = SubresourceControl::GetInstance()->GetResourceData(cbuffer_model[1], per_memory_size);
 	per_view_pack view_buffer_data;
 	DirectX::XMStoreFloat4x4(&view_buffer_data.view_matrix, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&view_mat)));
@@ -2550,6 +2794,7 @@ void scene_test_simple::Update(float delta_time)
 	view_buffer_data.view_position.z = view_pos.z;
 	view_buffer_data.view_position.w = 1.0f;
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[1].offset* per_memory_size, &view_buffer_data, sizeof(view_buffer_data));
+	
 }
 scene_test_simple::~scene_test_simple()
 {

@@ -232,6 +232,7 @@ class PancyModelAssimp : public PancyModelBasic
 	animation_set now_animation_use;//当前正在使用的动画
 	float now_animation_play_station;//当前正在播放的动画
 	bool if_animation_choose;
+	skin_tree *model_move_skin;//当前控制模型位置的根骨骼
 	//模型的pbr格式
 	PbrMaterialType moedl_pbr_type;
 public:
@@ -277,7 +278,22 @@ public:
 		}
 	}
 	void GetAnimationNameList(std::vector<std::string> &animation_name);
-	void GetModelBoneData();
+	void GetModelBoneData(DirectX::XMFLOAT4X4 *bone_matrix);
+	inline DirectX::XMFLOAT4X4 GetModelAnimationOffset() 
+	{
+		if (model_move_skin != NULL) 
+		{
+			DirectX::XMFLOAT4X4 bone_mat;
+			DirectX::XMStoreFloat4x4(&bone_mat, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&model_move_skin->now_matrix)));
+			return bone_mat;
+		}
+		else
+		{
+			DirectX::XMFLOAT4X4 identity_mat;
+			DirectX::XMStoreFloat4x4(&identity_mat,DirectX::XMMatrixIdentity());
+			return identity_mat;
+		}
+	}
 private:
 	PancystarEngine::EngineFailReason LoadModel(
 		const std::string &resource_desc_file,
@@ -386,6 +402,7 @@ private:
 	//骨骼动画计算
 	skin_tree* find_tree(skin_tree* p, char name[]);
 	skin_tree* find_tree(skin_tree* p, int num);
+	void FindRootBone(skin_tree *now_bone);
 	bool check_ifsame(char a[], char b[]);
 	PancystarEngine::EngineFailReason build_skintree(aiNode *now_node, skin_tree *now_root);
 	void set_matrix(DirectX::XMFLOAT4X4 &out, aiMatrix4x4 *in);
@@ -393,6 +410,12 @@ private:
 	void update_root(skin_tree *root, DirectX::XMFLOAT4X4 matrix_parent);
 	void update_mesh_offset(const aiScene *model_need);
 	PancystarEngine::EngineFailReason build_animation_list(const aiScene *model_need, const std::string animation_name_in = "");
+	void update_anim_data();
+	void find_anim_sted(const float &input_time,int &st, int &ed, const std::vector<quaternion_animation> &input);
+	void find_anim_sted(const float &input_time, int &st, int &ed, const std::vector<vector_animation> &input);
+	void Interpolate(quaternion_animation& pOut, const quaternion_animation &pStart, const quaternion_animation &pEnd, const float &pFactor);
+	void Interpolate(vector_animation& pOut, const vector_animation &pStart, const vector_animation &pEnd, const float &pFactor);
+	void Get_quatMatrix(DirectX::XMFLOAT4X4 &resMatrix, const quaternion_animation& pOut);
 
 };
 class scene_test_simple : public SceneRoot

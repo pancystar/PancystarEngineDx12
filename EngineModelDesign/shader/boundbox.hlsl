@@ -5,6 +5,7 @@ cbuffer per_object : register(b0)
 	float4x4 WVP_matrix;
 	float4x4 UV_matrix;
 	float4x4 normal_matrix;
+	float4x4 bone_world_matrix;
 }
 cbuffer per_frame : register(b1)
 {
@@ -25,7 +26,8 @@ struct PSInput
 PSInput VSMain(VSInput vinput)
 {
 	PSInput result;
-	result.position = mul(float4(vinput.position, 1.0f), WVP_matrix);
+	float3 pos_animation = mul(float4(vinput.position, 1.0f), bone_world_matrix);
+	result.position = mul(float4(pos_animation, 1.0f), WVP_matrix);
 	result.pos_out = mul(float4(vinput.position, 1.0), world_matrix);
 	return result;
 }

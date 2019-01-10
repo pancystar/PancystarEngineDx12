@@ -609,7 +609,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create(
 
 		_file.close();
 		//创建对应的资源分块格式
-		UINT buffer_block_size = (data_now->second.Size + 255) & ~255;//65536位对齐
+		UINT buffer_block_size = (data_now->second.Size + 255) & ~255;//先做256位对齐
 		std::string bufferblock_file_name = "json\\resource_view\\CbufferSub" + std::to_string(buffer_block_size) + ".json";
 		_file.open(bufferblock_file_name, ios::in);
 

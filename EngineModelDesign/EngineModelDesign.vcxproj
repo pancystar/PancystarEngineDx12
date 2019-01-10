@@ -157,7 +157,10 @@
     </FxCompile>
     <FxCompile Include="shader\pbr_lighting.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VSMainBone</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
     </FxCompile>
     <FxCompile Include="shader\ScreenMask.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -174,6 +177,7 @@
     <None Include="json\pipline_state_object\pso_boundbox.json" />
     <None Include="json\pipline_state_object\pso_brdfgen.json" />
     <None Include="json\pipline_state_object\pso_pbr.json" />
+    <None Include="json\pipline_state_object\pso_pbr_bone.json" />
     <None Include="json\pipline_state_object\pso_screenmask.json" />
     <None Include="json\pipline_state_object\pso_sky.json" />
     <None Include="json\pipline_state_object\pso_test.json" />

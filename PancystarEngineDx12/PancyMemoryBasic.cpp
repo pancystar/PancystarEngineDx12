@@ -641,6 +641,7 @@ PancystarEngine::EngineFailReason SubMemoryData::Create(
 	}
 	per_memory_size = per_memory_size_in;
 	auto memory_data = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
+	/*
 	auto check_size = memory_data->GetSize() % static_cast<uint64_t>(per_memory_size_in);
 	if (check_size != 0)
 	{
@@ -648,6 +649,7 @@ PancystarEngine::EngineFailReason SubMemoryData::Create(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build subresource from memory block", error_message);
 		return error_message;
 	}
+	*/
 	pancy_object_id all_empty_num = static_cast<pancy_object_id>(memory_data->GetSize() / static_cast<uint64_t>(per_memory_size_in));
 	for (pancy_object_id i = 0; i < all_empty_num; ++i)
 	{

@@ -1,4 +1,5 @@
 #define PI 3.14159265359f
+#define MaxBoneNum 100
 //常量缓冲区
 cbuffer per_object : register(b0)
 {
@@ -6,6 +7,8 @@ cbuffer per_object : register(b0)
 	float4x4 WVP_matrix;
 	float4x4 UV_matrix;
 	float4x4 normal_matrix;
+	float4x4 bone_world_matrix;
+	float4x4 bone_matrix[MaxBoneNum];
 }
 cbuffer per_frame : register(b1)
 {
@@ -30,6 +33,17 @@ struct VSInput
 	uint4  tex_id   : TEXID;
 	float4 tex_uv   : TEXUV;
 };
+struct VSInputBone
+{
+	float3 position     : POSITION;
+	float3 normal       : NORMAL;
+	float3 tangent      : TANGENT;
+	uint4  tex_id       : TEXID;
+	float4 tex_uv       : TEXUV;
+	uint4  bone_id      : BONEID;
+	float4 bone_weight0 : BONEWEIGHTFIR;
+	float4 bone_weight1 : BONEWEIGHTSEC;
+};
 struct PSInput
 {
 	float4 position : SV_POSITION;
@@ -39,6 +53,65 @@ struct PSInput
 	uint4  tex_id   : TEXID;
 	float4 tex_uv   : TEXUV;
 };
+PSInput VSMainBone(VSInputBone vinput)
+{
+	PSInput result;
+	//先做骨骼变换
+	int bone_id_mask = MaxBoneNum + 100;
+	int bone_id_use0 = vinput.bone_id[0] / bone_id_mask;
+	int bone_id_use1 = vinput.bone_id[1] / bone_id_mask;
+	int bone_id_use2 = vinput.bone_id[2] / bone_id_mask;
+	int bone_id_use3 = vinput.bone_id[3] / bone_id_mask;
+	int bone_id_use4 = vinput.bone_id[0] % bone_id_mask;
+	int bone_id_use5 = vinput.bone_id[1] % bone_id_mask;
+	int bone_id_use6 = vinput.bone_id[2] % bone_id_mask;
+	int bone_id_use7 = vinput.bone_id[3] % bone_id_mask;
+	float3 positon_bone = float3(0.0f, 0.0f, 0.0f);
+	float3 normal_bone = float3(0.0f, 0.0f, 0.0f);
+	float3 tangent_bone = float3(0.0f, 0.0f, 0.0f);
+	positon_bone += vinput.bone_weight0.x * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use0]).xyz;
+	normal_bone += vinput.bone_weight0.x * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use0]);
+	tangent_bone += vinput.bone_weight0.x * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use0]);
+
+	positon_bone += vinput.bone_weight0.y * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use1]).xyz;
+	normal_bone += vinput.bone_weight0.y * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use1]);
+	tangent_bone += vinput.bone_weight0.y * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use1]);
+
+	positon_bone += vinput.bone_weight0.z * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use2]).xyz;
+	normal_bone += vinput.bone_weight0.z * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use2]);
+	tangent_bone += vinput.bone_weight0.z * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use2]);
+
+	positon_bone += vinput.bone_weight0.w * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use3]).xyz;
+	normal_bone += vinput.bone_weight0.w * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use3]);
+	tangent_bone += vinput.bone_weight0.w * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use3]);
+
+	positon_bone += vinput.bone_weight1.x * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use4]).xyz;
+	normal_bone += vinput.bone_weight1.x * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use4]);
+	tangent_bone += vinput.bone_weight1.x * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use4]);
+
+	positon_bone += vinput.bone_weight1.y * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use5]).xyz;
+	normal_bone += vinput.bone_weight1.y * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use5]);
+	tangent_bone += vinput.bone_weight1.y * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use5]);
+
+	positon_bone += vinput.bone_weight1.z * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use6]).xyz;
+	normal_bone += vinput.bone_weight1.z * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use6]);
+	tangent_bone += vinput.bone_weight1.z * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use6]);
+
+	positon_bone += vinput.bone_weight1.w * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use7]).xyz;
+	normal_bone += vinput.bone_weight1.w * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use7]);
+	tangent_bone += vinput.bone_weight1.w * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use7]);
+
+
+
+	result.position = mul(float4(positon_bone, 1.0f), WVP_matrix);
+	result.pos_out = mul(float4(positon_bone, 1.0), world_matrix);
+	result.normal = mul(float4(normal_bone, 0.0), normal_matrix).xyz;
+	result.tangent = mul(float4(tangent_bone, 0.0), normal_matrix).xyz;
+	result.tex_id = vinput.tex_id;
+	result.tex_uv.xy = mul(float4(vinput.tex_uv.xy, 0, 0), UV_matrix).xy;
+	result.tex_uv.zw = mul(float4(vinput.tex_uv.zw, 0, 0), UV_matrix).zw;
+	return result;
+}
 PSInput VSMain(VSInput vinput)
 {
 	PSInput result;

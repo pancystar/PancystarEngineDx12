@@ -129,5 +129,8 @@
     <None Include="json\root_signature\boundbox_root_signature.json">
       <Filter>rootsignature</Filter>
     </None>
+    <None Include="json\pipline_state_object\pso_pbr_bone.json">
+      <Filter>pso</Filter>
+    </None>
   </ItemGroup>
 </Project>
