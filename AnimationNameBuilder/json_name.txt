@@ -19,14 +19,6 @@
 "animation_file" : "animation\\Lion@GetHit.FBX"
 },
 {
-"animation_name" : "Lion_GoBackUp.FBX",
-"animation_file" : "animation\\Lion@GoBackUp.FBX"
-},
-{
-"animation_name" : "Lion_GoToRest.FBX",
-"animation_file" : "animation\\Lion@GoToRest.FBX"
-},
-{
 "animation_name" : "Lion_IdleBreathe.FBX",
 "animation_file" : "animation\\Lion@IdleBreathe.FBX"
 },
@@ -47,10 +39,6 @@
 "animation_file" : "animation\\Lion@Jump_RM.FBX"
 },
 {
-"animation_name" : "Lion_Resting.FBX",
-"animation_file" : "animation\\Lion@Resting.FBX"
-},
-{
 "animation_name" : "Lion_Roar.FBX",
 "animation_file" : "animation\\Lion@Roar.FBX"
 },
@@ -59,48 +47,12 @@
 "animation_file" : "animation\\Lion@Run.FBX"
 },
 {
-"animation_name" : "Lion_RunTurnL.FBX",
-"animation_file" : "animation\\Lion@RunTurnL.FBX"
-},
-{
-"animation_name" : "Lion_RunTurnL_RM.FBX",
-"animation_file" : "animation\\Lion@RunTurnL_RM.FBX"
-},
-{
-"animation_name" : "Lion_RunTurnR.FBX",
-"animation_file" : "animation\\Lion@RunTurnR.FBX"
-},
-{
-"animation_name" : "Lion_RunTurnR_RM.FBX",
-"animation_file" : "animation\\Lion@RunTurnR_RM.FBX"
-},
-{
 "animation_name" : "Lion_Run_RM.FBX",
 "animation_file" : "animation\\Lion@Run_RM.FBX"
 },
 {
-"animation_name" : "Lion_Sleeping.FBX",
-"animation_file" : "animation\\Lion@Sleeping.FBX"
-},
-{
 "animation_name" : "Lion_Walk.FBX",
 "animation_file" : "animation\\Lion@Walk.FBX"
-},
-{
-"animation_name" : "Lion_WalkTurnL.FBX",
-"animation_file" : "animation\\Lion@WalkTurnL.FBX"
-},
-{
-"animation_name" : "Lion_WalkTurnL_RM.FBX",
-"animation_file" : "animation\\Lion@WalkTurnL_RM.FBX"
-},
-{
-"animation_name" : "Lion_WalkTurnR.FBX",
-"animation_file" : "animation\\Lion@WalkTurnR.FBX"
-},
-{
-"animation_name" : "Lion_WalkTurnR_RM.FBX",
-"animation_file" : "animation\\Lion@WalkTurnR_RM.FBX"
 },
 {
 "animation_name" : "Lion_Walk_RM.FBX",

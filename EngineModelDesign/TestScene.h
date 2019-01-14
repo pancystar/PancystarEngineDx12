@@ -5,6 +5,7 @@
 #include <assimp/postprocess.h>     // 该头文件中包含后处理的标志位定义
 #include <assimp/matrix4x4.h>
 #include <assimp/matrix3x3.h>
+#include <fbxsdk.h>
 #ifdef _DEBUG
 #pragma comment(lib,"..\\x64\\Debug\\PancystarEngineDx12.lib")
 #else
@@ -205,6 +206,75 @@ enum PbrMaterialType
 	PbrType_MetallicRoughness = 0,
 	PbrType_SpecularSmoothness
 };
+//FBX文件解析
+struct mesh_animation_data
+{
+	DirectX::XMFLOAT3 position;
+	DirectX::XMFLOAT3 normal;
+	DirectX::XMFLOAT3 tangent;
+	mesh_animation_data()
+	{
+		position = DirectX::XMFLOAT3(0, 0, 0);
+		normal = DirectX::XMFLOAT3(0, 0, 0);
+		tangent = DirectX::XMFLOAT3(0, 0, 0);
+	}
+};
+struct mesh_animation_per_frame
+{
+	int point_num;
+	mesh_animation_data *point_data;
+	mesh_animation_per_frame(int point_num_in)
+	{
+		point_num = point_num_in;
+		point_data = new mesh_animation_data[point_num_in];
+	};
+};
+class mesh_animation_FBX
+{
+#ifdef IOS_REF
+#undef  IOS_REF
+#define IOS_REF (*(pManager->GetIOSettings()))
+#endif
+	//FBX属性
+	bool if_fbx_file;
+	int lVertexCount;
+	FbxString *lFilePath;
+	FbxManager* lSdkManager = NULL;
+	FbxScene* lScene = NULL;
+	FbxMesh* lMesh;
+	//动画属性
+	int point_num;
+	int point_index_num;
+	UINT *index_buffer;
+	std::vector<mesh_animation_per_frame> anim_data_list;
+	FbxTime anim_start;
+	FbxTime anim_end;
+	FbxTime anim_frame;
+	int frame_per_second;
+	int frame_num;
+public:
+	mesh_animation_FBX(std::string file_name_in, int point_num_in, int point_index_num_in);
+	PancystarEngine::EngineFailReason create(UINT *index_buffer_in, DirectX::XMFLOAT3 *normal_in, DirectX::XMFLOAT3 *tangent_in);
+	int get_point_num() { return point_num; };
+	int get_frame_num() { return frame_num; };
+	int get_FPS() { return frame_per_second; };
+	std::vector<mesh_animation_per_frame> get_anim_list() { return anim_data_list; };
+	void release();
+private:
+	PancystarEngine::EngineFailReason build_buffer();
+	void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene);
+	void DestroySdkObjects(FbxManager* pManager, bool pExitStatus);
+	bool SaveScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename, int pFileFormat, bool pEmbedMedia);
+	bool LoadScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename);
+	void PreparePointCacheData(FbxScene* pScene, FbxTime &pCache_Start, FbxTime &pCache_Stop);
+	PancystarEngine::EngineFailReason ReadVertexCacheData(FbxMesh* pMesh, FbxTime& pTime, FbxVector4* pVertexArray);
+	void UpdateVertexPosition(FbxMesh * pMesh, const FbxVector4 * pVertices, DirectX::XMFLOAT3 *normal_in, DirectX::XMFLOAT3 *tangent_in);
+	PancystarEngine::EngineFailReason find_tree_mesh(FbxNode *pNode);
+	void compute_normal();
+	DirectX::XMFLOAT3 get_normal_vert(FbxMesh * pMesh, int vertex_count);
+};
+
+//Assimp文件解析
 class PancyModelAssimp : public PancyModelBasic
 {
 	//临时渲染变量(模型处理工具由于只处理一个模型，不做view化处理和renderobj封装，正式使用会有view化处理)
@@ -231,8 +301,11 @@ class PancyModelAssimp : public PancyModelBasic
 	std::unordered_map<std::string, animation_set> skin_animation_map;
 	animation_set now_animation_use;//当前正在使用的动画
 	float now_animation_play_station;//当前正在播放的动画
+	DirectX::XMFLOAT4X4 bind_pose_matrix;
 	bool if_animation_choose;
 	skin_tree *model_move_skin;//当前控制模型位置的根骨骼
+	//顶点动画信息
+	mesh_animation_FBX *FBXanim_import;
 	//模型的pbr格式
 	PbrMaterialType moedl_pbr_type;
 public:
@@ -284,7 +357,7 @@ public:
 		if (model_move_skin != NULL) 
 		{
 			DirectX::XMFLOAT4X4 bone_mat;
-			DirectX::XMStoreFloat4x4(&bone_mat, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&model_move_skin->now_matrix)));
+			DirectX::XMStoreFloat4x4(&bone_mat, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&bind_pose_matrix) * DirectX::XMLoadFloat4x4(&model_move_skin->now_matrix)));
 			return bone_mat;
 		}
 		else
@@ -416,7 +489,7 @@ private:
 	void Interpolate(quaternion_animation& pOut, const quaternion_animation &pStart, const quaternion_animation &pEnd, const float &pFactor);
 	void Interpolate(vector_animation& pOut, const vector_animation &pStart, const vector_animation &pEnd, const float &pFactor);
 	void Get_quatMatrix(DirectX::XMFLOAT4X4 &resMatrix, const quaternion_animation& pOut);
-
+	void GetRootSkinOffsetMatrix(aiNode *root, aiMatrix4x4 matrix_parent);
 };
 class scene_test_simple : public SceneRoot
 {

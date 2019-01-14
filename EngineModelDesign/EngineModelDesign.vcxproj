@@ -30,8 +30,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
-    <IncludePath>D:\vs2017_library\json\Include;D:\vs2017_library\dx12\include;D:\vs2017_library\assimp\include;D:\vs2017_library\dxtexture\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\vs2017_library\json\Debug;D:\vs2017_library\dx12\lib_debug;D:\vs2017_library\assimp\lib\release;D:\vs2017_library\dxtexture\lib\debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\vs2017_library\json\Include;D:\vs2017_library\dx12\include;D:\vs2017_library\assimp\include;D:\vs2017_library\dxtexture\include;D:\Program Files\Autodesk\FBX\FBX SDK\2019.2\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\vs2017_library\json\Debug;D:\vs2017_library\dx12\lib_debug;D:\vs2017_library\assimp\lib\release;D:\vs2017_library\dxtexture\lib\debug;D:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
@@ -66,7 +66,7 @@
       <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
       <AdditionalLibraryDirectories>$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>qtmaind.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Widgetsd.lib;d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;jsoncpp.lib;assimp-vc140-mt.lib;DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>qtmaind.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5Widgetsd.lib;d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;jsoncpp.lib;assimp-vc140-mt.lib;DirectXTex.lib;libfbxsdk-md.lib;libfbxsdk.lib;libxml2-md.lib;zlib-md.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <QtMoc>
       <OutputFile>.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</OutputFile>
