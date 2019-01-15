@@ -237,15 +237,11 @@ class mesh_animation_FBX
 #endif
 	//FBX Ù–‘
 	bool if_fbx_file;
-	int lVertexCount;
 	FbxString *lFilePath;
 	FbxManager* lSdkManager = NULL;
 	FbxScene* lScene = NULL;
-	FbxMesh* lMesh;
-	std::vector<FbxMesh* > lMesh_list;
+	std::vector<FbxMesh*> lMesh_list;
 	//∂Øª≠ Ù–‘
-	int point_num;
-	int point_index_num;
 	UINT *index_buffer;
 	std::vector<mesh_animation_per_frame> anim_data_list;
 	FbxTime anim_start;
@@ -254,8 +250,11 @@ class mesh_animation_FBX
 	int frame_per_second;
 	int frame_num;
 public:
-	mesh_animation_FBX(std::string file_name_in, int point_num_in, int point_index_num_in);
-	PancystarEngine::EngineFailReason create(UINT *index_buffer_in, DirectX::XMFLOAT3 *normal_in, DirectX::XMFLOAT3 *tangent_in);
+	mesh_animation_FBX(std::string file_name_in);
+	PancystarEngine::EngineFailReason create(
+		std::vector<int32_t> vertex_buffer_num_list,
+		std::vector<int32_t> index_buffer_num_list
+	);
 	int get_point_num() { return point_num; };
 	int get_frame_num() { return frame_num; };
 	int get_FPS() { return frame_per_second; };

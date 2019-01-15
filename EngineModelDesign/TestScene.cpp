@@ -1,6 +1,4 @@
 #include"TestScene.h"
-#include <Exceptional.h>
-#include<assimp\DefaultLogger.hpp>
 #pragma comment(lib, "D3D11.lib") 
 
 PancySubModel::PancySubModel()
@@ -64,7 +62,7 @@ PancyModelBasic::~PancyModelBasic()
 	}
 }
 //FBX网格动画
-mesh_animation_FBX::mesh_animation_FBX(std::string file_name_in, int point_num_in, int point_index_num_in)
+mesh_animation_FBX::mesh_animation_FBX(std::string file_name_in)
 {
 	if_fbx_file = false;
 	if (file_name_in.size() >= 3)
@@ -76,10 +74,11 @@ mesh_animation_FBX::mesh_animation_FBX(std::string file_name_in, int point_num_i
 		}
 	}
 	lFilePath = new FbxString(file_name_in.c_str());
-	point_index_num = point_index_num_in;
-	point_num = point_num_in;
 }
-PancystarEngine::EngineFailReason mesh_animation_FBX::create(UINT *index_buffer_in, DirectX::XMFLOAT3 *normal_in, DirectX::XMFLOAT3 *tangent_in)
+PancystarEngine::EngineFailReason mesh_animation_FBX::create(
+	std::vector<int32_t> vertex_buffer_num_list,
+	std::vector<int32_t> index_buffer_num_list
+)
 {
 	if (!if_fbx_file)
 	{
@@ -113,7 +112,62 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(UINT *index_buffer_
 	if (lMesh_list.size() == 0)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh data in FBX file");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load fbx animation", error_message);
 		return error_message;
+	}
+	if (lMesh_list.size() != index_buffer_num_list.size()) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "FBX mesh have different mesh part number with assimp & fbxsdk");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load fbx animation", error_message);
+		return error_message;
+	}
+	for (int i = 0; i < lMesh_list.size(); ++i) 
+	{
+		int32_t lPolygonCount = lMesh_list[i]->GetPolygonCount();
+		int32_t lPolygonCount_check = index_buffer_num_list[i];
+		if (lPolygonCount != lPolygonCount_check) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "FBX mesh have different triangle num with assimp & fbxsdk");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load fbx animation", error_message);
+			return error_message;
+		}
+		//检验动画信息
+		int a = lMesh_list[i]->GetDeformerCount(FbxDeformer::eVertexCache);
+		const bool lHasVertexCache = lMesh_list[i]->GetDeformerCount(FbxDeformer::eVertexCache) &&
+			(static_cast<FbxVertexCacheDeformer*>(lMesh_list[i]->GetDeformer(0, FbxDeformer::eVertexCache)))->Active.Get();
+		if (!lHasVertexCache)
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "the FBX file don't have animation message" + std::string(lFilePath->Buffer()));
+			return error_message;
+		}
+		//获取时间信息
+		PreparePointCacheData(lScene, anim_start, anim_end);
+		auto FPS_rec = anim_end.GetFrameRate(fbxsdk::FbxTime::EMode::eDefaultMode);
+		auto framenum_rec = anim_end.GetFrameCount();
+		frame_per_second = static_cast<int>(FPS_rec);
+		frame_num = static_cast<int>(framenum_rec);
+		anim_frame.SetTime(0, 0, 0, 1, 0, lScene->GetGlobalSettings().GetTimeMode());
+		if (frame_num == 0)
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh animation of FBX file" + std::string(lFilePath->Buffer()));
+			return error_message;
+		}
+
+		//开启顶点动画缓冲
+		auto time_now = anim_start;
+		FbxVector4* lVertexArray = NULL;
+		lVertexArray = new FbxVector4[lMesh_list[i]->GetPolygonVertex];
+		for (int i = 0; i < frame_num; ++i)
+		{
+			time_now += anim_frame;
+			int check = time_now.GetFrameCount();
+			check_error = ReadVertexCacheData(lMesh, time_now, lVertexArray);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			UpdateVertexPosition(lMesh, lVertexArray, normal_in, tangent_in);
+		}
 	}
 	/*
 	//检验动画信息
@@ -138,25 +192,6 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(UINT *index_buffer_
 		return error_message;
 	}
 */
-	//检验模型是否匹配
-	int lPolygonCount = lMesh->GetPolygonCount();
-	if (lPolygonCount * 3 != point_index_num)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The model from assimp have different face count" + std::string(lFilePath->Buffer()), PancystarEngine::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load FBX Model Animation", error_message);
-		point_index_num = lPolygonCount * 3;
-		//return error_message;
-	}
-	if (index_buffer_in != NULL)
-	{
-		index_buffer = new UINT[point_index_num];
-		for (int i = 0; i < point_index_num / 3; ++i)
-		{
-			index_buffer[i * 3 + 0] = index_buffer_in[i * 3 + 0];
-			index_buffer[i * 3 + 1] = index_buffer_in[i * 3 + 1];
-			index_buffer[i * 3 + 2] = index_buffer_in[i * 3 + 2];
-		}
-	}
 	//开启顶点动画缓冲
 	auto time_now = anim_start;
 	FbxVector4* lVertexArray = NULL;
@@ -197,16 +232,16 @@ void mesh_animation_FBX::find_tree_mesh(FbxNode *pNode)
 	{
 		lMesh = pNode->GetMesh();
 		lVertexCount = lMesh->GetControlPointsCount();
-		lMesh_list.push_back(lMesh);
-		//return PancystarEngine::succeed;
+		if (lVertexCount != 0) 
+		{
+			lMesh_list.push_back(lMesh);
+		}
 	}
 	const int lChildCount = pNode->GetChildCount();
 	for (int lChildIndex = 0; lChildIndex < lChildCount; ++lChildIndex)
 	{
 		find_tree_mesh(pNode->GetChild(lChildIndex));
 	}
-	//PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh data in FBX file");
-	//return error_message;
 }
 void mesh_animation_FBX::InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
 {
@@ -1055,11 +1090,11 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	}
 	//尝试读取顶点动画
 	std::vector<IndexType> index_pack;
-	int32_t vertex_num = 0;
+	std::vector<int32_t> vertex_num;
 	for (int i = 0; i < model_need->mNumMeshes; i++)
 	{
 		const aiMesh* paiMesh = model_need->mMeshes[i];
-		vertex_num += paiMesh->mNumVertices;
+		vertex_num.push_back(paiMesh->mNumFaces);
 		for (unsigned int j = 0; j < paiMesh->mNumFaces; j++)
 		{
 			if (paiMesh->mFaces[j].mNumIndices == 3)
