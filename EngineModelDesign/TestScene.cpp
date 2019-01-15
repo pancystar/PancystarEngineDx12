@@ -1,4 +1,6 @@
 #include"TestScene.h"
+#include <Exceptional.h>
+#include<assimp\DefaultLogger.hpp>
 #pragma comment(lib, "D3D11.lib") 
 
 PancySubModel::PancySubModel()
@@ -107,12 +109,15 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(UINT *index_buffer_
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the root node of FBX file" + std::string(lFilePath->Buffer()));
 		return error_message;
 	}
-	check_error = find_tree_mesh(pNode);
-	if (!check_error.CheckIfSucceed())
+	find_tree_mesh(pNode);
+	if (lMesh_list.size() == 0)
 	{
-		return check_error;
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh data in FBX file");
+		return error_message;
 	}
+	/*
 	//检验动画信息
+	int a = lMesh->GetDeformerCount(FbxDeformer::eVertexCache);
 	const bool lHasVertexCache = lMesh->GetDeformerCount(FbxDeformer::eVertexCache) &&
 		(static_cast<FbxVertexCacheDeformer*>(lMesh->GetDeformer(0, FbxDeformer::eVertexCache)))->Active.Get();
 	if (!lHasVertexCache)
@@ -132,17 +137,17 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(UINT *index_buffer_
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh animation of FBX file" + std::string(lFilePath->Buffer()));
 		return error_message;
 	}
-
+*/
 	//检验模型是否匹配
 	int lPolygonCount = lMesh->GetPolygonCount();
 	if (lPolygonCount * 3 != point_index_num)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The model from assimp have different face count" + std::string(lFilePath->Buffer()),PancystarEngine::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "The model from assimp have different face count" + std::string(lFilePath->Buffer()), PancystarEngine::LOG_MESSAGE_WARNING);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load FBX Model Animation", error_message);
 		point_index_num = lPolygonCount * 3;
 		//return error_message;
 	}
-	if (index_buffer_in != NULL) 
+	if (index_buffer_in != NULL)
 	{
 		index_buffer = new UINT[point_index_num];
 		for (int i = 0; i < point_index_num / 3; ++i)
@@ -185,22 +190,23 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::build_buffer()
 void mesh_animation_FBX::release()
 {
 }
-PancystarEngine::EngineFailReason mesh_animation_FBX::find_tree_mesh(FbxNode *pNode)
+void mesh_animation_FBX::find_tree_mesh(FbxNode *pNode)
 {
 	FbxNodeAttribute* lNodeAttribute = pNode->GetNodeAttribute();
 	if (lNodeAttribute && lNodeAttribute->GetAttributeType() == FbxNodeAttribute::eMesh)
 	{
 		lMesh = pNode->GetMesh();
 		lVertexCount = lMesh->GetControlPointsCount();
-		return PancystarEngine::succeed;
+		lMesh_list.push_back(lMesh);
+		//return PancystarEngine::succeed;
 	}
 	const int lChildCount = pNode->GetChildCount();
 	for (int lChildIndex = 0; lChildIndex < lChildCount; ++lChildIndex)
 	{
-		return find_tree_mesh(pNode->GetChild(lChildIndex));
+		find_tree_mesh(pNode->GetChild(lChildIndex));
 	}
-	PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh data in FBX file");
-	return error_message;
+	//PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh data in FBX file");
+	//return error_message;
 }
 void mesh_animation_FBX::InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
 {
@@ -1029,22 +1035,51 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 		}
 	}
-	FBXanim_import = new mesh_animation_FBX(resource_desc_file,0,0);
-	FBXanim_import->create(0, 0, 0);
+
 	//开始加载模型
 	const aiScene *model_need;//assimp模型备份
+	
 	model_need = importer.ReadFile(model_name,
 		aiProcess_MakeLeftHanded |
 		aiProcess_FlipWindingOrder |
 		aiProcess_CalcTangentSpace |
 		aiProcess_JoinIdenticalVertices
 	);//将不同图元放置到不同的模型中去，图片类型可能是点、直线、三角形等
+	const char *error_str;
+	error_str = importer.GetErrorString();
 	if (model_need == NULL)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "read model" + resource_desc_file + "error");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
 		return error_message;
 	}
+	//尝试读取顶点动画
+	std::vector<IndexType> index_pack;
+	int32_t vertex_num = 0;
+	for (int i = 0; i < model_need->mNumMeshes; i++)
+	{
+		const aiMesh* paiMesh = model_need->mMeshes[i];
+		vertex_num += paiMesh->mNumVertices;
+		for (unsigned int j = 0; j < paiMesh->mNumFaces; j++)
+		{
+			if (paiMesh->mFaces[j].mNumIndices == 3)
+			{
+				index_pack.push_back(static_cast<IndexType>(paiMesh->mFaces[j].mIndices[0]));
+				index_pack.push_back(static_cast<IndexType>(paiMesh->mFaces[j].mIndices[1]));
+				index_pack.push_back(static_cast<IndexType>(paiMesh->mFaces[j].mIndices[2]));
+			}
+			else
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "model" + resource_desc_file + "find no triangle face");
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+				return error_message;
+
+			}
+		}
+	}
+
+	FBXanim_import = new mesh_animation_FBX(resource_desc_file, 0, 0);
+	FBXanim_import->create(0, 0, 0);
 	std::unordered_map<pancy_object_id, pancy_object_id> real_material_list;//舍弃不合理材质后的材质编号与之前的编号对比
 	if (!if_auto_material)
 	{
@@ -1411,7 +1446,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		//计算偏移矩阵
 		update_mesh_offset(model_need);
 		//加载动画信息
-		build_animation_list(model_need,"Pancystar_LocalModel");
+		build_animation_list(model_need, "Pancystar_LocalModel");
 		//加载额外的动画信息
 		if (CheckIFJson(resource_desc_file))
 		{
@@ -1423,7 +1458,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				return check_error;
 			}
 			Json::Value extra_animation_list = root_value.get("Extra_Animation", Json::Value::null);
-			if (extra_animation_list != Json::Value::null) 
+			if (extra_animation_list != Json::Value::null)
 			{
 				int32_t num_extra_animation = extra_animation_list.size();
 				for (int32_t i = 0; i < num_extra_animation; ++i)
@@ -1454,7 +1489,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 		}
 		//初始化动画播放信息
-		if (skin_animation_map.size() > 0) 
+		if (skin_animation_map.size() > 0)
 		{
 			now_animation_use = skin_animation_map.begin()->second;
 			if_animation_choose = true;
@@ -1711,13 +1746,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_skintree(aiNode *now_n
 }
 void PancyModelAssimp::FindRootBone(skin_tree *now_bone)
 {
-	if (now_bone->bone_number == NouseAssimpStruct && now_bone->son != NULL && now_bone->son->bone_number != NouseAssimpStruct) 
+	if (now_bone->bone_number == NouseAssimpStruct && now_bone->son != NULL && now_bone->son->bone_number != NouseAssimpStruct)
 	{
 		model_move_skin = now_bone;
 	}
-	else 
+	else
 	{
-		if (now_bone->brother != NULL) 
+		if (now_bone->brother != NULL)
 		{
 			FindRootBone(now_bone->brother);
 		}
@@ -1783,7 +1818,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list(const a
 		{
 			now_animation_name = model_need->mAnimations[i]->mName.data;
 		}
-		else 
+		else
 		{
 			now_animation_name += "::";
 			now_animation_name += model_need->mAnimations[i]->mName.data;
@@ -1847,7 +1882,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list(const a
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load animation data From Model", error_message);
 			continue;
 		}
-		else 
+		else
 		{
 			skin_animation_map.insert(std::pair<string, animation_set>(now_animation_name, now_anim_set));
 		}
@@ -1922,14 +1957,14 @@ void PancyModelAssimp::GetModelBoneData(DirectX::XMFLOAT4X4 *bone_matrix)
 void PancyModelAssimp::update_anim_data()
 {
 	float input_time = now_animation_play_station * now_animation_use.animation_length;
-	for (int i = 0; i < now_animation_use.data_animition.size(); ++i) 
+	for (int i = 0; i < now_animation_use.data_animition.size(); ++i)
 	{
 		animation_data now = now_animation_use.data_animition[i];
 		DirectX::XMMATRIX rec_trans, rec_scal;
 		DirectX::XMFLOAT4X4 rec_rot;
 
 		int start_anim, end_anim;
-		find_anim_sted(input_time,start_anim, end_anim, now.rotation_key);
+		find_anim_sted(input_time, start_anim, end_anim, now.rotation_key);
 		//四元数插值并寻找变换矩阵
 		quaternion_animation rotation_now;
 		if (start_anim == end_anim || end_anim >= now.rotation_key.size())
@@ -2008,7 +2043,7 @@ void PancyModelAssimp::Interpolate(vector_animation& pOut, const vector_animatio
 		pOut.main_key[i] = pStart.main_key[i] + pFactor * (pEnd.main_key[i] - pStart.main_key[i]);
 	}
 }
-void PancyModelAssimp::find_anim_sted(const float &input_time, int &st, int &ed,const std::vector<quaternion_animation> &input)
+void PancyModelAssimp::find_anim_sted(const float &input_time, int &st, int &ed, const std::vector<quaternion_animation> &input)
 {
 	if (input_time < 0)
 	{
@@ -2022,7 +2057,7 @@ void PancyModelAssimp::find_anim_sted(const float &input_time, int &st, int &ed,
 		ed = input.size() - 1;
 		return;
 	}
-	for (int i = 0; i < input.size()-1; ++i)
+	for (int i = 0; i < input.size() - 1; ++i)
 	{
 		if (input_time >= input[i].time && input_time <= input[i + 1].time)
 		{
@@ -2084,15 +2119,15 @@ void PancyModelAssimp::Get_quatMatrix(DirectX::XMFLOAT4X4 &resMatrix, const quat
 }
 void PancyModelAssimp::GetRootSkinOffsetMatrix(aiNode *now_node, aiMatrix4x4 matrix_parent)
 {
-	if (strcmp(now_node->mName.data,model_move_skin->bone_ID) == 0)
+	if (strcmp(now_node->mName.data, model_move_skin->bone_ID) == 0)
 	{
 		auto mOffsetMatrix = now_node->mTransformation;
 		mOffsetMatrix.Inverse();
 
-		mOffsetMatrix =mOffsetMatrix ;
+		mOffsetMatrix = mOffsetMatrix;
 		set_matrix(bind_pose_matrix, &mOffsetMatrix);
 	}
-	else 
+	else
 	{
 		if (now_node->mNumChildren > 0)
 		{
@@ -2575,7 +2610,7 @@ PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(
 	}
 	if_skin_mesh = model_deal->CheckIfSkinMesh();
 	PancyModelAssimp *assimp_pointer = dynamic_cast<PancyModelAssimp*>(model_deal);
-	if (if_skin_mesh) 
+	if (if_skin_mesh)
 	{
 		assimp_pointer->GetAnimationNameList(animation_list);
 	}
@@ -3173,11 +3208,11 @@ void scene_test_simple::PopulateCommandListModelDeal()
 	PancyRenderCommandList *m_commandList;
 	PancyModelAssimp *render_object = dynamic_cast<PancyModelAssimp*>(model_deal);
 	PancyPiplineStateObjectGraph* pso_data;
-	if (render_object->CheckIfSkinMesh()) 
+	if (render_object->CheckIfSkinMesh())
 	{
 		pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr_bone.json");
 	}
-	else 
+	else
 	{
 		pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr.json");
 	}
@@ -3461,7 +3496,7 @@ void scene_test_simple::Update(float delta_time)
 	PancyModelAssimp *render_object_deal = dynamic_cast<PancyModelAssimp*>(model_deal);
 	if (render_object_deal != NULL)
 	{
-		if (render_object_deal->CheckIfSkinMesh()) 
+		if (render_object_deal->CheckIfSkinMesh())
 		{
 			DirectX::XMFLOAT4X4 bound_box_offset_mat = render_object_deal->GetModelAnimationOffset();
 			DirectX::XMFLOAT4X4 bone_mat[MaxBoneNum];
@@ -3469,10 +3504,10 @@ void scene_test_simple::Update(float delta_time)
 			check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[0].offset* per_memory_size + sizeof(pbr_world_mat), &bound_box_offset_mat, sizeof(bound_box_offset_mat));
 			check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[0].offset* per_memory_size + sizeof(pbr_world_mat) + sizeof(bound_box_offset_mat), bone_mat, sizeof(bone_mat));
 		}
-		else 
+		else
 		{
 			DirectX::XMFLOAT4X4 bound_box_offset_mat;
-			DirectX::XMStoreFloat4x4(&bound_box_offset_mat,DirectX::XMMatrixIdentity());
+			DirectX::XMStoreFloat4x4(&bound_box_offset_mat, DirectX::XMMatrixIdentity());
 			check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[0].offset* per_memory_size + sizeof(pbr_world_mat), &bound_box_offset_mat, sizeof(bound_box_offset_mat));
 		}
 	}
@@ -3488,7 +3523,7 @@ void scene_test_simple::Update(float delta_time)
 	view_buffer_data.view_position.z = view_pos.z;
 	view_buffer_data.view_position.w = 1.0f;
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[1].offset* per_memory_size, &view_buffer_data, sizeof(view_buffer_data));
-	
+
 }
 scene_test_simple::~scene_test_simple()
 {

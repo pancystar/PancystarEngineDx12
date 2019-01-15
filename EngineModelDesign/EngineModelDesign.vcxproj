@@ -30,7 +30,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
-    <IncludePath>D:\vs2017_library\json\Include;D:\vs2017_library\dx12\include;D:\vs2017_library\assimp\include;D:\vs2017_library\dxtexture\include;D:\Program Files\Autodesk\FBX\FBX SDK\2019.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\vs2017_library\json\Include;D:\vs2017_library\dx12\include;D:\vs2017_library\assimp\include;D:\vs2017_library\dxtexture\include;D:\Program Files\Autodesk\FBX\FBX SDK\2019.2\include;D:\vs2017_library\libcombile\assimp-3.3.1\code;$(IncludePath)</IncludePath>
     <LibraryPath>D:\vs2017_library\json\Debug;D:\vs2017_library\dx12\lib_debug;D:\vs2017_library\assimp\lib\release;D:\vs2017_library\dxtexture\lib\debug;D:\Program Files\Autodesk\FBX\FBX SDK\2019.2\lib\vs2017\x64\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

@@ -242,6 +242,7 @@ class mesh_animation_FBX
 	FbxManager* lSdkManager = NULL;
 	FbxScene* lScene = NULL;
 	FbxMesh* lMesh;
+	std::vector<FbxMesh* > lMesh_list;
 	//∂Øª≠ Ù–‘
 	int point_num;
 	int point_index_num;
@@ -269,7 +270,7 @@ private:
 	void PreparePointCacheData(FbxScene* pScene, FbxTime &pCache_Start, FbxTime &pCache_Stop);
 	PancystarEngine::EngineFailReason ReadVertexCacheData(FbxMesh* pMesh, FbxTime& pTime, FbxVector4* pVertexArray);
 	void UpdateVertexPosition(FbxMesh * pMesh, const FbxVector4 * pVertices, DirectX::XMFLOAT3 *normal_in, DirectX::XMFLOAT3 *tangent_in);
-	PancystarEngine::EngineFailReason find_tree_mesh(FbxNode *pNode);
+	void find_tree_mesh(FbxNode *pNode);
 	void compute_normal();
 	DirectX::XMFLOAT3 get_normal_vert(FbxMesh * pMesh, int vertex_count);
 };
