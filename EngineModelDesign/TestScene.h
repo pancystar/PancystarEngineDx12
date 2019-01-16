@@ -219,16 +219,6 @@ struct mesh_animation_data
 		tangent = DirectX::XMFLOAT3(0, 0, 0);
 	}
 };
-struct mesh_animation_per_frame
-{
-	int point_num;
-	mesh_animation_data *point_data;
-	mesh_animation_per_frame(int point_num_in)
-	{
-		point_num = point_num_in;
-		point_data = new mesh_animation_data[point_num_in];
-	};
-};
 class mesh_animation_FBX
 {
 #ifdef IOS_REF
@@ -242,8 +232,7 @@ class mesh_animation_FBX
 	FbxScene* lScene = NULL;
 	std::vector<FbxMesh*> lMesh_list;
 	//∂Øª≠ Ù–‘
-	UINT *index_buffer;
-	std::vector<mesh_animation_per_frame> anim_data_list;
+	std::vector <std::vector<std::vector<mesh_animation_data>>> anim_data_list;
 	FbxTime anim_start;
 	FbxTime anim_end;
 	FbxTime anim_frame;
@@ -252,13 +241,13 @@ class mesh_animation_FBX
 public:
 	mesh_animation_FBX(std::string file_name_in);
 	PancystarEngine::EngineFailReason create(
-		std::vector<int32_t> vertex_buffer_num_list,
-		std::vector<int32_t> index_buffer_num_list
+		const std::vector<int32_t> &vertex_buffer_num_list,
+		const std::vector<int32_t> &index_buffer_num_list,
+		const std::vector<vector<IndexType>> &index_buffer_data_list
 	);
-	int get_point_num() { return point_num; };
 	int get_frame_num() { return frame_num; };
 	int get_FPS() { return frame_per_second; };
-	std::vector<mesh_animation_per_frame> get_anim_list() { return anim_data_list; };
+	//std::vector<mesh_animation_per_frame> get_anim_list() { return anim_data_list; };
 	void release();
 private:
 	PancystarEngine::EngineFailReason build_buffer();
@@ -268,9 +257,15 @@ private:
 	bool LoadScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename);
 	void PreparePointCacheData(FbxScene* pScene, FbxTime &pCache_Start, FbxTime &pCache_Stop);
 	PancystarEngine::EngineFailReason ReadVertexCacheData(FbxMesh* pMesh, FbxTime& pTime, FbxVector4* pVertexArray);
-	void UpdateVertexPosition(FbxMesh * pMesh, const FbxVector4 * pVertices, DirectX::XMFLOAT3 *normal_in, DirectX::XMFLOAT3 *tangent_in);
+	void UpdateVertexPosition(
+		const int32_t &animation_id,
+		FbxMesh * pMesh, 
+		const FbxVector4 * pVertices, 
+		const int32_t &vertex_num_assimp,
+		const std::vector<IndexType> &index_assimp
+	);
 	void find_tree_mesh(FbxNode *pNode);
-	void compute_normal();
+	//void compute_normal();
 	DirectX::XMFLOAT3 get_normal_vert(FbxMesh * pMesh, int vertex_count);
 };
 

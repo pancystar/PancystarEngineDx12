@@ -76,8 +76,9 @@ mesh_animation_FBX::mesh_animation_FBX(std::string file_name_in)
 	lFilePath = new FbxString(file_name_in.c_str());
 }
 PancystarEngine::EngineFailReason mesh_animation_FBX::create(
-	std::vector<int32_t> vertex_buffer_num_list,
-	std::vector<int32_t> index_buffer_num_list
+	const std::vector<int32_t> &vertex_buffer_num_list,
+	const std::vector<int32_t> &index_buffer_num_list,
+	const std::vector<std::vector<IndexType>> &index_buffer_data_list
 )
 {
 	if (!if_fbx_file)
@@ -121,6 +122,7 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load fbx animation", error_message);
 		return error_message;
 	}
+	anim_data_list.resize(lMesh_list.size());
 	for (int i = 0; i < lMesh_list.size(); ++i) 
 	{
 		int32_t lPolygonCount = lMesh_list[i]->GetPolygonCount();
@@ -132,13 +134,19 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 			return error_message;
 		}
 		//检验动画信息
-		int a = lMesh_list[i]->GetDeformerCount(FbxDeformer::eVertexCache);
+		int deformer_num = lMesh_list[i]->GetDeformerCount(FbxDeformer::eVertexCache);
+		if (deformer_num > 0) 
+		{
+			auto check_data = lMesh_list[i]->GetDeformer(0, FbxDeformer::eVertexCache);
+			auto vertex_catch_data = static_cast<FbxVertexCacheDeformer*>(check_data);
+			int a = 0;
+		}
 		const bool lHasVertexCache = lMesh_list[i]->GetDeformerCount(FbxDeformer::eVertexCache) &&
 			(static_cast<FbxVertexCacheDeformer*>(lMesh_list[i]->GetDeformer(0, FbxDeformer::eVertexCache)))->Active.Get();
 		if (!lHasVertexCache)
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "the FBX file don't have animation message" + std::string(lFilePath->Buffer()));
-			return error_message;
+			//return error_message;
 		}
 		//获取时间信息
 		PreparePointCacheData(lScene, anim_start, anim_end);
@@ -150,23 +158,24 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 		if (frame_num == 0)
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh animation of FBX file" + std::string(lFilePath->Buffer()));
-			return error_message;
+			//return error_message;
 		}
-
 		//开启顶点动画缓冲
 		auto time_now = anim_start;
+		int num_vertex_now = lMesh_list[i]->GetControlPointsCount();
 		FbxVector4* lVertexArray = NULL;
-		lVertexArray = new FbxVector4[lMesh_list[i]->GetPolygonVertex];
-		for (int i = 0; i < frame_num; ++i)
+		lVertexArray = new FbxVector4[num_vertex_now];
+		
+		for (int j = 0; j < frame_num; ++j)
 		{
 			time_now += anim_frame;
 			int check = time_now.GetFrameCount();
-			check_error = ReadVertexCacheData(lMesh, time_now, lVertexArray);
+			check_error = ReadVertexCacheData(lMesh_list[i], time_now, lVertexArray);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
-			UpdateVertexPosition(lMesh, lVertexArray, normal_in, tangent_in);
+			UpdateVertexPosition(i,lMesh_list[i], lVertexArray, vertex_buffer_num_list[i],index_buffer_data_list[i]);
 		}
 	}
 	/*
@@ -191,8 +200,7 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh animation of FBX file" + std::string(lFilePath->Buffer()));
 		return error_message;
 	}
-*/
-	//开启顶点动画缓冲
+	开启顶点动画缓冲
 	auto time_now = anim_start;
 	FbxVector4* lVertexArray = NULL;
 	lVertexArray = new FbxVector4[lVertexCount];
@@ -207,6 +215,8 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 		}
 		UpdateVertexPosition(lMesh, lVertexArray, normal_in, tangent_in);
 	}
+*/
+	//
 	//计算法线
 	//compute_normal();
 	bool lResult = true;
@@ -230,8 +240,8 @@ void mesh_animation_FBX::find_tree_mesh(FbxNode *pNode)
 	FbxNodeAttribute* lNodeAttribute = pNode->GetNodeAttribute();
 	if (lNodeAttribute && lNodeAttribute->GetAttributeType() == FbxNodeAttribute::eMesh)
 	{
-		lMesh = pNode->GetMesh();
-		lVertexCount = lMesh->GetControlPointsCount();
+		auto lMesh = pNode->GetMesh();
+		auto lVertexCount = lMesh->GetControlPointsCount();
 		if (lVertexCount != 0) 
 		{
 			lMesh_list.push_back(lMesh);
@@ -621,10 +631,17 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::ReadVertexCacheData(FbxMes
 
 	return PancystarEngine::succeed;
 }
-void mesh_animation_FBX::UpdateVertexPosition(FbxMesh * pMesh, const FbxVector4 * pVertices, DirectX::XMFLOAT3 *normal_in, DirectX::XMFLOAT3 *tangent_in)
+void mesh_animation_FBX::UpdateVertexPosition(
+	const int32_t &animation_id,
+	FbxMesh * pMesh,
+	const FbxVector4 * pVertices,
+	const int32_t &vertex_num_assimp,
+	const std::vector<IndexType> &index_assimp
+)
 {
 	//创建基于assimp的顶点数组
-	mesh_animation_per_frame now_frame_data(point_num);
+	std::vector<mesh_animation_data> now_frame_data;
+	now_frame_data.resize(vertex_num_assimp);
 	//读取fbx动画数据
 	int TRIANGLE_VERTEX_COUNT = 3;
 	int VERTEX_STRIDE = 4;
@@ -646,27 +663,27 @@ void mesh_animation_FBX::UpdateVertexPosition(FbxMesh * pMesh, const FbxVector4 
 		const int lControlPointIndex_0 = pMesh->GetPolygonVertex(lPolygonIndex, 0);
 		const int lControlPointIndex_1 = pMesh->GetPolygonVertex(lPolygonIndex, 1);
 		const int lControlPointIndex_2 = pMesh->GetPolygonVertex(lPolygonIndex, 2);
+		int vertex_index_assimp_0 = index_assimp[traingle_point_2];
+		int vertex_index_assimp_1 = index_assimp[traingle_point_1];
+		int vertex_index_assimp_2 = index_assimp[traingle_point_0];
+		now_frame_data[vertex_index_assimp_0].position.x = static_cast<float>(pVertices[lControlPointIndex_0][0]);
+		now_frame_data[vertex_index_assimp_0].position.y = static_cast<float>(pVertices[lControlPointIndex_0][1]);
+		now_frame_data[vertex_index_assimp_0].position.z = -static_cast<float>(pVertices[lControlPointIndex_0][2]);
 
-		int vertex_index_assimp_0 = index_buffer[traingle_point_2];
-		int vertex_index_assimp_1 = index_buffer[traingle_point_1];
-		int vertex_index_assimp_2 = index_buffer[traingle_point_0];
-		now_frame_data.point_data[vertex_index_assimp_0].position.x = static_cast<float>(pVertices[lControlPointIndex_0][0]);
-		now_frame_data.point_data[vertex_index_assimp_0].position.y = static_cast<float>(pVertices[lControlPointIndex_0][1]);
-		now_frame_data.point_data[vertex_index_assimp_0].position.z = -static_cast<float>(pVertices[lControlPointIndex_0][2]);
+		now_frame_data[vertex_index_assimp_1].position.x = static_cast<float>(pVertices[lControlPointIndex_1][0]);
+		now_frame_data[vertex_index_assimp_1].position.y = static_cast<float>(pVertices[lControlPointIndex_1][1]);
+		now_frame_data[vertex_index_assimp_1].position.z = -static_cast<float>(pVertices[lControlPointIndex_1][2]);
 
-		now_frame_data.point_data[vertex_index_assimp_1].position.x = static_cast<float>(pVertices[lControlPointIndex_1][0]);
-		now_frame_data.point_data[vertex_index_assimp_1].position.y = static_cast<float>(pVertices[lControlPointIndex_1][1]);
-		now_frame_data.point_data[vertex_index_assimp_1].position.z = -static_cast<float>(pVertices[lControlPointIndex_1][2]);
-
-		now_frame_data.point_data[vertex_index_assimp_2].position.x = static_cast<float>(pVertices[lControlPointIndex_2][0]);
-		now_frame_data.point_data[vertex_index_assimp_2].position.y = static_cast<float>(pVertices[lControlPointIndex_2][1]);
-		now_frame_data.point_data[vertex_index_assimp_2].position.z = -static_cast<float>(pVertices[lControlPointIndex_2][2]);
+		now_frame_data[vertex_index_assimp_2].position.x = static_cast<float>(pVertices[lControlPointIndex_2][0]);
+		now_frame_data[vertex_index_assimp_2].position.y = static_cast<float>(pVertices[lControlPointIndex_2][1]);
+		now_frame_data[vertex_index_assimp_2].position.z = -static_cast<float>(pVertices[lControlPointIndex_2][2]);
 
 		lVertexCount += 3;
 	}
-	anim_data_list.push_back(now_frame_data);
+	anim_data_list[animation_id].push_back(now_frame_data);
 	int a = 0;
 }
+/*
 void mesh_animation_FBX::compute_normal()
 {
 	FbxGeometryConverter lGeometryConverter(lSdkManager);
@@ -688,85 +705,10 @@ void mesh_animation_FBX::compute_normal()
 		{
 			positions[i] = now_frame_data._Ptr->point_data[i].position;
 		}
-
-		/*
-		for (int i = 0; i < triangle_num; ++i)
-		{
-
-			//求三角面的三个点
-			int index_triangle_0 = index_buffer[i * 3 + 0];
-			int index_triangle_1 = index_buffer[i * 3 + 1];
-			int index_triangle_2 = index_buffer[i * 3 + 2];
-
-			XMFLOAT3 point_triangle_0 = now_frame_data._Ptr->point_data[index_triangle_0].position;
-			XMFLOAT3 point_triangle_1 = now_frame_data._Ptr->point_data[index_triangle_1].position;
-			XMFLOAT3 point_triangle_2 = now_frame_data._Ptr->point_data[index_triangle_2].position;
-
-			//求两个切向量
-			XMFLOAT3 vector_u, vector_v, vec_cross;
-			vector_u.x = point_triangle_1.x - point_triangle_0.x;
-			vector_u.y = point_triangle_1.y - point_triangle_0.y;
-			vector_u.z = point_triangle_1.z - point_triangle_0.z;
-			XMStoreFloat3(&vector_u,XMVector3Normalize(XMLoadFloat3(&vector_u)));
-			vector_v.x = point_triangle_2.x - point_triangle_0.x;
-			vector_v.y = point_triangle_2.y - point_triangle_0.y;
-			vector_v.z = point_triangle_2.z - point_triangle_0.z;
-			XMStoreFloat3(&vector_v, XMVector3Normalize(XMLoadFloat3(&vector_v)));
-			//求叉积
-			auto cross_vec_rec = XMVector3Cross(XMLoadFloat3(&vector_u), XMLoadFloat3(&vector_v));
-			auto cross_vec_normalize = XMVector3Normalize(cross_vec_rec);
-			XMStoreFloat3(&vec_cross, cross_vec_normalize);
-
-			//合并至法向量
-			now_frame_data._Ptr->point_data[index_triangle_0].normal.x += vec_cross.x;
-			now_frame_data._Ptr->point_data[index_triangle_0].normal.y += vec_cross.y;
-			now_frame_data._Ptr->point_data[index_triangle_0].normal.z += vec_cross.z;
-			now_frame_data._Ptr->point_data[index_triangle_1].normal.x += vec_cross.x;
-			now_frame_data._Ptr->point_data[index_triangle_1].normal.y += vec_cross.y;
-			now_frame_data._Ptr->point_data[index_triangle_1].normal.z += vec_cross.z;
-			now_frame_data._Ptr->point_data[index_triangle_2].normal.x += vec_cross.x;
-			now_frame_data._Ptr->point_data[index_triangle_2].normal.y += vec_cross.y;
-			now_frame_data._Ptr->point_data[index_triangle_2].normal.z += vec_cross.z;
-
-			//求面法线
-			XMFLOAT3 face_normal;
-			face_normal.x += now_frame_data._Ptr->point_data[index_triangle_0].normal.x;
-			face_normal.y += now_frame_data._Ptr->point_data[index_triangle_0].normal.y;
-			face_normal.z += now_frame_data._Ptr->point_data[index_triangle_0].normal.z;
-			face_normal.x += now_frame_data._Ptr->point_data[index_triangle_1].normal.x;
-			face_normal.y += now_frame_data._Ptr->point_data[index_triangle_1].normal.y;
-			face_normal.z += now_frame_data._Ptr->point_data[index_triangle_1].normal.z;
-			face_normal.x += now_frame_data._Ptr->point_data[index_triangle_2].normal.x;
-			face_normal.y += now_frame_data._Ptr->point_data[index_triangle_2].normal.y;
-			face_normal.z += now_frame_data._Ptr->point_data[index_triangle_2].normal.z;
-			XMStoreFloat3(&face_normal, XMVector3Normalize(XMLoadFloat3(&face_normal)));
-			//还原点法线
-			new_normal[index_triangle_0].x += face_normal.x;
-			new_normal[index_triangle_0].y += face_normal.y;
-			new_normal[index_triangle_0].z += face_normal.z;
-			new_normal[index_triangle_1].x += face_normal.x;
-			new_normal[index_triangle_1].y += face_normal.y;
-			new_normal[index_triangle_1].z += face_normal.z;
-			new_normal[index_triangle_2].x += face_normal.x;
-			new_normal[index_triangle_2].y += face_normal.y;
-			new_normal[index_triangle_2].z += face_normal.z;
-		}
-
-		for (int i = 0; i <  now_frame_data._Ptr->point_num; ++i)
-		{
-			//法向量归一化
-			//XMFLOAT3 vec_normal = now_frame_data._Ptr->point_data[i].normal;
-			XMFLOAT3 vec_normal = new_normal[i];
-			//XMFLOAT3 vec_normal = normals[i];
-			//XMFLOAT3 vec_normal = now_frame_data._Ptr->point_data[i].normal;
-			XMFLOAT3 vec_normal_normalize;
-			XMStoreFloat3(&vec_normal_normalize, XMVector3Normalize(XMLoadFloat3(&vec_normal)));
-			now_frame_data._Ptr->point_data[i].normal = vec_normal_normalize;
-		}
-		*/
 		int a = 0;
 	}
 }
+*/
 //ASSIMP模型解析
 PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in) :PancyModelBasic(desc_file_in)
 {
@@ -1089,12 +1031,15 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		return error_message;
 	}
 	//尝试读取顶点动画
-	std::vector<IndexType> index_pack;
 	std::vector<int32_t> vertex_num;
+	std::vector<int32_t> index_num;
+	std::vector<std::vector<IndexType>> index_data;
 	for (int i = 0; i < model_need->mNumMeshes; i++)
 	{
+		std::vector<IndexType> index_pack;
 		const aiMesh* paiMesh = model_need->mMeshes[i];
-		vertex_num.push_back(paiMesh->mNumFaces);
+		vertex_num.push_back(paiMesh->mNumVertices);
+		index_num.push_back(paiMesh->mNumFaces);
 		for (unsigned int j = 0; j < paiMesh->mNumFaces; j++)
 		{
 			if (paiMesh->mFaces[j].mNumIndices == 3)
@@ -1111,10 +1056,11 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 
 			}
 		}
+		index_data.push_back(index_pack);
 	}
 
-	FBXanim_import = new mesh_animation_FBX(resource_desc_file, 0, 0);
-	FBXanim_import->create(0, 0, 0);
+	FBXanim_import = new mesh_animation_FBX(resource_desc_file);
+	FBXanim_import->create(vertex_num, index_num, index_data);
 	std::unordered_map<pancy_object_id, pancy_object_id> real_material_list;//舍弃不合理材质后的材质编号与之前的编号对比
 	if (!if_auto_material)
 	{
