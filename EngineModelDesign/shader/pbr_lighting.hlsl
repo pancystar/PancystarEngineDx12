@@ -17,12 +17,19 @@ cbuffer per_frame : register(b1)
 	float4x4 invview_matrix;
 	float4 view_position;
 }
+struct mesh_anim
+{
+	float3 pos;
+	float3 norm;
+	float3 tangent;
+};
 //环境光IBL与brdf预计算
 TextureCube environment_IBL_spec    : register(t0);
 TextureCube environment_IBL_diffuse : register(t1);
 texture2D   environment_brdf        : register(t2);
+StructuredBuffer<mesh_anim> input_point: register(t3);
 //模型自带的贴图
-texture2D   texture_model[]         : register(t3);
+texture2D   texture_model[]         : register(t4);
 //静态采样器
 SamplerState samTex_liner : register(s0);
 struct VSInput
@@ -290,10 +297,10 @@ float3 count_pbr_environment(
 float4 PSMain(PSInput pin) : SV_TARGET
 {
 	//采样模型自带的纹理
-	uint self_id_diffuse   = pin.tex_id.x*pin.tex_id.y;     //漫反射贴图
-	uint self_id_normal    = pin.tex_id.x*pin.tex_id.y + 1; //法线贴图
-	uint self_id_metallic  = pin.tex_id.x*pin.tex_id.y + 2; //金属度贴图
-	uint self_id_roughness = pin.tex_id.x*pin.tex_id.y + 3; //粗糙度贴图
+	uint self_id_diffuse   = pin.tex_id.x;     //漫反射贴图
+	uint self_id_normal    = pin.tex_id.x + 1; //法线贴图
+	uint self_id_metallic  = pin.tex_id.x + 2; //金属度贴图
+	uint self_id_roughness = pin.tex_id.x + 3; //粗糙度贴图
 	float4 diffuse_color = texture_model[self_id_diffuse].Sample(samTex_liner, pin.tex_uv.xy);
 	float4 normal_color = texture_model[self_id_normal].Sample(samTex_liner, pin.tex_uv.xy);
 	float4 metallic_color = texture_model[self_id_metallic].Sample(samTex_liner, pin.tex_uv.xy);

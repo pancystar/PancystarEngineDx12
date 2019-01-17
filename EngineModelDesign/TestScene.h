@@ -28,7 +28,9 @@ enum TexType
 	tex_metallic,
 	tex_roughness,
 	tex_specular_smoothness,
-	tex_ambient
+	tex_ambient,
+	tex_subsurface_color,
+	tex_subsurface_value,
 };
 struct BoundingData
 {
@@ -54,6 +56,11 @@ struct skin_tree
 		DirectX::XMStoreFloat4x4(&animation_matrix, DirectX::XMMatrixIdentity());
 		DirectX::XMStoreFloat4x4(&now_matrix, DirectX::XMMatrixIdentity());
 	}
+};
+enum PbrMaterialType
+{
+	PbrType_MetallicRoughness = 0,
+	PbrType_SpecularSmoothness
 };
 //变换向量
 struct vector_animation
@@ -132,6 +139,8 @@ protected:
 	//模型的动画信息
 	bool if_skinmesh;
 	bool if_pointmesh;
+	//模型的pbr格式
+	PbrMaterialType model_pbr_type;
 public:
 	PancyModelBasic(const std::string &desc_file_in);
 	void GetRenderMesh(std::vector<PancySubModel*> &render_mesh);
@@ -184,6 +193,10 @@ public:
 		return if_skinmesh;
 	}
 	virtual ~PancyModelBasic();
+	inline PbrMaterialType GetModelPbrDesc()
+	{
+		return model_pbr_type;
+	}
 private:
 
 	PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
@@ -201,11 +214,7 @@ public:
 	PancyModelJson(const std::string &desc_file_in);
 
 };
-enum PbrMaterialType
-{
-	PbrType_MetallicRoughness = 0,
-	PbrType_SpecularSmoothness
-};
+
 //FBX文件解析
 struct mesh_animation_data
 {
@@ -296,13 +305,21 @@ class PancyModelAssimp : public PancyModelBasic
 	std::unordered_map<std::string, animation_set> skin_animation_map;
 	animation_set now_animation_use;//当前正在使用的动画
 	float now_animation_play_station;//当前正在播放的动画
-	DirectX::XMFLOAT4X4 bind_pose_matrix;
-	bool if_animation_choose;
+	DirectX::XMFLOAT4X4 bind_pose_matrix;//控制模型位置的根骨骼偏移矩阵
 	skin_tree *model_move_skin;//当前控制模型位置的根骨骼
+	bool if_animation_choose;
 	//顶点动画信息
 	mesh_animation_FBX *FBXanim_import;
-	//模型的pbr格式
-	PbrMaterialType moedl_pbr_type;
+	PancystarEngine::EngineFailReason BuildDefaultBuffer(
+		ID3D12GraphicsCommandList* cmdList,
+		int64_t memory_alignment_size,
+		int64_t memory_block_alignment_size,
+		SubMemoryPointer &default_buffer,
+		SubMemoryPointer &upload_buffer,
+		const void* initData,
+		const UINT BufferSize,
+		D3D12_RESOURCE_STATES buffer_type
+	);
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
 	~PancyModelAssimp();
@@ -362,6 +379,7 @@ public:
 			return identity_mat;
 		}
 	}
+	
 private:
 	PancystarEngine::EngineFailReason LoadModel(
 		const std::string &resource_desc_file,
@@ -375,12 +393,10 @@ private:
 	PancystarEngine::EngineFailReason BuildModelData(
 		T *point_need,
 		const aiMesh* paiMesh,
-		int32_t per_mat_size,
-		int32_t material_use
+		int32_t mat_start_id
 	)
 	{
 		//创建顶点缓冲区
-		//point_need = new T[paiMesh->mNumVertices];
 		for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
 		{
 			//从assimp中读取的数据
@@ -441,8 +457,7 @@ private:
 			}
 			//生成纹理使用数据
 			//使用漫反射纹理作为第一个纹理的偏移量,uvid的y通量记录纹理数量
-			point_need[j].tex_id.x = material_use;
-			point_need[j].tex_id.y = per_mat_size + 2;//金属度及粗糙度
+			point_need[j].tex_id.x = mat_start_id;
 			
 		}
 		
@@ -467,6 +482,7 @@ private:
 		}
 		return false;
 	}
+	pancy_object_id insert_new_texture(std::vector<pancy_object_id> &texture_use, const pancy_object_id &tex_id);
 	//骨骼动画计算
 	skin_tree* find_tree(skin_tree* p, char name[]);
 	skin_tree* find_tree(skin_tree* p, int num);
@@ -504,7 +520,7 @@ class scene_test_simple : public SceneRoot
 	ResourceViewPointer table_offset[3];
 	SubMemoryPointer cbuffer[2];
 	//资源绑定(待处理模型)
-	ResourceViewPointer table_offset_model[4];
+	ResourceViewPointer table_offset_model[5];
 	/*
 	cbuffer_per_object
 	cbuffer_per_view
@@ -528,10 +544,7 @@ class scene_test_simple : public SceneRoot
 	DirectX::XMFLOAT3 translation_pos;
 	DirectX::XMFLOAT3 rotation_angle;
 	//pbr纹理
-	pancy_object_id pic_empty_white_id;//空白纹理，标记为未加载
 	pancy_object_id tex_brdf_id;
-	std::vector<pancy_object_id> tex_metallic_id;
-	std::vector<pancy_object_id> tex_roughness_id;
 	pancy_object_id tex_ibl_spec_id;
 	pancy_object_id tex_ibl_diffuse_id;
 	//屏幕空间回读纹理
