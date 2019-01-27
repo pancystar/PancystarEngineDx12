@@ -189,7 +189,15 @@ void EngineModelDesign::ChangeModelRenderLod()
 }
 void EngineModelDesign::on_actionsave_triggered()
 {
-	int a = 0;
+	QString file_name = QFileDialog::getSaveFileName(0, "load model", "./", "JSON File(*.json)", 0, QFileDialog::Option::ReadOnly);
+	if (file_name.toStdString() != "")
+	{
+		PancystarEngine::EngineFailReason check_error = widget->SaveModel(file_name.toStdString());
+		if (!check_error.CheckIfSucceed())
+		{
+			return;
+		}
+	}
 }
 void EngineModelDesign::on_actionexportanimation_triggered()
 {
@@ -219,4 +227,18 @@ void EngineModelDesign::ModelAnimationTimeChange(int size_now)
 	widget->ChangeModelAnimationTime(now_percent);
 	QString now_animation= QString::number(now_percent, 'g', 2);
 	ui.label_model_animation->setText(now_animation);
+}
+void EngineModelDesign::ShowModelNormal() 
+{
+	bool if_show_normal = ui.CheckIfShowNormal->isChecked();
+	bool if_show_normal_point;
+	if (ui.show_normal_vertex->isChecked()) 
+	{
+		if_show_normal_point = true;
+	}
+	else 
+	{
+		if_show_normal_point = false;
+	}
+	widget->ChangeModelNormalShow(if_show_normal, if_show_normal_point);
 }

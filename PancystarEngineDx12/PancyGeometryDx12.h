@@ -56,7 +56,16 @@ namespace PancystarEngine
 		DirectX::XMFLOAT4 bone_weight0; //骨骼权重
 		DirectX::XMFLOAT4 bone_weight1; //骨骼权重
 	};
-	
+	//带顶点动画的顶点格式
+	struct PointCatchCommon
+	{
+		DirectX::XMFLOAT3 position;   //位置
+		DirectX::XMFLOAT3 normal;     //法线
+		DirectX::XMFLOAT3 tangent;    //切线
+		DirectX::XMUINT4  tex_id;     //使用的纹理ID号
+		DirectX::XMFLOAT4 tex_uv;     //用于采样的坐标
+		DirectX::XMUINT4  anim_id;    //对应的动画顶点
+	};
 	//几何体基础类型
 	class GeometryBasic
 	{
@@ -177,6 +186,10 @@ namespace PancystarEngine
 			const uint32_t &input_index_num,
 			bool if_adj_in = false,
 			bool if_save_cpu_data_in = false
+		);
+		PancystarEngine::EngineFailReason GetModelData(
+			std::vector<T> &vertex_data_in,
+			std::vector<IndexType> &index_data_in
 		);
 		~GeometryCommonModel();
 	private:
@@ -353,6 +366,30 @@ namespace PancystarEngine
 		else if (sizeof(IndexType) == sizeof(uint16_t))
 		{
 			geometry_index_buffer_view_in.Format = DXGI_FORMAT_R16_UINT;
+		}
+		return PancystarEngine::succeed;
+	}
+	template<typename T>
+	PancystarEngine::EngineFailReason GeometryCommonModel<T>::GetModelData(
+		std::vector<T> &vertex_data_in,
+		std::vector<IndexType> &index_data_in
+	) 
+	{
+		vertex_data_in.clear();
+		index_data_in.clear();
+		if (!if_save_CPU_data) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL,"the model doesn't save the data to cpu");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get model point data", error_message);
+			return error_message;
+		}
+		for (int i = 0; i < all_vertex; ++i)
+		{
+			vertex_data_in.push_back(vertex_data[i]);
+		}
+		for (int i = 0; i < all_index; ++i)
+		{
+			index_data_in.push_back(index_data[i]);
 		}
 		return PancystarEngine::succeed;
 	}

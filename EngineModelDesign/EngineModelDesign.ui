@@ -851,6 +851,54 @@ p, li { white-space: pre-wrap; }
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>CheckIfShowNormal</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>EngineModelDesignClass</receiver>
+   <slot>ShowModelNormal()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1356</x>
+     <y>418</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1145</x>
+     <y>421</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>show_normal_vertex</sender>
+   <signal>clicked()</signal>
+   <receiver>EngineModelDesignClass</receiver>
+   <slot>ShowModelNormal()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1358</x>
+     <y>445</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1034</x>
+     <y>457</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>show_normal_face</sender>
+   <signal>clicked()</signal>
+   <receiver>EngineModelDesignClass</receiver>
+   <slot>ShowModelNormal()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1357</x>
+     <y>477</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>986</x>
+     <y>498</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>ModelSizeChange(int)</slot>
@@ -864,5 +912,6 @@ p, li { white-space: pre-wrap; }
   <slot>ChangeModelRenderLod()</slot>
   <slot>ModelAnimationChange()</slot>
   <slot>ModelAnimationTimeChange(int)</slot>
+  <slot>ShowModelNormal()</slot>
  </slots>
 </ui>

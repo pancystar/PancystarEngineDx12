@@ -17,6 +17,7 @@ public:
 	}
 	PancystarEngine::EngineFailReason Create(SceneRoot *new_scene_in);
 	PancystarEngine::EngineFailReason LoadModel(const std::string &file_name);
+	PancystarEngine::EngineFailReason SaveModel(const std::string &file_name);
 	PancystarEngine::EngineFailReason ChangeModelSize(const float &scal_size);
 	PancystarEngine::EngineFailReason ChangeModelPosition(const float &pos_x,const float &pos_y, const float &pos_z);
 	PancystarEngine::EngineFailReason ChangeModelRotation(const float &rot_x, const float &rot_y, const float &rot_z);
@@ -28,6 +29,9 @@ public:
 
 	PancystarEngine::EngineFailReason ChangeModelAnimationUsed(const std::string &animation_name);
 	PancystarEngine::EngineFailReason ChangeModelAnimationTime(const float &animation_time);
+
+	PancystarEngine::EngineFailReason ChangeModelNormalShow(const bool &if_show_normal_in, const bool &if_show_normal_point_in);
+
 	inline int32_t GetRenderMeshNum() 
 	{
 		return render_mesh_num;

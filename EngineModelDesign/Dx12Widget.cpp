@@ -78,6 +78,12 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::LoadModel(const std::string
 	return scene_son->LoadDealModel(file_name, render_mesh_num, model_lod, if_have_skinmesh, animation_name);
 
 }
+PancystarEngine::EngineFailReason D3d12RenderWidget::SaveModel(const std::string &file_name)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	if_have_skinmesh = false;
+	return scene_son->SaveDealModel(file_name);
+}
 PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelSize(const float &scal_size)
 {
 	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
@@ -133,7 +139,14 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelAnimationTime(co
 	scene_son->ResetDealModelAnimationTime(animation_time);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason ChangeModelNowShowPart(int32_t now_show_part);
+
+PancystarEngine::EngineFailReason D3d12RenderWidget::ChangeModelNormalShow(const bool &if_show_normal_in, const bool &if_show_normal_point_in)
+{
+	auto scene_son = dynamic_cast<scene_test_simple*>(new_scene);
+	scene_son->ResetDealModelShowNormal(if_show_normal_in, if_show_normal_point_in);
+	return PancystarEngine::succeed;
+}
+
 void D3d12RenderWidget::mouseDoubleClickEvent(QMouseEvent *event_need)
 {
 	//click_pos_x = event_need->x();

@@ -72,6 +72,7 @@ EngineFailReason::EngineFailReason(HRESULT windows_result_in, std::string failed
 	}
 	else
 	{
+		ShowFailedReason();
 		if_succeed = false;
 	}
 }

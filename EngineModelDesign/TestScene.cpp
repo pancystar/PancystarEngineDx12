@@ -64,6 +64,7 @@ PancyModelBasic::~PancyModelBasic()
 //FBX网格动画
 mesh_animation_FBX::mesh_animation_FBX(std::string file_name_in)
 {
+	vertex_pack_num = 0;
 	if_fbx_file = false;
 	if (file_name_in.size() >= 3)
 	{
@@ -78,7 +79,8 @@ mesh_animation_FBX::mesh_animation_FBX(std::string file_name_in)
 PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 	const std::vector<int32_t> &vertex_buffer_num_list,
 	const std::vector<int32_t> &index_buffer_num_list,
-	const std::vector<std::vector<IndexType>> &index_buffer_data_list
+	const std::vector<std::vector<IndexType>> &index_buffer_data_list,
+	const std::vector<std::vector<DirectX::XMFLOAT2>> &UV_buffer_data_list
 )
 {
 	if (!if_fbx_file)
@@ -175,50 +177,16 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 			{
 				return check_error;
 			}
-			UpdateVertexPosition(i, lMesh_list[i], lVertexArray, vertex_buffer_num_list[i], index_buffer_data_list[i]);
+			UpdateVertexPosition(i, lMesh_list[i], lVertexArray, vertex_buffer_num_list[i], index_buffer_data_list[i], UV_buffer_data_list[i]);
 		}
 	}
-	/*
-	//检验动画信息
-	int a = lMesh->GetDeformerCount(FbxDeformer::eVertexCache);
-	const bool lHasVertexCache = lMesh->GetDeformerCount(FbxDeformer::eVertexCache) &&
-		(static_cast<FbxVertexCacheDeformer*>(lMesh->GetDeformer(0, FbxDeformer::eVertexCache)))->Active.Get();
-	if (!lHasVertexCache)
+
+	for (int i = 0; i < vertex_buffer_num_list.size(); ++i)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the FBX file don't have animation message" + std::string(lFilePath->Buffer()));
-		return error_message;
+		vertex_pack_num += vertex_buffer_num_list[i];
 	}
-	//获取时间信息
-	PreparePointCacheData(lScene, anim_start, anim_end);
-	auto FPS_rec = anim_end.GetFrameRate(fbxsdk::FbxTime::EMode::eDefaultMode);
-	auto framenum_rec = anim_end.GetFrameCount();
-	frame_per_second = static_cast<int>(FPS_rec);
-	frame_num = static_cast<int>(framenum_rec);
-	anim_frame.SetTime(0, 0, 0, 1, 0, lScene->GetGlobalSettings().GetTimeMode());
-	if (frame_num == 0)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh animation of FBX file" + std::string(lFilePath->Buffer()));
-		return error_message;
-	}
-	开启顶点动画缓冲
-	auto time_now = anim_start;
-	FbxVector4* lVertexArray = NULL;
-	lVertexArray = new FbxVector4[lVertexCount];
-	for (int i = 0; i < frame_num; ++i)
-	{
-		time_now += anim_frame;
-		int check = time_now.GetFrameCount();
-		check_error = ReadVertexCacheData(lMesh, time_now, lVertexArray);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		UpdateVertexPosition(lMesh, lVertexArray, normal_in, tangent_in);
-	}
-*/
-//
-//计算法线
-//compute_normal();
+	//计算法线
+	//compute_normal();
 	bool lResult = true;
 	DestroySdkObjects(lSdkManager, lResult);
 	check_error = build_buffer();
@@ -228,6 +196,7 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 	}
 	return PancystarEngine::succeed;
 }
+
 PancystarEngine::EngineFailReason mesh_animation_FBX::build_buffer()
 {
 	return PancystarEngine::succeed;
@@ -636,7 +605,8 @@ void mesh_animation_FBX::UpdateVertexPosition(
 	FbxMesh * pMesh,
 	const FbxVector4 * pVertices,
 	const int32_t &vertex_num_assimp,
-	const std::vector<IndexType> &index_assimp
+	const std::vector<IndexType> &index_assimp,
+	const std::vector<DirectX::XMFLOAT2> &uv_assimp
 )
 {
 	//创建基于assimp的顶点数组
@@ -653,6 +623,11 @@ void mesh_animation_FBX::UpdateVertexPosition(
 	lVertices = new float[lVertexCount * VERTEX_STRIDE];
 
 	lVertexCount = 0;
+	std::vector<float> vertex_normal_num;
+	for (int i = 0; i < vertex_num_assimp; ++i)
+	{
+		vertex_normal_num.push_back(0);
+	}
 	for (int lPolygonIndex = 0; lPolygonIndex < lPolygonCount; ++lPolygonIndex)
 	{
 
@@ -678,10 +653,71 @@ void mesh_animation_FBX::UpdateVertexPosition(
 		now_frame_data[vertex_index_assimp_2].position.y = static_cast<float>(pVertices[lControlPointIndex_2][1]);
 		now_frame_data[vertex_index_assimp_2].position.z = -static_cast<float>(pVertices[lControlPointIndex_2][2]);
 
+
 		lVertexCount += 3;
 	}
+	DirectX::XMFLOAT3 *point_buffer = new DirectX::XMFLOAT3[now_frame_data.size()];
+	DirectX::XMFLOAT3 *normal_buffer = new DirectX::XMFLOAT3[now_frame_data.size()];
+	DirectX::XMFLOAT4 *tangent_buffer = new DirectX::XMFLOAT4[now_frame_data.size()];
+	for (int i = 0; i < now_frame_data.size(); ++i)
+	{
+		point_buffer[i] = now_frame_data[i].position;
+	}
+	DirectX::ComputeNormals(&index_assimp[0], index_assimp.size() / 3, point_buffer, now_frame_data.size(), DirectX::CNORM_DEFAULT, normal_buffer);
+	DirectX::ComputeTangentFrame(&index_assimp[0], index_assimp.size() / 3, point_buffer, normal_buffer, &uv_assimp[0], now_frame_data.size(), tangent_buffer);
+	for (int i = 0; i < now_frame_data.size(); ++i)
+	{
+		now_frame_data[i].normal = normal_buffer[i];
+		now_frame_data[i].tangent.x = tangent_buffer[i].x;
+		now_frame_data[i].tangent.y = tangent_buffer[i].y;
+		now_frame_data[i].tangent.z = tangent_buffer[i].z;
+		/*
+		//计算法线
+		DirectX::XMFLOAT3 Tangent1, Tangent2;
+		Tangent1.x = now_frame_data[index_assimp[i]].position.x - now_frame_data[index_assimp[i + 1]].position.x;
+		Tangent1.y = now_frame_data[index_assimp[i]].position.y - now_frame_data[index_assimp[i + 1]].position.y;
+		Tangent1.z = now_frame_data[index_assimp[i]].position.z - now_frame_data[index_assimp[i + 1]].position.z;
+
+		Tangent2.x = now_frame_data[index_assimp[i]].position.x - now_frame_data[index_assimp[i + 2]].position.x;
+		Tangent2.y = now_frame_data[index_assimp[i]].position.y - now_frame_data[index_assimp[i + 2]].position.y;
+		Tangent2.z = now_frame_data[index_assimp[i]].position.z - now_frame_data[index_assimp[i + 2]].position.z;
+		DirectX::XMVECTOR new_normal = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&Tangent1)), DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&Tangent2))));
+		DirectX::XMFLOAT3 normal_data;
+		DirectX::XMStoreFloat3(&normal_data, DirectX::XMVector3Normalize(new_normal));
+		//将法线信息均匀填入顶点
+		now_frame_data[index_assimp[i]].normal.x = (now_frame_data[index_assimp[i]].normal.x*vertex_normal_num[index_assimp[i]] + normal_data.x) / (vertex_normal_num[index_assimp[i]] + 1);
+		now_frame_data[index_assimp[i]].normal.y = (now_frame_data[index_assimp[i]].normal.y*vertex_normal_num[index_assimp[i]] + normal_data.y) / (vertex_normal_num[index_assimp[i]] + 1);
+		now_frame_data[index_assimp[i]].normal.z = (now_frame_data[index_assimp[i]].normal.z*vertex_normal_num[index_assimp[i]] + normal_data.z) / (vertex_normal_num[index_assimp[i]] + 1);
+		vertex_normal_num[index_assimp[i]] += 1;
+		now_frame_data[index_assimp[i + 1]].normal.x = (now_frame_data[index_assimp[i + 1]].normal.x*vertex_normal_num[index_assimp[i + 1]] + normal_data.x) / (vertex_normal_num[index_assimp[i + 1]] + 1);
+		now_frame_data[index_assimp[i + 1]].normal.y = (now_frame_data[index_assimp[i + 1]].normal.y*vertex_normal_num[index_assimp[i + 1]] + normal_data.y) / (vertex_normal_num[index_assimp[i + 1]] + 1);
+		now_frame_data[index_assimp[i + 1]].normal.z = (now_frame_data[index_assimp[i + 1]].normal.z*vertex_normal_num[index_assimp[i + 1]] + normal_data.z) / (vertex_normal_num[index_assimp[i + 1]] + 1);
+		vertex_normal_num[index_assimp[i + 1]] += 1;
+		now_frame_data[index_assimp[i + 2]].normal.x = (now_frame_data[index_assimp[i + 2]].normal.x*vertex_normal_num[index_assimp[i + 2]] + normal_data.x) / (vertex_normal_num[index_assimp[i + 2]] + 1);
+		now_frame_data[index_assimp[i + 2]].normal.y = (now_frame_data[index_assimp[i + 2]].normal.y*vertex_normal_num[index_assimp[i + 2]] + normal_data.y) / (vertex_normal_num[index_assimp[i + 2]] + 1);
+		now_frame_data[index_assimp[i + 2]].normal.z = (now_frame_data[index_assimp[i + 2]].normal.z*vertex_normal_num[index_assimp[i + 2]] + normal_data.z) / (vertex_normal_num[index_assimp[i + 2]] + 1);
+		vertex_normal_num[index_assimp[i + 2]] += 1;
+		*/
+	}
+	delete[] point_buffer;
+	delete[] normal_buffer;
 	anim_data_list[animation_id].push_back(now_frame_data);
 	int a = 0;
+}
+void mesh_animation_FBX::GetMeshAnimData(mesh_animation_data *data)
+{
+	int32_t count_data = 0;
+	for (int i = 0; i < frame_num; ++i)
+	{
+		for (int j = 0; j < anim_data_list.size(); ++j)
+		{
+			for (int k = 0; k < anim_data_list[j][i].size(); ++k)
+			{
+				data[count_data] = anim_data_list[j][i][k];
+				count_data += 1;
+			}
+		}
+	}
 }
 /*
 void mesh_animation_FBX::compute_normal()
@@ -746,6 +782,8 @@ PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::s
 	}
 	//FBX点缓存数据
 	FBXanim_import = NULL;
+	//动画数据
+	now_animation_play_station = 0.0f;
 }
 PancyModelAssimp::~PancyModelAssimp()
 {
@@ -821,15 +859,29 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildTextureRes(std::string 
 }
 pancy_object_id PancyModelAssimp::insert_new_texture(std::vector<pancy_object_id> &texture_use, const pancy_object_id &tex_id)
 {
-	for (int i = 0; i < texture_use.size(); ++i) 
+	for (int i = 0; i < texture_use.size(); ++i)
 	{
-		if (texture_use[i] == tex_id) 
+		if (texture_use[i] == tex_id)
 		{
 			return i;
 		}
 	}
 	texture_use.push_back(tex_id);
 	return texture_use.size() - 1;
+}
+void PancyModelAssimp::SaveBoneTree(skin_tree *bone_data)
+{
+	out_stream.write("*heaphead*", sizeof("*heaphead*"));
+	out_stream.write(reinterpret_cast<char *>(bone_data), sizeof(*bone_data));
+	if (bone_data->son != NULL)
+	{
+		SaveBoneTree(bone_data->son);
+	}
+	out_stream.write("*heaptail*", sizeof("*heaptail*"));
+	if (bone_data->brother != NULL)
+	{
+		SaveBoneTree(bone_data->brother);
+	}
 }
 PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	const std::string &resource_desc_file,
@@ -1196,12 +1248,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
 		return error_message;
 	}
-	
+
 	std::vector<int32_t> vertex_num;
 	std::vector<int32_t> index_num;
 	std::vector<std::vector<IndexType>> index_data;
+	std::vector<std::vector<DirectX::XMFLOAT2>> UV_data;
 	for (int i = 0; i < model_need->mNumMeshes; i++)
 	{
+		std::vector<DirectX::XMFLOAT2> new_uv_list;
 		std::vector<IndexType> index_pack;
 		const aiMesh* paiMesh = model_need->mMeshes[i];
 		vertex_num.push_back(paiMesh->mNumVertices);
@@ -1222,6 +1276,23 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 
 			}
 		}
+		for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
+		{
+			DirectX::XMFLOAT2 now_uv;
+			if (paiMesh->HasTextureCoords(0))
+			{
+				now_uv.x = paiMesh->mTextureCoords[0][j].x;
+				now_uv.y = paiMesh->mTextureCoords[0][j].y;
+				now_uv.y = 1 - now_uv.y;
+			}
+			else
+			{
+				now_uv.x = 0.0f;
+				now_uv.y = 0.0f;
+			}
+			new_uv_list.push_back(now_uv);
+		}
+		UV_data.push_back(new_uv_list);
 		index_data.push_back(index_pack);
 	}
 	std::unordered_map<pancy_object_id, pancy_object_id> real_material_list;//舍弃不合理材质后的材质编号与之前的编号对比
@@ -1294,7 +1365,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 					string root_name = name_diffuse.substr(0, start_compare);
 					material_name_list.insert(std::pair<pancy_object_id, std::string>(real_material_num, root_name));
 					//将纹理数据加载到材质表
-					auto now_texture_id_diffuse = insert_new_texture(texture_use,id_need);
+					auto now_texture_id_diffuse = insert_new_texture(texture_use, id_need);
 					mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, now_texture_id_diffuse));
 					//texture_use.push_back(id_need);
 					for (auto tex_deal = tex_tail_name.begin(); tex_deal != tex_tail_name.end(); ++tex_deal)
@@ -1321,25 +1392,25 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 										return check_error;
 									}
 								}
-								else 
+								else
 								{
 									//纹理文件不存在，使用空白图片代替
 									texture_not_find.push_back(tex_name_combine);
 									auto empty_texture_now = tex_empty.find(tex_deal->first);
-									if (empty_texture_now != tex_empty.end()) 
+									if (empty_texture_now != tex_empty.end())
 									{
 										id_need = empty_texture_now->second;
 									}
-									else 
+									else
 									{
 										PancystarEngine::EngineFailReason error_message(E_FAIL, "empty texture haven't load: " + resource_desc_file);
 										PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model material", error_message);
 										return error_message;
 									}
 								}
-								
+
 							}
-							else 
+							else
 							{
 								//纹理文件不存在，使用空白图片代替
 								texture_not_find.push_back(root_name + "::empty");
@@ -1409,11 +1480,39 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		}
 		model_lod_divide.push_back(Lod_block_list);
 	}
-	if (if_pointmesh) 
+	//加载顶点动画信息
+	if (if_pointmesh)
 	{
 		//尝试读取顶点动画
 		FBXanim_import = new mesh_animation_FBX(model_name);
-		FBXanim_import->create(vertex_num, index_num, index_data);
+		check_error = FBXanim_import->create(vertex_num, index_num, index_data, UV_data);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		int point_number = FBXanim_import->GetMeshAnimNumber();
+		mesh_animation_data *new_data = new mesh_animation_data[point_number];
+		FBXanim_import->GetMeshAnimData(new_data);
+		//拷贝顶点动画数据到buffer
+		SubMemoryPointer vertex_buffer_upload;
+		PancyRenderCommandList *copy_render_list;
+		uint32_t copy_render_list_ID;
+		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
+		check_error = BuildDefaultBuffer(copy_render_list->GetCommandList().Get(), 4194304, 131072, vertex_anim_buffer, vertex_buffer_upload, new_data, point_number * sizeof(mesh_animation_data), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//完成渲染队列并提交拷贝
+		copy_render_list->UnlockPrepare();
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &copy_render_list_ID);
+		//在GPU上插一个监控眼位
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(upload_fence_value);
+		//等待拷贝介绍
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(upload_fence_value);
+		//删除动态资源
+		SubresourceControl::GetInstance()->FreeSubResource(vertex_buffer_upload);
+		delete[] new_data;
 	}
 	//预加载骨骼信息
 	if (if_skinmesh)
@@ -1422,7 +1521,8 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	}
 	//填充几何体信息
 	int now_used_bone_num = 0;
-	
+
+	int mesh_vertex_offset = 0;
 	for (int i = 0; i < model_need->mNumMeshes; i++)
 	{
 		const aiMesh* paiMesh = model_need->mMeshes[i];
@@ -1435,7 +1535,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			return error_message;
 		}
 		pancy_object_id material_use = real_material_find->second;
-		
+
 		auto mat_list_now = material_list.find(material_use);
 		if (mat_list_now == material_list.end())
 		{
@@ -1467,166 +1567,186 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 		}
 		//创建缓冲区
-		if (if_skinmesh || if_pointmesh)
+		if (if_skinmesh)
 		{
-			if (if_skinmesh)
+			PancystarEngine::PointSkinCommon8 *point_need = new PancystarEngine::PointSkinCommon8[paiMesh->mNumVertices];
+			check_error = BuildModelData(point_need, paiMesh, mat_stat_id);
+			if (!check_error.CheckIfSucceed())
 			{
-				PancystarEngine::PointSkinCommon8 *point_need = new PancystarEngine::PointSkinCommon8[paiMesh->mNumVertices];
-				check_error = BuildModelData(point_need, paiMesh, mat_stat_id);
-				if (!check_error.CheckIfSucceed())
+				return check_error;
+			}
+			//填充动画数据
+			float *bone_removed_weight = new float[paiMesh->mNumVertices];
+			//清空骨骼蒙皮信息
+			for (int j = 0; j < paiMesh->mNumVertices; ++j)
+			{
+				point_need[j].bone_id.x = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
+				point_need[j].bone_id.y = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
+				point_need[j].bone_id.z = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
+				point_need[j].bone_id.w = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
+				point_need[j].bone_weight0.x = 0.0f;
+				point_need[j].bone_weight0.y = 0.0f;
+				point_need[j].bone_weight0.z = 0.0f;
+				point_need[j].bone_weight0.w = 0.0f;
+				point_need[j].bone_weight1.x = 0.0f;
+				point_need[j].bone_weight1.y = 0.0f;
+				point_need[j].bone_weight1.z = 0.0f;
+				point_need[j].bone_weight1.w = 0.0f;
+				bone_removed_weight[j] = 0.0f;
+			}
+			//预填充蒙皮信息
+			for (int j = 0; j < paiMesh->mNumBones; ++j)
+			{
+				skin_tree * now_node = find_tree(root_skin, paiMesh->mBones[j]->mName.data);
+				if (now_node->bone_number == NouseAssimpStruct)
 				{
-					return check_error;
+					now_node->bone_number = now_used_bone_num++;
+					bone_num += 1;
 				}
-				//填充动画数据
-				float *bone_removed_weight = new float[paiMesh->mNumVertices];
-				//清空骨骼蒙皮信息
-				for (int j = 0; j < paiMesh->mNumVertices; ++j)
+				tree_node_num[i][j] = now_node->bone_number;
+				for (int k = 0; k < paiMesh->mBones[j]->mNumWeights; ++k)
 				{
-					point_need[j].bone_id.x = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
-					point_need[j].bone_id.y = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
-					point_need[j].bone_id.z = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
-					point_need[j].bone_id.w = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
-					point_need[j].bone_weight0.x = 0.0f;
-					point_need[j].bone_weight0.y = 0.0f;
-					point_need[j].bone_weight0.z = 0.0f;
-					point_need[j].bone_weight0.w = 0.0f;
-					point_need[j].bone_weight1.x = 0.0f;
-					point_need[j].bone_weight1.y = 0.0f;
-					point_need[j].bone_weight1.z = 0.0f;
-					point_need[j].bone_weight1.w = 0.0f;
-					bone_removed_weight[j] = 0.0f;
-				}
-				//预填充蒙皮信息
-				for (int j = 0; j < paiMesh->mNumBones; ++j)
-				{
-					skin_tree * now_node = find_tree(root_skin, paiMesh->mBones[j]->mName.data);
-					if (now_node->bone_number == NouseAssimpStruct)
+					//先将8个骨骼的id和数据取出以备后续使用
+					uint32_t bone_id[8];
+					bone_id[0] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x / (MaxBoneNum + 100);
+					bone_id[1] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y / (MaxBoneNum + 100);
+					bone_id[2] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z / (MaxBoneNum + 100);
+					bone_id[3] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.w / (MaxBoneNum + 100);
+					bone_id[4] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x % (MaxBoneNum + 100);
+					bone_id[5] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y % (MaxBoneNum + 100);
+					bone_id[6] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z % (MaxBoneNum + 100);
+					bone_id[7] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.w % (MaxBoneNum + 100);
+					float bone_weight[8];
+					bone_weight[0] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.x;
+					bone_weight[1] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.y;
+					bone_weight[2] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.z;
+					bone_weight[3] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.w;
+					bone_weight[4] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.x;
+					bone_weight[5] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.y;
+					bone_weight[6] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.z;
+					bone_weight[7] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.w;
+					//挑选一个ID空闲的骨骼数据进行写入
+					bool if_success_load = false;
+					for (int i = 0; i < 8; ++i)
 					{
-						now_node->bone_number = now_used_bone_num++;
-						bone_num += 1;
+						if (bone_id[i] == MaxBoneNum + 99)
+						{
+							bone_id[i] = now_node->bone_number;
+							bone_weight[i] = paiMesh->mBones[j]->mWeights[k].mWeight;
+							if_success_load = true;
+							break;
+						}
 					}
-					tree_node_num[i][j] = now_node->bone_number;
-					for (int k = 0; k < paiMesh->mBones[j]->mNumWeights; ++k)
+					//如果8个骨骼被占满，则挑选一个权重最轻的骨骼，并比较是否需要更新
+					if (!if_success_load)
 					{
-						//先将8个骨骼的id和数据取出以备后续使用
-						uint32_t bone_id[8];
-						bone_id[0] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x / (MaxBoneNum + 100);
-						bone_id[1] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y / (MaxBoneNum + 100);
-						bone_id[2] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z / (MaxBoneNum + 100);
-						bone_id[3] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.w / (MaxBoneNum + 100);
-						bone_id[4] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x % (MaxBoneNum + 100);
-						bone_id[5] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y % (MaxBoneNum + 100);
-						bone_id[6] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z % (MaxBoneNum + 100);
-						bone_id[7] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.w % (MaxBoneNum + 100);
-						float bone_weight[8];
-						bone_weight[0] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.x;
-						bone_weight[1] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.y;
-						bone_weight[2] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.z;
-						bone_weight[3] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.w;
-						bone_weight[4] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.x;
-						bone_weight[5] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.y;
-						bone_weight[6] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.z;
-						bone_weight[7] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.w;
-						//挑选一个ID空闲的骨骼数据进行写入
-						bool if_success_load = false;
+						int min_id = 0;
+						float min_weight = 99.99;
 						for (int i = 0; i < 8; ++i)
 						{
-							if (bone_id[i] == MaxBoneNum + 99)
+							if (min_weight > bone_weight[i])
 							{
-								bone_id[i] = now_node->bone_number;
-								bone_weight[i] = paiMesh->mBones[j]->mWeights[k].mWeight;
-								if_success_load = true;
-								break;
+								min_id = i;
+								min_weight = bone_weight[i];
 							}
 						}
-						//如果8个骨骼被占满，则挑选一个权重最轻的骨骼，并比较是否需要更新
-						if (!if_success_load)
+						if (bone_weight[min_id] < paiMesh->mBones[j]->mWeights[k].mWeight)
 						{
-							int min_id = 0;
-							float min_weight = 99.99;
-							for (int i = 0; i < 8; ++i)
-							{
-								if (min_weight > bone_weight[i])
-								{
-									min_id = i;
-									min_weight = bone_weight[i];
-								}
-							}
-							if (bone_weight[min_id] < paiMesh->mBones[j]->mWeights[k].mWeight)
-							{
-								//将被移除的骨骼权重保留，以备之后进行调和加权
-								bone_removed_weight[paiMesh->mBones[j]->mWeights[k].mVertexId] += bone_weight[min_id];
-								//使用新的骨骼代替之前权重较小的骨骼
-								bone_id[min_id] = now_node->bone_number;
-								bone_weight[min_id] = paiMesh->mBones[j]->mWeights[k].mWeight;
-							}
-							else
-							{
-								bone_removed_weight[paiMesh->mBones[j]->mWeights[k].mVertexId] += paiMesh->mBones[j]->mWeights[k].mWeight;
-							}
+							//将被移除的骨骼权重保留，以备之后进行调和加权
+							bone_removed_weight[paiMesh->mBones[j]->mWeights[k].mVertexId] += bone_weight[min_id];
+							//使用新的骨骼代替之前权重较小的骨骼
+							bone_id[min_id] = now_node->bone_number;
+							bone_weight[min_id] = paiMesh->mBones[j]->mWeights[k].mWeight;
 						}
-						//将处理完毕的骨骼蒙皮信息还原到顶点
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x = bone_id[0] * (MaxBoneNum + 100) + bone_id[4];
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y = bone_id[1] * (MaxBoneNum + 100) + bone_id[5];
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z = bone_id[2] * (MaxBoneNum + 100) + bone_id[6];
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.w = bone_id[3] * (MaxBoneNum + 100) + bone_id[7];
-
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.x = bone_weight[0];
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.y = bone_weight[1];
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.z = bone_weight[2];
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.w = bone_weight[3];
-
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.x = bone_weight[4];
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.y = bone_weight[5];
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.z = bone_weight[6];
-						point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.w = bone_weight[7];
-
-
+						else
+						{
+							bone_removed_weight[paiMesh->mBones[j]->mWeights[k].mVertexId] += paiMesh->mBones[j]->mWeights[k].mWeight;
+						}
 					}
-				}
-				//将被舍弃的蒙皮信息分配给已使用的骨骼
-				for (int j = 0; j < paiMesh->mNumVertices; ++j)
-				{
-					float now_bone_weight[8];
-					//将骨骼权重取出
-					now_bone_weight[0] = point_need[j].bone_weight0.x;
-					now_bone_weight[1] = point_need[j].bone_weight0.y;
-					now_bone_weight[2] = point_need[j].bone_weight0.z;
-					now_bone_weight[3] = point_need[j].bone_weight0.w;
+					//将处理完毕的骨骼蒙皮信息还原到顶点
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x = bone_id[0] * (MaxBoneNum + 100) + bone_id[4];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y = bone_id[1] * (MaxBoneNum + 100) + bone_id[5];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z = bone_id[2] * (MaxBoneNum + 100) + bone_id[6];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.w = bone_id[3] * (MaxBoneNum + 100) + bone_id[7];
 
-					now_bone_weight[4] = point_need[j].bone_weight1.x;
-					now_bone_weight[5] = point_need[j].bone_weight1.y;
-					now_bone_weight[6] = point_need[j].bone_weight1.z;
-					now_bone_weight[7] = point_need[j].bone_weight1.w;
-					float final_weight_use = 0.0f;
-					for (int k = 0; k < 8; ++k)
-					{
-						final_weight_use += now_bone_weight[k];
-					}
-					for (int k = 0; k < 8; ++k)
-					{
-						now_bone_weight[k] += (now_bone_weight[k] / final_weight_use) * bone_removed_weight[j];
-					}
-					//将处理完的骨骼权重恢复
-					point_need[j].bone_weight0.x = now_bone_weight[0];
-					point_need[j].bone_weight0.y = now_bone_weight[1];
-					point_need[j].bone_weight0.z = now_bone_weight[2];
-					point_need[j].bone_weight0.w = now_bone_weight[3];
-					point_need[j].bone_weight1.x = now_bone_weight[4];
-					point_need[j].bone_weight1.y = now_bone_weight[5];
-					point_need[j].bone_weight1.z = now_bone_weight[6];
-					point_need[j].bone_weight1.w = now_bone_weight[7];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.x = bone_weight[0];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.y = bone_weight[1];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.z = bone_weight[2];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight0.w = bone_weight[3];
+
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.x = bone_weight[4];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.y = bone_weight[5];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.z = bone_weight[6];
+					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.w = bone_weight[7];
+
+
 				}
-				PancySubModel *new_submodel = new PancySubModel();
-				check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
-				if (!check_error.CheckIfSucceed())
-				{
-					return check_error;
-				}
-				model_resource.push_back(new_submodel);
-				delete[] point_need;
-				delete[] bone_removed_weight;
 			}
+			//将被舍弃的蒙皮信息分配给已使用的骨骼
+			for (int j = 0; j < paiMesh->mNumVertices; ++j)
+			{
+				float now_bone_weight[8];
+				//将骨骼权重取出
+				now_bone_weight[0] = point_need[j].bone_weight0.x;
+				now_bone_weight[1] = point_need[j].bone_weight0.y;
+				now_bone_weight[2] = point_need[j].bone_weight0.z;
+				now_bone_weight[3] = point_need[j].bone_weight0.w;
+
+				now_bone_weight[4] = point_need[j].bone_weight1.x;
+				now_bone_weight[5] = point_need[j].bone_weight1.y;
+				now_bone_weight[6] = point_need[j].bone_weight1.z;
+				now_bone_weight[7] = point_need[j].bone_weight1.w;
+				float final_weight_use = 0.0f;
+				for (int k = 0; k < 8; ++k)
+				{
+					final_weight_use += now_bone_weight[k];
+				}
+				for (int k = 0; k < 8; ++k)
+				{
+					now_bone_weight[k] += (now_bone_weight[k] / final_weight_use) * bone_removed_weight[j];
+				}
+				//将处理完的骨骼权重恢复
+				point_need[j].bone_weight0.x = now_bone_weight[0];
+				point_need[j].bone_weight0.y = now_bone_weight[1];
+				point_need[j].bone_weight0.z = now_bone_weight[2];
+				point_need[j].bone_weight0.w = now_bone_weight[3];
+				point_need[j].bone_weight1.x = now_bone_weight[4];
+				point_need[j].bone_weight1.y = now_bone_weight[5];
+				point_need[j].bone_weight1.z = now_bone_weight[6];
+				point_need[j].bone_weight1.w = now_bone_weight[7];
+			}
+			PancySubModel *new_submodel = new PancySubModel();
+			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			model_resource.push_back(new_submodel);
+			delete[] point_need;
+			delete[] bone_removed_weight;
+		}
+		else if (if_pointmesh)
+		{
+			PancystarEngine::PointCatchCommon *point_need = new PancystarEngine::PointCatchCommon[paiMesh->mNumVertices];
+			check_error = BuildModelData(point_need, paiMesh, mat_stat_id);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			//填充动画数据
+			for (int j = 0; j < paiMesh->mNumVertices; ++j)
+			{
+				point_need[j].anim_id.x = 1;
+				point_need[j].anim_id.y = mesh_vertex_offset + j;
+			}
+			PancySubModel *new_submodel = new PancySubModel();
+			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			model_resource.push_back(new_submodel);
+			delete[] point_need;
 		}
 		else
 		{
@@ -1646,6 +1766,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			delete[] point_need;
 		}
 		delete[] index_need;
+		mesh_vertex_offset += paiMesh->mNumVertices;
 	}
 	if (if_skinmesh)
 	{
@@ -1857,8 +1978,286 @@ void PancyModelAssimp::update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT
 	//DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, DirectX::XM_PIDIV4, 0.1f, 1000.0f);
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, &world_mat, sizeof(world_mat));
 }
+PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device* device_pancy, const std::string &out_file_in)
+{
+	PancystarEngine::EngineFailReason check_error;
+	//处理存储文件的文件名
+	std::string file_root_name = out_file_in.substr(0, out_file_in.size() - 5);
+	std::string file_root_real_name;
+	int32_t st_pos = 0;
+	for (int32_t i = 0; i < file_root_name.size(); ++i)
+	{
+		if (file_root_name[i] == '\\' || file_root_name[i] == '/')
+		{
+			st_pos = i + 1;
+		}
+	}
+	if (st_pos < file_root_name.size())
+	{
+		file_root_real_name = file_root_name.substr(st_pos, file_root_name.size() - st_pos);
+	}
+	else
+	{
+		file_root_real_name = "";
+	}
+	//创建json文件
+	Json::Value json_data_outmodel;
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "IfHaveSkinAnimation", if_skinmesh);
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "IfHavePoinAnimation", if_pointmesh);
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "PbrType", PancyJsonTool::GetInstance()->GetEnumName(typeid(model_pbr_type).name(), model_pbr_type));
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "model_num", model_lod_divide.size());
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "material_num", material_list.size());
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "texture_num", texture_list.size());
+	for (int i = 0; i < texture_list.size(); ++i)
+	{
+		//存储每一张纹理数据
+		std::string now_tex_file_name = file_root_name + "_tex" + std::to_string(i) + ".dds";
+		std::string now_tex_file_real_name = file_root_real_name + "_tex" + std::to_string(i) + ".dds";
+		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "texture_file", now_tex_file_real_name);
+		check_error = PancystarEngine::PancyTextureControl::GetInstance()->SaveTextureToFile(device_pancy, texture_list[i], now_tex_file_name, true, true);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	//填充动画信息
+	if (if_skinmesh)
+	{
+		//存储骨骼数据
+		out_stream.open(file_root_name + ".bone", ios::binary);
+		SaveBoneTree(root_skin);
+		out_stream.close();
+		//存储动画数据
+		for (auto animation_deal = skin_animation_map.begin(); animation_deal != skin_animation_map.end(); ++animation_deal)
+		{
+			//将动画信息写入json
+			std::string animation_real_name_now = file_root_real_name + "_anim_" + animation_deal->first + ".skinanim";
+			PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "SkinAnimation", animation_real_name_now);
+			//将动画细节导入到文件
+			std::string animation_name_now = file_root_name + "_anim_" + animation_deal->first + ".skinanim";
+			out_stream.open(animation_name_now, ios::binary);
+			//将一个动画的每个骨骼的变换信息写入文件
+			for (int i = 0; i < animation_deal->second.data_animition.size(); ++i)
+			{
+				//当前变换的骨骼名称的长度
+				auto bone_name_size = animation_deal->second.data_animition[i].bone_name.size();
+				out_stream.write(reinterpret_cast<char*>(&bone_name_size), sizeof(bone_name_size));
+				//当前变换的骨骼名称
+				out_stream.write(animation_deal->second.data_animition[i].bone_name.c_str(), animation_deal->second.data_animition[i].bone_name.size() * sizeof(char));
+				//所有旋转数据
+				auto rottation_key_size = animation_deal->second.data_animition[i].rotation_key.size();
+				out_stream.write(reinterpret_cast<char*>(&rottation_key_size), sizeof(rottation_key_size));
+				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].rotation_key[0]), animation_deal->second.data_animition[i].rotation_key.size() * sizeof(animation_deal->second.data_animition[i].rotation_key[0]));
+				//所有平移数据
+				auto translation_key_size = animation_deal->second.data_animition[i].translation_key.size();
+				out_stream.write(reinterpret_cast<char*>(&translation_key_size), sizeof(translation_key_size));
+				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].translation_key[0]), animation_deal->second.data_animition[i].translation_key.size() * sizeof(animation_deal->second.data_animition[i].translation_key[0]));
+				//所有缩放数据
+				auto scaling_key_size = animation_deal->second.data_animition[i].scaling_key.size();
+				out_stream.write(reinterpret_cast<char*>(&scaling_key_size), sizeof(scaling_key_size));
+				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].scaling_key[0]), animation_deal->second.data_animition[i].scaling_key.size() * sizeof(animation_deal->second.data_animition[i].scaling_key[0]));
+			}
+			out_stream.close();
+		}
+	}
+	else if (if_pointmesh)
+	{
+		//存储顶点动画数据
+		int point_number = FBXanim_import->GetMeshAnimNumber();
+		mesh_animation_data *new_data = new mesh_animation_data[point_number];
+		FBXanim_import->GetMeshAnimData(new_data);
+		//将动画信息写入json
+		std::string animation_real_name_now = file_root_real_name + "_anim_" + "basic" + ".pointcatch";
+		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "PointAnimation", animation_real_name_now);
+		//将动画细节导入到文件
+		std::string animation_name_now = file_root_name + "_anim_" + "basic" + ".pointcatch";
+		out_stream.open(animation_name_now, ios::binary);
+		auto all_frame_num = FBXanim_import->get_frame_num();
+		auto perframe_size = FBXanim_import->GetMeshSizePerFrame();
+		out_stream.write(reinterpret_cast<char*>(&all_frame_num), sizeof(all_frame_num));
+		out_stream.write(reinterpret_cast<char*>(&perframe_size), sizeof(perframe_size));
+		out_stream.write(reinterpret_cast<char*>(&point_number), sizeof(point_number));
+		int32_t size_need = point_number * sizeof(mesh_animation_data);
+		out_stream.write(reinterpret_cast<char*>(new_data), size_need);
+		
+		out_stream.close();
+		delete[] new_data;
+	}
+	//整合顶点数据
+	for (int i = 0; i < model_lod_divide.size(); ++i)
+	{
+		if (if_skinmesh)
+		{
+			//填充顶点及索引
+			std::vector<PancystarEngine::PointSkinCommon8> vertex_data_pack;
+			std::vector<IndexType> index_data_pack;
+			for (int j = 0; j < model_lod_divide[i].size(); ++j)
+			{
+				std::vector<PancystarEngine::PointSkinCommon8> vertex_data_in;
+				std::vector<IndexType> index_data_in;
+				model_resource_list[model_lod_divide[i][j]]->GetSubModelData(vertex_data_in, index_data_in);
+				for (int k = 0; k < index_data_in.size(); ++k)
+				{
+					//添加索引号
+					index_data_pack.push_back(index_data_in[i] + vertex_data_pack.size());
+				}
+				for (int k = 0; k < vertex_data_in.size(); ++k)
+				{
+					//添加顶点信息
+					vertex_data_pack.push_back(vertex_data_in[i]);
+				}
+			}
+			//存储顶点及索引
+			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
+			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
+			out_stream.close();
+			out_stream.open(file_root_name + std::to_string(i) + ".index", ios::binary);
+			out_stream.write(reinterpret_cast<char*>(&index_data_pack[0]), index_data_pack.size() * sizeof(index_data_pack[0]));
+			out_stream.close();
+		}
+		else if (if_pointmesh)
+		{
+			//填充顶点及索引
+			std::vector<PancystarEngine::PointCatchCommon> vertex_data_pack;
+			std::vector<IndexType> index_data_pack;
+			for (int j = 0; j < model_lod_divide[i].size(); ++j)
+			{
+				std::vector<PancystarEngine::PointCatchCommon> vertex_data_in;
+				std::vector<IndexType> index_data_in;
+				model_resource_list[model_lod_divide[i][j]]->GetSubModelData(vertex_data_in, index_data_in);
+				for (int k = 0; k < index_data_in.size(); ++k)
+				{
+					//添加索引号
+					index_data_pack.push_back(index_data_in[i] + vertex_data_pack.size());
+				}
+				for (int k = 0; k < vertex_data_in.size(); ++k)
+				{
+					//添加顶点信息
+					vertex_data_pack.push_back(vertex_data_in[i]);
+				}
+			}
+			//存储顶点及索引
+			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
+			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
+			out_stream.close();
+			out_stream.open(file_root_name + std::to_string(i) + ".index", ios::binary);
+			out_stream.write(reinterpret_cast<char*>(&index_data_pack[0]), index_data_pack.size() * sizeof(index_data_pack[0]));
+			out_stream.close();
+		}
+		else
+		{
+			std::vector<PancystarEngine::PointCommon> vertex_data_pack;
+			std::vector<IndexType> index_data_pack;
+			//填充顶点及索引
+			for (int j = 0; j < model_lod_divide[i].size(); ++j)
+			{
+				std::vector<PancystarEngine::PointCommon> vertex_data_in;
+				std::vector<IndexType> index_data_in;
+				model_resource_list[model_lod_divide[i][j]]->GetSubModelData(vertex_data_in, index_data_in);
+				for (int k = 0; k < index_data_in.size(); ++k)
+				{
+					//添加索引号
+					index_data_pack.push_back(index_data_in[i] + vertex_data_pack.size());
+				}
+				for (int k = 0; k < vertex_data_in.size(); ++k)
+				{
+					//添加顶点信息
+					vertex_data_pack.push_back(vertex_data_in[i]);
+				}
+			}
+			//存储顶点及索引
+			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
+			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
+			out_stream.close();
+			out_stream.open(file_root_name + std::to_string(i) + ".index", ios::binary);
+			out_stream.write(reinterpret_cast<char*>(&index_data_pack[0]), index_data_pack.size() * sizeof(index_data_pack[0]));
+			out_stream.close();
+		}
+
+	}
+	//向json文件写入材质信息
+
+	for (auto material_data_deal = material_list.begin(); material_data_deal != material_list.end(); ++material_data_deal)
+	{
+		Json::Value json_data_material;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_material, "materialID", material_data_deal->first);
+		if (material_data_deal->second.find(TexType::tex_diffuse) != material_data_deal->second.end())
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(json_data_material, "Albedotex", material_data_deal->second[TexType::tex_diffuse]);
+		}
+		else
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the albedo tex to export");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+			return error_message;
+		}
+		if (material_data_deal->second.find(TexType::tex_normal) != material_data_deal->second.end())
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(json_data_material, "Normaltex", material_data_deal->second[TexType::tex_normal]);
+		}
+		else
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the normal tex to export");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+			return error_message;
+		}
+		if (material_data_deal->second.find(TexType::tex_ambient) != material_data_deal->second.end())
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(json_data_material, "Ambienttex", material_data_deal->second[TexType::tex_ambient]);
+		}
+		else
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the ambient tex to export");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+			return error_message;
+		}
+		if (model_pbr_type == PbrMaterialType::PbrType_MetallicRoughness)
+		{
+			if (material_data_deal->second.find(TexType::tex_metallic) != material_data_deal->second.end())
+			{
+				PancyJsonTool::GetInstance()->SetJsonValue(json_data_material, "MetallicTex", material_data_deal->second[TexType::tex_metallic]);
+			}
+			else
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the metallic tex to export");
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+				return error_message;
+			}
+			if (material_data_deal->second.find(TexType::tex_roughness) != material_data_deal->second.end())
+			{
+				PancyJsonTool::GetInstance()->SetJsonValue(json_data_material, "RoughnessTex", material_data_deal->second[TexType::tex_roughness]);
+			}
+			else
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the roughness tex to export");
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+				return error_message;
+			}
+		}
+		else if (model_pbr_type == PbrMaterialType::PbrType_SpecularSmoothness) 
+		{
+			if (material_data_deal->second.find(TexType::tex_specular_smoothness) != material_data_deal->second.end())
+			{
+				PancyJsonTool::GetInstance()->SetJsonValue(json_data_material, "SpecularSmoothTex", material_data_deal->second[TexType::tex_specular_smoothness]);
+			}
+			else
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the specularsmooth tex to export");
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+				return error_message;
+			}
+		}
+		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "material", json_data_material);
+	}
+	check_error = PancyJsonTool::GetInstance()->WriteValueToJson(json_data_outmodel, out_file_in);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
 //顶点动画
-PancystarEngine::EngineFailReason BuildDefaultBuffer(
+PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 	ID3D12GraphicsCommandList* cmdList,
 	int64_t memory_alignment_size,
 	int64_t memory_block_alignment_size,
@@ -1867,7 +2266,7 @@ PancystarEngine::EngineFailReason BuildDefaultBuffer(
 	const void* initData,
 	const UINT BufferSize,
 	D3D12_RESOURCE_STATES buffer_type
-) 
+)
 {
 	HRESULT hr;
 	PancystarEngine::EngineFailReason check_error;
@@ -2195,7 +2594,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list(const a
 		}
 		else
 		{
-			now_animation_name += "::";
+			now_animation_name += "_";
 			now_animation_name += model_need->mAnimations[i]->mName.data;
 		}
 		animation_set now_anim_set;
@@ -2847,6 +3246,27 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 {
 	PancystarEngine::EngineFailReason check_error;
+
+	if (model_deal->CheckIfPointMesh())
+	{
+		ResourceViewPointer animation_buffer_pointer = table_offset_model[3];
+		PancyModelAssimp *pointer = dynamic_cast<PancyModelAssimp*>(model_deal);
+		int32_t buffer_size = 0;
+		int32_t stride_size = 0;
+		SubMemoryPointer buffer_need = pointer->GetPointAnimationBuffer(buffer_size, stride_size);
+		D3D12_SHADER_RESOURCE_VIEW_DESC  SRV_desc = {};
+		SRV_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		SRV_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+		SRV_desc.Buffer.StructureByteStride = stride_size;
+		SRV_desc.Buffer.NumElements = buffer_size;
+		SRV_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+		SRV_desc.Buffer.FirstElement = 0;
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(animation_buffer_pointer, buffer_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
 	ResourceViewPointer new_rvp = table_offset_model[4];
 	SubMemoryPointer texture_need;
 	D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
@@ -2912,7 +3332,7 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 			}
 			new_rvp.resource_view_offset_id += 1;
 		}
-		else if (model_deal->GetModelPbrDesc() == PbrMaterialType::PbrType_SpecularSmoothness) 
+		else if (model_deal->GetModelPbrDesc() == PbrMaterialType::PbrType_SpecularSmoothness)
 		{
 			//镜面光&光滑度纹理
 			check_error = model_deal->GetMateriaTexture(i, TexType::tex_specular_smoothness, now_tex_id);
@@ -3053,6 +3473,16 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_pbr_bone.json");
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_pbr_pointcatch.json");
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_geometry_normal.json");
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -3456,6 +3886,17 @@ void scene_test_simple::PopulateCommandListModelDeal()
 	{
 		pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr_bone.json");
 	}
+	else if (render_object->CheckIfPointMesh())
+	{
+		if (if_show_normal && !if_show_normal_point)
+		{
+			pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_geometry_normal.json");
+		}
+		else
+		{
+			pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr_pointcatch.json");
+		}
+	}
 	else
 	{
 		pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr.json");
@@ -3767,7 +4208,22 @@ void scene_test_simple::Update(float delta_time)
 	view_buffer_data.view_position.z = view_pos.z;
 	view_buffer_data.view_position.w = 1.0f;
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[1].offset* per_memory_size, &view_buffer_data, sizeof(view_buffer_data));
-
+	//顶点动画数据
+	if (render_object_deal != NULL && render_object_deal->CheckIfPointMesh())
+	{
+		DirectX::XMUINT4 vertex_animation_size;
+		render_object_deal->GetPointAnimationFrame(vertex_animation_size.x, vertex_animation_size.y);
+		//是否显示法线
+		if (if_show_normal && if_show_normal_point)
+		{
+			vertex_animation_size.z = 1;
+		}
+		else
+		{
+			vertex_animation_size.z = 0;
+		}
+		check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[1].offset* per_memory_size + sizeof(view_buffer_data), &vertex_animation_size, sizeof(vertex_animation_size));
+	}
 }
 scene_test_simple::~scene_test_simple()
 {

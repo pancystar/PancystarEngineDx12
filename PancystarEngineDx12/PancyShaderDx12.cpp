@@ -1003,6 +1003,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 	}
 	desc_out.RasterizerState.CullMode = static_cast<D3D12_CULL_MODE>(now_value.int_value);
 	//读取alpha混合格式
+	desc_out.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	Json::Value value_blend_state = jsonRoot.get("BlendState", Json::Value::null);
 	if (value_blend_state == Json::Value::null)
 	{
@@ -1033,7 +1034,6 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDesc(
 	}
 	if (value_blend_target.size() > 0)
 	{
-		desc_out.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 		for (uint32_t i = 0; i < value_blend_target.size(); ++i)
 		{
 			pancy_json_value data_num[10];

@@ -1,3 +1,8 @@
 描述符的内存堆做分级处理(64/32/16....)以减少bundless texture过少而对描述符内存的浪费(需要多个rootsignature)
 为场景动画单独开辟顶点缓冲区用于computeshader更新(影响instance处理，待考虑)
 次表面散射
+buffer单独开辟一个类
+根据cbuffer和srv的反射名设置shader参数，并将cbuffer上传封装
+资源分类:
+外部资源，使用一个状态来标记当前资源的处理情况，包括(未加载，已加载至cpu，已拷贝至gpu)等
+内部创建的动态逐帧中间件资源包括rtt的纹理以及cbuffer等一律创建两份以供交叉线程使用

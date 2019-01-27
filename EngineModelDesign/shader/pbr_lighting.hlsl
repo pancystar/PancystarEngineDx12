@@ -16,6 +16,7 @@ cbuffer per_frame : register(b1)
 	float4x4 projectmatrix;
 	float4x4 invview_matrix;
 	float4 view_position;
+	uint4 point_animation_time;/*帧号，每帧顶点数量,是否显示法线*/
 }
 struct mesh_anim
 {
@@ -51,6 +52,19 @@ struct VSInputBone
 	float4 bone_weight0 : BONEWEIGHTFIR;
 	float4 bone_weight1 : BONEWEIGHTSEC;
 };
+struct VSInputCatch
+{
+	float3 position : POSITION;
+	float3 normal   : NORMAL;
+	float3 tangent  : TANGENT;
+	uint4  tex_id   : TEXID;
+	float4 tex_uv   : TEXUV;
+	uint4  anim_id  : ANIMID;
+};
+struct GSInput 
+{
+	float3 pos_out  :POSITION;
+};
 struct PSInput
 {
 	float4 position : SV_POSITION;
@@ -59,6 +73,11 @@ struct PSInput
 	float3 tangent  : TANGENT;
 	uint4  tex_id   : TEXID;
 	float4 tex_uv   : TEXUV;
+};
+struct PSInputNormal 
+{
+	float4 position : SV_POSITION;
+	float3 normal   : NORMAL;
 };
 PSInput VSMainBone(VSInputBone vinput)
 {
@@ -130,6 +149,59 @@ PSInput VSMain(VSInput vinput)
 	result.tex_uv.xy = mul(float4(vinput.tex_uv.xy, 0, 0), UV_matrix).xy;
 	result.tex_uv.zw = mul(float4(vinput.tex_uv.zw, 0, 0), UV_matrix).zw;
 	return result;
+}
+PSInput VSMainPointCatch(VSInputCatch vinput)
+{
+	PSInput result;
+	float delta_change = (float)(vinput.anim_id.x);
+	int index_anim = point_animation_time.x * point_animation_time.y + vinput.anim_id.y;
+	float3 new_position = input_point[index_anim].pos;
+	float3 used_position = new_position * delta_change + vinput.position * (1.0f - delta_change);
+	float3 new_normal = normalize(input_point[index_anim].norm);
+	float3 used_normal = new_normal * delta_change + vinput.normal * (1.0f - delta_change);
+	float3 new_tangent = normalize(input_point[index_anim].tangent);
+	float3 used_tangent = new_tangent * delta_change + vinput.tangent * (1.0f - delta_change);
+
+
+	result.position = mul(float4(used_position, 1.0f), WVP_matrix);
+	result.pos_out = mul(float4(used_position, 1.0), world_matrix);
+	result.normal = mul(float4(used_normal, 0.0), normal_matrix).xyz;
+	result.tangent = mul(float4(used_tangent, 0.0), normal_matrix).xyz;
+	result.tex_id = vinput.tex_id;
+	result.tex_uv.xy = mul(float4(vinput.tex_uv.xy, 0, 0), UV_matrix).xy;
+	result.tex_uv.zw = mul(float4(vinput.tex_uv.zw, 0, 0), UV_matrix).zw;
+	return result;
+}
+GSInput VSMainNormal(VSInputCatch vinput)
+{
+	GSInput result;
+	float delta_change = (float)(vinput.anim_id.x);
+	int index_anim = point_animation_time.x * point_animation_time.y + vinput.anim_id.y;
+	float3 new_position = input_point[index_anim].pos;
+	float3 used_position = new_position * delta_change + vinput.position * (1.0f - delta_change);
+	result.pos_out = used_position;
+	return result;
+}
+[maxvertexcount(3)]
+void GSMainNormal(
+	triangle GSInput input[3],
+	inout TriangleStream< PSInputNormal > output
+) 
+{
+	float3 vector_1 = normalize(input[0].pos_out - input[1].pos_out);
+	float3 vector_2 = normalize(input[0].pos_out - input[2].pos_out);
+	float3 vector_normal = cross(vector_1, vector_2);
+	for (uint i = 0; i < 3; i++)
+	{
+		PSInputNormal element;
+		element.position = mul(float4(input[i].pos_out, 1.0f), WVP_matrix);
+		element.normal = mul(float4(vector_normal,0), normal_matrix).xyz;
+		output.Append(element);
+	}
+}
+float4 PSMainNormal(PSInputNormal pin) : SV_TARGET
+{
+	return float4(pin.normal,1.0f);
 }
 //菲涅尔系数
 float3 Fresnel_Schlick(float3 specularColor, float3 h, float3 v)
@@ -343,5 +415,9 @@ float4 PSMain(PSInput pin) : SV_TARGET
 		1.0f
 	);
 	//return float4(environment_light_color, 1.0f);
-	return float4(dir_light_color + environment_light_color,1.0f);
+	if (point_animation_time.z == 0) 
+	{
+		return float4(dir_light_color + environment_light_color, diffuse_color.a);
+	}
+	return float4(pin.normal, 1.0f);
 }

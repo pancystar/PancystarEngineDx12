@@ -265,3 +265,4 @@ __pycache__/
 *.png
 *.dds
 /EngineModelDesign/model
+/EngineModelDesign/export

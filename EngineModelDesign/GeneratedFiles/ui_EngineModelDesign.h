@@ -268,6 +268,9 @@ public:
         QObject::connect(MeshLod, SIGNAL(currentIndexChanged(int)), EngineModelDesignClass, SLOT(ChangeModelRenderLod()));
         QObject::connect(ChooseAnimation, SIGNAL(currentIndexChanged(int)), EngineModelDesignClass, SLOT(ModelAnimationChange()));
         QObject::connect(model_animation, SIGNAL(valueChanged(int)), EngineModelDesignClass, SLOT(ModelAnimationTimeChange(int)));
+        QObject::connect(CheckIfShowNormal, SIGNAL(stateChanged(int)), EngineModelDesignClass, SLOT(ShowModelNormal()));
+        QObject::connect(show_normal_vertex, SIGNAL(clicked()), EngineModelDesignClass, SLOT(ShowModelNormal()));
+        QObject::connect(show_normal_face, SIGNAL(clicked()), EngineModelDesignClass, SLOT(ShowModelNormal()));
 
         QMetaObject::connectSlotsByName(EngineModelDesignClass);
     } // setupUi
