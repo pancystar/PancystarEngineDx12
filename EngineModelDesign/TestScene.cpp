@@ -2013,12 +2013,28 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		//存储每一张纹理数据
 		std::string now_tex_file_name = file_root_name + "_tex" + std::to_string(i) + ".dds";
 		std::string now_tex_file_real_name = file_root_real_name + "_tex" + std::to_string(i) + ".dds";
-		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "texture_file", now_tex_file_real_name);
+		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "texture_file", file_root_real_name + "_tex" + std::to_string(i) + ".json");
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->SaveTextureToFile(device_pancy, texture_list[i], now_tex_file_name, true, true);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
+		//创建导出的json文件数据
+		string json_file_out = file_root_name + "_tex" + std::to_string(i) + ".json";
+		//为非json纹理创建一个纹理格式符
+		Json::Value json_data_out;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "FileName", now_tex_file_real_name);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfAutoBuildMipMap", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfForceSrgb", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "MaxSize", 0);
+		check_error = PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, json_file_out);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//将文件标记为已经创建
+		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(json_file_out);
 	}
 	//填充动画信息
 	if (if_skinmesh)
@@ -2079,7 +2095,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		out_stream.write(reinterpret_cast<char*>(&point_number), sizeof(point_number));
 		int32_t size_need = point_number * sizeof(mesh_animation_data);
 		out_stream.write(reinterpret_cast<char*>(new_data), size_need);
-		
+
 		out_stream.close();
 		delete[] new_data;
 	}
@@ -2234,7 +2250,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 				return error_message;
 			}
 		}
-		else if (model_pbr_type == PbrMaterialType::PbrType_SpecularSmoothness) 
+		else if (model_pbr_type == PbrMaterialType::PbrType_SpecularSmoothness)
 		{
 			if (material_data_deal->second.find(TexType::tex_specular_smoothness) != material_data_deal->second.end())
 			{
