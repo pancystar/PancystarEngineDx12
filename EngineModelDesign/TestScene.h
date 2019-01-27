@@ -139,6 +139,7 @@ public:
 };
 class PancyModelBasic : public PancystarEngine::PancyBasicVirtualResource
 {
+	//测试分支
 protected:
 	std::vector<PancySubModel*> model_resource_list;     //模型的每个子部件
 	std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> material_list;
