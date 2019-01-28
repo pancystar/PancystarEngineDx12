@@ -871,6 +871,10 @@ pancy_object_id PancyModelAssimp::insert_new_texture(std::vector<pancy_object_id
 }
 void PancyModelAssimp::SaveBoneTree(skin_tree *bone_data)
 {
+	//偏移矩阵
+	out_stream.write((char *)(&bone_num), sizeof(bone_num));
+	out_stream.write((char *)(offset_matrix_array), bone_num * sizeof(offset_matrix_array[0]));
+	//骨骼树
 	out_stream.write("*heaphead*", sizeof("*heaphead*"));
 	out_stream.write(reinterpret_cast<char *>(bone_data), sizeof(*bone_data));
 	if (bone_data->son != NULL)
@@ -2006,14 +2010,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "IfHavePoinAnimation", if_pointmesh);
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "PbrType", PancyJsonTool::GetInstance()->GetEnumName(typeid(model_pbr_type).name(), model_pbr_type));
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "model_num", model_lod_divide.size());
-	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "material_num", material_list.size());
+	//PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "material_num", material_list.size());
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "texture_num", texture_list.size());
 	for (int i = 0; i < texture_list.size(); ++i)
 	{
 		//存储每一张纹理数据
 		std::string now_tex_file_name = file_root_name + "_tex" + std::to_string(i) + ".dds";
 		std::string now_tex_file_real_name = file_root_real_name + "_tex" + std::to_string(i) + ".dds";
-		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "texture_file", file_root_real_name + "_tex" + std::to_string(i) + ".json");
+		//PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "texture_file", file_root_real_name + "_tex" + std::to_string(i) + ".json");
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->SaveTextureToFile(device_pancy, texture_list[i], now_tex_file_name, true, true);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -2053,7 +2057,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			std::string animation_name_now = file_root_name + "_anim_" + animation_deal->first + ".skinanim";
 			out_stream.open(animation_name_now, ios::binary);
 			//将一个动画的每个骨骼的变换信息写入文件
-			for (int i = 0; i < animation_deal->second.data_animition.size(); ++i)
+			int32_t animation_used_bone_num = animation_deal->second.data_animition.size();
+			out_stream.write(reinterpret_cast<char*>(&animation_used_bone_num),sizeof(animation_used_bone_num));
+			for (int i = 0; i < animation_used_bone_num; ++i)
 			{
 				//当前变换的骨骼名称的长度
 				auto bone_name_size = animation_deal->second.data_animition[i].bone_name.size();
@@ -2090,9 +2096,11 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		out_stream.open(animation_name_now, ios::binary);
 		auto all_frame_num = FBXanim_import->get_frame_num();
 		auto perframe_size = FBXanim_import->GetMeshSizePerFrame();
+		auto fps_need = FBXanim_import->get_FPS();
 		out_stream.write(reinterpret_cast<char*>(&all_frame_num), sizeof(all_frame_num));
 		out_stream.write(reinterpret_cast<char*>(&perframe_size), sizeof(perframe_size));
 		out_stream.write(reinterpret_cast<char*>(&point_number), sizeof(point_number));
+		out_stream.write(reinterpret_cast<char*>(&fps_need), sizeof(fps_need));
 		int32_t size_need = point_number * sizeof(mesh_animation_data);
 		out_stream.write(reinterpret_cast<char*>(new_data), size_need);
 
