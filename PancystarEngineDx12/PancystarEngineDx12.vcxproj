@@ -150,12 +150,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="PancyBufferDx12.h" />
     <ClInclude Include="PancyCamera.h" />
     <ClInclude Include="PancyDx12Basic.h" />
     <ClInclude Include="PancyGeometryDx12.h" />
     <ClInclude Include="PancyInput.h" />
     <ClInclude Include="PancyJsonTool.h" />
     <ClInclude Include="PancyMemoryBasic.h" />
+    <ClInclude Include="PancyModelBasic.h" />
     <ClInclude Include="PancyResourceBasic.h" />
     <ClInclude Include="PancySceneDesign.h" />
     <ClInclude Include="PancyShaderDx12.h" />
@@ -166,6 +168,7 @@
     <ClInclude Include="PancyThreadBasic.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="PancyBufferDx12.cpp" />
     <ClCompile Include="PancyCamera.cpp" />
     <ClCompile Include="PancyDx12Basic.cpp" />
     <ClCompile Include="PancyGeometryDx12.cpp" />

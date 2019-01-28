@@ -190,6 +190,7 @@ namespace PancystarEngine
 			return true;
 		}
 	};
+	void DivideFilePath(const std::string &full_file_name_in,std::string &file_path_out,std::string &file_name_out, std::string &file_tail_out);
 	static EngineFailReason succeed;
 }
 

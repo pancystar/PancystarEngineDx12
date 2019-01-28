@@ -54,6 +54,12 @@
     <ClInclude Include="PancyInput.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="PancyBufferDx12.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="PancyModelBasic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PancyDx12Basic.cpp">
@@ -90,6 +96,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="PancyInput.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PancyBufferDx12.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
