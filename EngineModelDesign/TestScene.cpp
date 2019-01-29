@@ -2065,7 +2065,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 				auto bone_name_size = animation_deal->second.data_animition[i].bone_name.size() + 1;
 				out_stream.write(reinterpret_cast<char*>(&bone_name_size), sizeof(bone_name_size));
 				//当前变换的骨骼名称
-				out_stream.write(animation_deal->second.data_animition[i].bone_name.c_str(), animation_deal->second.data_animition[i].bone_name.size() * sizeof(char));
+				out_stream.write(animation_deal->second.data_animition[i].bone_name.c_str(), bone_name_size * sizeof(char));
 				//所有旋转数据
 				auto rottation_key_size = animation_deal->second.data_animition[i].rotation_key.size();
 				out_stream.write(reinterpret_cast<char*>(&rottation_key_size), sizeof(rottation_key_size));
