@@ -2133,9 +2133,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			}
 			//存储顶点及索引
 			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
+			int32_t vertex_size = vertex_data_pack.size();
+			out_stream.write(reinterpret_cast<char*>(&vertex_size), sizeof(vertex_size));
 			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
 			out_stream.close();
 			out_stream.open(file_root_name + std::to_string(i) + ".index", ios::binary);
+			int32_t index_size = index_data_pack.size();
+			out_stream.write(reinterpret_cast<char*>(&index_size), sizeof(index_size));
 			out_stream.write(reinterpret_cast<char*>(&index_data_pack[0]), index_data_pack.size() * sizeof(index_data_pack[0]));
 			out_stream.close();
 		}
@@ -2162,9 +2166,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			}
 			//存储顶点及索引
 			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
+			int32_t vertex_size = vertex_data_pack.size();
+			out_stream.write(reinterpret_cast<char*>(&vertex_size), sizeof(vertex_size));
 			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
 			out_stream.close();
 			out_stream.open(file_root_name + std::to_string(i) + ".index", ios::binary);
+			int32_t index_size = index_data_pack.size();
+			out_stream.write(reinterpret_cast<char*>(&index_size), sizeof(index_size));
 			out_stream.write(reinterpret_cast<char*>(&index_data_pack[0]), index_data_pack.size() * sizeof(index_data_pack[0]));
 			out_stream.close();
 		}
@@ -2191,9 +2199,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			}
 			//存储顶点及索引
 			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
+			int32_t vertex_size = vertex_data_pack.size();
+			out_stream.write(reinterpret_cast<char*>(&vertex_size),sizeof(vertex_size));
 			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
 			out_stream.close();
 			out_stream.open(file_root_name + std::to_string(i) + ".index", ios::binary);
+			int32_t index_size = index_data_pack.size();
+			out_stream.write(reinterpret_cast<char*>(&index_size), sizeof(index_size));
 			out_stream.write(reinterpret_cast<char*>(&index_data_pack[0]), index_data_pack.size() * sizeof(index_data_pack[0]));
 			out_stream.close();
 		}
