@@ -14,9 +14,9 @@
 			"Count" : 1,
 			"Quality" : 0
 		},
-		"Width" : 262144
+		"Width" : 1048576
 	},
 	"D3D12_RESOURCE_STATES" : "D3D12_RESOURCE_STATE_GENERIC_READ",
-	"ResourceType" : "json\\resource_heap\\DynamicBuffer262144.json",
+	"ResourceType" : "json\\resource_heap\\DynamicBuffer1048576.json",
 	"per_block_size" : 262144
 }

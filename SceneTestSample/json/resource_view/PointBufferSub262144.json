@@ -14,9 +14,9 @@
 			"Count" : 1,
 			"Quality" : 0
 		},
-		"Width" : 4194304
+		"Width" : 1048576
 	},
 	"D3D12_RESOURCE_STATES" : "D3D12_RESOURCE_STATE_COPY_DEST",
-	"ResourceType" : "json\\resource_heap\\PointBuffer4194304.json",
+	"ResourceType" : "json\\resource_heap\\PointBuffer1048576.json",
 	"per_block_size" : 262144
 }

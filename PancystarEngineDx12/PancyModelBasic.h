@@ -287,7 +287,7 @@ namespace PancystarEngine
 			model_resource_list.push_back(new_submodel);
 			delete[] vertex_data;
 			delete[] index_data;
-			
+			return PancystarEngine::succeed;
 		}
 	};
 

@@ -229,6 +229,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 			}
 			now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_specular_smoothness, rec_value.int_value));
 		}
+		material_list.insert(std::pair<pancy_object_id, std::unordered_map<TexType, pancy_object_id>>(material_id, now_material_need));
 	}
 	//¶ÁÈ¡¹Ç÷À¶¯»­
 	if (if_skinmesh)
@@ -333,4 +334,5 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 			delete[] new_point_catch_data;
 		}
 	}
+	return PancystarEngine::succeed;
 }
