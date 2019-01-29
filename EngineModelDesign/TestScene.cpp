@@ -2062,7 +2062,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			for (int i = 0; i < animation_used_bone_num; ++i)
 			{
 				//当前变换的骨骼名称的长度
-				auto bone_name_size = animation_deal->second.data_animition[i].bone_name.size();
+				auto bone_name_size = animation_deal->second.data_animition[i].bone_name.size() + 1;
 				out_stream.write(reinterpret_cast<char*>(&bone_name_size), sizeof(bone_name_size));
 				//当前变换的骨骼名称
 				out_stream.write(animation_deal->second.data_animition[i].bone_name.c_str(), animation_deal->second.data_animition[i].bone_name.size() * sizeof(char));
