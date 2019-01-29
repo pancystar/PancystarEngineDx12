@@ -266,3 +266,4 @@ __pycache__/
 *.dds
 /EngineModelDesign/model
 /EngineModelDesign/export
+/SceneTestSample/model/export

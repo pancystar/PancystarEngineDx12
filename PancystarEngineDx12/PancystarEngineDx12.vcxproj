@@ -175,6 +175,7 @@
     <ClCompile Include="PancyInput.cpp" />
     <ClCompile Include="PancyJsonTool.cpp" />
     <ClCompile Include="PancyMemoryBasic.cpp" />
+    <ClCompile Include="PancyModelBasic.cpp" />
     <ClCompile Include="PancyResourceBasic.cpp" />
     <ClCompile Include="PancySceneDesign.cpp" />
     <ClCompile Include="PancyShaderDx12.cpp" />

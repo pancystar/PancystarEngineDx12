@@ -29,8 +29,17 @@
     },
     {
       "RangeType": "D3D12_DESCRIPTOR_RANGE_TYPE_SRV",
-      "NumDescriptors": 64,
+      "NumDescriptors": 1,
       "BaseShaderRegister": 3,
+      "RegisterSpace": 0,
+      "flags": "D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC",
+      "numDescriptorRanges": 1,
+      "ShaderVisibility": "D3D12_SHADER_VISIBILITY_ALL"
+    },
+    {
+      "RangeType": "D3D12_DESCRIPTOR_RANGE_TYPE_SRV",
+      "NumDescriptors": 64,
+      "BaseShaderRegister": 4,
       "RegisterSpace": 0,
       "flags": "D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC",
       "numDescriptorRanges": 1,

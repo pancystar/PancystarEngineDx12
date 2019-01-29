@@ -12,8 +12,12 @@ class scene_test_simple : public SceneRoot
 	//管线状态
 	ComPtr<ID3D12PipelineState> m_pipelineState;
 	std::vector<PancyThreadIdGPU> renderlist_ID;
-	//模型测试
+	//屏幕空间模型
 	PancystarEngine::GeometryBasic *test_model;
+	//模型测试
+	PancystarEngine::PancyBasicModel *test_model_common;
+	PancystarEngine::PancyBasicModel *test_model_pointmesh;
+	PancystarEngine::PancyBasicModel *test_model_skinmesh;
 	//视口
 	CD3DX12_VIEWPORT view_port;
 	CD3DX12_RECT view_rect;
@@ -44,6 +48,8 @@ public:
 	scene_test_simple()
 	{
 		renderlist_ID.clear();
+		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_MetallicRoughness", static_cast<int32_t>(PancystarEngine::PbrType_MetallicRoughness), typeid(PancystarEngine::PbrType_MetallicRoughness).name());
+		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_SpecularSmoothness", static_cast<int32_t>(PancystarEngine::PbrType_SpecularSmoothness), typeid(PancystarEngine::PbrType_SpecularSmoothness).name());
 	}
 	~scene_test_simple();
 	

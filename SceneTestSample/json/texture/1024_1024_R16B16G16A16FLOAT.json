@@ -4,5 +4,5 @@
   "IfRTV": 0,
   "IFUAV": 0,
   "IFDSV": 1,
-  "SubResourceFile": "json\\resource_view\\Subtex_1024_1024_R16G16B16A16_FLOAT_1mip.json"
+  "SubResourceFile": "json\\resource_view\\Subtex_1024_1024_R16G16B16A16_FLOAT_1mip_rtt.json"
 }

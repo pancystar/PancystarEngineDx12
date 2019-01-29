@@ -101,5 +101,8 @@
     <ClCompile Include="PancyBufferDx12.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="PancyModelBasic.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
