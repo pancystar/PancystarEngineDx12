@@ -116,9 +116,10 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 	for (int i = 0; i < model_part_num; ++i)
 	{
 		std::string model_vertex_data_name = path_name + file_name + std::to_string(i) + ".vertex";
+		std::string model_index_data_name = path_name + file_name + std::to_string(i) + ".index";
 		if (if_skinmesh)
 		{
-			check_error = LoadMeshData<PancystarEngine::PointSkinCommon8>(model_vertex_data_name);
+			check_error = LoadMeshData<PancystarEngine::PointSkinCommon8>(model_vertex_data_name, model_index_data_name);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -126,7 +127,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 		}
 		else if (if_pointmesh)
 		{
-			check_error = LoadMeshData<PancystarEngine::PointCatchCommon>(model_vertex_data_name);
+			check_error = LoadMeshData<PancystarEngine::PointCatchCommon>(model_vertex_data_name, model_index_data_name);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -134,7 +135,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 		}
 		else
 		{
-			check_error = LoadMeshData<PancystarEngine::PointCommon>(model_vertex_data_name);
+			check_error = LoadMeshData<PancystarEngine::PointCommon>(model_vertex_data_name, model_index_data_name);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;

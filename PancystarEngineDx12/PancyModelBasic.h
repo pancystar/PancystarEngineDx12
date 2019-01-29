@@ -257,21 +257,27 @@ namespace PancystarEngine
 		void ReadBoneTree(skin_tree *now);
 		//读取网格数据
 		template<typename T>
-		PancystarEngine::EngineFailReason LoadMeshData(const std::string &file_name) 
+		PancystarEngine::EngineFailReason LoadMeshData(const std::string &file_name_vertex, const std::string &file_name_index)
 		{
 			PancystarEngine::EngineFailReason check_error;
-			instream.open(file_name, ios::binary);
+			
 			int32_t vertex_num;
 			int32_t index_num;
+			
+			
+			instream.open(file_name_vertex, ios::binary);
 			instream.read(reinterpret_cast<char*>(&vertex_num), sizeof(vertex_num));
-			instream.read(reinterpret_cast<char*>(&index_num), sizeof(index_num));
-
 			T *vertex_data = new T[vertex_num];
-			IndexType *index_data = new IndexType[index_num];
 			int32_t vertex_size = vertex_num * sizeof(vertex_data[0]);
-			int32_t index_size = vertex_num * sizeof(index_data[0]);
 			instream.read(reinterpret_cast<char*>(vertex_data), vertex_size);
+			instream.close();
+
+			instream.open(file_name_index, ios::binary);
+			instream.read(reinterpret_cast<char*>(&index_num), sizeof(index_num));
+			IndexType *index_data = new IndexType[index_num];
+			int32_t index_size = vertex_num * sizeof(index_data[0]);
 			instream.read(reinterpret_cast<char*>(index_data), index_size);
+			instream.close();
 			PancySubModel *new_submodel = new PancySubModel();
 			check_error = new_submodel->Create(vertex_data, index_data, vertex_num, index_num, 0);
 			if (!check_error.CheckIfSucceed())
@@ -281,7 +287,7 @@ namespace PancystarEngine
 			model_resource_list.push_back(new_submodel);
 			delete[] vertex_data;
 			delete[] index_data;
-			instream.close();
+			
 		}
 	};
 
