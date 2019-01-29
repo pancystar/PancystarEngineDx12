@@ -871,9 +871,6 @@ pancy_object_id PancyModelAssimp::insert_new_texture(std::vector<pancy_object_id
 }
 void PancyModelAssimp::SaveBoneTree(skin_tree *bone_data)
 {
-	//Æ«ÒÆ¾ØÕó
-	out_stream.write((char *)(&bone_num), sizeof(bone_num));
-	out_stream.write((char *)(offset_matrix_array), bone_num * sizeof(offset_matrix_array[0]));
 	//¹Ç÷ÀÊ÷
 	out_stream.write("*heaphead*", sizeof("*heaphead*"));
 	out_stream.write(reinterpret_cast<char *>(bone_data), sizeof(*bone_data));
@@ -2045,6 +2042,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 	{
 		//´æ´¢¹Ç÷ÀÊý¾Ý
 		out_stream.open(file_root_name + ".bone", ios::binary);
+		//Æ«ÒÆ¾ØÕó
+		out_stream.write((char *)(&bone_num), sizeof(bone_num));
+		out_stream.write((char *)(offset_matrix_array), bone_num * sizeof(offset_matrix_array[0]));
 		SaveBoneTree(root_skin);
 		out_stream.close();
 		//´æ´¢¶¯»­Êý¾Ý
