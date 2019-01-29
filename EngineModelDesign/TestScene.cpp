@@ -2062,20 +2062,20 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			for (int i = 0; i < animation_used_bone_num; ++i)
 			{
 				//当前变换的骨骼名称的长度
-				auto bone_name_size = animation_deal->second.data_animition[i].bone_name.size() + 1;
+				int32_t bone_name_size = animation_deal->second.data_animition[i].bone_name.size() + 1;
 				out_stream.write(reinterpret_cast<char*>(&bone_name_size), sizeof(bone_name_size));
 				//当前变换的骨骼名称
 				out_stream.write(animation_deal->second.data_animition[i].bone_name.c_str(), bone_name_size * sizeof(char));
 				//所有旋转数据
-				auto rottation_key_size = animation_deal->second.data_animition[i].rotation_key.size();
+				int32_t rottation_key_size = animation_deal->second.data_animition[i].rotation_key.size();
 				out_stream.write(reinterpret_cast<char*>(&rottation_key_size), sizeof(rottation_key_size));
 				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].rotation_key[0]), animation_deal->second.data_animition[i].rotation_key.size() * sizeof(animation_deal->second.data_animition[i].rotation_key[0]));
 				//所有平移数据
-				auto translation_key_size = animation_deal->second.data_animition[i].translation_key.size();
+				int32_t translation_key_size = animation_deal->second.data_animition[i].translation_key.size();
 				out_stream.write(reinterpret_cast<char*>(&translation_key_size), sizeof(translation_key_size));
 				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].translation_key[0]), animation_deal->second.data_animition[i].translation_key.size() * sizeof(animation_deal->second.data_animition[i].translation_key[0]));
 				//所有缩放数据
-				auto scaling_key_size = animation_deal->second.data_animition[i].scaling_key.size();
+				int32_t scaling_key_size = animation_deal->second.data_animition[i].scaling_key.size();
 				out_stream.write(reinterpret_cast<char*>(&scaling_key_size), sizeof(scaling_key_size));
 				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].scaling_key[0]), animation_deal->second.data_animition[i].scaling_key.size() * sizeof(animation_deal->second.data_animition[i].scaling_key[0]));
 			}
@@ -2085,7 +2085,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 	else if (if_pointmesh)
 	{
 		//存储顶点动画数据
-		int point_number = FBXanim_import->GetMeshAnimNumber();
+		int32_t point_number = FBXanim_import->GetMeshAnimNumber();
 		mesh_animation_data *new_data = new mesh_animation_data[point_number];
 		FBXanim_import->GetMeshAnimData(new_data);
 		//将动画信息写入json
@@ -2094,9 +2094,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		//将动画细节导入到文件
 		std::string animation_name_now = file_root_name + "_anim_" + "basic" + ".pointcatch";
 		out_stream.open(animation_name_now, ios::binary);
-		auto all_frame_num = FBXanim_import->get_frame_num();
-		auto perframe_size = FBXanim_import->GetMeshSizePerFrame();
-		auto fps_need = FBXanim_import->get_FPS();
+		int32_t all_frame_num = FBXanim_import->get_frame_num();
+		int32_t perframe_size = FBXanim_import->GetMeshSizePerFrame();
+		int32_t fps_need = FBXanim_import->get_FPS();
 		out_stream.write(reinterpret_cast<char*>(&all_frame_num), sizeof(all_frame_num));
 		out_stream.write(reinterpret_cast<char*>(&perframe_size), sizeof(perframe_size));
 		out_stream.write(reinterpret_cast<char*>(&point_number), sizeof(point_number));
