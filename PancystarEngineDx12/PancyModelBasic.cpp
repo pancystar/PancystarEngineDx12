@@ -303,9 +303,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 			}
 			//将动画信息加入表单
 			skin_animation_name.insert(std::pair<std::string, pancy_resource_id>(now_animation_name, i));
-			skin_animation_map.insert(std::pair<pancy_resource_id, animation_set>(i, new_animation));
-			instream.close();
+			skin_animation_map.insert(std::pair<pancy_resource_id, animation_set>(i, new_animation));	
 		}
+		instream.close();
 	}
 	//读取顶点动画
 	if (if_pointmesh)
