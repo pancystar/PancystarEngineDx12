@@ -9,6 +9,7 @@
 
 class scene_test_simple : public SceneRoot
 {
+	bool if_have_previous_frame;
 	//管线状态
 	ComPtr<ID3D12PipelineState> m_pipelineState;
 	std::vector<PancyThreadIdGPU> renderlist_ID;
@@ -22,6 +23,7 @@ class scene_test_simple : public SceneRoot
 	CD3DX12_VIEWPORT view_port;
 	CD3DX12_RECT view_rect;
 	//帧等待fence号码
+	PancyFenceIdGPU last_broken_fence_id;
 	PancyFenceIdGPU broken_fence_id;
 	//资源绑定(天空盒)
 	ResourceViewPointer table_offset[3];
@@ -47,6 +49,7 @@ class scene_test_simple : public SceneRoot
 public:
 	scene_test_simple()
 	{
+		if_have_previous_frame = false;
 		renderlist_ID.clear();
 		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_MetallicRoughness", static_cast<int32_t>(PancystarEngine::PbrType_MetallicRoughness), typeid(PancystarEngine::PbrType_MetallicRoughness).name());
 		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_SpecularSmoothness", static_cast<int32_t>(PancystarEngine::PbrType_SpecularSmoothness), typeid(PancystarEngine::PbrType_SpecularSmoothness).name());

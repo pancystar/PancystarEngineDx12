@@ -339,6 +339,7 @@ HRESULT engine_windows_main::game_loop()
 WPARAM engine_windows_main::game_end()
 {
 	delete new_scene;
+	delete PancystarEngine::PancyModelControl::GetInstance();
 	delete PancyDx12DeviceBasic::GetInstance();
 	PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 	delete PancystarEngine::EngineFailLog::GetInstance();
@@ -354,5 +355,6 @@ WPARAM engine_windows_main::game_end()
 	delete PancystarEngine::FileBuildRepeatCheck::GetInstance();
 	delete PancyInput::GetInstance();
 	delete PancyCamera::GetInstance();
+	
 	return msg.wParam;
 }

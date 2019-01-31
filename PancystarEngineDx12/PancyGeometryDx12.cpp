@@ -44,7 +44,7 @@ GeometryBasic::~GeometryBasic()
 {
 }
 PancystarEngine::EngineFailReason GeometryBasic::BuildDefaultBuffer(
-	ID3D12GraphicsCommandList* cmdList,
+	PancyNowGraphicsCommandList* cmdList,
 	int64_t memory_alignment_size,
 	int64_t memory_block_alignment_size,
 	SubMemoryPointer &default_buffer,
@@ -210,7 +210,9 @@ PancystarEngine::EngineFailReason GeometryBasic::BuildDefaultBuffer(
 	}
 	//将上传缓冲区的数据拷贝到显存缓冲区
 	cmdList->CopyBufferRegion(dest_res->GetResource().Get(), default_buffer.offset * per_memory_size, copy_res->GetResource().Get(), upload_buffer.offset*per_memory_size, buffer_block_size);
+	/*
 	//修改缓冲区格式
+	顶点/索引缓冲区必须要由渲染命令才能调用，拷贝命令不能调用渲染格式转换
 	cmdList->ResourceBarrier(
 		1,
 		&CD3DX12_RESOURCE_BARRIER::Transition(
@@ -219,5 +221,6 @@ PancystarEngine::EngineFailReason GeometryBasic::BuildDefaultBuffer(
 			buffer_type
 		)
 	);
+	*/
 	return PancystarEngine::succeed;
 }

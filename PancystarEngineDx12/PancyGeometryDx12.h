@@ -135,7 +135,7 @@ namespace PancystarEngine
 		{
 			if (!if_build_finish)
 			{
-				ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(upload_fence_value);
+				ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->WaitGpuBrokenFence(upload_fence_value);
 				if_build_finish = true;
 			}
 		}
@@ -154,7 +154,7 @@ namespace PancystarEngine
 			D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in
 		) = 0;
 		PancystarEngine::EngineFailReason BuildDefaultBuffer(
-			ID3D12GraphicsCommandList* cmdList,
+			PancyNowGraphicsCommandList* cmdList,
 			int64_t memory_alignment_size,
 			int64_t memory_block_alignment_size,
 			SubMemoryPointer &default_buffer,
@@ -277,7 +277,7 @@ namespace PancystarEngine
 		PancyRenderCommandList *copy_render_list;
 		uint32_t copy_render_list_ID;
 		
-		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
+		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
 		all_vertex_need = all_model_vertex;
 		all_index_need = all_model_index;
 
@@ -320,9 +320,9 @@ namespace PancystarEngine
 		//完成渲染队列并提交拷贝
 		copy_render_list->UnlockPrepare();
 		
-		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &copy_render_list_ID);
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
 		//在GPU上插一个监控眼位
-		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(upload_fence_value);
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(upload_fence_value);
 		//ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(upload_fence_value);
 		//等待拷贝结束，todo::创建资源不再等待
 		WaitCopyFinish();

@@ -8,24 +8,14 @@
 #define PancyThreadPoolIdGPU uint16_t
 #define PancyEngineIdGPU uint8_t
 #define MaxSubmitCommandList 256
+#define PancyNowGraphicsCommandList ID3D12GraphicsCommandList1
 //commandlist管理(GPU线程(fence)管理)
 class PancyRenderCommandList
 {
 	std::atomic<bool> if_preparing;                       //是否正在准备
 	std::atomic<bool> if_finish;                          //是否已经由GPU处理完毕
-	/*
-	执行完毕状态：
-	preparing = false;
-	if_finis = true;
-	正在填充命令状态
-	preparing = true;
-	if_finis = false;
-	工作/待工作(已完成命令填充但GPU尚未处理完毕)状态
-	preparing = false;
-	if_finish = false;
-	*/
 	PancyThreadIdGPU command_list_ID;                     //commandlist的编号
-	ComPtr<ID3D12GraphicsCommandList> command_list_data;  //commandlist指针
+	ComPtr<PancyNowGraphicsCommandList> command_list_data;  //commandlist指针
 	D3D12_COMMAND_LIST_TYPE command_list_type;            //commandlist类型
 public:
 	PancyRenderCommandList(PancyThreadIdGPU command_list_ID_in);
@@ -39,7 +29,7 @@ public:
 	{
 		return command_list_type;
 	}
-	inline ComPtr<ID3D12GraphicsCommandList> GetCommandList()
+	inline ComPtr<PancyNowGraphicsCommandList> GetCommandList()
 	{
 		return command_list_data;
 	}
@@ -91,7 +81,7 @@ class CommandListEngine
 	HANDLE wait_thread_ID;
 	ComPtr<ID3D12Fence> GPU_thread_fence;//用于在接收当前线程处理GPU同步消息的fence
 	PancyFenceIdGPU fence_value_self_add;//自增长的fencevalue
-	std::unordered_map<PancyFenceIdGPU, std::vector<PancyThreadIdGPU>> GPU_broken_point;//记录每个请求的GPU断点所影响到的commandlist
+	std::map<PancyFenceIdGPU, std::vector<PancyThreadIdGPU>> GPU_broken_point;//记录每个请求的GPU断点所影响到的commandlist
 	//正在工作的commandlist
 	std::unordered_map<PancyThreadIdGPU, PancyRenderCommandList*> command_list_work;
 	//制作完毕的commandlist
@@ -142,23 +132,16 @@ private:
 class ThreadPoolGPU
 {
 	PancyThreadPoolIdGPU GPUThreadPoolID;
-	//multi engine 变量
-	std::unordered_map<PancyEngineIdGPU, CommandListEngine*> multi_engine_list;
-	//获取对应类型的线程池
-	
+	int32_t pre_thread_id;
+	//multi engine 变量(根据backbuffer的数量来决定使用几个rename缓冲区)
+	std::vector<std::unordered_map<PancyEngineIdGPU, CommandListEngine*>> multi_engine_list;
 public:
 	ThreadPoolGPU(uint32_t GPUThreadPoolID_in);
 	~ThreadPoolGPU();
-	inline CommandListEngine* GetThreadPool(D3D12_COMMAND_LIST_TYPE engine_type)
-	{
-		PancyEngineIdGPU engine_id = static_cast<PancyEngineIdGPU>(D3D12_COMMAND_LIST_TYPE_DIRECT);
-		auto engine_data = multi_engine_list.find(engine_id);
-		if (engine_data == multi_engine_list.end()) 
-		{
-			return NULL;
-		}
-		return engine_data->second;
-	}
+	//获取对应类型的线程池
+	CommandListEngine* GetThreadPool(D3D12_COMMAND_LIST_TYPE engine_type);
+	//获取上一帧的线程池
+	CommandListEngine* GetLastThreadPool(D3D12_COMMAND_LIST_TYPE engine_type);
 	PancystarEngine::EngineFailReason Create();
 private:
 	template<class T>
@@ -170,6 +153,7 @@ private:
 		}
 		list_in.clear();
 	}
+	PancystarEngine::EngineFailReason BuildNewEngine(D3D12_COMMAND_LIST_TYPE engine_type);
 };
 
 class ThreadPoolGPUControl

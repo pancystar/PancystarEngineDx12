@@ -39,20 +39,18 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 		return check_error;
 	}
 	//´´²âÊÔÄ£ÐÍ
-	test_model_common = new PancystarEngine::PancyBasicModel("model\\export\\multiball\\multibal.json");
-	check_error = test_model_common->Create();
+	uint32_t model_common,model_skinmesh,model_pointmesh;
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\multiball\\multibal.json", model_common);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	test_model_skinmesh = new PancystarEngine::PancyBasicModel("model\\export\\lion\\lion.json");
-	check_error = test_model_skinmesh->Create();
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\lion\\lion.json", model_skinmesh);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	test_model_pointmesh = new PancystarEngine::PancyBasicModel("model\\export\\treetest\\tree.json");
-	check_error = test_model_pointmesh->Create();
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\treetest\\tree.json", model_pointmesh);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -240,11 +238,17 @@ void scene_test_simple::Display()
 	HRESULT hr;
 	renderlist_ID.clear();
 	auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->FreeAlloctor();
-	ClearScreen();
+	ClearScreen();	
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(renderlist_ID.size(), &renderlist_ID[0]);
+	last_broken_fence_id = broken_fence_id;
 	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(broken_fence_id);
 	hr = PancyDx12DeviceBasic::GetInstance()->GetSwapchain()->Present(1, 0);
-	WaitForPreviousFrame();
+	if (if_have_previous_frame) 
+	{
+		WaitForPreviousFrame();
+	}
+	
+	if_have_previous_frame = true;
 }
 void scene_test_simple::DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix)
 {
@@ -282,7 +286,7 @@ void scene_test_simple::ClearScreen()
 }
 void scene_test_simple::WaitForPreviousFrame()
 {
-	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(broken_fence_id);
+	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(last_broken_fence_id);
 }
 void scene_test_simple::Update(float delta_time)
 {

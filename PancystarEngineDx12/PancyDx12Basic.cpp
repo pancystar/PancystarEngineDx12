@@ -45,7 +45,7 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
 		return error_message;
 	}
-	//创建渲染队列
+	//创建直接渲染队列
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -57,6 +57,30 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		return error_message;
 	}
 	command_queue_direct->SetName(PancystarEngine::PancyString("direct queue").GetUnicodeString().c_str());
+	//创建拷贝渲染队列
+	D3D12_COMMAND_QUEUE_DESC queueDesc_copy = {};
+	queueDesc_copy.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	queueDesc_copy.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+	hr = m_device->CreateCommandQueue(&queueDesc_copy, IID_PPV_ARGS(&command_queue_copy));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create Command Queue(Copy) Error When init D3D basic");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
+		return error_message;
+	}
+	command_queue_direct->SetName(PancystarEngine::PancyString("copy queue").GetUnicodeString().c_str());
+	//创建计算渲染队列
+	D3D12_COMMAND_QUEUE_DESC queueDesc_compute = {};
+	queueDesc_compute.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	queueDesc_compute.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+	hr = m_device->CreateCommandQueue(&queueDesc_compute, IID_PPV_ARGS(&command_queue_compute));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create Command Queue(Compute) Error When init D3D basic");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
+		return error_message;
+	}
+	command_queue_direct->SetName(PancystarEngine::PancyString("Compute queue").GetUnicodeString().c_str());
 	//创建屏幕
 	check_error = ResetScreen(width, height);
 	if (!check_error.CheckIfSucceed())

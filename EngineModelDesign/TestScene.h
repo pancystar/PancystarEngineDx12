@@ -347,7 +347,7 @@ class PancyModelAssimp : public PancyModelBasic
 	SubMemoryPointer vertex_anim_buffer;
 	PancyFenceIdGPU upload_fence_value;
 	PancystarEngine::EngineFailReason BuildDefaultBuffer(
-		ID3D12GraphicsCommandList* cmdList,
+		PancyNowGraphicsCommandList* cmdList,
 		int64_t memory_alignment_size,
 		int64_t memory_block_alignment_size,
 		SubMemoryPointer &default_buffer,

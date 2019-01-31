@@ -1,5 +1,6 @@
 #include"PancyModelBasic.h"
 using namespace PancystarEngine;
+//模型部件
 PancySubModel::PancySubModel()
 {
 	model_mesh = NULL;
@@ -13,11 +14,16 @@ PancySubModel::~PancySubModel()
 		delete model_mesh;
 	}
 }
+//模型类
 PancyBasicModel::PancyBasicModel(const std::string &desc_file_in) : PancyBasicVirtualResource(desc_file_in)
 {
 }
 PancyBasicModel::~PancyBasicModel()
 {
+	if (if_skinmesh) 
+	{
+		FreeBoneTree(root_skin);
+	}
 	for (auto data_submodel = model_resource_list.begin(); data_submodel != model_resource_list.end(); ++data_submodel)
 	{
 		delete *data_submodel;
@@ -69,6 +75,21 @@ void PancyBasicModel::ReadBoneTree(skin_tree *now)
 		instream.read(data, sizeof(data));
 	}
 
+}
+void PancyBasicModel::FreeBoneTree(skin_tree *now)
+{
+	if (now->brother != NULL)
+	{
+		FreeBoneTree(now->brother);
+	}
+	if (now->son != NULL)
+	{
+		FreeBoneTree(now->son);
+	}
+	if (now != NULL)
+	{
+		free(now);
+	}
 }
 PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::string &resource_desc_file)
 {
@@ -252,31 +273,32 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 				return check_error;
 			}
 			std::string now_animation_name = path_name + rec_value.string_value;
-			instream.open(now_animation_name);
+			instream.open(now_animation_name,ios::binary);
 			int32_t animation_bone_num;
 			instream.read(reinterpret_cast<char*>(&animation_bone_num), sizeof(animation_bone_num));
-			for (int i = 0; i < animation_bone_num; ++i)
+			for (int l = 0; l < animation_bone_num; ++l)
 			{
 				animation_data new_bone_data;
 				//骨骼信息
-				int32_t bone_name_size;
+				int32_t bone_name_size = -1;
 				instream.read(reinterpret_cast<char*>(&bone_name_size), sizeof(bone_name_size));
 				char *name = new char[bone_name_size];
 				instream.read(name, bone_name_size * sizeof(char));
 				new_bone_data.bone_name += name;
 				delete[] name;
 				//旋转向量
-				int32_t rotation_key_num;
+				int32_t rotation_key_num = 0;
 				instream.read(reinterpret_cast<char*>(&rotation_key_num), sizeof(rotation_key_num));
 				quaternion_animation *new_rotation_key = new quaternion_animation[rotation_key_num];
 				int32_t rotation_key_size = sizeof(new_rotation_key[0]) * rotation_key_num;
+
 				instream.read(reinterpret_cast<char*>(new_rotation_key), rotation_key_size);
 				for (int j = 0; j < rotation_key_num; ++j)
 				{
 					new_bone_data.rotation_key.push_back(new_rotation_key[i]);
 				}
 				//平移向量
-				int32_t translation_key_num;
+				int32_t translation_key_num = 0;
 				instream.read(reinterpret_cast<char*>(&translation_key_num), sizeof(translation_key_num));
 				vector_animation *new_translation_key = new vector_animation[translation_key_num];
 				int32_t translation_key_size = sizeof(new_translation_key[0]) * translation_key_num;
@@ -285,8 +307,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 				{
 					new_bone_data.translation_key.push_back(new_translation_key[i]);
 				}
+				
 				//缩放向量
-				int32_t scaling_key_num;
+				int32_t scaling_key_num = 0;
 				instream.read(reinterpret_cast<char*>(&scaling_key_num), sizeof(scaling_key_num));
 				vector_animation *new_scaling_key = new vector_animation[scaling_key_num];
 				int32_t scaling_key_size = sizeof(new_scaling_key[0]) * scaling_key_num;
@@ -304,8 +327,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 			//将动画信息加入表单
 			skin_animation_name.insert(std::pair<std::string, pancy_resource_id>(now_animation_name, i));
 			skin_animation_map.insert(std::pair<pancy_resource_id, animation_set>(i, new_animation));	
+			instream.close();
 		}
-		instream.close();
+		
 	}
 	//读取顶点动画
 	if (if_pointmesh)
@@ -319,9 +343,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 				return check_error;
 			}
 			std::string now_animation_name = path_name + rec_value.string_value;
-			instream.open(now_animation_name);
+			instream.open(now_animation_name,ios::binary);
 			instream.read(reinterpret_cast<char*>(&all_frame_num), sizeof(all_frame_num));
-			instream.read(reinterpret_cast<char*>(&all_frame_num), sizeof(all_frame_num));
+			instream.read(reinterpret_cast<char*>(&perframe_size), sizeof(perframe_size));
 			instream.read(reinterpret_cast<char*>(&buffer_size), sizeof(buffer_size));
 			instream.read(reinterpret_cast<char*>(&fps_point_catch), sizeof(fps_point_catch));
 			int32_t size_need = buffer_size * sizeof(mesh_animation_data);
@@ -334,5 +358,16 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 			delete[] new_point_catch_data;
 		}
 	}
+	return PancystarEngine::succeed;
+}
+//模型管理器
+static PancyModelControl* this_instance = NULL;
+PancyModelControl::PancyModelControl(const std::string &resource_type_name_in) :PancyBasicResourceControl(resource_type_name_in)
+{
+
+}
+PancystarEngine::EngineFailReason PancyModelControl::BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out)
+{
+	*resource_out = new PancyBasicModel(desc_file_in);
 	return PancystarEngine::succeed;
 }

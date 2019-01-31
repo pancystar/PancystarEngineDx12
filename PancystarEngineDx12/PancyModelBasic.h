@@ -171,7 +171,7 @@ namespace PancystarEngine
 		uint32_t all_frame_num;
 		uint32_t fps_point_catch;
 		PancystarEngine::EngineFailReason BuildDefaultBuffer(
-			ID3D12GraphicsCommandList* cmdList,
+			PancyNowGraphicsCommandList* cmdList,
 			int64_t memory_alignment_size,
 			int64_t memory_block_alignment_size,
 			SubMemoryPointer &default_buffer,
@@ -255,6 +255,7 @@ namespace PancystarEngine
 		//读取骨骼树
 		PancystarEngine::EngineFailReason LoadSkinTree(string filename);
 		void ReadBoneTree(skin_tree *now);
+		void FreeBoneTree(skin_tree *now);
 		//读取网格数据
 		template<typename T>
 		PancystarEngine::EngineFailReason LoadMeshData(const std::string &file_name_vertex, const std::string &file_name_index)
@@ -290,5 +291,23 @@ namespace PancystarEngine
 			return PancystarEngine::succeed;
 		}
 	};
-
+	//模型管理器
+	class PancyModelControl : public PancystarEngine::PancyBasicResourceControl 
+	{
+	private:
+		PancyModelControl(const std::string &resource_type_name_in);
+	public:
+		static PancyModelControl* GetInstance()
+		{
+			static PancyModelControl* this_instance;
+			if (this_instance == NULL)
+			{
+				this_instance = new PancyModelControl("Model Resource Control");
+			}
+			return this_instance;
+		}
+	private:
+		PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out);
+	};
+	
 }
