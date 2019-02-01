@@ -1,9 +1,0 @@
-{
-	"commit_block_num" : 1,
-	"heap_flag_in" : 
-	[
-		"D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS"
-	],
-	"heap_type_in" : "D3D12_HEAP_TYPE_UPLOAD",
-	"per_block_size" : 71303168
-}

@@ -15,7 +15,7 @@ PancySubModel::~PancySubModel()
 	}
 }
 //模型类
-PancyBasicModel::PancyBasicModel(const std::string &desc_file_in) : PancyBasicVirtualResource(desc_file_in)
+PancyBasicModel::PancyBasicModel(const std::string &resource_name, const Json::Value &root_value) : PancyBasicVirtualResource(resource_name,root_value)
 {
 }
 PancyBasicModel::~PancyBasicModel()
@@ -91,36 +91,38 @@ void PancyBasicModel::FreeBoneTree(skin_tree *now)
 		free(now);
 	}
 }
-PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::string &resource_desc_file)
+PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Value &root_value, const std::string &resource_name)
 {
 	PancystarEngine::EngineFailReason check_error;
 	std::string path_name = "";
 	std::string file_name = "";
 	std::string tile_name = "";
-	DivideFilePath(resource_desc_file, path_name, file_name, tile_name);
+	DivideFilePath(resource_name, path_name, file_name, tile_name);
 	pancy_json_value rec_value;
+	/*
 	Json::Value root_value;
 	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_desc_file, root_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	*/
 	//是否包含骨骼动画
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfHaveSkinAnimation", pancy_json_data_type::json_data_bool, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "IfHaveSkinAnimation", pancy_json_data_type::json_data_bool, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	if_skinmesh = rec_value.bool_value;
 	//是否包含顶点动画
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfHavePoinAnimation", pancy_json_data_type::json_data_bool, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "IfHavePoinAnimation", pancy_json_data_type::json_data_bool, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	if_pointmesh = rec_value.bool_value;
 	//模型的pbr类型
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "PbrType", pancy_json_data_type::json_data_enum, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "PbrType", pancy_json_data_type::json_data_enum, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -128,7 +130,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 	model_pbr_type = static_cast<PbrMaterialType>(rec_value.int_value);
 	//读取模型的网格数据
 	int32_t model_part_num;
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "model_num", pancy_json_data_type::json_data_int, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "model_num", pancy_json_data_type::json_data_int, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -165,7 +167,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 	}
 	//读取模型的纹理数据
 	int32_t model_texture_num;
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "texture_num", pancy_json_data_type::json_data_int, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "texture_num", pancy_json_data_type::json_data_int, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -195,28 +197,28 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 		std::unordered_map<TexType, pancy_object_id> now_material_need;
 		int32_t material_id;
 		//材质id
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "materialID", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "materialID", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		material_id = rec_value.int_value;
 		//漫反射纹理
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "Albedotex", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "Albedotex", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, rec_value.int_value));
 		//法线纹理
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "Normaltex", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "Normaltex", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, rec_value.int_value));
 		//AO纹理
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "Ambienttex", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "Ambienttex", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -226,14 +228,14 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 		if (model_pbr_type == PbrMaterialType::PbrType_MetallicRoughness)
 		{
 			//金属度纹理
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "MetallicTex", pancy_json_data_type::json_data_int, rec_value);
+			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "MetallicTex", pancy_json_data_type::json_data_int, rec_value);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
 			now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_metallic, rec_value.int_value));
 			//粗糙度纹理
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "RoughnessTex", pancy_json_data_type::json_data_int, rec_value);
+			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "RoughnessTex", pancy_json_data_type::json_data_int, rec_value);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -243,7 +245,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 		else if (model_pbr_type == PbrMaterialType::PbrType_SpecularSmoothness)
 		{
 			//镜面光&平滑度纹理
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "SpecularSmoothTex", pancy_json_data_type::json_data_int, rec_value);
+			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "SpecularSmoothTex", pancy_json_data_type::json_data_int, rec_value);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -267,7 +269,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 		for (int i = 0; i < skin_animation_value.size(); ++i)
 		{
 			animation_set new_animation;
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, skin_animation_value, i, pancy_json_data_type::json_data_string, rec_value);
+			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, skin_animation_value, i, pancy_json_data_type::json_data_string, rec_value);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -337,7 +339,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const std::strin
 		Json::Value point_animation_value = root_value.get("PointAnimation", Json::Value::null);
 		for (int i = 0; i < point_animation_value.size(); ++i)
 		{
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, point_animation_value, i, pancy_json_data_type::json_data_string, rec_value);
+			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, point_animation_value, i, pancy_json_data_type::json_data_string, rec_value);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -366,8 +368,12 @@ PancyModelControl::PancyModelControl(const std::string &resource_type_name_in) :
 {
 
 }
-PancystarEngine::EngineFailReason PancyModelControl::BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out)
+PancystarEngine::EngineFailReason PancyModelControl::BuildResource(
+	const Json::Value &root_value,
+	const std::string &name_resource_in,
+	PancyBasicVirtualResource** resource_out
+)
 {
-	*resource_out = new PancyBasicModel(desc_file_in);
+	*resource_out = new PancyBasicModel(name_resource_in,root_value);
 	return PancystarEngine::succeed;
 }

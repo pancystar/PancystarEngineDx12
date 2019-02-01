@@ -1,9 +1,0 @@
-{
-  "D3D12_DESCRIPTOR_HEAP_DESC": {
-    "Flags": "D3D12_DESCRIPTOR_HEAP_FLAG_NONE",
-    "NodeMask": 0,
-    "NumDescriptors": 256,
-    "Type": "D3D12_DESCRIPTOR_HEAP_TYPE_DSV"
-  },
-	"heap_block_size" : 1
-}

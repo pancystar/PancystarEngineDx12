@@ -1,6 +1,5 @@
 #pragma once
 #include"PancystarEngineBasicDx12.h"
-#include"PancyResourceBasic.h"
 #include"PancyJsonTool.h"
 
 class PancyDx12DeviceBasic

@@ -173,7 +173,50 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	//加载brdf预处理纹理
 	//todo:commandalloctor间隔帧需要两个线程池
 	//todo：依靠resourcedesc来计算heap及分块的大小
+	//done:2019.2.1
 	//pancy_object_id tex_brdf_id;
+	//创建新的屏幕空间纹理格式
+	D3D12_RESOURCE_DESC default_tex_RGB_desc;
+	default_tex_RGB_desc.Alignment = 0;
+	default_tex_RGB_desc.DepthOrArraySize = 1;
+	default_tex_RGB_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	default_tex_RGB_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	default_tex_RGB_desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	default_tex_RGB_desc.Height = 1024;
+	default_tex_RGB_desc.Width = 1024;
+	default_tex_RGB_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	default_tex_RGB_desc.MipLevels = 1;
+	default_tex_RGB_desc.SampleDesc.Count = 1;
+	default_tex_RGB_desc.SampleDesc.Quality = 0;
+	std::vector<D3D12_HEAP_FLAGS> heap_flags;
+	heap_flags.clear();
+	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_BUFFERS);
+	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES);
+	std::string subres_name;
+	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(default_tex_RGB_desc, 1, D3D12_HEAP_TYPE_DEFAULT, heap_flags, D3D12_RESOURCE_STATE_COMMON, subres_name);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	std::string RGB8_file_data = "json\\texture\\1024_1024_R16B16G16A16FLOAT.json";
+	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(RGB8_file_data))
+	{
+		Json::Value json_data_out;
+		//填充资源格式
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
+		//写入文件并标记为已创建
+		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, RGB8_file_data);
+		//将文件标记为已经创建
+		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(RGB8_file_data);
+	}
+
+
+
 	SubMemoryPointer texture_brdf_need;
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("json\\texture\\1024_1024_R16B16G16A16FLOAT.json", tex_brdf_id);
 	if (!check_error.CheckIfSucceed())

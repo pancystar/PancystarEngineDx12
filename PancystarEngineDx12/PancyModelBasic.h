@@ -183,7 +183,7 @@ namespace PancystarEngine
 		//文件读取器
 		ifstream instream;
 	public:
-		PancyBasicModel(const std::string &desc_file_in);
+		PancyBasicModel(const std::string &resource_name,const Json::Value &root_value);
 		//获取渲染网格
 		inline pancy_object_id GetSubModelNum()
 		{
@@ -251,7 +251,7 @@ namespace PancystarEngine
 		
 		virtual ~PancyBasicModel();
 	private:
-		PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
+		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name);
 		//读取骨骼树
 		PancystarEngine::EngineFailReason LoadSkinTree(string filename);
 		void ReadBoneTree(skin_tree *now);
@@ -307,7 +307,11 @@ namespace PancystarEngine
 			return this_instance;
 		}
 	private:
-		PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out);
+		PancystarEngine::EngineFailReason BuildResource(
+			const Json::Value &root_value,
+			const std::string &name_resource_in,
+			PancyBasicVirtualResource** resource_out
+		);
 	};
 	
 }

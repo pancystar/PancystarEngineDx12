@@ -194,7 +194,7 @@ HRESULT PancystarEngine::MyFillInitData(_In_ size_t width,
 
 	return initData.empty() ? E_FAIL : S_OK;
 }
-PancyBasicTexture::PancyBasicTexture(std::string desc_file_in) : PancystarEngine::PancyBasicVirtualResource(desc_file_in)
+PancyBasicTexture::PancyBasicTexture(const std::string &resource_name,const Json::Value &root_value) : PancystarEngine::PancyBasicVirtualResource(resource_name,root_value)
 {
 	if_force_srgb = false;
 	if_gen_mipmap = false;
@@ -856,20 +856,22 @@ bool PancyBasicTexture::CheckIfJson(const std::string &path_name)
 	}
 	return false;
 }
-PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const std::string &picture_desc_file)
+PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Json::Value &root_value)
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_json_value rec_value;
+	/*
 	Json::Value root_value;
-	Json::Value sub_res_value;
 	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(picture_desc_file, root_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	*/
+	Json::Value sub_res_value;
 	//加载次级资源的格式文件
 	tex_dsv_desc.Texture2D.MipSlice = 0;
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(picture_desc_file, root_value, "SubResourceFile", pancy_json_data_type::json_data_string, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "SubResourceFile", pancy_json_data_type::json_data_string, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -881,20 +883,21 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const std
 	{
 		return check_error;
 	}
-	//加载DSV资料
-	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(subresource_file_name, root_value);
+	//加载纹理资源
+	Json::Value sub_resource_desc;
+	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(subresource_file_name, sub_resource_desc);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	Json::Value resource_desc = root_value.get("D3D12_RESOURCE_DESC", Json::Value::null);
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(picture_desc_file, resource_desc, "Format", pancy_json_data_type::json_data_enum, rec_value);
+	Json::Value resource_desc = sub_resource_desc.get("D3D12_RESOURCE_DESC", Json::Value::null);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, resource_desc, "Format", pancy_json_data_type::json_data_enum, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	tex_dsv_desc.Format = static_cast<DXGI_FORMAT>(rec_value.int_value);
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(picture_desc_file, resource_desc, "Dimension", pancy_json_data_type::json_data_enum, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, resource_desc, "Dimension", pancy_json_data_type::json_data_enum, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -949,17 +952,23 @@ void PancyBasicTexture::RebuildTextureDataPath(const std::string &json_file_name
 		tex_data_file_name = path_file + tex_data_file_name;
 	}
 }
-PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::string &resource_desc_file)
+PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(
+	const Json::Value &root_value, 
+	const std::string &resource_name,
+	ResourceStateType &now_res_state
+)
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_json_value rec_value;
+	/*
 	Json::Value root_value;
 	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_desc_file, root_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfFromFile", pancy_json_data_type::json_data_int, rec_value);
+	*/
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "IfFromFile", pancy_json_data_type::json_data_int, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -967,16 +976,16 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::str
 	if (rec_value.int_value == 1)
 	{
 		std::string tex_file_name;
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "FileName", pancy_json_data_type::json_data_string, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "FileName", pancy_json_data_type::json_data_string, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		tex_file_name = rec_value.string_value;
 		//根据路径格式决定是否修改为绝对路径
-		RebuildTextureDataPath(resource_desc_file, tex_file_name);
+		RebuildTextureDataPath(resource_name, tex_file_name);
 		//是否自动创建mipmap
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfAutoBuildMipMap", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "IfAutoBuildMipMap", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -990,7 +999,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::str
 			if_gen_mipmap = false;
 		}
 		//是否强制转换为srgb
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfForceSrgb", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "IfForceSrgb", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -1004,13 +1013,16 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource(const std::str
 			if_force_srgb = false;
 		}
 		//最大内存大小
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "MaxSize", pancy_json_data_type::json_data_int, rec_value);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "MaxSize", pancy_json_data_type::json_data_int, rec_value);
 		max_size = rec_value.int_value;
 		return LoadPictureFromFile(tex_file_name);
+		now_res_state = ResourceStateType::resource_state_load_CPU_memory_finish;
+
 	}
 	else
 	{
-		return BuildEmptyPicture(resource_desc_file);
+		return BuildEmptyPicture(root_value);
+		now_res_state = ResourceStateType::resource_state_load_GPU_memory_finish;
 	}
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
@@ -1099,9 +1111,12 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 PancyTextureControl::PancyTextureControl(const std::string &resource_type_name_in) :PancystarEngine::PancyBasicResourceControl(resource_type_name_in)
 {
 }
-PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out)
+PancystarEngine::EngineFailReason PancyTextureControl::BuildResource(
+	const Json::Value &root_value,
+	const std::string &name_resource_in,
+	PancyBasicVirtualResource** resource_out)
 {
-	*resource_out = new PancyBasicTexture(desc_file_in);
+	*resource_out = new PancyBasicTexture(name_resource_in, root_value);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyTextureControl::SaveTextureToFile(

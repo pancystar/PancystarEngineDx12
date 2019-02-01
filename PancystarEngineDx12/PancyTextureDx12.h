@@ -48,11 +48,9 @@ namespace PancystarEngine
 		bool                             if_gen_mipmap; //是否为无mipmap的纹理创建mipmap
 		bool                             if_force_srgb; //是否强制转换为线性空间纹理
 		int                              max_size;      //纹理最大大小
-		//D3D12_RESOURCE_DESC              texture_desc;  //纹理格式
 		D3D12_SHADER_RESOURCE_VIEW_DESC  tex_srv_desc = {};  //纹理访问格式
 		D3D12_DEPTH_STENCIL_VIEW_DESC    tex_dsv_desc = {};  //深度模板缓冲格式
 		D3D12_RENDER_TARGET_VIEW_DESC    tex_rtv_desc = {};  //渲染目标格式
-		//VirtualMemoryPointer             tex_data;      //纹理数据指针
 		//todo：纹理拷贝
 		bool                             if_copy_finish;       //纹理上传gpu是否完成
 		SubMemoryPointer                 tex_data;             //纹理数据指针
@@ -60,7 +58,8 @@ namespace PancystarEngine
 		PancyFenceIdGPU                  copy_broken_fence;
 	public:
 		PancyBasicTexture(
-			std::string desc_file_in
+			const std::string &resource_name,
+			const Json::Value &root_value
 		);
 		PancystarEngine::EngineFailReason GetResource(SubMemoryPointer &resource)
 		{
@@ -99,9 +98,10 @@ namespace PancystarEngine
 			return tex_rtv_desc;
 		}
 	private:
-		PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file);
+		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name, ResourceStateType &now_res_state);
 		PancystarEngine::EngineFailReason LoadPictureFromFile(const std::string &picture_path_file);
-		PancystarEngine::EngineFailReason BuildEmptyPicture(const std::string &picture_desc_file);
+		//PancystarEngine::EngineFailReason BuildEmptyPicture(const std::string &picture_desc_file);
+		PancystarEngine::EngineFailReason BuildEmptyPicture(const Json::Value &root_value);
 		
 		std::string GetFileTile(const std::string &data_input);
 		PancystarEngine::EngineFailReason BuildTextureResource(
@@ -194,6 +194,7 @@ namespace PancystarEngine
 			RTV_desc = tex_data->GetRTVDesc();
 			return PancystarEngine::succeed;
 		}
+		//根据指定的纹理资源类型，创建一套确定纹理资源格式的json文件(heap,subresource)
 		PancystarEngine::EngineFailReason BuildTextureTypeJson(
 			const D3D12_RESOURCE_DESC &subresource_desc,
 			int32_t resource_num,
@@ -210,7 +211,11 @@ namespace PancystarEngine
 			bool if_compress = false
 		);
 	private:
-		PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out);
+		PancystarEngine::EngineFailReason BuildResource(
+			const Json::Value &root_value,
+			const std::string &name_resource_in,
+			PancyBasicVirtualResource** resource_out
+		);
 	};
 	
 }

@@ -1,20 +1,22 @@
 {
-  "D3D12_RESOURCE_DESC": {
-    "Alignment": 0,
-    "DepthOrArraySize": 1,
-    "Dimension": "D3D12_RESOURCE_DIMENSION_TEXTURE2D",
-    "Flags": "D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET",
-    "Format": "DXGI_FORMAT_R16G16B16A16_FLOAT",
-    "Height": 1024,
-    "Layout": "D3D12_TEXTURE_LAYOUT_UNKNOWN",
-    "MipLevels": 1,
-    "SampleDesc": {
-      "Count": 1,
-      "Quality": 0
-    },
-    "Width": 1024
-  },
-  "D3D12_RESOURCE_STATES": "D3D12_RESOURCE_STATE_COMMON",
-  "ResourceType": "json\\resource_heap\\tex_1024_1024_R16G16B16A16_FLOAT_1mip.json",
-  "per_block_size": 8388608
+	"D3D12_RESOURCE_DESC" : 
+	{
+		"Alignment" : 0,
+		"DepthOrArraySize" : 1,
+		"Dimension" : "D3D12_RESOURCE_DIMENSION_TEXTURE2D",
+		"Flags" : "D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET",
+		"Format" : "DXGI_FORMAT_R16G16B16A16_FLOAT",
+		"Height" : 1024,
+		"Layout" : "D3D12_TEXTURE_LAYOUT_UNKNOWN",
+		"MipLevels" : 1,
+		"SampleDesc" : 
+		{
+			"Count" : 1,
+			"Quality" : 0
+		},
+		"Width" : 1024
+	},
+	"D3D12_RESOURCE_STATES" : "D3D12_RESOURCE_STATE_COMMON",
+	"ResourceType" : "json\\resource_heap\\tex_1024_1024_R16G16B16A16_FLOAT_1mip.json",
+	"per_block_size" : 8388608
 }
