@@ -26,6 +26,25 @@ void PancyBasicVirtualResource::DeleteReference()
 		reference_count.store(0);
 	}
 }
+PancystarEngine::EngineFailReason PancyBasicVirtualResource::CopyCpuResourceToGpu(void* cpu_resource,const pancy_resource_size &resource_size_in)
+{
+	if (now_res_state == ResourceStateType::resource_state_not_init)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL,"The Resource Haven't load or load failed");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Resource"+ resource_name +" From Cpu to Gpu", error_message);
+		return error_message;
+	}
+	else if (now_res_state == ResourceStateType::resource_state_load_GPU_memory_finish) 
+	{
+		now_res_state == ResourceStateType::resource_state_load_CPU_memory_finish;
+	}
+	return UpdateResourceToGPU(now_res_state, cpu_resource, resource_size_in);
+}
+ResourceStateType PancyBasicVirtualResource::GetResourceState()
+{
+	CheckIfResourceLoadToGpu(now_res_state);
+	return now_res_state;
+}
 PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create()
 {
 	auto check_error = InitResource(root_value, resource_name, now_res_state);
@@ -34,6 +53,14 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create()
 		return check_error;
 	}
 	return PancystarEngine::succeed;
+}
+//空白的虚函数
+PancystarEngine::EngineFailReason PancyBasicVirtualResource::UpdateResourceToGPU(
+	ResourceStateType &now_res_state,
+	void* resource,
+	const pancy_resource_size &resource_size_in
+)
+{
 }
 //基础资源管理器
 PancyBasicResourceControl::PancyBasicResourceControl(const std::string &resource_type_name_in)
@@ -141,6 +168,35 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::DeleteResurceRefere
 		delete data_now->second;
 		basic_resource_array.erase(data_now);
 	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyBasicResourceControl::CopyCpuResourceToGpu(const pancy_object_id &resource_id, void* cpu_resource)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto data_now = basic_resource_array.find(resource_id);
+	if (data_now == basic_resource_array.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Copy Cpu Resource To Gpu in resource control " + resource_type_name, error_message);
+		return error_message;
+	}
+	check_error = data_now->second->CopyCpuResourceToGpu(cpu_resource);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyBasicResourceControl::GetResourceState(const pancy_object_id &resource_id, ResourceStateType &resource_state)
+{
+	auto data_now = basic_resource_array.find(resource_id);
+	if (data_now == basic_resource_array.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Resource State in resource control " + resource_type_name, error_message);
+		return error_message;
+	}
+	resource_state = data_now->second->GetResourceState();
 	return PancystarEngine::succeed;
 }
 PancyBasicVirtualResource* PancyBasicResourceControl::GetResource(const pancy_object_id &resource_id)

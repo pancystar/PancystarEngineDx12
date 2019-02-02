@@ -10,8 +10,8 @@ namespace PancystarEngine
 	};
 	class PancyBasicVirtualResource
 	{
-		ResourceStateType now_res_state;
 		Json::Value root_value;
+		ResourceStateType now_res_state;
 	protected:
 		std::string resource_name;
 		std::atomic<pancy_object_id> reference_count;
@@ -19,8 +19,13 @@ namespace PancystarEngine
 		PancyBasicVirtualResource(const std::string &resource_name_in, Json::Value root_value_in);
 		virtual ~PancyBasicVirtualResource();
 		PancystarEngine::EngineFailReason Create();
+		PancystarEngine::EngineFailReason CopyCpuResourceToGpu(void* cpu_resource, const pancy_resource_size &resource_size_in);
+		//获取当前资源的运行状态(置空/cpu部分已经创建/已经完全加载入GPU)
+		ResourceStateType GetResourceState();
+		
 		void AddReference();
 		void DeleteReference();
+
 		inline int32_t GetReferenceCount()
 		{
 			return reference_count;
@@ -30,12 +35,20 @@ namespace PancystarEngine
 			return resource_name;
 		}
 	private:
-		//virtual PancystarEngine::EngineFailReason InitResource(const std::string &resource_desc_file) = 0;
+		//注册并加载资源
 		virtual PancystarEngine::EngineFailReason InitResource(
 			const Json::Value &root_value, 
 			const std::string &resource_name, 
 			ResourceStateType &now_res_state
 		) = 0;
+		//使用CPU数据更新资源
+		virtual PancystarEngine::EngineFailReason UpdateResourceToGPU(
+			ResourceStateType &now_res_state,
+			void* resource,
+			const pancy_resource_size &resource_size_in
+		);
+		//检测当前的资源是否已经被载入GPU
+		virtual void CheckIfResourceLoadToGpu(ResourceStateType &now_res_state) = 0;
 	};
 	class PancyBasicResourceControl
 	{
@@ -52,6 +65,9 @@ namespace PancystarEngine
 		PancyBasicVirtualResource* GetResource(const pancy_object_id &desc_file_name);
 		PancystarEngine::EngineFailReason LoadResource(const std::string &desc_file_in, pancy_object_id &id_need);
 		PancystarEngine::EngineFailReason LoadResource(const std::string &name_resource_in, const Json::Value &root_value, pancy_object_id &id_need);
+
+		PancystarEngine::EngineFailReason CopyCpuResourceToGpu(const pancy_object_id &resource_id,void* cpu_resource);
+		PancystarEngine::EngineFailReason GetResourceState(const pancy_object_id &resource_id, ResourceStateType &resource_state);
 	private:
 		//virtual PancystarEngine::EngineFailReason BuildResource(const std::string &desc_file_in, PancyBasicVirtualResource** resource_out) = 0;
 		virtual PancystarEngine::EngineFailReason BuildResource(

@@ -7,6 +7,10 @@
 #include<WICTextureLoader.h>
 #define TextureHeapAliaze 16777216
 #define BufferHeapAliaze 4194304
+/*
+todo:ÎÆÀíË«»º³å
+todo:ÎÆÀícopy queue
+*/
 enum TextureCompressType 
 {
 	TEXTURE_COMPRESS_NONE = 0,

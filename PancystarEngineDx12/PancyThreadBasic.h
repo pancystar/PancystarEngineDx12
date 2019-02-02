@@ -106,6 +106,11 @@ public:
 	bool CheckGpuBrokenFence(const PancyFenceIdGPU &broken_point_id);
 	//等待一个GPU断点
 	PancystarEngine::EngineFailReason WaitGpuBrokenFence(const PancyFenceIdGPU &broken_point_id);
+	//获取下一个将要进行的GPU断点
+	inline PancyFenceIdGPU GetNextBrokenFence() 
+	{
+		return fence_value_self_add;
+	}
 	//提交一个准备完毕的commandlist
 	PancystarEngine::EngineFailReason SubmitRenderlist
 	(
@@ -135,8 +140,10 @@ class ThreadPoolGPU
 	int32_t pre_thread_id;
 	//multi engine 变量(根据backbuffer的数量来决定使用几个rename缓冲区)
 	std::vector<std::unordered_map<PancyEngineIdGPU, CommandListEngine*>> multi_engine_list;
+	//线程池是否跟随交换链进行rename操作
+	bool if_rename;
 public:
-	ThreadPoolGPU(uint32_t GPUThreadPoolID_in);
+	ThreadPoolGPU(uint32_t GPUThreadPoolID_in,bool if_rename_in = true);
 	~ThreadPoolGPU();
 	//获取对应类型的线程池
 	CommandListEngine* GetThreadPool(D3D12_COMMAND_LIST_TYPE engine_type);
@@ -158,8 +165,8 @@ private:
 
 class ThreadPoolGPUControl
 {
-	ThreadPoolGPU* main_contex;//主渲染线程池
-							   //其他的GPU线程池表
+	ThreadPoolGPU* main_contex;         //主渲染线程池
+	ThreadPoolGPU* resource_load_contex;//资源加载线程池
 	int GPU_thread_pool_self_add;
 	std::unordered_map<uint32_t, ThreadPoolGPU*> GPU_thread_pool_empty;
 	std::unordered_map<uint32_t, ThreadPoolGPU*> GPU_thread_pool_working;
@@ -186,6 +193,10 @@ public:
 		return threadpool_control_instance;
 	}
 	ThreadPoolGPU* GetMainContex()
+	{
+		return main_contex;
+	}
+	ThreadPoolGPU* GetResourceLoadContex()
 	{
 		return main_contex;
 	}
