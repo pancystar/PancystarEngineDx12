@@ -183,11 +183,13 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		{
 			return check_error;
 		}
+		/*
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->AddResurceReference(texture_id);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
+		*/
 		texture_list.push_back(texture_id);
 	}
 	//读取模型的材质数据

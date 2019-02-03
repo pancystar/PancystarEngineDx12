@@ -1,9 +1,11 @@
 #include"PancyBufferDx12.h"
 using namespace PancystarEngine;
+static PancyBasicBufferControl* this_instance = NULL;
 //基础缓冲区
 PancyBasicBuffer::PancyBasicBuffer(const std::string &resource_name_in, Json::Value root_value_in) :PancyBasicVirtualResource(resource_name_in, root_value_in)
 {
-	WaitFence = 0;
+	upload_buffer_id = -1;
+	WaitFence = -1;
 }
 PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource(const Json::Value &root_value, const std::string &resource_name, ResourceStateType &now_res_state)
 {
@@ -26,29 +28,118 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource(const Json::Val
 	{
 		return check_error;
 	}
-	if (buffer_type == PancyBufferType::Buffer_ShaderResource_dynamic || buffer_type == PancyBufferType::Buffer_Constant) 
-	{
-		now_res_state = ResourceStateType::resource_state_load_GPU_memory_finish;
-	}
-	else 
-	{
-		now_res_state = ResourceStateType::resource_state_load_CPU_memory_finish;
-	}
-	
+	now_res_state = ResourceStateType::resource_state_load_GPU_memory_finish;
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicBuffer::UpdateResourceToGPU(
 	ResourceStateType &now_res_state,
 	void* resource,
-	const pancy_resource_size &resource_size_in
-) 
+	const pancy_resource_size &resource_size_in,
+	const pancy_resource_size &resource_offset_in
+)
 {
-	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist();
-
-
-	WaitFence = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->GetNextBrokenFence();
+	//先检查当前的资源是否处于GPU空闲状态
+	if (GetResourceState() != ResourceStateType::resource_state_load_GPU_memory_finish) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Resource is being created now,could not write data");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Upload Buffer resource From Cpu To GPU", error_message);
+		return error_message;
+	}
+	PancystarEngine::EngineFailReason check_error;
+	if (buffer_type == Buffer_ShaderResource_dynamic || buffer_type == Buffer_Constant) 
+	{
+		//动态缓冲区,直接拷贝
+		check_error = SubresourceControl::GetInstance()->WriteFromCpuToBuffer(buffer_data, resource_offset_in, resource, resource_size_in);
+		if (!check_error.CheckIfSucceed()) 
+		{
+			return check_error;
+		}
+		now_res_state = ResourceStateType::resource_state_load_GPU_memory_finish;
+	}
+	else if (buffer_type == Buffer_ShaderResource_static || buffer_type == Buffer_Vertex || buffer_type == Buffer_Index)
+	{
+		//静态缓冲区,需要借助额外的动态缓冲区进行拷贝
+		std::string subresource_name;
+		//先创建一个临时的动态缓冲区
+		check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(Buffer_ShaderResource_dynamic, resource_size_in, subresource_name);
+		if (!check_error.CheckIfSucceed()) 
+		{
+			return check_error;
+		}
+		//填充资源格式
+		Json::Value json_root;
+		PancyJsonTool::GetInstance()->SetJsonValue(json_root, "BufferType", "Buffer_ShaderResource_dynamic");
+		PancyJsonTool::GetInstance()->SetJsonValue(json_root, "SubResourceFile", subresource_name);
+		//创建临时缓冲区资源
+		check_error = PancyBasicBufferControl::GetInstance()->LoadResource("Dynamic_buffer", json_root, upload_buffer_id,true);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//将需要拷贝的资源先拷贝到临时缓冲区
+		check_error = PancyBasicBufferControl::GetInstance()->CopyCpuResourceToGpu(upload_buffer_id, resource, resource_size_in, 0);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//获取用于拷贝的commond list
+		PancyRenderCommandList *copy_render_list;
+		uint32_t copy_render_list_ID;
+		check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//获取拷贝资源
+		SubMemoryPointer upload_submemory_pointer;
+		ResourceStateType copy_resource_state = ResourceStateType::resource_state_not_init;
+		check_error = PancyBasicBufferControl::GetInstance()->GetBufferSubResource(upload_buffer_id, upload_submemory_pointer);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		check_error = PancyBasicBufferControl::GetInstance()->GetResourceState(upload_buffer_id, copy_resource_state);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		if (copy_resource_state != ResourceStateType::resource_state_load_GPU_memory_finish) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL,"The upload memory haven't init success");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Upload Buffer resource From Cpu To GPU",error_message);
+			return error_message;
+		}
+		//组织资源拷贝命令
+		check_error = SubresourceControl::GetInstance()->CopyResource(copy_render_list, upload_submemory_pointer, buffer_data,0, resource_offset_in, resource_size_in);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		copy_render_list->UnlockPrepare();
+		//提交渲染命令
+		ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
+		//预测等待眼位
+		WaitFence = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetNextBrokenFence();
+		now_res_state = ResourceStateType::resource_state_load_CPU_memory_finish;
+	}
+	return PancystarEngine::succeed;
 }
-
+void PancyBasicBuffer::CheckIfResourceLoadToGpu(ResourceStateType &now_res_state)
+{
+	if (now_res_state == ResourceStateType::resource_state_load_CPU_memory_finish) 
+	{
+		//资源加载进入CPU但是未完全载入GPU，检测资源是否已经加载完毕
+		bool if_GPU_finished = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->CheckGpuBrokenFence(WaitFence);
+		if (if_GPU_finished) 
+		{
+			//资源加载完毕
+			now_res_state = ResourceStateType::resource_state_load_GPU_memory_finish;
+			//删除临时的缓冲区
+			auto check_error = PancyBasicBufferControl::GetInstance()->DeleteResurceReference(upload_buffer_id);
+			WaitFence = -1;
+		}
+	}
+}
 //缓冲区管理器
 PancyBasicBufferControl::PancyBasicBufferControl(const std::string &resource_type_name_in) : PancyBasicResourceControl(resource_type_name_in)
 {
@@ -144,9 +235,9 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 	{
 		//根据每块内存的对齐大小确定每个堆可以开辟的内存数量
 		memory_num_per_heap = static_cast<pancy_object_id>(static_cast<pancy_resource_size>(MaxWasteSpace) / heap_alize_size);
-		if (memory_num_per_heap > 32)
+		if (memory_num_per_heap > MaxHeapDivide)
 		{
-			memory_num_per_heap = 32;
+			memory_num_per_heap = MaxHeapDivide;
 		}
 		//根据每块数据区的对齐大小重改数据区的请求大小
 		if (subresources_size % subresource_alize_size != 0)
@@ -201,7 +292,7 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 	else
 	{
 		PancystarEngine::EngineFailReason error_message(S_OK, "repeat load json file: " + heap_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		return error_message;
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build new buffer resource desc", error_message);
 	}
 	if (!FileBuildRepeatCheck::GetInstance()->CheckIfCreated(bufferblock_file_name))
 	{
@@ -234,8 +325,45 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 	else
 	{
 		PancystarEngine::EngineFailReason error_message(S_OK, "repeat load json file: " + bufferblock_file_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		return error_message;
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build new buffer resource desc", error_message);
 	}
 	subresource_desc_name = bufferblock_file_name;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyBasicBufferControl::WriteFromCpuToBuffer(
+	const pancy_object_id  &resource_id,
+	const pancy_resource_size &pointer_offset,
+	std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+	UINT64* pRowSizesInBytes,
+	UINT* pNumRows
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto resource_data = GetResource(resource_id);
+	if (resource_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource, check log for detail");
+		return error_message;
+	}
+	PancyBasicBuffer *real_data_pointer = dynamic_cast<PancyBasicBuffer*>(resource_data);
+	SubMemoryPointer now_pointer = real_data_pointer->GetBufferSubResource();
+	check_error = SubresourceControl::GetInstance()->WriteFromCpuToBuffer(now_pointer, pointer_offset, subresources, pLayouts, pRowSizesInBytes, pNumRows);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyBasicBufferControl::GetBufferSubResource(const pancy_object_id  &resource_id, SubMemoryPointer &submemory)
+{
+	auto resource_data = GetResource(resource_id);
+	if (resource_data == NULL) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource, check log for detail");
+		return error_message;
+	}
+	PancyBasicBuffer *real_data_pointer = dynamic_cast<PancyBasicBuffer*>(resource_data);
+	submemory = real_data_pointer->GetBufferSubResource();
 	return PancystarEngine::succeed;
 }

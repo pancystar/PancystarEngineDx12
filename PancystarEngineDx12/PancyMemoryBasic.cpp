@@ -24,7 +24,7 @@ MemoryBlockGpu::MemoryBlockGpu(
 		map_pointer = NULL;
 	}
 }
-PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(const int32_t &pointer_offset, const void* copy_data, const int32_t data_size)
+PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(const pancy_resource_size &pointer_offset, const void* copy_data, const pancy_resource_size data_size)
 {
 	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD) 
 	{
@@ -36,7 +36,7 @@ PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(const int
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(
-	const int32_t &pointer_offset, 
+	const pancy_resource_size &pointer_offset,
 	std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
 	UINT64* pRowSizesInBytes,
@@ -61,7 +61,7 @@ PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason MemoryBlockGpu::ReadFromBufferToCpu(const int32_t &pointer_offset, void* copy_data, const int32_t data_size)
+PancystarEngine::EngineFailReason MemoryBlockGpu::ReadFromBufferToCpu(const pancy_resource_size &pointer_offset, void* copy_data, const pancy_resource_size data_size)
 {
 	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
 	{
@@ -86,7 +86,7 @@ MemoryHeapGpu::MemoryHeapGpu(const std::string &heap_type_name_in)
 	size_per_block = 0;
 	max_block_num = 0;
 }
-PancystarEngine::EngineFailReason MemoryHeapGpu::Create(const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in)
+PancystarEngine::EngineFailReason MemoryHeapGpu::Create(const CD3DX12_HEAP_DESC &heap_desc_in, const pancy_resource_size &size_per_block_in, const pancy_resource_id &max_block_num_in)
 {
 	size_per_block = size_per_block_in;
 	max_block_num = max_block_num_in;
@@ -256,7 +256,7 @@ MemoryHeapGpu::~MemoryHeapGpu()
 	memory_heap_block.clear();
 }
 //GPU线性增长的资源堆
-MemoryHeapLinear::MemoryHeapLinear(const std::string &heap_type_name_in, const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in)
+MemoryHeapLinear::MemoryHeapLinear(const std::string &heap_type_name_in, const CD3DX12_HEAP_DESC &heap_desc_in, const pancy_resource_size &size_per_block_in, const pancy_resource_id &max_block_num_in)
 {
 	heap_desc = heap_desc_in;
 	size_per_block = size_per_block_in;
@@ -639,7 +639,7 @@ PancystarEngine::EngineFailReason SubMemoryData::Create(
 	{
 		return check_error;
 	}
-	per_memory_size = per_memory_size_in;
+	per_memory_size = static_cast<pancy_resource_size>(per_memory_size_in);
 	auto memory_data = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
 	/*
 	auto check_size = memory_data->GetSize() % static_cast<uint64_t>(per_memory_size_in);
@@ -650,7 +650,7 @@ PancystarEngine::EngineFailReason SubMemoryData::Create(
 		return error_message;
 	}
 	*/
-	pancy_object_id all_empty_num = static_cast<pancy_object_id>(memory_data->GetSize() / static_cast<uint64_t>(per_memory_size_in));
+	pancy_object_id all_empty_num = static_cast<pancy_object_id>(memory_data->GetSize() / per_memory_size_in);
 	for (pancy_object_id i = 0; i < all_empty_num; ++i)
 	{
 		empty_sub_memory.insert(i);
@@ -766,7 +766,7 @@ PancystarEngine::EngineFailReason SubresourceLiner::ReleaseSubResource
 	//todo: 一个资源链上没有资源引用时则删除该资源链
 	return PancystarEngine::succeed;
 }
-MemoryBlockGpu* SubresourceLiner::GetSubResource(pancy_object_id sub_memory_id, int64_t &per_memory_size)
+MemoryBlockGpu* SubresourceLiner::GetSubResource(pancy_object_id sub_memory_id, pancy_resource_size &per_memory_size)
 {
 	auto subresource_block = submemory_list.find(sub_memory_id);
 	if (subresource_block == submemory_list.end())
@@ -1139,6 +1139,84 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildSubresource(
 	}
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason SubresourceControl::WriteFromCpuToBuffer(
+	const SubMemoryPointer &submemory_pointer,
+	const pancy_resource_size &pointer_offset,
+	const void* copy_data,
+	const pancy_resource_size data_size
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_resource_size per_memory_size;
+	auto memory_block = GetResourceData(submemory_pointer, per_memory_size);
+	if (memory_block == NULL) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find submemory, check log for detail");
+		return error_message;
+	}
+	check_error = memory_block->WriteFromCpuToBuffer(submemory_pointer.offset* per_memory_size + pointer_offset, copy_data, data_size);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::WriteFromCpuToBuffer(
+	const SubMemoryPointer &submemory_pointer,
+	const pancy_resource_size &pointer_offset,
+	std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+	UINT64* pRowSizesInBytes,
+	UINT* pNumRows
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_resource_size per_memory_size;
+	auto memory_block = GetResourceData(submemory_pointer, per_memory_size);
+	if (memory_block == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	check_error = memory_block->WriteFromCpuToBuffer(
+		submemory_pointer.offset* per_memory_size + pointer_offset,
+		subresources,
+		pLayouts,
+		pRowSizesInBytes,
+		pNumRows
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::CopyResource(
+	PancyRenderCommandList *commandlist,
+	const SubMemoryPointer &src_submemory,
+	const SubMemoryPointer &dst_submemory,
+	const pancy_resource_size &src_offset,
+	const pancy_resource_size &dst_offset,
+	const pancy_resource_size &data_size
+) 
+{
+	pancy_resource_size per_memory_size_src;
+	pancy_resource_size per_memory_size_dst;
+	auto dst_res = GetResourceData(dst_submemory, per_memory_size_dst);
+	auto src_res = GetResourceData(src_submemory, per_memory_size_src);
+	if (dst_res == NULL || src_res == NULL) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	commandlist->GetCommandList()->CopyBufferRegion(
+		dst_res->GetResource().Get(),
+		dst_submemory.offset * per_memory_size_dst + dst_offset, 
+		src_res->GetResource().Get(),
+		src_submemory.offset*per_memory_size_src + src_offset,
+		data_size);
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason SubresourceControl::FreeSubResource(const SubMemoryPointer &submemory_pointer)
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1156,7 +1234,7 @@ PancystarEngine::EngineFailReason SubresourceControl::FreeSubResource(const SubM
 	}
 	return PancystarEngine::succeed;
 }
-MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &submemory_pointer, int64_t &per_memory_size)
+MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &submemory_pointer,pancy_resource_size &per_memory_size)
 {
 	auto submemory_list = subresource_list_map.find(submemory_pointer.type_id);
 	if (submemory_list == subresource_list_map.end())

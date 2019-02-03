@@ -1,5 +1,7 @@
 #pragma once
 #include"PancyDx12Basic.h"
+#include"PancyThreadBasic.h"
+#define MaxHeapDivide 32
 //显存指针
 struct VirtualMemoryPointer
 {
@@ -20,7 +22,7 @@ struct VirtualMemoryPointer
 //显存块
 class MemoryBlockGpu
 {
-	uint64_t memory_size;//存储块的大小
+	pancy_resource_size memory_size;//存储块的大小
 	ComPtr<ID3D12Resource> resource_data;//存储块的数据
 	D3D12_HEAP_TYPE resource_usage;
 	UINT8* map_pointer;
@@ -39,21 +41,21 @@ public:
 	{
 		return memory_size;
 	}
-	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(const int32_t &pointer_offset, const void* copy_data, const int32_t data_size);
+	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(const pancy_resource_size &pointer_offset, const void* copy_data, const pancy_resource_size data_size);
 	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(
-		const int32_t &pointer_offset, 
+		const pancy_resource_size &pointer_offset,
 		std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
 		UINT64* pRowSizesInBytes,
 		UINT* pNumRows
 	);
-	PancystarEngine::EngineFailReason ReadFromBufferToCpu(const int32_t &pointer_offset, void* copy_data, const int32_t data_size);
+	PancystarEngine::EngineFailReason ReadFromBufferToCpu(const pancy_resource_size &pointer_offset, void* copy_data, const pancy_resource_size data_size);
 };
 //保留显存堆
 class MemoryHeapGpu
 {
 	std::string heap_type_name;
-	uint64_t size_per_block;
+	pancy_resource_size size_per_block;
 	pancy_resource_id max_block_num;
 	ComPtr<ID3D12Heap> heap_data;
 	//std::unordered_set<pancy_resource_id> free_list;
@@ -65,7 +67,7 @@ class MemoryHeapGpu
 public:
 	MemoryHeapGpu(const std::string &heap_type_name_in);
 	//每个显存块的大小
-	inline uint64_t GetMemorySizePerBlock()
+	inline pancy_resource_size GetMemorySizePerBlock()
 	{
 		return size_per_block;
 	}
@@ -99,7 +101,7 @@ class MemoryHeapLinear
 {
 	//显存堆的格式
 	CD3DX12_HEAP_DESC heap_desc;
-	int64_t size_per_block;
+	pancy_resource_size size_per_block;
 	pancy_resource_id max_block_num;
 	//显存堆的名称
 	std::string heap_type_name;
@@ -109,7 +111,7 @@ class MemoryHeapLinear
 	//空出的显存堆
 	std::unordered_set<pancy_resource_id> empty_memory_heap;
 public:
-	MemoryHeapLinear(const std::string &heap_type_name_in, const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in);
+	MemoryHeapLinear(const std::string &heap_type_name_in, const CD3DX12_HEAP_DESC &heap_desc_in, const pancy_resource_size &size_per_block_in, const pancy_resource_id &max_block_num_in);
 	//从显存堆开辟资源
 	PancystarEngine::EngineFailReason BuildMemoryResource(
 		const D3D12_RESOURCE_DESC &resource_desc,
@@ -205,7 +207,7 @@ struct SubMemoryPointer
 class SubMemoryData 
 {
 	VirtualMemoryPointer buffer_data;//显存资源指针
-	pancy_object_id per_memory_size;//每个常量缓冲区的大小
+	pancy_resource_size per_memory_size;//每个缓冲区的大小
 	std::unordered_set<pancy_object_id> empty_sub_memory;
 	std::unordered_set<pancy_object_id> sub_memory_data;
 public:
@@ -228,9 +230,9 @@ public:
 	{
 		return MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
 	}
-	inline int64_t GetBlockSize() 
+	inline pancy_resource_size GetBlockSize()
 	{
-		return static_cast<int64_t>(per_memory_size);
+		return static_cast<pancy_resource_size>(per_memory_size);
 	}
 };
 class SubresourceLiner 
@@ -261,7 +263,7 @@ public:
 		const pancy_object_id &new_memory_block_id,
 		const pancy_object_id &sub_memory_offset
 	);
-	MemoryBlockGpu* GetSubResource(pancy_object_id sub_memory_id, int64_t &per_memory_size);
+	MemoryBlockGpu* GetSubResource(pancy_object_id sub_memory_id, pancy_resource_size &per_memory_size);
 };
 class SubresourceControl
 {
@@ -287,8 +289,30 @@ public:
 		SubMemoryPointer &submemory_pointer
 	);
 	PancystarEngine::EngineFailReason FreeSubResource(const SubMemoryPointer &submemory_pointer);
-	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer,int64_t &per_memory_size);
+	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(
+		const SubMemoryPointer &submemory_pointer,
+		const pancy_resource_size &pointer_offset, 
+		const void* copy_data, 
+		const pancy_resource_size data_size
+	);
+	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(
+		const SubMemoryPointer &submemory_pointer,
+		const pancy_resource_size &pointer_offset,
+		std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+		UINT64* pRowSizesInBytes,
+		UINT* pNumRows
+	);
+	PancystarEngine::EngineFailReason CopyResource(
+		PancyRenderCommandList *commandlist,
+		const SubMemoryPointer &src_submemory,
+		const SubMemoryPointer &dst_submemory,
+		const pancy_resource_size &src_offset,
+		const pancy_resource_size &dst_offset,
+		const pancy_resource_size &data_size
+	);
 private:
+	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer, pancy_resource_size &per_memory_size);
 	void InitSubResourceType(
 		const std::string &hash_name,
 		const std::string &heap_name_in,

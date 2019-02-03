@@ -1,6 +1,6 @@
 #pragma once
-#include"PancyResourceBasic.h"
 #include"PancyThreadBasic.h"
+#include"PancyBufferDx12.h"
 #include<DirectXTex.h>
 #include<LoaderHelpers.h>
 #include<DDSTextureLoader.h>
@@ -58,7 +58,8 @@ namespace PancystarEngine
 		//todo：纹理拷贝
 		bool                             if_copy_finish;       //纹理上传gpu是否完成
 		SubMemoryPointer                 tex_data;             //纹理数据指针
-		SubMemoryPointer                 update_tex_data;      //纹理上传数据指针
+		pancy_object_id                  upload_buffer_id;     //上传缓冲区ID号
+		//SubMemoryPointer                 update_tex_data;      //纹理上传数据指针
 		PancyFenceIdGPU                  copy_broken_fence;
 	public:
 		PancyBasicTexture(
