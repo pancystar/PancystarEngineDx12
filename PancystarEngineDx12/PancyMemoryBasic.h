@@ -1,6 +1,10 @@
 #pragma once
 #include"PancyDx12Basic.h"
 #include"PancyThreadBasic.h"
+#include<DirectXTex.h>
+#include<LoaderHelpers.h>
+#include<DDSTextureLoader.h>
+#include<WICTextureLoader.h>
 #define MaxHeapDivide 32
 //œ‘¥Ê÷∏’Î
 struct VirtualMemoryPointer
@@ -189,8 +193,8 @@ private:
 	);
 	PancystarEngine::EngineFailReason BuildHeap(
 		const std::string &HeapFileName,
-		const pancy_resource_id &commit_block_num,
-		const uint64_t &per_block_size,
+		const pancy_resource_size &heap_size,
+		const pancy_resource_size &per_block_size,
 		const D3D12_HEAP_TYPE &heap_type_in,
 		const D3D12_HEAP_FLAGS &heap_flag_in,
 		pancy_resource_id &resource_id,
@@ -311,6 +315,63 @@ public:
 		const pancy_resource_size &dst_offset,
 		const pancy_resource_size &data_size
 	);
+	PancystarEngine::EngineFailReason CopyResource(
+		PancyRenderCommandList *commandlist,
+		const SubMemoryPointer &src_submemory,
+		const SubMemoryPointer &dst_submemory,
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+		const pancy_object_id &Layout_num
+	);
+	PancystarEngine::EngineFailReason ResourceBarrier(
+		PancyRenderCommandList *commandlist,
+		const SubMemoryPointer &src_submemory,
+		const D3D12_RESOURCE_STATES &last_state,
+		const D3D12_RESOURCE_STATES &now_state
+		);
+	PancystarEngine::EngineFailReason CaptureTextureDataToWindows(
+		const SubMemoryPointer &tex_data,
+		const bool &if_cube_map,
+		DirectX::ScratchImage *new_image
+	);
+	PancystarEngine::EngineFailReason GetSubResourceDesc(
+		const SubMemoryPointer & tex_data,
+		D3D12_RESOURCE_DESC &resource_desc
+	);
+	PancystarEngine::EngineFailReason BuildConstantBufferView(
+		const SubMemoryPointer &src_submemory,
+		const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor
+	);
+	PancystarEngine::EngineFailReason BuildShaderResourceView(
+		const SubMemoryPointer &src_submemory,
+		const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+		const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
+	);
+	PancystarEngine::EngineFailReason BuildRenderTargetView(
+		const SubMemoryPointer &src_submemory,
+		const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+		const D3D12_RENDER_TARGET_VIEW_DESC  &RTV_desc
+	);
+	PancystarEngine::EngineFailReason BuildUnorderedAccessView(
+		const SubMemoryPointer &src_submemory,
+		const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+		const D3D12_UNORDERED_ACCESS_VIEW_DESC  &UAV_desc
+	);
+	PancystarEngine::EngineFailReason BuildDepthStencilView(
+		const SubMemoryPointer &src_submemory,
+		const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+		const D3D12_DEPTH_STENCIL_VIEW_DESC  &DSV_desc
+	);
+	PancystarEngine::EngineFailReason BuildVertexBufferView(
+		const SubMemoryPointer &src_submemory,
+		UINT StrideInBytes,
+		D3D12_VERTEX_BUFFER_VIEW &VBV_out
+	);
+	PancystarEngine::EngineFailReason BuildIndexBufferView(
+		const SubMemoryPointer &src_submemory,
+		DXGI_FORMAT StrideInBytes,
+		D3D12_INDEX_BUFFER_VIEW &IBV_out
+	);
+	
 private:
 	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer, pancy_resource_size &per_memory_size);
 	void InitSubResourceType(

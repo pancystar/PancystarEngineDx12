@@ -159,6 +159,8 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 			PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(Default_depthstencil_buffer[i]);
 		}
 	}
+
+	//todo:由纹理直接创建描述符
 	for (int i = 0; i < back_buffer_num; ++i)
 	{
 		//加载深度模板缓冲区
@@ -171,16 +173,21 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 		//创建深度模板缓冲区描述符
 		SubMemoryPointer tex_resource_data;
 		D3D12_DEPTH_STENCIL_VIEW_DESC DSV_desc;
+		D3D12_RESOURCE_DESC res_desc = {};
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[i], tex_resource_data);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetDSVDesc(Default_depthstencil_buffer[i], DSV_desc);
+		check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexDesc(Default_depthstencil_buffer[i], res_desc);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
+		DSV_desc.Flags = D3D12_DSV_FLAG_NONE;
+		DSV_desc.Format = res_desc.Format;
+		DSV_desc.Texture2D.MipSlice = 0;
+		DSV_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 		std::string dsv_descriptor_name = "json\\descriptor_heap\\DSV_1_descriptor_heap.json";
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, Default_depthstencil_view[i].resource_view_pack_id);
 		if (!check_error.CheckIfSucceed())
@@ -194,7 +201,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 			return check_error;
 		}
 	}
-
+	
 	//D3D12_DESCRIPTOR_HEAP_TYPE_DSV
 	check_error = ScreenChange();
 	if (!check_error.CheckIfSucceed())
@@ -340,6 +347,7 @@ WPARAM engine_windows_main::game_end()
 {
 	delete new_scene;
 	delete PancystarEngine::PancyModelControl::GetInstance();
+	delete PancystarEngine::PancyBasicBufferControl::GetInstance();
 	delete PancyDx12DeviceBasic::GetInstance();
 	PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 	delete PancystarEngine::EngineFailLog::GetInstance();

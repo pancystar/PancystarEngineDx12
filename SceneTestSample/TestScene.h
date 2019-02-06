@@ -30,6 +30,8 @@ class scene_test_simple : public SceneRoot
 	SubMemoryPointer cbuffer[2];
 	//资源绑定(待处理模型)
 	ResourceViewPointer table_offset_model[4];
+	//模型ID号
+	uint32_t model_common, model_skinmesh, model_pointmesh;
 	/*
 	cbuffer_per_object
 	cbuffer_per_view

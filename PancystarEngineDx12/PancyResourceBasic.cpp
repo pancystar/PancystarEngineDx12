@@ -28,21 +28,28 @@ void PancyBasicVirtualResource::DeleteReference()
 }
 PancystarEngine::EngineFailReason PancyBasicVirtualResource::CopyCpuResourceToGpu(
 	void* cpu_resource,
-	const pancy_resource_size &resource_size_in, 
+	const pancy_resource_size &resource_size_in,
 	const pancy_resource_size &resource_offset_in
 )
 {
 	if (now_res_state == ResourceStateType::resource_state_not_init)
 	{
 		//GPU资源未加载获取加载失败，不允许拷贝。
-		PancystarEngine::EngineFailReason error_message(E_FAIL,"The Resource Haven't load or load failed");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Resource"+ resource_name +" From Cpu to Gpu", error_message);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Resource Haven't load or load failed");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Resource" + resource_name + " From Cpu to Gpu", error_message);
 		return error_message;
 	}
-	else if (now_res_state == ResourceStateType::resource_state_load_GPU_memory_finish) 
+	else if (GetResourceState() != ResourceStateType::resource_state_load_GPU_memory_finish)
+	{
+		//GPU资源正在加载，不允许现在继续加载新资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Resource is being created now,could not write data");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Upload Buffer resource From Cpu To GPU", error_message);
+		return error_message;
+	}
+	else if (now_res_state == ResourceStateType::resource_state_load_GPU_memory_finish)
 	{
 		//GPU资源曾加载成功，将状态设置为CPU完成代表虚拟清空原先的数据
-		now_res_state == ResourceStateType::resource_state_load_CPU_memory_finish;
+		now_res_state = ResourceStateType::resource_state_load_CPU_memory_finish;
 	}
 	return UpdateResourceToGPU(now_res_state, cpu_resource, resource_size_in, resource_offset_in);
 }
@@ -68,6 +75,7 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::UpdateResourceToGPU
 	const pancy_resource_size &resource_offset_in
 )
 {
+	return PancystarEngine::succeed;
 }
 //基础资源管理器
 PancyBasicResourceControl::PancyBasicResourceControl(const std::string &resource_type_name_in)
@@ -85,15 +93,15 @@ PancyBasicResourceControl::~PancyBasicResourceControl()
 	free_id_list.clear();
 }
 PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(
-	const std::string &name_resource_in, 
-	const Json::Value &root_value, 
-	pancy_object_id &id_need, 
+	const std::string &name_resource_in,
+	const Json::Value &root_value,
+	pancy_object_id &id_need,
 	bool if_allow_repeat
 )
 {
 	PancystarEngine::EngineFailReason check_error;
 	//资源加载判断重复
-	if (!if_allow_repeat) 
+	if (!if_allow_repeat)
 	{
 		auto check_data = resource_name_list.find(name_resource_in);
 		if (check_data != resource_name_list.end())
@@ -191,8 +199,8 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::DeleteResurceRefere
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicResourceControl::CopyCpuResourceToGpu(
-	const pancy_object_id &resource_id, 
-	void* cpu_resource, 
+	const pancy_object_id &resource_id,
+	void* cpu_resource,
 	const pancy_resource_size &resource_size,
 	const pancy_resource_size &resource_offset_in
 )
@@ -205,8 +213,8 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::CopyCpuResourceToGp
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Copy Cpu Resource To Gpu in resource control " + resource_type_name, error_message);
 		return error_message;
 	}
-	check_error = data_now->second->CopyCpuResourceToGpu(cpu_resource, resource_size,resource_offset_in);
-	if (!check_error.CheckIfSucceed()) 
+	check_error = data_now->second->CopyCpuResourceToGpu(cpu_resource, resource_size, resource_offset_in);
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}

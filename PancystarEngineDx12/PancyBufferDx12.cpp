@@ -39,12 +39,7 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::UpdateResourceToGPU(
 )
 {
 	//先检查当前的资源是否处于GPU空闲状态
-	if (GetResourceState() != ResourceStateType::resource_state_load_GPU_memory_finish) 
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Resource is being created now,could not write data");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Upload Buffer resource From Cpu To GPU", error_message);
-		return error_message;
-	}
+
 	PancystarEngine::EngineFailReason check_error;
 	if (buffer_type == Buffer_ShaderResource_dynamic || buffer_type == Buffer_Constant) 
 	{
@@ -143,6 +138,11 @@ void PancyBasicBuffer::CheckIfResourceLoadToGpu(ResourceStateType &now_res_state
 //缓冲区管理器
 PancyBasicBufferControl::PancyBasicBufferControl(const std::string &resource_type_name_in) : PancyBasicResourceControl(resource_type_name_in)
 {
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_ShaderResource_static", static_cast<int32_t>(Buffer_ShaderResource_static), typeid(Buffer_ShaderResource_static).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_ShaderResource_dynamic", static_cast<int32_t>(Buffer_ShaderResource_dynamic), typeid(Buffer_ShaderResource_dynamic).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_Constant", static_cast<int32_t>(Buffer_Constant), typeid(Buffer_Constant).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_Vertex", static_cast<int32_t>(Buffer_Vertex), typeid(Buffer_Vertex).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_Index", static_cast<int32_t>(Buffer_Index), typeid(Buffer_Index).name());
 }
 PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildResource(
 	const Json::Value &root_value,
@@ -164,18 +164,17 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 	pancy_resource_size subresource_alize_size = 0;//缓冲区所使用资源对齐的内存大小
 	pancy_resource_size heap_alize_size = 0;//缓冲区所在的堆资源对齐的内存大小
 	pancy_object_id memory_num_per_heap = 0;//堆所开辟的内存块数量
-	pancy_object_id block_num_per_memory = 0; //内存所开辟的数据块数量
 	//确定缓冲区的对齐大小
 	if (buffer_type == Buffer_Constant) 
 	{
 		//计算常量缓冲区对齐大小
-		if (subresources_size > 65536) 
+		if (subresources_size > 65536)
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL,"the constant buffer size need less than 64K,Ask: " + std::to_string(subresources_size));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build constant buffer", error_message);
 			return error_message;
 		}
-		else if (subresources_size > 16384) 
+		else if (subresources_size > ConstantBufferSubResourceAliaze256K*4)
 		{
 			heap_alize_size = static_cast<pancy_resource_size>(ConstantBufferHeapAliaze256K);
 			subresource_alize_size = static_cast<pancy_resource_size>(ConstantBufferSubResourceAliaze256K);
@@ -186,49 +185,87 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 			subresource_alize_size = static_cast<pancy_resource_size>(ConstantBufferSubResourceAliaze64K);
 		}
 	}
-	else 
+	else if (buffer_type == Buffer_ShaderResource_dynamic)
 	{
 		//根据当前资源的大小，决定使用哪种对齐方式
-		if (subresources_size > 16777216) 
+		if (subresources_size > BufferHeapAliaze4M)
 		{
-			//大于16M的内存直接开辟
-			if (subresources_size % 65536 != 0) 
+			memory_num_per_heap = 1;
+			//大于4M的内存直接开辟，1M对齐
+			if (subresources_size % 1048576 != 0)
 			{
-				subresources_size = ((subresources_size / 65536) + 1) * 65536;
+				subresources_size = ((subresources_size / 1048576) + 1) * 1048576;
 			}
 			//限定开辟的数据，单堆，单数据
 			heap_alize_size = subresources_size;
 			subresource_alize_size = subresources_size;
-			memory_num_per_heap = 1;
-			block_num_per_memory = 1;
 		}
-		else 
+		else
 		{
-			if (subresources_size > 4194304)
-			{
-				//4M-16M的内存
-				heap_alize_size = static_cast<pancy_resource_size>(BufferHeapAliaze64M);
-				subresource_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze64M);
-			}
-			else if (subresources_size > 1048576)
+			if (subresources_size > 1048576)
 			{
 				//1M-4M的内存
 				heap_alize_size = static_cast<pancy_resource_size>(BufferHeapAliaze16M);
 				subresource_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze16M);
 			}
-			else if (subresources_size > 262144) 
+			else if (subresources_size > BufferSubResourceAliaze4M)
 			{
-				//256K-1M的内存
+				//128k-1M的内存
 				heap_alize_size = static_cast<pancy_resource_size>(BufferHeapAliaze4M);
 				subresource_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze4M);
 			}
 			else
 			{
-				//0-256K的内存
+				//0-128K的内存
 				heap_alize_size = static_cast<pancy_resource_size>(BufferHeapAliaze1M);
 				subresource_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze1M);
 			}
 		}
+	}
+	else if (buffer_type == Buffer_ShaderResource_static || buffer_type == Buffer_Vertex || buffer_type == Buffer_Index) 
+	{
+		//根据当前资源的大小，决定使用哪种对齐方式
+		if (subresources_size > BufferHeapAliaze4M)
+		{
+			//大于4M的内存直接开辟，1M对齐
+			if (subresources_size % 1048576 != 0)
+			{
+				subresources_size = ((subresources_size / 1048576) + 1) * 1048576;
+			}
+			//限定开辟的数据，单堆，单数据
+			heap_alize_size = subresources_size;
+			subresource_alize_size = subresources_size;
+		}
+		else
+		{
+			if (subresources_size > 1048576)
+			{
+				memory_num_per_heap = static_cast<pancy_object_id>(BufferHeapAliaze16M / BufferSubResourceAliaze16M);
+				//1M-4M的内存
+				heap_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze16M);
+				subresource_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze16M);
+			}
+			else if (subresources_size > BufferSubResourceAliaze4M)
+			{
+				memory_num_per_heap = static_cast<pancy_object_id>(BufferHeapAliaze4M / BufferSubResourceAliaze4M);
+				//128k-1M的内存
+				heap_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze4M);
+				subresource_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze4M);
+			}
+			else
+			{
+				memory_num_per_heap = static_cast<pancy_object_id>(BufferHeapAliaze1M / BufferSubResourceAliaze1M);
+				//0-128K的内存
+				heap_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze1M);
+				subresource_alize_size = static_cast<pancy_resource_size>(BufferSubResourceAliaze1M);
+			}
+		}
+		//根据每块数据区的对齐大小重改数据区的请求大小
+		if (subresources_size % subresource_alize_size != 0)
+		{
+			subresources_size = ((subresources_size / subresource_alize_size) + 1) * subresource_alize_size;
+		}
+		heap_alize_size = subresources_size;
 	}
 	//根据内存堆的对其大小以及数据区的对齐大小，计算出heap的大小以及数据区的数量
 	if (memory_num_per_heap == 0) 
@@ -244,19 +281,17 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 		{
 			subresources_size = ((subresources_size / subresource_alize_size) + 1) * subresource_alize_size;
 		}
-		//根据数据区的对齐大小计算每块内存可以开辟的数据区数量
-		block_num_per_memory = static_cast<pancy_object_id>(heap_alize_size / subresources_size);
 	}
 	//计算存储堆和存储单元的名称
 	std::string bufferblock_file_name = "";
 	std::string heap_name = "";
 	if (buffer_type == Buffer_ShaderResource_static || buffer_type == Buffer_Vertex || buffer_type == Buffer_Index)
 	{
-		resource_create_state = D3D12_RESOURCE_STATE_COPY_DEST;
+		resource_create_state = D3D12_RESOURCE_STATE_COMMON;
 		heap_type = D3D12_HEAP_TYPE_DEFAULT;
 		//静态缓冲区
 		bufferblock_file_name = "json\\resource_view\\StaticBufferSub_";
-		std::string heap_name = "json\\resource_heap\\StaticBuffer_";
+		heap_name = "json\\resource_heap\\StaticBuffer_";
 	}
 	else if (buffer_type == Buffer_ShaderResource_dynamic || buffer_type == Buffer_Constant)
 	{
@@ -264,7 +299,7 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 		heap_type = D3D12_HEAP_TYPE_UPLOAD;
 		//动态缓冲区
 		bufferblock_file_name = "json\\resource_view\\DynamicBufferSub_";
-		std::string heap_name = "json\\resource_heap\\DynamicBuffer_";
+		heap_name = "json\\resource_heap\\DynamicBuffer_";
 	}
 	heap_name += std::to_string(heap_alize_size);
 	bufferblock_file_name += std::to_string(subresources_size);
@@ -276,7 +311,7 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 		//文件未创建，创建文件
 		Json::Value json_data_out;
 		//填充资源格式
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "commit_block_num", memory_num_per_heap);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_size", static_cast<pancy_resource_size>(memory_num_per_heap) * heap_alize_size);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "per_block_size", heap_alize_size);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_type_in", PancyJsonTool::GetInstance()->GetEnumName(typeid(heap_type).name(), heap_type));
 		std::vector<D3D12_HEAP_FLAGS> heap_flags;
@@ -302,7 +337,7 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 		Json::Value json_data_res_desc;
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Dimension", "D3D12_RESOURCE_DIMENSION_BUFFER");
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Alignment", 0);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Width", subresources_size);
+		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Width", heap_alize_size);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Height", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "DepthOrArraySize", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "MipLevels", 1);

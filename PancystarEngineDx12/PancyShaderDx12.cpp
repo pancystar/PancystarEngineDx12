@@ -582,6 +582,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create(
 	const PancystarEngine::PancyString &root_signature_name_in
 )
 {
+	PancystarEngine::EngineFailReason check_error;
 	root_signature_name = root_signature_name_in;
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateGraphicsPipelineState(&pso_desc_in, IID_PPV_ARGS(&pso_data));
 	if (FAILED(hr))
@@ -593,6 +594,15 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create(
 	for (auto data_now = Cbuffer_map_in.begin(); data_now != Cbuffer_map_in.end(); ++data_now)
 	{
 		Cbuffer_map.insert(std::pair<std::string, D3D12_SHADER_BUFFER_DESC>(data_now->first, data_now->second));
+		pancy_resource_size buffer_block_size = (data_now->second.Size + 255) & ~255;//256位对齐
+		std::string subresource_name;
+		check_error = PancystarEngine::PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(PancystarEngine::Buffer_Constant, buffer_block_size, subresource_name);
+		if (!check_error.CheckIfSucceed()) 
+		{
+			return check_error;
+		}
+		Cbuffer_name.insert(std::pair<std::string, std::string>(data_now->first, subresource_name));
+		/*
 		//创建对应的cbuffer资源堆
 		UINT buffer_size = (data_now->second.Size + 65535) & ~65535;//65536位对齐
 		std::string heapdesc_file_name = "json\\resource_heap\\Cbuffer" + std::to_string(buffer_size) + ".json";
@@ -637,18 +647,16 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create(
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "per_block_size", buffer_block_size);
 
 		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_resourceview, bufferblock_file_name);
-
+		*/
 
 	}
 	return PancystarEngine::succeed;
 }
 void PancyPiplineStateObjectGraph::GetCbufferHeapName(std::unordered_map<std::string, std::string> &Cbuffer_Heap_desc)
 {
-	for (auto cbuffer_data = Cbuffer_map.begin(); cbuffer_data != Cbuffer_map.end(); ++cbuffer_data)
+	for (auto cbuffer_data = Cbuffer_name.begin(); cbuffer_data != Cbuffer_name.end(); ++cbuffer_data)
 	{
-		UINT buffer_size = (cbuffer_data->second.Size + 255) & ~255;//256位对齐
-		std::string heapdesc_file_name = "json\\resource_view\\CbufferSub" + std::to_string(buffer_size) + ".json";
-		Cbuffer_Heap_desc.insert(std::pair<std::string, std::string>(cbuffer_data->first, heapdesc_file_name));
+		Cbuffer_Heap_desc.insert(*cbuffer_data);
 	}
 }
 //effect

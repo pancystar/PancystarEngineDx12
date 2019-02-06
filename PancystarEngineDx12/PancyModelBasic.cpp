@@ -91,7 +91,7 @@ void PancyBasicModel::FreeBoneTree(skin_tree *now)
 		free(now);
 	}
 }
-PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Value &root_value, const std::string &resource_name)
+PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Value &root_value, const std::string &resource_name,ResourceStateType &now_res_state)
 {
 	PancystarEngine::EngineFailReason check_error;
 	std::string path_name = "";
@@ -362,7 +362,48 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 			delete[] new_point_catch_data;
 		}
 	}
+	now_res_state = ResourceStateType::resource_state_load_CPU_memory_finish;
 	return PancystarEngine::succeed;
+}
+void PancyBasicModel::CheckIfResourceLoadToGpu(ResourceStateType &now_res_state)
+{
+	PancystarEngine::EngineFailReason check_error;
+	if (now_res_state == ResourceStateType::resource_state_load_CPU_memory_finish) 
+	{
+		//检测所有的纹理资源是否已经加载完毕
+		for (int i = 0; i < texture_list.size(); ++i) 
+		{
+			ResourceStateType now_texture_state;
+			check_error = PancyTextureControl::GetInstance()->GetResourceState(texture_list[i], now_texture_state);
+			if (!check_error.CheckIfSucceed() || now_texture_state == ResourceStateType::resource_state_not_init)
+			{
+				now_res_state = ResourceStateType::resource_state_not_init;
+				return;
+			}
+			else if (now_texture_state == ResourceStateType::resource_state_load_CPU_memory_finish) 
+			{
+				now_res_state = ResourceStateType::resource_state_load_CPU_memory_finish;
+				return;
+			}
+		}
+		//检测所有的几何体资源是否已经加载完毕
+		for (int i = 0; i < model_resource_list.size(); ++i)
+		{
+			ResourceStateType now_texture_state;
+			check_error = model_resource_list[i]->GetLoadState(now_texture_state);
+			if (!check_error.CheckIfSucceed() || now_texture_state == ResourceStateType::resource_state_not_init)
+			{
+				now_res_state = ResourceStateType::resource_state_not_init;
+				return;
+			}
+			else if (now_texture_state == ResourceStateType::resource_state_load_CPU_memory_finish)
+			{
+				now_res_state = ResourceStateType::resource_state_load_CPU_memory_finish;
+				return;
+			}
+		}
+		now_res_state = ResourceStateType::resource_state_load_GPU_memory_finish;
+	}
 }
 //模型管理器
 static PancyModelControl* this_instance = NULL;

@@ -4,5 +4,5 @@
 	"IFUAV" : 0,
 	"IfFromFile" : 0,
 	"IfRTV" : 1,
-	"SubResourceFile" : "json\\resource_view\\Subtex_1280_720_R16G16B16A16_FLOAT_1mip.json"
+	"SubResourceFile" : "json\\resource_view\\Subtex_1280_720_R16G16B16A16_FLOAT_1mip_GpuReadWrite.json"
 }

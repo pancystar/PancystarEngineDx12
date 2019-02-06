@@ -64,7 +64,7 @@ CommandListEngine::CommandListEngine(const D3D12_COMMAND_LIST_TYPE &type_need)
 	//ÎªidºÅÇåÁã
 	command_list_ID_selfadd = 0;
 	engine_type_id = type_need;
-	fence_value_self_add = 0;
+	fence_value_self_add = 1;
 	now_prepare_commandlist = 0;
 	wait_thread_ID = NULL;
 }
@@ -450,6 +450,10 @@ ThreadPoolGPUControl::~ThreadPoolGPUControl()
 	if (main_contex != NULL)
 	{
 		delete main_contex;
+	}
+	if (resource_load_contex != NULL)
+	{
+		delete resource_load_contex;
 	}
 	for (auto data_working = GPU_thread_pool_working.begin(); data_working != GPU_thread_pool_working.end(); ++data_working)
 	{

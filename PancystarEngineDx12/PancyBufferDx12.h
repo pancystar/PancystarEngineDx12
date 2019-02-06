@@ -1,7 +1,7 @@
 #pragma once
 #include"PancyResourceBasic.h"
 #include"PancyThreadBasic.h"
-#define MaxWasteSpace 67108864
+#define MaxWasteSpace 16777216
 //Cbuffer资源堆(开辟范围16K-64k,区间精度1K)
 #define ConstantBufferHeapAliaze256K 262144
 #define ConstantBufferSubResourceAliaze256K 1024
@@ -12,15 +12,15 @@
 //64M的资源堆(开辟空间范围为4M-16M，区间精度4M)
 #define BufferHeapAliaze64M 67108864
 #define BufferSubResourceAliaze64M 4194304
-//16M的资源堆(开辟空间范围为1M-4M，区间精度1M)
+//16M的资源堆(开辟空间范围为1M-4M，区间精度512k,整体最大空闲浪费量80-90M)
 #define BufferHeapAliaze16M 16777216
-#define BufferSubResourceAliaze16M 1048576
+#define BufferSubResourceAliaze16M 524288
 //4M的资源堆(开辟空间范围为256k-1M,区间精度128k)
 #define BufferHeapAliaze4M 4194304
 #define BufferSubResourceAliaze4M 131072
 //1M的资源堆(开辟空间范围为0-256k,区间精度32k)
 #define BufferHeapAliaze1M 1048576
-#define BufferSubResourceAliaze1M 32768
+#define BufferSubResourceAliaze1M 65536
 namespace PancystarEngine 
 {
 	enum PancyBufferType 

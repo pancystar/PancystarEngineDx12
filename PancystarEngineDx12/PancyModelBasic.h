@@ -134,6 +134,10 @@ namespace PancystarEngine
 		{
 			return model_mesh->GetIndexNum();
 		}
+		inline PancystarEngine::EngineFailReason GetLoadState(ResourceStateType &load_state)
+		{
+			return model_mesh->CheckGeometryState(load_state);
+		}
 	};
 	class PancyBasicModel : public PancyBasicVirtualResource
 	{
@@ -251,7 +255,8 @@ namespace PancystarEngine
 		
 		virtual ~PancyBasicModel();
 	private:
-		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name);
+		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name, ResourceStateType &now_res_state);
+		void CheckIfResourceLoadToGpu(ResourceStateType &now_res_state);
 		//¶ÁÈ¡¹Ç÷ÀÊ÷
 		PancystarEngine::EngineFailReason LoadSkinTree(string filename);
 		void ReadBoneTree(skin_tree *now);

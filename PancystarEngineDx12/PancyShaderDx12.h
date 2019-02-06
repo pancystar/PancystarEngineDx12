@@ -2,6 +2,7 @@
 #include"PancyDx12Basic.h"
 #include"PancyJsonTool.h"
 #include"PancyMemoryBasic.h"
+#include"PancyBufferDx12.h"
 //几何体的格式对接类型
 struct PancyVertexBufferDesc
 {
@@ -138,6 +139,7 @@ private:
 class PancyPiplineStateObjectGraph
 {
 	std::unordered_map<std::string, D3D12_SHADER_BUFFER_DESC> Cbuffer_map;
+	std::unordered_map<std::string, std::string> Cbuffer_name;
 	PancystarEngine::PancyString root_signature_name;
 	PancystarEngine::PancyString pso_name;
 	ComPtr<ID3D12PipelineState> pso_data;
