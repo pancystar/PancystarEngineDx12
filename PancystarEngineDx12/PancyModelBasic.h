@@ -1,6 +1,7 @@
 #pragma once
 #include"PancyTextureDx12.h"
 #include"PancyGeometryDx12.h"
+#include"PancyShaderDx12.h"
 namespace PancystarEngine
 {
 #define MaxBoneNum 100
@@ -139,8 +140,60 @@ namespace PancystarEngine
 			return model_mesh->CheckGeometryState(load_state);
 		}
 	};
+	//描述符对象
+	class DescriptorObject
+	{
+		ResourceViewPack descriptor_block_id;
+		pancy_object_id resource_view_num;
+		std::unordered_map<std::string, PancystarEngine::PancyConstantBuffer*> per_object_cbuffer;
+		std::unordered_map<std::string, pancy_object_id> per_object_cbuffer_index;
+	public:
+		DescriptorObject();
+		~DescriptorObject();
+		PancystarEngine::EngineFailReason Create(
+			const std::string &PSO_name,
+			const std::string &descriptor_name,
+			const std::vector<std::string> &cbuffer_name_per_object,
+			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame,
+			const std::vector<SubMemoryPointer> &resource_data_per_frame,
+			const std::vector<SubMemoryPointer> &resource_data_per_object
+		);
+	};
+	//描述符链
+	class DescriptorObjectList
+	{
+		std::string PSO_name;
+		std::string descriptor_name;
+		//空闲的描述符队列
+		std::queue<DescriptorObject*> empty_list;
+		//正在使用的描述符队列
+		std::queue<DescriptorObject*> used_list;
+		//描述符所绑定的资源(外部资源,不需要释放)
+		std::vector<std::string> cbuffer_name_per_object;
+		std::vector<PancystarEngine::PancyConstantBuffer *> cbuffer_per_frame;
+		std::vector<SubMemoryPointer> resource_data_per_frame;
+		std::vector<SubMemoryPointer> resource_data_per_object;
+	public:
+		DescriptorObjectList(
+			const std::string &PSO_name_in,
+			const std::string &descriptor_name_in
+		);
+		~DescriptorObjectList();
+		PancystarEngine::EngineFailReason Create(
+			const std::vector<std::string> &cbuffer_name_per_object,
+			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame,
+			const std::vector<SubMemoryPointer> &resource_data_per_frame,
+			const std::vector<SubMemoryPointer> &resource_data_per_object
+		);
+		PancystarEngine::EngineFailReason GetEmptyList(DescriptorObject** descripto_res);
+		void Reset();
+	};
+	//基础模型
 	class PancyBasicModel : public PancyBasicVirtualResource
 	{
+		//模型的渲染描述符数据
+		std::vector<std::unordered_map<pancy_object_id, DescriptorObjectList*>> descriptor_map;
+		//模型的数据信息
 		std::vector<PancySubModel*> model_resource_list;     //模型的每个子部件
 		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> material_list;
 		std::vector<pancy_object_id> texture_list;
@@ -174,16 +227,6 @@ namespace PancystarEngine
 		uint32_t perframe_size;
 		uint32_t all_frame_num;
 		uint32_t fps_point_catch;
-		PancystarEngine::EngineFailReason BuildDefaultBuffer(
-			PancyNowGraphicsCommandList* cmdList,
-			int64_t memory_alignment_size,
-			int64_t memory_block_alignment_size,
-			SubMemoryPointer &default_buffer,
-			SubMemoryPointer &upload_buffer,
-			const void* initData,
-			const UINT BufferSize,
-			D3D12_RESOURCE_STATES buffer_type
-		);
 		//文件读取器
 		ifstream instream;
 	public:
@@ -232,7 +275,7 @@ namespace PancystarEngine
 		{
 			return model_pbr_type;
 		}
-
+		//获取包围盒信息
 		inline PancystarEngine::GeometryBasic *GetBoundBox()
 		{
 			return model_boundbox;
@@ -252,7 +295,14 @@ namespace PancystarEngine
 			perframe_size_in = perframe_size;
 			now_frame = now_animation_play_station * all_frame_num;
 		}
-		
+		//获取一个用于渲染的描述符结构
+		PancystarEngine::EngineFailReason GetRenderDescriptor(
+			pancy_object_id PSO_id,
+			const std::vector<std::string> &cbuffer_name_per_object_in,
+			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
+			const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
+			DescriptorObject **descriptor_out
+			);
 		virtual ~PancyBasicModel();
 	private:
 		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name, ResourceStateType &now_res_state);

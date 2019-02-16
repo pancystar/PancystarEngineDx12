@@ -189,7 +189,8 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 		DSV_desc.Texture2D.MipSlice = 0;
 		DSV_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 		std::string dsv_descriptor_name = "json\\descriptor_heap\\DSV_1_descriptor_heap.json";
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, Default_depthstencil_view[i].resource_view_pack_id);
+		pancy_object_id dsv_num;
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, Default_depthstencil_view[i].resource_view_pack_id, dsv_num);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;

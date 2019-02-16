@@ -1,6 +1,6 @@
 cbuffer per_object : register(b0)
 {
-	float4x4 world_matrix;
+	float4x4 world_matrix[100];
 	float4x4 WVP_matrix;
 	float4x4 UV_matrix;
 }
@@ -36,7 +36,7 @@ PSInput VSMain(VSInput vinput)
 
 	result.position = mul(float4(vinput.position,1.0f), WVP_matrix);
 	result.color = float4(vinput.normal,1.0f);
-	result.pos_out = mul(float4(vinput.position, 1.0), world_matrix);
+	result.pos_out = mul(float4(vinput.position, 1.0), world_matrix[0]);
 	result.pos_out = mul(result.pos_out, view_matrix);
 	result.tex_id = vinput.tex_id;
 	result.tex_uv.xy = mul(float4(vinput.tex_uv.xy,0,0), UV_matrix).xy;

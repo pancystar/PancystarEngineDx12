@@ -65,13 +65,54 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 
 
 	//加载一个pso
-	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_test.json");
+	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json", PSO_test);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//模型加载测试
-	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_pbr.json");
+	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr.json", PSO_pbr);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log.json");
+
+	PancystarEngine::ResourceStateType now_id_state;
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_common, now_id_state);
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_skinmesh, now_id_state);
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_pointmesh, now_id_state);
+	if (check_error.CheckIfSucceed() && now_id_state == PancystarEngine::ResourceStateType::resource_state_load_GPU_memory_finish)
+	{
+		SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log2.json");
+	}
+	PancystarEngine::PancyModelControl::GetInstance()->DeleteResurceReference(model_common);
+	PancystarEngine::PancyModelControl::GetInstance()->DeleteResurceReference(model_skinmesh);
+	PancystarEngine::PancyModelControl::GetInstance()->DeleteResurceReference(model_pointmesh);
+	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log3.json");
+	//重复创建测试
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\multiball\\multibal.json", model_common);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\lion\\lion.json", model_skinmesh);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\treetest\\tree.json", model_pointmesh);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	PancyFenceIdGPU broken_fence2;
+	check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(broken_fence2);
+	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log4.json");
+
+
+
+
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -93,7 +134,8 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	view_rect_brdf.right = 1024;
 	view_rect_brdf.bottom = 1024;
 	PancystarEngine::EngineFailReason check_error;
-	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_brdfgen.json");
+	pancy_object_id PSO_brdfgen;
+	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_brdfgen.json", PSO_brdfgen);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -163,7 +205,8 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 
 	std::string dsv_descriptor_name = "json\\descriptor_heap\\RTV_1_descriptor_heap.json";
 	ResourceViewPointer RTV_pointer;
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, RTV_pointer.resource_view_pack_id);
+	pancy_object_id rsv_pack_size;
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, RTV_pointer.resource_view_pack_id, rsv_pack_size);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -176,13 +219,16 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	}
 	//设置预渲染参数
 	PancyRenderCommandList *m_commandList;
-	auto pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_brdfgen.json");
+	ID3D12PipelineState *PSO_res_brdfgen;
+	auto pso_data = PancyEffectGraphic::GetInstance()->GetPSOResource(PSO_brdfgen,&PSO_res_brdfgen);
 	PancyThreadIdGPU commdlist_id_use;
-	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data->GetData(), &m_commandList, commdlist_id_use);
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(PSO_res_brdfgen, &m_commandList, commdlist_id_use);
 	m_commandList->GetCommandList()->RSSetViewports(1, &view_port_brdf);
 	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect_brdf);
-	auto rootsignature_data = pso_data->GetRootSignature()->GetResource();
-	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
+
+	ID3D12RootSignature *rootsignature_data;
+	check_error = PancyEffectGraphic::GetInstance()->GetRootSignatureResource(PSO_brdfgen,&rootsignature_data);
+	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data);
 	//设置渲染目标
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, texture_brdf_need, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -212,6 +258,7 @@ void scene_test_simple::Display()
 	auto check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_pointmesh, now_id_state);
 	if (check_error.CheckIfSucceed() && now_id_state == PancystarEngine::ResourceStateType::resource_state_load_GPU_memory_finish)
 	{
+		
 		HRESULT hr;
 		renderlist_ID.clear();
 		auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->FreeAlloctor();

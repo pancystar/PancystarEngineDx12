@@ -133,6 +133,16 @@ public:
 		const pancy_resource_id &memory_heap_ID,
 		const pancy_resource_id &memory_block_ID
 	);
+	//获取当前堆类型开启的堆数量
+	inline pancy_object_id GetHeapNum()
+	{
+		return memory_heap_data.size();
+	}
+	//获取当前堆类型的每个堆的大小
+	inline pancy_resource_size GetPerHeapSize()
+	{
+		return heap_desc.SizeInBytes;
+	}
 	~MemoryHeapLinear();
 };
 //资源管理器
@@ -169,6 +179,8 @@ public:
 	);
 	MemoryBlockGpu *GetMemoryResource(const VirtualMemoryPointer &virtual_pointer);
 	PancystarEngine::EngineFailReason FreeResource(const VirtualMemoryPointer &virtual_pointer);
+	void GetHeapDesc(const pancy_resource_id &heap_id, pancy_object_id &heap_num,pancy_resource_size &per_heap_size);
+	void GetHeapDesc(const std::string &heap_name, pancy_object_id &heap_num, pancy_resource_size &per_heap_size);
 	~MemoryHeapGpuControl();
 private:
 	//不存放在指定堆上的资源
@@ -234,6 +246,8 @@ public:
 	{
 		return MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
 	}
+	void GetLogMessage(std::vector<std::string> &log_message);
+	void GetLogMessage(Json::Value &root_value,bool &if_empty);
 	inline pancy_resource_size GetBlockSize()
 	{
 		return static_cast<pancy_resource_size>(per_memory_size);
@@ -242,6 +256,7 @@ public:
 class SubresourceLiner 
 {
 	std::string heap_name;
+	std::string hash_name;
 	D3D12_RESOURCE_DESC resource_desc;
 	D3D12_RESOURCE_STATES resource_state;
 	pancy_object_id per_memory_size;
@@ -254,11 +269,22 @@ class SubresourceLiner
 public:
 	SubresourceLiner(
 		const std::string &heap_name_in,
+		const std::string &hash_name_in,
 		const D3D12_RESOURCE_DESC &resource_desc_in,
 		const D3D12_RESOURCE_STATES &resource_state_in,
 		const pancy_object_id &per_memory_size_in
 	);
 	~SubresourceLiner();
+	inline std::string GetHeapName() 
+	{
+		return heap_name;
+	}
+	inline std::string GetResourceName()
+	{
+		return hash_name;
+	}
+	void GetLogMessage(std::vector<std::string> &log_message);
+	void GetLogMessage(Json::Value &root_value);
 	PancystarEngine::EngineFailReason BuildSubresource(
 		pancy_object_id &new_memory_block_id, 
 		pancy_object_id &sub_memory_offset
@@ -371,7 +397,8 @@ public:
 		DXGI_FORMAT StrideInBytes,
 		D3D12_INDEX_BUFFER_VIEW &IBV_out
 	);
-	
+	void WriteSubMemoryMessageToFile(const std::string &log_file_name);
+	//void WriteSubMemoryMessageToFile(Json::Value &root_value);
 private:
 	MemoryBlockGpu*  GetResourceData(const SubMemoryPointer &submemory_pointer, pancy_resource_size &per_memory_size);
 	void InitSubResourceType(
@@ -543,7 +570,8 @@ public:
 	}
 	PancystarEngine::EngineFailReason BuildResourceViewFromFile(
 		const std::string &file_name,
-		ResourceViewPack &RSV_pack_id
+		ResourceViewPack &RSV_pack_id,
+		pancy_object_id &per_resource_view_pack_size
 	);
 	inline PancystarEngine::EngineFailReason FreeResourceView(const ResourceViewPack &RSV_pack_id) 
 	{

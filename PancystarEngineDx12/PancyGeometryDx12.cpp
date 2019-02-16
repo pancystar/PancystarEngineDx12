@@ -70,4 +70,10 @@ PancystarEngine::EngineFailReason GeometryBasic::CheckGeometryState(ResourceStat
 }
 GeometryBasic::~GeometryBasic()
 {
+	PancystarEngine::PancyBasicBufferControl::GetInstance()->DeleteResurceReference(geometry_vertex_buffer);
+	PancystarEngine::PancyBasicBufferControl::GetInstance()->DeleteResurceReference(geometry_index_buffer);
+	if (if_create_adj) 
+	{
+		PancystarEngine::PancyBasicBufferControl::GetInstance()->DeleteResurceReference(geometry_adjindex_buffer);
+	}
 }

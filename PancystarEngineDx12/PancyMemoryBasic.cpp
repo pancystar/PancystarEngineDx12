@@ -610,6 +610,31 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResourceFromHeap(
 	}
 	return PancystarEngine::succeed;
 }
+void MemoryHeapGpuControl::GetHeapDesc(const pancy_resource_id &heap_id, pancy_object_id &heap_num, pancy_resource_size &per_heap_size)
+{
+	auto heap_data = resource_heap_list.find(heap_id);
+	if (heap_data == resource_heap_list.end())
+	{
+		heap_num = 0;
+		per_heap_size = 0;
+		PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find heap ID: " + std::to_string(heap_id),PancystarEngine::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Heap Desc", error_message);
+	}
+	heap_num = heap_data->second->GetHeapNum();
+	per_heap_size = heap_data->second->GetPerHeapSize();
+}
+void MemoryHeapGpuControl::GetHeapDesc(const std::string &heap_name, pancy_object_id &heap_num, pancy_resource_size &per_heap_size)
+{
+	auto heap_id = resource_init_list.find(heap_name);
+	if (heap_id == resource_init_list.end()) 
+	{
+		heap_num = 0;
+		per_heap_size = 0;
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find heap name: " + heap_name, PancystarEngine::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Heap Desc", error_message);
+	}
+	GetHeapDesc(heap_id->second, heap_num, per_heap_size);
+}
 MemoryHeapGpuControl::~MemoryHeapGpuControl()
 {
 	for (auto data_heap = resource_heap_list.begin(); data_heap != resource_heap_list.end(); ++data_heap)
@@ -629,6 +654,7 @@ MemoryHeapGpuControl::~MemoryHeapGpuControl()
 SubMemoryData::SubMemoryData()
 {
 }
+
 PancystarEngine::EngineFailReason SubMemoryData::Create(
 	const std::string &buffer_desc_file,
 	const D3D12_RESOURCE_DESC &resource_desc,
@@ -660,6 +686,28 @@ PancystarEngine::EngineFailReason SubMemoryData::Create(
 	}
 	return PancystarEngine::succeed;
 }
+void SubMemoryData::GetLogMessage(std::vector<std::string> &log_message)
+{
+	std::string log_message_out = "";
+	log_message_out = "heap_list_id:" + std::to_string(buffer_data.heap_list_id) + " memory_block_id:" + std::to_string(buffer_data.memory_block_id);
+	log_message.push_back(log_message_out);
+	log_message_out = "per_memory_size: " + std::to_string(per_memory_size);
+	log_message.push_back(log_message_out);
+	log_message_out = "empty_sub_memory_num: " + std::to_string(empty_sub_memory.size());
+	log_message.push_back(log_message_out);
+	log_message_out = "sub_memory_data_num: " + std::to_string(sub_memory_data.size());
+	log_message.push_back(log_message_out);
+}
+void SubMemoryData::GetLogMessage(Json::Value &root_value, bool &if_empty)
+{
+	if_empty = true;
+	if (sub_memory_data.size() != 0) 
+	{
+		if_empty = false;
+		PancyJsonTool::GetInstance()->SetJsonValue(root_value, "empty_sub_memory_num", empty_sub_memory.size());
+		PancyJsonTool::GetInstance()->SetJsonValue(root_value, "sub_memory_data_num", sub_memory_data.size());
+	}
+}
 PancystarEngine::EngineFailReason SubMemoryData::BuildSubMemory(pancy_object_id &offset)
 {
 	if (empty_sub_memory.size() == 0)
@@ -690,6 +738,7 @@ PancystarEngine::EngineFailReason SubMemoryData::FreeSubMemory(const pancy_objec
 //二级资源链
 SubresourceLiner::SubresourceLiner(
 	const std::string &heap_name_in,
+	const std::string &hash_name_in,
 	const D3D12_RESOURCE_DESC &resource_desc_in,
 	const D3D12_RESOURCE_STATES &resource_state_in,
 	const pancy_object_id &per_memory_size_in
@@ -697,9 +746,48 @@ SubresourceLiner::SubresourceLiner(
 {
 	max_id = 0;
 	heap_name = heap_name_in;
+	hash_name = hash_name_in;
 	resource_desc = resource_desc_in;
 	resource_state = resource_state_in;
 	per_memory_size = per_memory_size_in;
+}
+void SubresourceLiner::GetLogMessage(std::vector<std::string> &log_message)
+{
+	std::string now_string;
+	now_string = "heap_name: " + heap_name;
+	log_message.push_back(now_string);
+	now_string = "used_memory_num: " + std::to_string(submemory_list.size());
+	log_message.push_back(now_string);
+	now_string = "empty_memory_num: " + std::to_string(empty_memory_heap.size());
+	log_message.push_back(now_string);
+	for (auto data_log = submemory_list.begin(); data_log != submemory_list.end(); ++data_log)
+	{
+		now_string = "memory_ID: " + std::to_string(data_log->first);
+		log_message.push_back(now_string);
+		data_log->second->GetLogMessage(log_message);
+	}
+}
+void SubresourceLiner::GetLogMessage(Json::Value &root_value) 
+{
+	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "all_memory_num", submemory_list.size());
+	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "empty_memory_num", empty_memory_heap.size());
+	
+	for (auto data_log = submemory_list.begin(); data_log != submemory_list.end(); ++data_log)
+	{
+		Json::Value submemory_member_value;
+		PancyJsonTool::GetInstance()->SetJsonValue(submemory_member_value, "memory_ID", data_log->first);
+		bool if_empty = true;
+		data_log->second->GetLogMessage(submemory_member_value, if_empty);
+		if (!if_empty) 
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(root_value, "memory_" + std::to_string(data_log->first), submemory_member_value);
+		}
+		else 
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(root_value, "memory_" + std::to_string(data_log->first), "empty");
+		}
+	}
+	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "per_memory_size", per_memory_size);
 }
 PancystarEngine::EngineFailReason SubresourceLiner::BuildSubresource(
 	pancy_object_id &new_memory_block_id,
@@ -1097,7 +1185,7 @@ void SubresourceControl::InitSubResourceType(
 )
 {
 	//std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
-	SubresourceLiner *new_subresource = new SubresourceLiner(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in);
+	SubresourceLiner *new_subresource = new SubresourceLiner(heap_name_in, hash_name, resource_desc_in, resource_state_in, per_memory_size_in);
 	if (subresource_free_id.size() != 0)
 	{
 		subresource_type_id = *subresource_free_id.begin();
@@ -1479,6 +1567,51 @@ MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &sub
 		return NULL;
 	}
 	return submemory_list->second->GetSubResource(submemory_pointer.list_id, per_memory_size);
+}
+/*
+void SubresourceControl::WriteSubMemoryMessageToFile(const std::string &log_file_name)
+{
+	std::ofstream write_stream;
+	write_stream.open(log_file_name);
+	for (auto data_submemory = subresource_list_map.begin(); data_submemory != subresource_list_map.end(); ++data_submemory)
+	{
+		std::vector<std::string> log_message;
+		data_submemory->second->GetLogMessage(log_message);
+		for (int i = 0; i < log_message.size(); ++i) 
+		{
+			write_stream<< log_message[i]<<endl;
+		}
+	}
+	write_stream.close();
+}
+*/
+void SubresourceControl::WriteSubMemoryMessageToFile(const std::string &log_file_name)
+{
+	Json::Value root_value;
+	for (auto data_submemory = subresource_list_map.begin(); data_submemory != subresource_list_map.end(); ++data_submemory)
+	{
+		Json::Value list_value;
+		data_submemory->second->GetLogMessage(list_value);
+		Json::Value heap_json = root_value.get(data_submemory->second->GetHeapName(), Json::Value::null);
+		if (heap_json == Json::Value::null)
+		{
+			Json::Value new_heap_json;
+			PancyJsonTool::GetInstance()->SetJsonValue(new_heap_json, data_submemory->second->GetResourceName(), list_value);
+			uint32_t heap_num;
+			pancy_resource_size per_heap_size;
+			MemoryHeapGpuControl::GetInstance()->GetHeapDesc(data_submemory->second->GetHeapName(), heap_num, per_heap_size);
+			PancyJsonTool::GetInstance()->SetJsonValue(new_heap_json, "AllHeapNum", heap_num);
+			PancyJsonTool::GetInstance()->SetJsonValue(new_heap_json, "PerHeapSize", per_heap_size);
+			PancyJsonTool::GetInstance()->SetJsonValue(root_value, data_submemory->second->GetHeapName(), new_heap_json);
+		}
+		else 
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(heap_json, data_submemory->second->GetResourceName(), list_value);
+			PancyJsonTool::GetInstance()->SetJsonValue(root_value, data_submemory->second->GetHeapName(), heap_json);
+		}
+		
+	}
+	PancyJsonTool::GetInstance()->WriteValueToJson(root_value, log_file_name);
 }
 SubresourceControl::~SubresourceControl()
 {
@@ -1877,12 +2010,12 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildDescriptorHea
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildResourceViewFromFile(
 	const std::string &file_name,
-	ResourceViewPack &RSV_pack_id
+	ResourceViewPack &RSV_pack_id,
+	pancy_object_id &per_resource_view_pack_size
 )
 {
 	PancystarEngine::EngineFailReason check_error;
 	D3D12_DESCRIPTOR_HEAP_DESC descriptor_heap_desc;
-	pancy_object_id per_resource_view_pack_size;
 	pancy_json_value root_data;
 	//加载json文件
 	Json::Value root_value;

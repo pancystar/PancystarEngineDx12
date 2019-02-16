@@ -31,6 +31,7 @@ namespace PancystarEngine
 		Buffer_Vertex,
 		Buffer_Index
 	};
+	//缓冲区资源
 	class PancyBasicBuffer : public PancyBasicVirtualResource
 	{
 		PancyBufferType  buffer_type;
@@ -39,6 +40,7 @@ namespace PancystarEngine
 		PancyFenceIdGPU  WaitFence;       //需要等待的GPU眼位号
 	public:
 		PancyBasicBuffer(const std::string &resource_name_in, Json::Value root_value_in);
+		~PancyBasicBuffer();
 		inline SubMemoryPointer GetBufferSubResource()
 		{
 			return buffer_data;
@@ -55,6 +57,8 @@ namespace PancystarEngine
 		//检测当前的资源是否已经被载入GPU
 		void CheckIfResourceLoadToGpu(ResourceStateType &now_res_state);
 	};
+	
+	//缓冲区管理器
 	class PancyBasicBufferControl :public PancyBasicResourceControl
 	{
 		PancyBasicBufferControl(const std::string &resource_type_name_in);
@@ -91,6 +95,37 @@ namespace PancystarEngine
 			const std::string &name_resource_in,
 			PancyBasicVirtualResource** resource_out
 		);
+	};
+	//常量缓冲区
+	struct CbufferVariable 
+	{
+		pancy_resource_size variable_size;
+		pancy_resource_size start_offset;
+	};
+	class PancyConstantBuffer
+	{
+		pancy_resource_size cbuffer_size;
+		std::string cbuffer_name;       //常量缓冲区的名称
+		std::string cbuffer_effect_name; //创建常量缓冲区的渲染管线名称
+		//常量缓冲区的数据
+		pancy_object_id buffer_ID;
+		//所有成员变量的起始位置
+		std::unordered_map<std::string, CbufferVariable> member_variable;
+		//CPU方面的临时存储单元
+		unsigned char* cbuffer_cpu_data;
+	public:
+		PancyConstantBuffer(const std::string &cbuffer_name_in, const std::string &cbuffer_effect_name_in);
+		~PancyConstantBuffer();
+		PancystarEngine::EngineFailReason Create(const std::string &file_name);
+		PancystarEngine::EngineFailReason Create(const std::string &hash_name,const Json::Value &root_value);
+		PancystarEngine::EngineFailReason SetMatrix(const std::string &variable,const DirectX::XMFLOAT4X4 &mat_data);
+		PancystarEngine::EngineFailReason SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data);
+		PancystarEngine::EngineFailReason SetUint4(const std::string &variable, const DirectX::XMUINT4 &vector_data);
+		PancystarEngine::EngineFailReason UpdateCbuffer();
+		PancystarEngine::EngineFailReason GetBufferSubResource(SubMemoryPointer &submemory);
+	private:
+		PancystarEngine::EngineFailReason ErrorVariableNotFind(const std::string &variable_name);
+		PancystarEngine::EngineFailReason GetCbufferDesc(const std::string &file_name,const Json::Value &root_value);
 	};
 	
 	

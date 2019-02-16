@@ -20,8 +20,8 @@ public:
 	PancyRenderCommandList(PancyThreadIdGPU command_list_ID_in);
 	PancystarEngine::EngineFailReason Create
 	(
-		ComPtr<ID3D12CommandAllocator> allocator_use_in,
-		ComPtr<ID3D12PipelineState> pso_use_in,
+		ID3D12CommandAllocator *allocator_use_in,
+		ID3D12PipelineState *pso_use_in,
 		D3D12_COMMAND_LIST_TYPE command_list_type
 	);
 	inline D3D12_COMMAND_LIST_TYPE GetCommandListType()
@@ -43,13 +43,13 @@ public:
 		return if_finish.load();
 	}
 	//锁住资源分配器，开启commandlist的资源分配(进入填充命令状态,前置状态为->执行完毕状态)
-	inline void LockPrepare(ComPtr<ID3D12CommandAllocator> allocator_use_in, ComPtr<ID3D12PipelineState> pso_use_in)
+	inline void LockPrepare(ID3D12CommandAllocator *allocator_use_in, ID3D12PipelineState *pso_use_in)
 	{
 		if (if_preparing.load() == false && if_finish.load() == true)
 		{
 			if_finish.store(false);
 			if_preparing.store(true);
-			command_list_data->Reset(allocator_use_in.Get(), pso_use_in.Get());
+			command_list_data->Reset(allocator_use_in, pso_use_in);
 		}
 	}
 	//解锁资源分配器，关闭commandlist的资源分配(进入工作/待工作状态,前置状态为->填充命令状态)
@@ -95,7 +95,7 @@ public:
 	//获取一个空闲的commandlist
 	PancystarEngine::EngineFailReason GetEmptyRenderlist
 	(
-		ComPtr<ID3D12PipelineState> pso_use_in,
+		ID3D12PipelineState *pso_use_in,
 		PancyRenderCommandList** command_list_data,
 		PancyThreadIdGPU &command_list_ID
 	);

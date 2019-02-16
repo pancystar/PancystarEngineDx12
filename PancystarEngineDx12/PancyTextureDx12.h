@@ -62,6 +62,7 @@ namespace PancystarEngine
 			const std::string &resource_name,
 			const Json::Value &root_value
 		);
+		~PancyBasicTexture();
 		PancystarEngine::EngineFailReason GetResource(SubMemoryPointer &resource)
 		{
 			auto resource_state = GetResourceState();

@@ -1145,6 +1145,10 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 	}
 	return PancystarEngine::succeed;
 }
+PancyBasicTexture::~PancyBasicTexture() 
+{
+	SubresourceControl::GetInstance()->FreeSubResource(tex_data);
+}
 //Œ∆¿Ìπ‹¿Ì∆˜
 PancyTextureControl::PancyTextureControl(const std::string &resource_type_name_in) :PancystarEngine::PancyBasicResourceControl(resource_type_name_in)
 {

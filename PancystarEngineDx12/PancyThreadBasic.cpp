@@ -6,11 +6,11 @@ PancyRenderCommandList::PancyRenderCommandList(PancyThreadIdGPU command_list_ID_
 	if_preparing.store(false);
 	if_finish.store(true);
 }
-PancystarEngine::EngineFailReason PancyRenderCommandList::Create(ComPtr<ID3D12CommandAllocator> allocator_use_in, ComPtr<ID3D12PipelineState> pso_use_in, D3D12_COMMAND_LIST_TYPE command_list_type_in)
+PancystarEngine::EngineFailReason PancyRenderCommandList::Create(ID3D12CommandAllocator *allocator_use_in, ID3D12PipelineState *pso_use_in, D3D12_COMMAND_LIST_TYPE command_list_type_in)
 {
 	command_list_type = command_list_type_in;
 	//创建commondlist
-	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandList(0, command_list_type_in, allocator_use_in.Get(), nullptr, IID_PPV_ARGS(&command_list_data));
+	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandList(0, command_list_type_in, allocator_use_in, pso_use_in, IID_PPV_ARGS(&command_list_data));
 	if (FAILED(hr))
 	{
 		PancystarEngine::EngineFailReason error_message(hr, "Create CommandList Error When build commandlist");
@@ -88,7 +88,7 @@ void CommandListEngine::UpdateLastRenderList()
 }
 PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 (
-	ComPtr<ID3D12PipelineState> pso_use_in,
+	ID3D12PipelineState *pso_use_in,
 	PancyRenderCommandList** command_list_data,
 	PancyThreadIdGPU &command_list_ID
 )
@@ -108,7 +108,7 @@ PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 		//从当前空闲的commanlist里获取一个commandlist
 		command_list_ID = command_list_empty.begin()->first;
 		*command_list_data = command_list_empty.begin()->second;
-		(*command_list_data)->LockPrepare(allocator_use, pso_use_in);
+		(*command_list_data)->LockPrepare(allocator_use.Get(), pso_use_in);
 		now_prepare_commandlist = command_list_ID;
 	}
 	else
@@ -116,7 +116,7 @@ PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 		//新建一个空闲的commandlist
 		PancyRenderCommandList *new_render_command_list = new PancyRenderCommandList(command_list_ID_selfadd);
 		PancystarEngine::EngineFailReason check_error;
-		check_error = new_render_command_list->Create(allocator_use, pso_use_in, engine_type_id);
+		check_error = new_render_command_list->Create(allocator_use.Get(), pso_use_in, engine_type_id);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;

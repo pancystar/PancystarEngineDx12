@@ -1,0 +1,26 @@
+{
+	"BufferType" : "Buffer_Constant",
+	"CbufferDesc" : 
+	{
+		"BufferSize" : 6528,
+		"VariableMember" : 
+		[
+			{
+				"Name" : "world_matrix",
+				"Size" : 6400,
+				"StartOffset" : 0
+			},
+			{
+				"Name" : "WVP_matrix",
+				"Size" : 64,
+				"StartOffset" : 6400
+			},
+			{
+				"Name" : "UV_matrix",
+				"Size" : 64,
+				"StartOffset" : 6464
+			}
+		]
+	},
+	"SubResourceFile" : "json\\resource_view\\DynamicBufferSub_7168.json"
+}
