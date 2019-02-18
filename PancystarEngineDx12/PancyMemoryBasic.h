@@ -53,6 +53,18 @@ public:
 		UINT64* pRowSizesInBytes,
 		UINT* pNumRows
 	);
+	PancystarEngine::EngineFailReason GetCpuMapPointer(UINT8** map_pointer_out)
+	{
+		if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get CPU Pointer of memory block gpu", error_message);
+			map_pointer_out = NULL;
+			return error_message;
+		}
+		*map_pointer_out = map_pointer;
+		return PancystarEngine::succeed;
+	}
 	PancystarEngine::EngineFailReason ReadFromBufferToCpu(const pancy_resource_size &pointer_offset, void* copy_data, const pancy_resource_size data_size);
 };
 //±£¡Ùœ‘¥Ê∂—
@@ -324,6 +336,10 @@ public:
 		const pancy_resource_size &pointer_offset, 
 		const void* copy_data, 
 		const pancy_resource_size data_size
+	);
+	PancystarEngine::EngineFailReason GetBufferCpuPointer(
+		const SubMemoryPointer &submemory_pointer,
+		UINT8** map_pointer_out
 	);
 	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(
 		const SubMemoryPointer &submemory_pointer,

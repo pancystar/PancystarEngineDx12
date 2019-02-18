@@ -406,6 +406,24 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::GetBufferSubResource(
 	submemory = real_data_pointer->GetBufferSubResource();
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason PancyBasicBufferControl::GetBufferCPUPointer(const pancy_object_id  &resource_id, UINT8** map_pointer_out)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto resource_data = GetResource(resource_id);
+	if (resource_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource, check log for detail");
+		return error_message;
+	}
+	PancyBasicBuffer *real_data_pointer = dynamic_cast<PancyBasicBuffer*>(resource_data);
+	SubMemoryPointer submemory = real_data_pointer->GetBufferSubResource();
+	check_error = SubresourceControl::GetInstance()->GetBufferCpuPointer(submemory, map_pointer_out);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
 //常量缓冲区
 PancyConstantBuffer::PancyConstantBuffer(const std::string &cbuffer_name_in, const std::string &cbuffer_effect_name_in)
 {
@@ -413,45 +431,71 @@ PancyConstantBuffer::PancyConstantBuffer(const std::string &cbuffer_name_in, con
 	cbuffer_effect_name = cbuffer_effect_name_in;
 	cbuffer_size = 0;
 	cbuffer_cpu_data = NULL;
+	map_pointer_out = NULL;
 }
-PancystarEngine::EngineFailReason PancyConstantBuffer::SetMatrix(const std::string &variable, const DirectX::XMFLOAT4X4 &mat_data)
+PancystarEngine::EngineFailReason PancyConstantBuffer::SetMatrix(const std::string &variable, const DirectX::XMFLOAT4X4 &mat_data, const pancy_resource_size &offset)
 {
 	auto start_pos = member_variable.find(variable);
-	if (start_pos != member_variable.end())
+	if (start_pos == member_variable.end())
 	{
 		return ErrorVariableNotFind(variable);
 	}
-	memcpy(cbuffer_cpu_data + start_pos->second.start_offset, &mat_data, sizeof(mat_data));
+	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4X4), &mat_data, sizeof(mat_data));
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyConstantBuffer::SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data)
+PancystarEngine::EngineFailReason PancyConstantBuffer::SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data, const pancy_resource_size &offset)
 {
 	auto start_pos = member_variable.find(variable);
-	if (start_pos != member_variable.end())
+	if (start_pos == member_variable.end())
 	{
 		return ErrorVariableNotFind(variable);
 	}
-	memcpy(cbuffer_cpu_data + start_pos->second.start_offset, &vector_data, sizeof(vector_data));
+	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4), &vector_data, sizeof(vector_data));
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyConstantBuffer::SetUint4(const std::string &variable, const DirectX::XMUINT4 &vector_data)
+PancystarEngine::EngineFailReason PancyConstantBuffer::SetUint4(const std::string &variable, const DirectX::XMUINT4 &vector_data, const pancy_resource_size &offset)
 {
 	auto start_pos = member_variable.find(variable);
-	if (start_pos != member_variable.end())
+	if (start_pos == member_variable.end())
 	{
 		return ErrorVariableNotFind(variable);
 	}
-	memcpy(cbuffer_cpu_data + start_pos->second.start_offset, &vector_data, sizeof(vector_data));
+	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * sizeof(DirectX::XMUINT4), &vector_data, sizeof(vector_data));
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyConstantBuffer::SetStruct(const std::string &variable, const void* struct_data, const pancy_resource_size &data_size, const pancy_resource_size &offset)
+{
+	auto start_pos = member_variable.find(variable);
+	if (start_pos == member_variable.end())
+	{
+		return ErrorVariableNotFind(variable);
+	}
+	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * data_size, struct_data, data_size);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyConstantBuffer::UpdateCbuffer()
 {
-	PancystarEngine::EngineFailReason check_error;
+	//PancystarEngine::EngineFailReason check_error;
+	if (cbuffer_cpu_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "The pre CPU pointer of Cbuffer is NULL");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Cbuffer", error_message);
+		return error_message;
+	}
+	if (map_pointer_out == NULL) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL,"The CPU pointer of Cbuffer is NULL");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Cbuffer", error_message);
+		return error_message;
+	}
+	memcpy(map_pointer_out, cbuffer_cpu_data, cbuffer_size);
+	/*
 	check_error = PancyBasicBufferControl::GetInstance()->CopyCpuResourceToGpu(buffer_ID, cbuffer_cpu_data, cbuffer_size, 0);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	*/
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyConstantBuffer::ErrorVariableNotFind(const std::string &variable_name)
@@ -460,8 +504,9 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::ErrorVariableNotFind(cons
 	PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer Variable", error_message);
 	return error_message;
 }
-PancystarEngine::EngineFailReason PancyConstantBuffer::Create(const std::string &file_name)
+PancystarEngine::EngineFailReason PancyConstantBuffer::Create()
 {
+	std::string file_name = "json\\buffer\\" + cbuffer_effect_name + "_" + cbuffer_name+".json";
 	PancystarEngine::EngineFailReason check_error;
 	Json::Value root_value;
 	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(file_name, root_value);
@@ -479,8 +524,11 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::Create(const std::string 
 	{
 		return check_error;
 	}
+	//从buffer中获取直接指向CPU资源的指针，保证更新资源不需要访问虚拟资源管理器
+	PancyBasicBufferControl::GetInstance()->GetBufferCPUPointer(buffer_ID, &map_pointer_out);
 	return PancystarEngine::succeed;
 }
+/*
 PancystarEngine::EngineFailReason PancyConstantBuffer::Create(const std::string &hash_name,const Json::Value &root_value)
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -496,6 +544,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::Create(const std::string 
 	}
 	return PancystarEngine::succeed;
 }
+*/
 PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std::string &file_name,const Json::Value &root_value)
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -524,7 +573,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 		CbufferVariable new_variable_data;
 		std::string variable_name;
 		Json::Value value_cbuffer_variable;
-		Json::Value value_cbuffer_member = value_cbuffer_desc.get(i, value_cbuffer_variable);
+		value_cbuffer_variable = value_cbuffer_member.get(i, Json::nullValue);
 		//读取变量名称
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "Name", pancy_json_data_type::json_data_string, now_value);
 		if (!check_error.CheckIfSucceed())

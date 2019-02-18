@@ -143,6 +143,7 @@ namespace PancystarEngine
 	//ÃèÊö·û¶ÔÏó
 	class DescriptorObject
 	{
+		std::string PSO_name_descriptor;
 		ResourceViewPack descriptor_block_id;
 		pancy_object_id resource_view_num;
 		std::unordered_map<std::string, PancystarEngine::PancyConstantBuffer*> per_object_cbuffer;
@@ -156,7 +157,34 @@ namespace PancystarEngine
 			const std::vector<std::string> &cbuffer_name_per_object,
 			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame,
 			const std::vector<SubMemoryPointer> &resource_data_per_frame,
-			const std::vector<SubMemoryPointer> &resource_data_per_object
+			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
+			const std::vector<SubMemoryPointer> &resource_data_per_object,
+			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_object_in
+		);
+		PancystarEngine::EngineFailReason SetCbufferMatrix(
+			const std::string &cbuffer_name, 
+			const std::string &variable_name, 
+			const DirectX::XMFLOAT4X4 &data_in, 
+			const pancy_resource_size &offset
+		);
+		PancystarEngine::EngineFailReason SetCbufferFloat4(
+			const std::string &cbuffer_name, 
+			const std::string &variable_name, 
+			const DirectX::XMFLOAT4 &data_in, 
+			const pancy_resource_size &offset
+		);
+		PancystarEngine::EngineFailReason SetCbufferUint4(
+			const std::string &cbuffer_name, 
+			const std::string &variable_name, 
+			const DirectX::XMUINT4 &data_in, 
+			const pancy_resource_size &offset
+		);
+		PancystarEngine::EngineFailReason SetCbufferStructData(
+			const std::string &cbuffer_name,
+			const std::string &variable_name,
+			const void* data_in,
+			const pancy_resource_size &data_size,
+			const pancy_resource_size &offset
 		);
 	};
 	//ÃèÊö·ûÁ´
@@ -172,7 +200,9 @@ namespace PancystarEngine
 		std::vector<std::string> cbuffer_name_per_object;
 		std::vector<PancystarEngine::PancyConstantBuffer *> cbuffer_per_frame;
 		std::vector<SubMemoryPointer> resource_data_per_frame;
+		std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> resource_desc_per_frame;
 		std::vector<SubMemoryPointer> resource_data_per_object;
+		std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> resource_desc_per_per_object;
 	public:
 		DescriptorObjectList(
 			const std::string &PSO_name_in,
@@ -183,7 +213,9 @@ namespace PancystarEngine
 			const std::vector<std::string> &cbuffer_name_per_object,
 			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame,
 			const std::vector<SubMemoryPointer> &resource_data_per_frame,
-			const std::vector<SubMemoryPointer> &resource_data_per_object
+			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
+			const std::vector<SubMemoryPointer> &resource_data_per_object_in,
+			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_object_in
 		);
 		PancystarEngine::EngineFailReason GetEmptyList(DescriptorObject** descripto_res);
 		void Reset();
@@ -301,6 +333,7 @@ namespace PancystarEngine
 			const std::vector<std::string> &cbuffer_name_per_object_in,
 			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
 			const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
+			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
 			DescriptorObject **descriptor_out
 			);
 		virtual ~PancyBasicModel();
@@ -361,6 +394,15 @@ namespace PancystarEngine
 			}
 			return this_instance;
 		}
+		PancystarEngine::EngineFailReason GetRenderDescriptor(
+			pancy_object_id model_id,
+			pancy_object_id PSO_id,
+			const std::vector<std::string> &cbuffer_name_per_object_in,
+			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
+			const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
+			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
+			DescriptorObject **descriptor_out
+		);
 	private:
 		PancystarEngine::EngineFailReason BuildResource(
 			const Json::Value &root_value,

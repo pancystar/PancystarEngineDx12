@@ -1,4 +1,9 @@
 #include"TestScene.h"
+struct instance_value 
+{
+	DirectX::XMFLOAT4X4 world_mat;
+	DirectX::XMUINT4 animation_index;
+};
 PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 {
 	view_port.TopLeftX = 0;
@@ -20,7 +25,6 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 PancystarEngine::EngineFailReason scene_test_simple::Init()
 {
 	PancystarEngine::EngineFailReason check_error;
-	
 	//¥¥Ω®»´∆¡»˝Ω«–Œ
 	PancystarEngine::Point2D point[4];
 	point[0].position = DirectX::XMFLOAT4(-1.0f, -1.0f, 0.0f, 1.0f);
@@ -108,11 +112,46 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	}
 	PancyFenceIdGPU broken_fence2;
 	check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(broken_fence2);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log4.json");
+	//≤‚ ‘‰÷»æ√Ë ˆ∑˚
+	std::vector<std::string> cbuffer_name_perobj;
+	cbuffer_name_perobj.push_back("per_instance");
+	std::vector<PancystarEngine::PancyConstantBuffer *> cbuffer_data_perframe;
+	PancystarEngine::PancyConstantBuffer *now_used_cbuffer;
+	check_error = GetGlobelCbuffer(PSO_test, "per_frame",&now_used_cbuffer);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	cbuffer_data_perframe.push_back(now_used_cbuffer);
+	std::vector<SubMemoryPointer> globel_shader_resource;
+	std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> globel_shader_desc;
+	PancystarEngine::DescriptorObject *data_descriptor_test;
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetRenderDescriptor(
+		model_common, 
+		PSO_test, 
+		cbuffer_name_perobj, 
+		cbuffer_data_perframe, 
+		globel_shader_resource, 
+		globel_shader_desc, 
+		&data_descriptor_test
+	);
 
-
-
-
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	instance_value new_instance;
+	DirectX::XMStoreFloat4x4(&new_instance.world_mat, DirectX::XMMatrixTranspose(DirectX::XMMatrixTranslation(10, 10, 10)));
+	new_instance.animation_index.x = 0;
+	new_instance.animation_index.y = 0;
+	new_instance.animation_index.z = 0;
+	new_instance.animation_index.w = 0;
+	check_error = data_descriptor_test->SetCbufferStructData("per_instance","_Instances", &new_instance,sizeof(new_instance),0);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;

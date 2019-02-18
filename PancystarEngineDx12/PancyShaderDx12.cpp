@@ -584,17 +584,13 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDescriptorHeapUs
 {
 	PancystarEngine::EngineFailReason check_error;
 	auto root_signature_find = root_signature_array.find(root_signature_id);
-	if (root_signature_find != root_signature_array.end())
+	if (root_signature_find == root_signature_array.end())
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find rootsignature ID: " + std::to_string(root_signature_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find rootsignature by id", error_message);
 		return error_message;
 	}
-	check_error = PancyRootSignatureControl::GetInstance()->GetDescriptorHeapUse(root_signature_id, descriptor_heap_name);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
-	}
+	root_signature_find->second->GetDescriptorHeapUse(descriptor_heap_name);
 	return PancystarEngine::succeed;
 }
 PancyRootSignatureControl::~PancyRootSignatureControl()
@@ -621,7 +617,17 @@ PancyPiplineStateObjectGraph::PancyPiplineStateObjectGraph(const std::string &ps
 	pso_name = pso_name_in;
 }
 
-
+PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::CheckCbuffer(const std::string &cbuffer_name)
+{
+	auto cbuffer_data = Cbuffer_map.find(cbuffer_name);
+	if (cbuffer_data == Cbuffer_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString());
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Check Pso cbuffer", error_message);
+		return error_message;
+	}
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC desc_out = {};
@@ -1457,6 +1463,23 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetPSO(const std::string &
 		PSO_array_find = PSO_name.find(name_in);
 	}
 	PSO_id = PSO_array_find->second;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyEffectGraphic::CheckCbuffer(const pancy_object_id &PSO_id, const std::string &name_in)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto PSO_array_find = PSO_array.find(PSO_id);
+	if (PSO_array_find == PSO_array.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		return error_message;
+	}
+	check_error = PSO_array_find->second->CheckCbuffer(name_in);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 PancyEffectGraphic::~PancyEffectGraphic()

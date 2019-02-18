@@ -1,8 +1,12 @@
-cbuffer per_object : register(b0)
+struct instance_data 
 {
-	float4x4 world_matrix[100];
-	float4x4 WVP_matrix;
-	float4x4 UV_matrix;
+	float4x4 world_matrix;
+	uint4 animation_index;
+	//float4x4 normal_matrix;
+};
+cbuffer per_instance : register(b0) 
+{
+	instance_data _Instances[100];
 }
 cbuffer per_frame : register(b1)
 {
@@ -33,14 +37,15 @@ struct PSInput
 PSInput VSMain(VSInput vinput)
 {
 	PSInput result;
-
-	result.position = mul(float4(vinput.position,1.0f), WVP_matrix);
+	result.pos_out = mul(float4(vinput.position, 1.0), _Instances[0].world_matrix);
+	result.position = mul(result.pos_out, view_matrix);
+	result.position = mul(result.position, projectmatrix);
 	result.color = float4(vinput.normal,1.0f);
-	result.pos_out = mul(float4(vinput.position, 1.0), world_matrix[0]);
+	
 	result.pos_out = mul(result.pos_out, view_matrix);
 	result.tex_id = vinput.tex_id;
-	result.tex_uv.xy = mul(float4(vinput.tex_uv.xy,0,0), UV_matrix).xy;
-	result.tex_uv.zw = mul(float4(vinput.tex_uv.zw, 0, 0), UV_matrix).zw;
+	result.tex_uv.xy =vinput.tex_uv.xy;
+	result.tex_uv.zw =vinput.tex_uv.zw;
 	return result;
 }
 float4 PSMain(PSInput input) : SV_TARGET

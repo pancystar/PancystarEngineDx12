@@ -152,6 +152,7 @@ public:
 		return root_signature_ID;
 	}
 	PancystarEngine::EngineFailReason GetDescriptorHeapUse(std::string  &descriptor_heap_name);
+	PancystarEngine::EngineFailReason CheckCbuffer(const std::string &cbuffer_name);
 private:
 	PancystarEngine::EngineFailReason GetInputDesc(ComPtr<ID3D12ShaderReflection> t_ShaderReflection, std::vector<D3D12_INPUT_ELEMENT_DESC> &t_InputElementDescVec);
 };
@@ -183,6 +184,7 @@ public:
 	PancystarEngine::EngineFailReason GetRootSignatureResource(const pancy_object_id &PSO_id, ID3D12RootSignature** RootSig_res);
 	PancystarEngine::EngineFailReason GetPSOName(const pancy_object_id &PSO_id,std::string &pso_name_out);
 	PancystarEngine::EngineFailReason GetPSODescriptorName(const pancy_object_id &PSO_id, std::string &descriptor_heap_name);
+	PancystarEngine::EngineFailReason CheckCbuffer(const pancy_object_id &PSO_id, const std::string &name_in);
 	~PancyEffectGraphic();
 private:
 	PancystarEngine::EngineFailReason BuildPso(const std::string &pso_config_file);

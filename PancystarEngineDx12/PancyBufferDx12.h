@@ -89,6 +89,8 @@ namespace PancystarEngine
 		);
 		//获取buffer数据的submemory指针
 		PancystarEngine::EngineFailReason GetBufferSubResource(const pancy_object_id  &resource_id, SubMemoryPointer &submemory);
+		//获取buffer数据的CPU端真实指针
+		PancystarEngine::EngineFailReason GetBufferCPUPointer(const pancy_object_id  &resource_id, UINT8** map_pointer_out);
 	private:
 		PancystarEngine::EngineFailReason BuildResource(
 			const Json::Value &root_value,
@@ -113,14 +115,17 @@ namespace PancystarEngine
 		std::unordered_map<std::string, CbufferVariable> member_variable;
 		//CPU方面的临时存储单元
 		unsigned char* cbuffer_cpu_data;
+		//常量缓冲区在CPU端的指针
+		UINT8* map_pointer_out;
 	public:
 		PancyConstantBuffer(const std::string &cbuffer_name_in, const std::string &cbuffer_effect_name_in);
 		~PancyConstantBuffer();
-		PancystarEngine::EngineFailReason Create(const std::string &file_name);
-		PancystarEngine::EngineFailReason Create(const std::string &hash_name,const Json::Value &root_value);
-		PancystarEngine::EngineFailReason SetMatrix(const std::string &variable,const DirectX::XMFLOAT4X4 &mat_data);
-		PancystarEngine::EngineFailReason SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data);
-		PancystarEngine::EngineFailReason SetUint4(const std::string &variable, const DirectX::XMUINT4 &vector_data);
+		PancystarEngine::EngineFailReason Create();
+		//PancystarEngine::EngineFailReason Create(const std::string &hash_name,const Json::Value &root_value);
+		PancystarEngine::EngineFailReason SetMatrix(const std::string &variable,const DirectX::XMFLOAT4X4 &mat_data,const pancy_resource_size &offset);
+		PancystarEngine::EngineFailReason SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data, const pancy_resource_size &offset);
+		PancystarEngine::EngineFailReason SetUint4(const std::string &variable, const DirectX::XMUINT4 &vector_data, const pancy_resource_size &offset);
+		PancystarEngine::EngineFailReason SetStruct(const std::string &variable, const void* struct_data, const pancy_resource_size &data_size, const pancy_resource_size &offset);
 		PancystarEngine::EngineFailReason UpdateCbuffer();
 		PancystarEngine::EngineFailReason GetBufferSubResource(SubMemoryPointer &submemory);
 	private:

@@ -10,6 +10,8 @@
 #include"PancyCamera.h"
 class SceneRoot
 {
+private:
+	std::vector<std::unordered_map<pancy_object_id, std::unordered_map<std::string, PancystarEngine::PancyConstantBuffer *>>> frame_constant_buffer;
 protected:
 	int32_t                               back_buffer_num;
 	DirectX::XMFLOAT3                     scene_center_pos;//³¡¾°ÖÐÐÄ
@@ -33,7 +35,12 @@ public:
 private:
 	virtual PancystarEngine::EngineFailReason Init() = 0;
 	virtual PancystarEngine::EngineFailReason ScreenChange() = 0;
-
+protected:
+	PancystarEngine::EngineFailReason GetGlobelCbuffer(
+		const pancy_object_id &PSO_id, 
+		const std::string &cbuffer_name, 
+		PancystarEngine::PancyConstantBuffer ** cbuffer_data
+	);
 };
 
 class engine_windows_main

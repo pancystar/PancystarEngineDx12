@@ -687,6 +687,29 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	}
 	uint64_t subresources_size;
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&desc, 0, subresources_num, 0, nullptr, nullptr, nullptr, &subresources_size);
+	//确定加载纹理的SRV格式
+	tex_srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	tex_srv_desc.Format = desc.Format;
+	if (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE1D)
+	{
+		tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+	}
+	else if (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE2D)
+	{
+		if (!if_cube_map)
+		{
+			tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		}
+		else
+		{
+			tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+		}
+	}
+	else if (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
+	{
+		tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+	}
+	tex_srv_desc.Texture2D.MipLevels = desc.MipLevels;
 	/*
 	uint64_t subresources_size;
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&desc, 0, subresources_num, 0, nullptr, nullptr, nullptr, &subresources_size);

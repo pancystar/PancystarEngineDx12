@@ -1252,6 +1252,23 @@ PancystarEngine::EngineFailReason SubresourceControl::WriteFromCpuToBuffer(
 	}
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason SubresourceControl::GetBufferCpuPointer(
+	const SubMemoryPointer &submemory_pointer,
+	UINT8** map_pointer_out
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_resource_size per_memory_size;
+	auto memory_block = GetResourceData(submemory_pointer, per_memory_size);
+	if (memory_block == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	memory_block->GetCpuMapPointer(map_pointer_out);
+	map_pointer_out += submemory_pointer.offset * per_memory_size;
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason SubresourceControl::WriteFromCpuToBuffer(
 	const SubMemoryPointer &submemory_pointer,
 	const pancy_resource_size &pointer_offset,
