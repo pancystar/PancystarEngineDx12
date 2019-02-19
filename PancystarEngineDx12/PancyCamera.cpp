@@ -315,9 +315,12 @@ void PancyCamera::WalkUp(float distance)
 	camera_position.y += camera_up.y *distance;
 	camera_position.z += camera_up.z *distance;
 }
-void PancyCamera::GetViewPosition(XMFLOAT3 *view_pos)
+void PancyCamera::GetViewPosition(XMFLOAT4 *view_pos)
 {
-	*view_pos = camera_position;
+	(*view_pos).x = camera_position.x;
+	(*view_pos).y = camera_position.y;
+	(*view_pos).z = camera_position.z;
+	(*view_pos).w = 1;
 }
 void PancyCamera::GetViewDirect(XMFLOAT3 *view_direct)
 {

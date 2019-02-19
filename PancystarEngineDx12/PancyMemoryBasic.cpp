@@ -1864,6 +1864,18 @@ PancyResourceView* PancyDescriptorHeap::GetHeapBlock(const pancy_resource_id &re
 	check_error = PancystarEngine::succeed;
 	return now_resource_remove->second;
 }
+PancystarEngine::EngineFailReason PancyDescriptorHeap::GetDescriptorHeap(ID3D12DescriptorHeap **descriptor_heap_use)
+{
+	if (heap_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the discriptor heap haven't succeed inited");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get desciptor heap real pointer", error_message);
+		*descriptor_heap_use = NULL;
+		return error_message;
+	}
+	*descriptor_heap_use = heap_data.Get();
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildSRV(
 	const pancy_object_id &descriptor_block_id,
 	const pancy_object_id &self_offset,
@@ -2103,6 +2115,18 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::FreeDescriptorHeap
 	//删除资源的记录
 	resource_heap_list.erase(now_free_data);
 	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetDescriptorHeap(const ResourceViewPack &heap_id, ID3D12DescriptorHeap **descriptor_heap_use)
+{
+	auto heap_data = resource_heap_list.find(heap_id.descriptor_heap_type_id);
+	if (heap_data == resource_heap_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap ID: " + std::to_string(heap_id.descriptor_heap_type_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor heap", error_message);
+		*descriptor_heap_use = NULL;
+		return error_message;
+	}
+	return heap_data->second->GetDescriptorHeap(descriptor_heap_use);
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildSRV(
 	const ResourceViewPointer &RSV_point,

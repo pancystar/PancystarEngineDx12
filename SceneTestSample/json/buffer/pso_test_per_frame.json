@@ -2,7 +2,7 @@
 	"BufferType" : "Buffer_Constant",
 	"CbufferDesc" : 
 	{
-		"BufferSize" : 208,
+		"BufferSize" : 272,
 		"VariableMember" : 
 		[
 			{
@@ -16,16 +16,21 @@
 				"StartOffset" : 64
 			},
 			{
-				"Name" : "invview_matrix",
+				"Name" : "view_projectmatrix",
 				"Size" : 64,
 				"StartOffset" : 128
 			},
 			{
+				"Name" : "invview_matrix",
+				"Size" : 64,
+				"StartOffset" : 192
+			},
+			{
 				"Name" : "view_position",
 				"Size" : 16,
-				"StartOffset" : 192
+				"StartOffset" : 256
 			}
 		]
 	},
-	"SubResourceFile" : "json\\resource_view\\DynamicBufferSub_256.json"
+	"SubResourceFile" : "json\\resource_view\\DynamicBufferSub_512.json"
 }

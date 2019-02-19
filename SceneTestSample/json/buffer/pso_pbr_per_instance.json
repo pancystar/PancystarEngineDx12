@@ -1,0 +1,16 @@
+{
+	"BufferType" : "Buffer_Constant",
+	"CbufferDesc" : 
+	{
+		"BufferSize" : 8000,
+		"VariableMember" : 
+		[
+			{
+				"Name" : "_Instances",
+				"Size" : 8000,
+				"StartOffset" : 0
+			}
+		]
+	},
+	"SubResourceFile" : "json\\resource_view\\DynamicBufferSub_8192.json"
+}

@@ -440,7 +440,10 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::SetMatrix(const std::stri
 	{
 		return ErrorVariableNotFind(variable);
 	}
-	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4X4), &mat_data, sizeof(mat_data));
+	//传入Cbuffer中的矩阵需要做转置操作
+	DirectX::XMFLOAT4X4 transpose_mat;
+	DirectX::XMStoreFloat4x4(&transpose_mat, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&mat_data)));
+	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4X4), &transpose_mat, sizeof(transpose_mat));
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyConstantBuffer::SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data, const pancy_resource_size &offset)

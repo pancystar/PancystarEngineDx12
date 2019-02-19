@@ -51,6 +51,7 @@ class scene_test_simple : public SceneRoot
 	//psoID
 	pancy_object_id PSO_test;
 	pancy_object_id PSO_pbr;
+
 public:
 	scene_test_simple()
 	{
@@ -66,6 +67,8 @@ public:
 	void DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix);
 	void Update(float delta_time);
 private:
+	PancystarEngine::EngineFailReason ShowFloor();
+	PancystarEngine::EngineFailReason ShowModel();
 	PancystarEngine::EngineFailReason Init();
 	PancystarEngine::EngineFailReason ScreenChange();
 	void PopulateCommandListSky();

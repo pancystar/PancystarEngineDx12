@@ -36,7 +36,7 @@ public:
 	void CountInvviewMatrix(DirectX::XMFLOAT4X4* inv_view_matrix);  //º∆À„»°æ∞æÿ’ÛƒÊæÿ’Û
 	void CountInvviewMatrix(DirectX::XMFLOAT3 rec_look, DirectX::XMFLOAT3 rec_up, DirectX::XMFLOAT3 rec_pos, DirectX::XMFLOAT4X4* inv_view_matrix);  //º∆À„»°æ∞æÿ’ÛƒÊæÿ’Û
 	
-	void GetViewPosition(DirectX::XMFLOAT3 *view_pos);
+	void GetViewPosition(DirectX::XMFLOAT4 *view_pos);
 	void GetViewDirect(DirectX::XMFLOAT3 *view_direct);
 	void GetRightDirect(DirectX::XMFLOAT3 *right_direct);
 	void SetCamera(DirectX::XMFLOAT3 rec_look, DirectX::XMFLOAT3 rec_up, DirectX::XMFLOAT3 rec_pos);

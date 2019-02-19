@@ -511,6 +511,55 @@ PancystarEngine::EngineFailReason DescriptorObject::Create(
 	{
 		return check_error;
 	}
+	//将渲染需要的绑定资源指针一次性全部获取并保存
+	pancy_object_id PSO_id_need;
+	//PSO数据
+	check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id_need);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancyEffectGraphic::GetInstance()->GetPSOResource(PSO_id_need,&PSO_pointer);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//rootsignature数据
+	check_error = PancyEffectGraphic::GetInstance()->GetRootSignatureResource(PSO_id_need, &rootsignature);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//绑定的描述符堆数据
+	check_error = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(descriptor_block_id,&descriptor_heap_use);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//绑定的描述符堆的偏移
+	std::vector<pancy_object_id> descriptor_distribute;
+	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDistribute(PSO_id_need, descriptor_distribute);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	pancy_object_id now_start_offset = 0;
+	for (int i = 0; i < descriptor_distribute.size(); ++i) 
+	{
+		ResourceViewPointer distribute_point;
+		distribute_point.resource_view_pack_id = descriptor_block_id;
+		CD3DX12_GPU_DESCRIPTOR_HANDLE now_gpu_handle;
+		distribute_point.resource_view_offset_id = now_start_offset;
+		check_error = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(distribute_point, now_gpu_handle);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		descriptor_offset.push_back(now_gpu_handle);
+		now_start_offset += descriptor_distribute[i];
+	}
+	
+	//填充描述符的信息
 	new_point.resource_view_pack_id = descriptor_block_id;
 	//检验传入的资源数量和描述符的数量是否匹配(如果有bindless texture则不做考虑)
 	pancy_object_id check_descriptor_size = cbuffer_name_per_object.size() + cbuffer_per_frame.size() + resource_data_per_frame.size() + resource_data_per_object.size();

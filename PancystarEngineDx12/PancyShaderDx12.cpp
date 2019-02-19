@@ -242,6 +242,7 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 		D3D12_SHADER_VISIBILITY shader_visibility_type = static_cast<D3D12_SHADER_VISIBILITY>(data_param_value[6].int_value);
 		//注册rootsignature格式
 		rootParameters[i].InitAsDescriptorTable(descriptor_range_num, &ranges[i], shader_visibility_type);
+		resource_descriptor_distribution.push_back(descriptor_num);
 		all_descriptor_num += descriptor_num;
 	}
 	//根据当前格式创建描述符堆
@@ -421,6 +422,13 @@ void PancyRootSignature::GetDescriptorHeapUse(std::string &descriptor_heap_id_ou
 {
 	descriptor_heap_id_out = descriptor_heap_name;
 }
+void PancyRootSignature::GetDescriptorDistribute(std::vector<pancy_object_id> &descriptor_distribute)
+{
+	for (int i = 0; i < resource_descriptor_distribution.size(); ++i)
+	{
+		descriptor_distribute.push_back(resource_descriptor_distribution[i]);
+	}
+}
 //rootsignature管理器
 PancyRootSignatureControl::PancyRootSignatureControl()
 {
@@ -593,6 +601,19 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDescriptorHeapUs
 	root_signature_find->second->GetDescriptorHeapUse(descriptor_heap_name);
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason PancyRootSignatureControl::GetDescriptorDistribute(const pancy_object_id &root_signature_id, std::vector<pancy_object_id> &descriptor_distribute)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto root_signature_find = root_signature_array.find(root_signature_id);
+	if (root_signature_find == root_signature_array.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find rootsignature ID: " + std::to_string(root_signature_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find rootsignature by id", error_message);
+		return error_message;
+	}
+	root_signature_find->second->GetDescriptorDistribute(descriptor_distribute);
+	return PancystarEngine::succeed;
+}
 PancyRootSignatureControl::~PancyRootSignatureControl()
 {
 	for (auto data = root_signature_array.begin(); data != root_signature_array.end(); ++data)
@@ -616,7 +637,16 @@ PancyPiplineStateObjectGraph::PancyPiplineStateObjectGraph(const std::string &ps
 {
 	pso_name = pso_name_in;
 }
-
+PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetDescriptorDistribute(std::vector<pancy_object_id> &descriptor_distribute)
+{
+	PancystarEngine::EngineFailReason check_error;
+	check_error = PancyRootSignatureControl::GetInstance()->GetDescriptorDistribute(root_signature_ID, descriptor_distribute);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::CheckCbuffer(const std::string &cbuffer_name)
 {
 	auto cbuffer_data = Cbuffer_map.find(cbuffer_name);
@@ -1446,6 +1476,18 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetPSODescriptorName(const
 		return error_message;
 	}
 	PSO_array_find->second->GetDescriptorHeapUse(descriptor_heap_name);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyEffectGraphic::GetDescriptorDistribute(const pancy_object_id &PSO_id, std::vector<pancy_object_id> &descriptor_distribute) 
+{
+	auto PSO_array_find = PSO_array.find(PSO_id);
+	if (PSO_array_find == PSO_array.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		return error_message;
+	}
+	PSO_array_find->second->GetDescriptorDistribute(descriptor_distribute);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyEffectGraphic::GetPSO(const std::string &name_in, pancy_object_id &PSO_id)

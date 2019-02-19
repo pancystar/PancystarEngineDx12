@@ -143,6 +143,12 @@ namespace PancystarEngine
 	//描述符对象
 	class DescriptorObject
 	{
+		//用于提交渲染的直接信息
+		ID3D12PipelineState  *PSO_pointer;
+		ID3D12RootSignature  *rootsignature;
+		ID3D12DescriptorHeap *descriptor_heap_use;
+		std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> descriptor_offset;
+		//资源管理信息
 		std::string PSO_name_descriptor;
 		ResourceViewPack descriptor_block_id;
 		pancy_object_id resource_view_num;

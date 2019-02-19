@@ -89,6 +89,7 @@ class PancyRootSignature
 	std::string descriptor_heap_name;
 	PancystarEngine::PancyString root_signature_name;
 	ComPtr<ID3D12RootSignature> root_signature_data;
+	std::vector<pancy_object_id> resource_descriptor_distribution;//描述符分布情况
 public:
 	PancyRootSignature(const std::string &file_name);
 	PancystarEngine::EngineFailReason Create();
@@ -96,6 +97,7 @@ public:
 	{
 		*root_signature_data_out = root_signature_data.Get();
 	};
+	void GetDescriptorDistribute(std::vector<pancy_object_id> &descriptor_distribute);
 	void GetDescriptorHeapUse(std::string &descriptor_heap_id_out);
 private:
 	PancystarEngine::EngineFailReason BuildResource(const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC &rootSignatureDesc);
@@ -127,6 +129,7 @@ public:
 	PancystarEngine::EngineFailReason GetRootSignature(const std::string &name_in, pancy_object_id &root_signature_id);
 	PancystarEngine::EngineFailReason GetResource(const pancy_object_id &root_signature_id, ID3D12RootSignature** root_signature_res);
 	PancystarEngine::EngineFailReason GetDescriptorHeapUse(const pancy_object_id &root_signature_id,std::string &descriptor_heap_name);
+	PancystarEngine::EngineFailReason GetDescriptorDistribute(const pancy_object_id &root_signature_id, std::vector<pancy_object_id> &descriptor_distribute);
 	~PancyRootSignatureControl();
 private:
 	PancystarEngine::EngineFailReason BuildRootSignature(const std::string &rootsig_config_file);
@@ -152,6 +155,7 @@ public:
 		return root_signature_ID;
 	}
 	PancystarEngine::EngineFailReason GetDescriptorHeapUse(std::string  &descriptor_heap_name);
+	PancystarEngine::EngineFailReason GetDescriptorDistribute(std::vector<pancy_object_id> &descriptor_distribute);
 	PancystarEngine::EngineFailReason CheckCbuffer(const std::string &cbuffer_name);
 private:
 	PancystarEngine::EngineFailReason GetInputDesc(ComPtr<ID3D12ShaderReflection> t_ShaderReflection, std::vector<D3D12_INPUT_ELEMENT_DESC> &t_InputElementDescVec);
@@ -184,6 +188,7 @@ public:
 	PancystarEngine::EngineFailReason GetRootSignatureResource(const pancy_object_id &PSO_id, ID3D12RootSignature** RootSig_res);
 	PancystarEngine::EngineFailReason GetPSOName(const pancy_object_id &PSO_id,std::string &pso_name_out);
 	PancystarEngine::EngineFailReason GetPSODescriptorName(const pancy_object_id &PSO_id, std::string &descriptor_heap_name);
+	PancystarEngine::EngineFailReason GetDescriptorDistribute(const pancy_object_id &PSO_id, std::vector<pancy_object_id> &descriptor_distribute);
 	PancystarEngine::EngineFailReason CheckCbuffer(const pancy_object_id &PSO_id, const std::string &name_in);
 	~PancyEffectGraphic();
 private:

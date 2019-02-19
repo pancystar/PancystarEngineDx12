@@ -513,17 +513,14 @@ public:
 	PancystarEngine::EngineFailReason Create();
 	PancystarEngine::EngineFailReason BuildHeapBlock(pancy_resource_id &resource_view_ID);
 	PancystarEngine::EngineFailReason FreeHeapBlock(const pancy_resource_id &resource_view_ID);
-	inline ComPtr<ID3D12DescriptorHeap> GetDescriptorHeap() 
-	{
-		return heap_data;
-	}
-	inline pancy_object_id GetOffsetNum(pancy_resource_id heap_offset, pancy_object_id self_offset, CD3DX12_GPU_DESCRIPTOR_HANDLE &descriptor_table)
+	PancystarEngine::EngineFailReason GetDescriptorHeap(ID3D12DescriptorHeap **descriptor_heap_use);
+	inline PancystarEngine::EngineFailReason GetOffsetNum(pancy_resource_id heap_offset, pancy_object_id self_offset, CD3DX12_GPU_DESCRIPTOR_HANDLE &descriptor_table)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(heap_data->GetGPUDescriptorHandleForHeapStart());
 		pancy_object_id id_offset = static_cast<pancy_object_id>(heap_offset) * heap_block_size * per_offset_size + self_offset * per_offset_size;
 		srvHandle.Offset(id_offset);
 		descriptor_table = srvHandle;
-		return id_offset;
+		return PancystarEngine::succeed;
 	}
 	inline pancy_object_id GetOffsetNum(pancy_resource_id heap_offset, pancy_object_id self_offset, CD3DX12_CPU_DESCRIPTOR_HANDLE &descriptor_table)
 	{
@@ -608,27 +605,23 @@ public:
 	PancystarEngine::EngineFailReason FreeDescriptorHeap(
 		pancy_resource_id &descriptor_heap_id
 	);
-	inline ComPtr<ID3D12DescriptorHeap> GetDescriptorHeap(pancy_resource_id heap_id)
+	PancystarEngine::EngineFailReason GetDescriptorHeap(const ResourceViewPack &heap_id, ID3D12DescriptorHeap **descriptor_heap_use);
+	inline PancystarEngine::EngineFailReason GetOffsetNum(ResourceViewPointer heap_pointer, CD3DX12_GPU_DESCRIPTOR_HANDLE &descriptor_table)
 	{
-		auto heap_data = resource_heap_list.find(heap_id);
-		if (heap_data == resource_heap_list.end()) 
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find the descriptor heap ID: "+ std::to_string(heap_id));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor heap",error_message);
-			return NULL;
-		}
-		return heap_data->second->GetDescriptorHeap();
-	}
-	inline pancy_object_id GetOffsetNum(ResourceViewPointer heap_pointer, CD3DX12_GPU_DESCRIPTOR_HANDLE &descriptor_table)
-	{
+		PancystarEngine::EngineFailReason check_error;
 		auto heap_data = resource_heap_list.find(heap_pointer.resource_view_pack_id.descriptor_heap_type_id);
 		if (heap_data == resource_heap_list.end())
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap ID: " + std::to_string(heap_pointer.resource_view_pack_id.descriptor_heap_type_id));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor heap offset", error_message);
-			return NULL;
+			return error_message;
 		}
-		return heap_data->second->GetOffsetNum(heap_pointer.resource_view_pack_id.descriptor_heap_offset, heap_pointer.resource_view_offset_id, descriptor_table);
+		check_error = heap_data->second->GetOffsetNum(heap_pointer.resource_view_pack_id.descriptor_heap_offset, heap_pointer.resource_view_offset_id, descriptor_table);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		return PancystarEngine::succeed;
 	}
 	inline pancy_object_id GetOffsetNum(ResourceViewPointer heap_pointer, CD3DX12_CPU_DESCRIPTOR_HANDLE &descriptor_table)
 	{
