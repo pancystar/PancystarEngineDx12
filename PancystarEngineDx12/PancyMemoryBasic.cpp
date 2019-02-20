@@ -24,7 +24,7 @@ MemoryBlockGpu::MemoryBlockGpu(
 		map_pointer = NULL;
 	}
 }
-PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(const int32_t &pointer_offset, const void* copy_data, const int32_t data_size)
+PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(const pancy_resource_size &pointer_offset, const void* copy_data, const pancy_resource_size data_size)
 {
 	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD) 
 	{
@@ -36,7 +36,7 @@ PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(const int
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(
-	const int32_t &pointer_offset, 
+	const pancy_resource_size &pointer_offset,
 	std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
 	UINT64* pRowSizesInBytes,
@@ -61,7 +61,7 @@ PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason MemoryBlockGpu::ReadFromBufferToCpu(const int32_t &pointer_offset, void* copy_data, const int32_t data_size)
+PancystarEngine::EngineFailReason MemoryBlockGpu::ReadFromBufferToCpu(const pancy_resource_size &pointer_offset, void* copy_data, const pancy_resource_size data_size)
 {
 	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
 	{
@@ -86,10 +86,11 @@ MemoryHeapGpu::MemoryHeapGpu(const std::string &heap_type_name_in)
 	size_per_block = 0;
 	max_block_num = 0;
 }
-PancystarEngine::EngineFailReason MemoryHeapGpu::Create(const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in)
+PancystarEngine::EngineFailReason MemoryHeapGpu::Create(const CD3DX12_HEAP_DESC &heap_desc_in, const pancy_resource_size &size_per_block_in, const pancy_resource_id &max_block_num_in)
 {
 	size_per_block = size_per_block_in;
 	max_block_num = max_block_num_in;
+	/*
 	//检查堆缓存的大小
 	if (heap_desc_in.SizeInBytes != size_per_block * max_block_num)
 	{
@@ -97,6 +98,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::Create(const CD3DX12_HEAP_DESC 
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Memorty Heap", check_error);
 		return check_error;
 	}
+	*/
 	//创建资源堆
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateHeap(&heap_desc_in, IID_PPV_ARGS(&heap_data));
 	if (FAILED(hr))
@@ -256,7 +258,7 @@ MemoryHeapGpu::~MemoryHeapGpu()
 	memory_heap_block.clear();
 }
 //GPU线性增长的资源堆
-MemoryHeapLinear::MemoryHeapLinear(const std::string &heap_type_name_in, const CD3DX12_HEAP_DESC &heap_desc_in, const uint64_t &size_per_block_in, const pancy_resource_id &max_block_num_in)
+MemoryHeapLinear::MemoryHeapLinear(const std::string &heap_type_name_in, const CD3DX12_HEAP_DESC &heap_desc_in, const pancy_resource_size &size_per_block_in, const pancy_resource_id &max_block_num_in)
 {
 	heap_desc = heap_desc_in;
 	size_per_block = size_per_block_in;
@@ -471,7 +473,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::LoadHeapFromFile(
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	pancy_resource_id commit_block_num;
+	pancy_resource_size heap_size;
 	uint64_t per_block_size;
 	D3D12_HEAP_TYPE heap_type_in;
 	D3D12_HEAP_FLAGS heap_flag_in;
@@ -482,12 +484,12 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::LoadHeapFromFile(
 	{
 		return check_error;
 	}
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(HeapFileName, root_value, "commit_block_num", pancy_json_data_type::json_data_int, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(HeapFileName, root_value, "heap_size", pancy_json_data_type::json_data_int, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	commit_block_num = static_cast<pancy_resource_id>(rec_value.int_value);
+	heap_size = static_cast<pancy_resource_size>(rec_value.int_value);
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(HeapFileName, root_value, "per_block_size", pancy_json_data_type::json_data_int, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -512,7 +514,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::LoadHeapFromFile(
 		rec_data = rec_data | rec_value.int_value;
 	}
 	heap_flag_in = static_cast<D3D12_HEAP_FLAGS>(rec_data);
-	check_error = BuildHeap(HeapFileName, commit_block_num, per_block_size, heap_type_in, heap_flag_in, resource_id, heap_alignment_size);
+	check_error = BuildHeap(HeapFileName, heap_size, per_block_size, heap_type_in, heap_flag_in, resource_id, heap_alignment_size);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -521,8 +523,8 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::LoadHeapFromFile(
 }
 PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildHeap(
 	const std::string &heap_desc_name,
-	const pancy_resource_id &commit_block_num,
-	const uint64_t &per_block_size,
+	const pancy_resource_size &heap_size,
+	const pancy_resource_size &per_block_size,
 	const D3D12_HEAP_TYPE &heap_type_in,
 	const D3D12_HEAP_FLAGS &heap_flag_in,
 	pancy_resource_id &resource_id,
@@ -536,7 +538,8 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildHeap(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build resource heap from file", error_message);
 		return error_message;
 	}
-	CD3DX12_HEAP_DESC heapDesc(commit_block_num * per_block_size, heap_type_in, heap_alignment_size, heap_flag_in);
+	CD3DX12_HEAP_DESC heapDesc(heap_size, heap_type_in, heap_alignment_size, heap_flag_in);
+	pancy_resource_id commit_block_num = static_cast<pancy_resource_id>(heap_size / per_block_size);
 	MemoryHeapLinear *new_heap = new MemoryHeapLinear(heap_desc_name, heapDesc, per_block_size, commit_block_num);
 	resource_id = static_cast<pancy_resource_id>(resource_init_list.size());
 	resource_init_list.insert(std::pair<std::string, pancy_resource_id>(heap_desc_name, resource_id));
@@ -607,6 +610,31 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResourceFromHeap(
 	}
 	return PancystarEngine::succeed;
 }
+void MemoryHeapGpuControl::GetHeapDesc(const pancy_resource_id &heap_id, pancy_object_id &heap_num, pancy_resource_size &per_heap_size)
+{
+	auto heap_data = resource_heap_list.find(heap_id);
+	if (heap_data == resource_heap_list.end())
+	{
+		heap_num = 0;
+		per_heap_size = 0;
+		PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find heap ID: " + std::to_string(heap_id),PancystarEngine::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Heap Desc", error_message);
+	}
+	heap_num = heap_data->second->GetHeapNum();
+	per_heap_size = heap_data->second->GetPerHeapSize();
+}
+void MemoryHeapGpuControl::GetHeapDesc(const std::string &heap_name, pancy_object_id &heap_num, pancy_resource_size &per_heap_size)
+{
+	auto heap_id = resource_init_list.find(heap_name);
+	if (heap_id == resource_init_list.end()) 
+	{
+		heap_num = 0;
+		per_heap_size = 0;
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find heap name: " + heap_name, PancystarEngine::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Heap Desc", error_message);
+	}
+	GetHeapDesc(heap_id->second, heap_num, per_heap_size);
+}
 MemoryHeapGpuControl::~MemoryHeapGpuControl()
 {
 	for (auto data_heap = resource_heap_list.begin(); data_heap != resource_heap_list.end(); ++data_heap)
@@ -626,6 +654,7 @@ MemoryHeapGpuControl::~MemoryHeapGpuControl()
 SubMemoryData::SubMemoryData()
 {
 }
+
 PancystarEngine::EngineFailReason SubMemoryData::Create(
 	const std::string &buffer_desc_file,
 	const D3D12_RESOURCE_DESC &resource_desc,
@@ -639,7 +668,7 @@ PancystarEngine::EngineFailReason SubMemoryData::Create(
 	{
 		return check_error;
 	}
-	per_memory_size = per_memory_size_in;
+	per_memory_size = static_cast<pancy_resource_size>(per_memory_size_in);
 	auto memory_data = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(buffer_data);
 	/*
 	auto check_size = memory_data->GetSize() % static_cast<uint64_t>(per_memory_size_in);
@@ -650,12 +679,34 @@ PancystarEngine::EngineFailReason SubMemoryData::Create(
 		return error_message;
 	}
 	*/
-	pancy_object_id all_empty_num = static_cast<pancy_object_id>(memory_data->GetSize() / static_cast<uint64_t>(per_memory_size_in));
+	pancy_object_id all_empty_num = static_cast<pancy_object_id>(memory_data->GetSize() / per_memory_size_in);
 	for (pancy_object_id i = 0; i < all_empty_num; ++i)
 	{
 		empty_sub_memory.insert(i);
 	}
 	return PancystarEngine::succeed;
+}
+void SubMemoryData::GetLogMessage(std::vector<std::string> &log_message)
+{
+	std::string log_message_out = "";
+	log_message_out = "heap_list_id:" + std::to_string(buffer_data.heap_list_id) + " memory_block_id:" + std::to_string(buffer_data.memory_block_id);
+	log_message.push_back(log_message_out);
+	log_message_out = "per_memory_size: " + std::to_string(per_memory_size);
+	log_message.push_back(log_message_out);
+	log_message_out = "empty_sub_memory_num: " + std::to_string(empty_sub_memory.size());
+	log_message.push_back(log_message_out);
+	log_message_out = "sub_memory_data_num: " + std::to_string(sub_memory_data.size());
+	log_message.push_back(log_message_out);
+}
+void SubMemoryData::GetLogMessage(Json::Value &root_value, bool &if_empty)
+{
+	if_empty = true;
+	if (sub_memory_data.size() != 0) 
+	{
+		if_empty = false;
+		PancyJsonTool::GetInstance()->SetJsonValue(root_value, "empty_sub_memory_num", empty_sub_memory.size());
+		PancyJsonTool::GetInstance()->SetJsonValue(root_value, "sub_memory_data_num", sub_memory_data.size());
+	}
 }
 PancystarEngine::EngineFailReason SubMemoryData::BuildSubMemory(pancy_object_id &offset)
 {
@@ -687,6 +738,7 @@ PancystarEngine::EngineFailReason SubMemoryData::FreeSubMemory(const pancy_objec
 //二级资源链
 SubresourceLiner::SubresourceLiner(
 	const std::string &heap_name_in,
+	const std::string &hash_name_in,
 	const D3D12_RESOURCE_DESC &resource_desc_in,
 	const D3D12_RESOURCE_STATES &resource_state_in,
 	const pancy_object_id &per_memory_size_in
@@ -694,9 +746,48 @@ SubresourceLiner::SubresourceLiner(
 {
 	max_id = 0;
 	heap_name = heap_name_in;
+	hash_name = hash_name_in;
 	resource_desc = resource_desc_in;
 	resource_state = resource_state_in;
 	per_memory_size = per_memory_size_in;
+}
+void SubresourceLiner::GetLogMessage(std::vector<std::string> &log_message)
+{
+	std::string now_string;
+	now_string = "heap_name: " + heap_name;
+	log_message.push_back(now_string);
+	now_string = "used_memory_num: " + std::to_string(submemory_list.size());
+	log_message.push_back(now_string);
+	now_string = "empty_memory_num: " + std::to_string(empty_memory_heap.size());
+	log_message.push_back(now_string);
+	for (auto data_log = submemory_list.begin(); data_log != submemory_list.end(); ++data_log)
+	{
+		now_string = "memory_ID: " + std::to_string(data_log->first);
+		log_message.push_back(now_string);
+		data_log->second->GetLogMessage(log_message);
+	}
+}
+void SubresourceLiner::GetLogMessage(Json::Value &root_value) 
+{
+	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "all_memory_num", submemory_list.size());
+	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "empty_memory_num", empty_memory_heap.size());
+	
+	for (auto data_log = submemory_list.begin(); data_log != submemory_list.end(); ++data_log)
+	{
+		Json::Value submemory_member_value;
+		PancyJsonTool::GetInstance()->SetJsonValue(submemory_member_value, "memory_ID", data_log->first);
+		bool if_empty = true;
+		data_log->second->GetLogMessage(submemory_member_value, if_empty);
+		if (!if_empty) 
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(root_value, "memory_" + std::to_string(data_log->first), submemory_member_value);
+		}
+		else 
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(root_value, "memory_" + std::to_string(data_log->first), "empty");
+		}
+	}
+	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "per_memory_size", per_memory_size);
 }
 PancystarEngine::EngineFailReason SubresourceLiner::BuildSubresource(
 	pancy_object_id &new_memory_block_id,
@@ -766,7 +857,7 @@ PancystarEngine::EngineFailReason SubresourceLiner::ReleaseSubResource
 	//todo: 一个资源链上没有资源引用时则删除该资源链
 	return PancystarEngine::succeed;
 }
-MemoryBlockGpu* SubresourceLiner::GetSubResource(pancy_object_id sub_memory_id, int64_t &per_memory_size)
+MemoryBlockGpu* SubresourceLiner::GetSubResource(pancy_object_id sub_memory_id, pancy_resource_size &per_memory_size)
 {
 	auto subresource_block = submemory_list.find(sub_memory_id);
 	if (subresource_block == submemory_list.end())
@@ -1094,7 +1185,7 @@ void SubresourceControl::InitSubResourceType(
 )
 {
 	//std::string hash_name = heap_name_in + "::" + std::to_string(resource_state_in) + "::" + std::to_string(per_memory_size_in);
-	SubresourceLiner *new_subresource = new SubresourceLiner(heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in);
+	SubresourceLiner *new_subresource = new SubresourceLiner(heap_name_in, hash_name, resource_desc_in, resource_state_in, per_memory_size_in);
 	if (subresource_free_id.size() != 0)
 	{
 		subresource_type_id = *subresource_free_id.begin();
@@ -1139,6 +1230,333 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildSubresource(
 	}
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason SubresourceControl::WriteFromCpuToBuffer(
+	const SubMemoryPointer &submemory_pointer,
+	const pancy_resource_size &pointer_offset,
+	const void* copy_data,
+	const pancy_resource_size data_size
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_resource_size per_memory_size;
+	auto memory_block = GetResourceData(submemory_pointer, per_memory_size);
+	if (memory_block == NULL) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find submemory, check log for detail");
+		return error_message;
+	}
+	check_error = memory_block->WriteFromCpuToBuffer(submemory_pointer.offset* per_memory_size + pointer_offset, copy_data, data_size);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::GetBufferCpuPointer(
+	const SubMemoryPointer &submemory_pointer,
+	UINT8** map_pointer_out
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_resource_size per_memory_size;
+	auto memory_block = GetResourceData(submemory_pointer, per_memory_size);
+	if (memory_block == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	memory_block->GetCpuMapPointer(map_pointer_out);
+	map_pointer_out += submemory_pointer.offset * per_memory_size;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::WriteFromCpuToBuffer(
+	const SubMemoryPointer &submemory_pointer,
+	const pancy_resource_size &pointer_offset,
+	std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+	UINT64* pRowSizesInBytes,
+	UINT* pNumRows
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_resource_size per_memory_size;
+	auto memory_block = GetResourceData(submemory_pointer, per_memory_size);
+	if (memory_block == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	check_error = memory_block->WriteFromCpuToBuffer(
+		submemory_pointer.offset* per_memory_size + pointer_offset,
+		subresources,
+		pLayouts,
+		pRowSizesInBytes,
+		pNumRows
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::CopyResource(
+	PancyRenderCommandList *commandlist,
+	const SubMemoryPointer &src_submemory,
+	const SubMemoryPointer &dst_submemory,
+	const pancy_resource_size &src_offset,
+	const pancy_resource_size &dst_offset,
+	const pancy_resource_size &data_size
+) 
+{
+	pancy_resource_size per_memory_size_src;
+	pancy_resource_size per_memory_size_dst;
+	auto dst_res = GetResourceData(dst_submemory, per_memory_size_dst);
+	auto src_res = GetResourceData(src_submemory, per_memory_size_src);
+	if (dst_res == NULL || src_res == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	ResourceBarrier(commandlist, dst_submemory, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+	commandlist->GetCommandList()->CopyBufferRegion(
+		dst_res->GetResource().Get(),
+		dst_submemory.offset * per_memory_size_dst + dst_offset, 
+		src_res->GetResource().Get(),
+		src_submemory.offset*per_memory_size_src + src_offset,
+		data_size);
+	ResourceBarrier(commandlist, dst_submemory, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::CopyResource(
+	PancyRenderCommandList *commandlist,
+	const SubMemoryPointer &src_submemory,
+	const SubMemoryPointer &dst_submemory,
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+	const pancy_object_id &Layout_num
+) 
+{
+	pancy_resource_size per_memory_size_src;
+	pancy_resource_size per_memory_size_dst;
+	auto dst_res = GetResourceData(dst_submemory, per_memory_size_dst);
+	auto src_res = GetResourceData(src_submemory, per_memory_size_src);
+	if (dst_res == NULL || src_res == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	ResourceBarrier(commandlist, dst_submemory, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+	for (UINT i = 0; i < Layout_num; ++i)
+	{
+		CD3DX12_TEXTURE_COPY_LOCATION Dst(dst_res->GetResource().Get(), i + 0);
+		CD3DX12_TEXTURE_COPY_LOCATION Src(src_res->GetResource().Get(), pLayouts[i]);
+		commandlist->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
+	}
+	ResourceBarrier(commandlist, dst_submemory, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::ResourceBarrier(
+	PancyRenderCommandList *commandlist,
+	const SubMemoryPointer &src_submemory,
+	const D3D12_RESOURCE_STATES &last_state,
+	const D3D12_RESOURCE_STATES &now_state
+) 
+{
+	pancy_resource_size per_memory_size;
+	auto dst_res = GetResourceData(src_submemory, per_memory_size);
+	if (dst_res == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	commandlist->GetCommandList()->ResourceBarrier(
+		1,
+		&CD3DX12_RESOURCE_BARRIER::Transition(
+			dst_res->GetResource().Get(),
+			last_state,
+			now_state
+		)
+	);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::CaptureTextureDataToWindows(
+	const SubMemoryPointer &tex_data,
+	const bool &if_cube_map,
+	DirectX::ScratchImage *new_image
+)
+{
+	pancy_resource_size per_block_size;
+	auto res_data = GetResourceData(tex_data, per_block_size);
+	if (res_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	HRESULT hr = DirectX::CaptureTexture(
+		PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect().Get(),
+		res_data->GetResource().Get(),
+		if_cube_map,
+		*new_image,
+		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
+	if (FAILED(hr)) 
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "could not Capture texture to windows desc");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("capture texture data for saving", error_message);
+		return error_message;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::GetSubResourceDesc(
+	const SubMemoryPointer & tex_data,
+	D3D12_RESOURCE_DESC &resource_desc
+) 
+{
+	pancy_resource_size per_block_size;
+	auto res_data = GetResourceData(tex_data, per_block_size);
+	if (res_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	resource_desc = res_data->GetResource()->GetDesc();
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::BuildConstantBufferView(
+	const SubMemoryPointer &src_submemory,
+	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor
+) 
+{
+	//根据资源指针获取资源
+	pancy_resource_size per_block_size;
+	auto data_submemory = GetResourceData(src_submemory, per_block_size);
+	if (data_submemory == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	//根据资源数据创建描述符
+	D3D12_CONSTANT_BUFFER_VIEW_DESC  CBV_desc;
+	CBV_desc.BufferLocation = data_submemory->GetResource()->GetGPUVirtualAddress() + src_submemory.offset * per_block_size;
+	CBV_desc.SizeInBytes = per_block_size;
+	//创建描述符
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateConstantBufferView(&CBV_desc, DestDescriptor);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::BuildShaderResourceView(
+	const SubMemoryPointer &src_submemory,
+	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
+) 
+{
+	//根据资源指针获取资源
+	pancy_resource_size per_block_size;
+	auto data_submemory = GetResourceData(src_submemory, per_block_size);
+	if (data_submemory == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	//创建描述符
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateShaderResourceView(data_submemory->GetResource().Get(), &SRV_desc, DestDescriptor);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::BuildRenderTargetView(
+	const SubMemoryPointer &src_submemory,
+	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+	const D3D12_RENDER_TARGET_VIEW_DESC  &RTV_desc
+) 
+{
+	//根据资源指针获取资源
+	pancy_resource_size per_block_size;
+	auto data_submemory = GetResourceData(src_submemory, per_block_size);
+	if (data_submemory == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	//创建描述符
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRenderTargetView(data_submemory->GetResource().Get(), &RTV_desc, DestDescriptor);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::BuildUnorderedAccessView(
+	const SubMemoryPointer &src_submemory,
+	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+	const D3D12_UNORDERED_ACCESS_VIEW_DESC  &UAV_desc
+) 
+{
+	//根据资源指针获取资源
+	pancy_resource_size per_block_size;
+	auto data_submemory = GetResourceData(src_submemory, per_block_size);
+	if (data_submemory == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	//创建描述符
+	/*
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateUnorderedAccessView(resource_data->GetResource().Get(), &UAV_desc, cpuHandle);
+	*/
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::BuildDepthStencilView(
+	const SubMemoryPointer &src_submemory,
+	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+	const D3D12_DEPTH_STENCIL_VIEW_DESC  &DSV_desc
+) 
+{
+	//根据资源指针获取资源
+	pancy_resource_size per_block_size;
+	auto data_submemory = GetResourceData(src_submemory, per_block_size);
+	if (data_submemory == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	//创建描述符
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateDepthStencilView(data_submemory->GetResource().Get(), &DSV_desc, DestDescriptor);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::BuildVertexBufferView(
+	const SubMemoryPointer &src_submemory,
+	UINT StrideInBytes,
+	D3D12_VERTEX_BUFFER_VIEW &VBV_out
+) 
+{
+	//根据资源指针获取资源
+	pancy_resource_size per_block_size;
+	auto data_submemory = GetResourceData(src_submemory, per_block_size);
+	if (data_submemory == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	//创建描述符
+	VBV_out.BufferLocation = data_submemory->GetResource()->GetGPUVirtualAddress() + src_submemory.offset * per_block_size;
+	VBV_out.StrideInBytes = StrideInBytes;
+	VBV_out.SizeInBytes = per_block_size;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SubresourceControl::BuildIndexBufferView(
+	const SubMemoryPointer &src_submemory,
+	DXGI_FORMAT StrideInBytes,
+	D3D12_INDEX_BUFFER_VIEW &IBV_out
+) 
+{
+	//根据资源指针获取资源
+	pancy_resource_size per_block_size;
+	auto data_submemory = GetResourceData(src_submemory, per_block_size);
+	if (data_submemory == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
+		return error_message;
+	}
+	//创建描述符
+	IBV_out.BufferLocation = data_submemory->GetResource()->GetGPUVirtualAddress() + src_submemory.offset * per_block_size;
+	IBV_out.Format = StrideInBytes;
+	IBV_out.SizeInBytes = per_block_size;
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason SubresourceControl::FreeSubResource(const SubMemoryPointer &submemory_pointer)
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1156,7 +1574,7 @@ PancystarEngine::EngineFailReason SubresourceControl::FreeSubResource(const SubM
 	}
 	return PancystarEngine::succeed;
 }
-MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &submemory_pointer, int64_t &per_memory_size)
+MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &submemory_pointer,pancy_resource_size &per_memory_size)
 {
 	auto submemory_list = subresource_list_map.find(submemory_pointer.type_id);
 	if (submemory_list == subresource_list_map.end())
@@ -1166,6 +1584,51 @@ MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &sub
 		return NULL;
 	}
 	return submemory_list->second->GetSubResource(submemory_pointer.list_id, per_memory_size);
+}
+/*
+void SubresourceControl::WriteSubMemoryMessageToFile(const std::string &log_file_name)
+{
+	std::ofstream write_stream;
+	write_stream.open(log_file_name);
+	for (auto data_submemory = subresource_list_map.begin(); data_submemory != subresource_list_map.end(); ++data_submemory)
+	{
+		std::vector<std::string> log_message;
+		data_submemory->second->GetLogMessage(log_message);
+		for (int i = 0; i < log_message.size(); ++i) 
+		{
+			write_stream<< log_message[i]<<endl;
+		}
+	}
+	write_stream.close();
+}
+*/
+void SubresourceControl::WriteSubMemoryMessageToFile(const std::string &log_file_name)
+{
+	Json::Value root_value;
+	for (auto data_submemory = subresource_list_map.begin(); data_submemory != subresource_list_map.end(); ++data_submemory)
+	{
+		Json::Value list_value;
+		data_submemory->second->GetLogMessage(list_value);
+		Json::Value heap_json = root_value.get(data_submemory->second->GetHeapName(), Json::Value::null);
+		if (heap_json == Json::Value::null)
+		{
+			Json::Value new_heap_json;
+			PancyJsonTool::GetInstance()->SetJsonValue(new_heap_json, data_submemory->second->GetResourceName(), list_value);
+			uint32_t heap_num;
+			pancy_resource_size per_heap_size;
+			MemoryHeapGpuControl::GetInstance()->GetHeapDesc(data_submemory->second->GetHeapName(), heap_num, per_heap_size);
+			PancyJsonTool::GetInstance()->SetJsonValue(new_heap_json, "AllHeapNum", heap_num);
+			PancyJsonTool::GetInstance()->SetJsonValue(new_heap_json, "PerHeapSize", per_heap_size);
+			PancyJsonTool::GetInstance()->SetJsonValue(root_value, data_submemory->second->GetHeapName(), new_heap_json);
+		}
+		else 
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(heap_json, data_submemory->second->GetResourceName(), list_value);
+			PancyJsonTool::GetInstance()->SetJsonValue(root_value, data_submemory->second->GetHeapName(), heap_json);
+		}
+		
+	}
+	PancyJsonTool::GetInstance()->WriteValueToJson(root_value, log_file_name);
 }
 SubresourceControl::~SubresourceControl()
 {
@@ -1197,6 +1660,7 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildSRV(
 	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
 )
 {
+	PancystarEngine::EngineFailReason check_error;
 	//检验偏移是否合法
 	if (self_offset >= resource_view_number)
 	{
@@ -1204,21 +1668,15 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildSRV(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add SRV to descriptor heap block", error_message);
 		return error_message;
 	}
-	//检验资源是否存在
-	int64_t per_memory_size;
-	auto resource_data = SubresourceControl::GetInstance()->GetResourceData(resource_in, per_memory_size);
-	//auto resource_data = MemoryHeapGpuControl::GetInstance()->GetMemoryResource(resource_in);
-	if (resource_data == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource from pointer: " + std::to_string(resource_in.type_id) + "::" + std::to_string(resource_in.list_id) + "::" + std::to_string(resource_in.offset));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add SRV to descriptor heap block", error_message);
-		return error_message;
-	}
 	//创建描述符
 	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
 	cpuHandle.Offset(heap_start_pos);
-	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateShaderResourceView(resource_data->GetResource().Get(), &SRV_desc, cpuHandle);
+	check_error = SubresourceControl::GetInstance()->BuildShaderResourceView(resource_in, cpuHandle, SRV_desc);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyResourceView::BuildCBV(
@@ -1226,6 +1684,7 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildCBV(
 	const SubMemoryPointer &resource_in
 )
 {
+	PancystarEngine::EngineFailReason check_error;
 	//检验偏移是否合法
 	if (self_offset >= resource_view_number)
 	{
@@ -1233,18 +1692,15 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildCBV(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add CBV to descriptor heap block", error_message);
 		return error_message;
 	}
-	int64_t resource_size;
-	auto data_submemory = SubresourceControl::GetInstance()->GetResourceData(resource_in, resource_size);
-	D3D12_CONSTANT_BUFFER_VIEW_DESC  CBV_desc;
-	CBV_desc.BufferLocation = data_submemory->GetResource()->GetGPUVirtualAddress()+ resource_in.offset * resource_size;
-	CBV_desc.SizeInBytes = resource_size;
-
-
 	//创建描述符
 	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
 	cpuHandle.Offset(heap_start_pos);
-	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateConstantBufferView(&CBV_desc, cpuHandle);
+	check_error = SubresourceControl::GetInstance()->BuildConstantBufferView(resource_in, cpuHandle);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyResourceView::BuildUAV(
@@ -1253,6 +1709,7 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildUAV(
 	const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
 )
 {
+	PancystarEngine::EngineFailReason check_error;
 	//检验偏移是否合法
 	if (self_offset >= resource_view_number)
 	{
@@ -1260,22 +1717,16 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildUAV(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add UAV to descriptor heap block", error_message);
 		return error_message;
 	}
-	//检验资源是否存在
-	int64_t per_memory_size;
-	auto resource_data = SubresourceControl::GetInstance()->GetResourceData(resource_in, per_memory_size);
-	if (resource_data == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource from pointer: " + std::to_string(resource_in.type_id) + "::" + std::to_string(resource_in.list_id) + "::" + std::to_string(resource_in.offset));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add UAV to descriptor heap block", error_message);
-		return error_message;
-	}
 	//创建描述符
-	/*
 	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
 	cpuHandle.Offset(heap_start_pos);
-	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateUnorderedAccessView(resource_data->GetResource().Get(), &UAV_desc, cpuHandle);
-	*/
+	//创建描述符
+	check_error = SubresourceControl::GetInstance()->BuildUnorderedAccessView(resource_in, cpuHandle, UAV_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyResourceView::BuildRTV(
@@ -1284,6 +1735,7 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildRTV(
 	const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
 )
 {
+	PancystarEngine::EngineFailReason check_error;
 	//检验偏移是否合法
 	if (self_offset >= resource_view_number)
 	{
@@ -1291,20 +1743,15 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildRTV(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add RTV to descriptor heap block", error_message);
 		return error_message;
 	}
-	//检验资源是否存在
-	int64_t per_memory_size;
-	auto resource_data = SubresourceControl::GetInstance()->GetResourceData(resource_in, per_memory_size);
-	if (resource_data == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource from pointer: " + std::to_string(resource_in.type_id) + "::" + std::to_string(resource_in.list_id) + "::" + std::to_string(resource_in.offset));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add RTV to descriptor heap block", error_message);
-		return error_message;
-	}
 	//创建描述符
 	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
 	cpuHandle.Offset(heap_start_pos);
-	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRenderTargetView(resource_data->GetResource().Get(), &RTV_desc, cpuHandle);
+	check_error = SubresourceControl::GetInstance()->BuildRenderTargetView(resource_in, cpuHandle, RTV_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyResourceView::BuildDSV(
@@ -1313,6 +1760,7 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildDSV(
 	const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
 ) 
 {
+	PancystarEngine::EngineFailReason check_error;
 	//检验偏移是否合法
 	if (self_offset >= resource_view_number)
 	{
@@ -1320,20 +1768,15 @@ PancystarEngine::EngineFailReason PancyResourceView::BuildDSV(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add DSV to descriptor heap block", error_message);
 		return error_message;
 	}
-	//检验资源是否存在
-	int64_t per_memory_size;
-	auto resource_data = SubresourceControl::GetInstance()->GetResourceData(resource_in, per_memory_size);
-	if (resource_data == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource from pointer: " + std::to_string(resource_in.type_id) + "::" + std::to_string(resource_in.list_id) + "::" + std::to_string(resource_in.offset));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add DSV to descriptor heap block", error_message);
-		return error_message;
-	}
 	//创建描述符
 	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
 	cpuHandle.Offset(heap_start_pos);
-	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateDepthStencilView(resource_data->GetResource().Get(), &DSV_desc, cpuHandle);
+	check_error = SubresourceControl::GetInstance()->BuildDepthStencilView(resource_in, cpuHandle, DSV_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 //资源描述符管理堆
@@ -1420,6 +1863,18 @@ PancyResourceView* PancyDescriptorHeap::GetHeapBlock(const pancy_resource_id &re
 	}
 	check_error = PancystarEngine::succeed;
 	return now_resource_remove->second;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::GetDescriptorHeap(ID3D12DescriptorHeap **descriptor_heap_use)
+{
+	if (heap_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the discriptor heap haven't succeed inited");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get desciptor heap real pointer", error_message);
+		*descriptor_heap_use = NULL;
+		return error_message;
+	}
+	*descriptor_heap_use = heap_data.Get();
+	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildSRV(
 	const pancy_object_id &descriptor_block_id,
@@ -1584,12 +2039,12 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildDescriptorHea
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildResourceViewFromFile(
 	const std::string &file_name,
-	ResourceViewPack &RSV_pack_id
+	ResourceViewPack &RSV_pack_id,
+	pancy_object_id &per_resource_view_pack_size
 )
 {
 	PancystarEngine::EngineFailReason check_error;
 	D3D12_DESCRIPTOR_HEAP_DESC descriptor_heap_desc;
-	pancy_object_id per_resource_view_pack_size;
 	pancy_json_value root_data;
 	//加载json文件
 	Json::Value root_value;
@@ -1660,6 +2115,18 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::FreeDescriptorHeap
 	//删除资源的记录
 	resource_heap_list.erase(now_free_data);
 	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetDescriptorHeap(const ResourceViewPack &heap_id, ID3D12DescriptorHeap **descriptor_heap_use)
+{
+	auto heap_data = resource_heap_list.find(heap_id.descriptor_heap_type_id);
+	if (heap_data == resource_heap_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap ID: " + std::to_string(heap_id.descriptor_heap_type_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor heap", error_message);
+		*descriptor_heap_use = NULL;
+		return error_message;
+	}
+	return heap_data->second->GetDescriptorHeap(descriptor_heap_use);
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildSRV(
 	const ResourceViewPointer &RSV_point,

@@ -72,6 +72,7 @@ EngineFailReason::EngineFailReason(HRESULT windows_result_in, std::string failed
 	}
 	else
 	{
+		ShowFailedReason();
 		if_succeed = false;
 	}
 }
@@ -132,6 +133,40 @@ void EngineFailLog::PrintLogToconsole()
 		OutputDebugString(out_debug_string.GetUnicodeString().c_str());
 	}
 	log_save_list.clear();
+}
+void PancystarEngine::DivideFilePath(const std::string &full_file_name_in, std::string &file_path_out, std::string &file_name_out, std::string &file_tail_out)
+{
+	//获取文件后缀名
+	int length_name = full_file_name_in.size();
+	while (full_file_name_in[length_name - 1] != '.') 
+	{
+		length_name -= 1;
+	}
+	for (int i = length_name; i < full_file_name_in.size(); ++i) 
+	{
+		file_tail_out += full_file_name_in[i];
+	}
+	length_name -= 1;
+	//处理存储文件的文件名
+	std::string file_root_name = full_file_name_in.substr(0, length_name);
+	int32_t st_pos = 0;
+	for (int32_t i = 0; i < file_root_name.size(); ++i)
+	{
+		if (file_root_name[i] == '\\' || file_root_name[i] == '/')
+		{
+			st_pos = i + 1;
+		}
+	}
+	if (st_pos < file_root_name.size())
+	{
+		file_name_out = file_root_name.substr(st_pos, file_root_name.size() - st_pos);
+	}
+	else
+	{
+		file_name_out = "";
+	}
+	//获取文件的路径名
+	file_path_out = file_root_name.substr(0, st_pos);
 }
 //文件加载判重
 static FileBuildRepeatCheck* this_instance = NULL;

@@ -3,8 +3,8 @@
 	{
 		"Flags" : "D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE",
 		"NodeMask" : 0,
-		"NumDescriptors" : 70656,
+		"NumDescriptors" : 71680,
 		"Type" : "D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV"
 	},
-	"heap_block_size" : 69
+	"heap_block_size" : 70
 }

@@ -28,14 +28,14 @@
       <Extensions>moc;h;cpp</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
-    <Filter Include="shader">
-      <UniqueIdentifier>{6783a4d3-f738-48fc-9eed-61bf9a2642c6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="pso">
       <UniqueIdentifier>{eef5b47c-3fa9-469c-b4b2-ba8e09a5377d}</UniqueIdentifier>
     </Filter>
     <Filter Include="rootsignature">
       <UniqueIdentifier>{55a03c01-58a3-4c67-8ea1-345c5fefa1bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rootsignature\shader">
+      <UniqueIdentifier>{6783a4d3-f738-48fc-9eed-61bf9a2642c6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -77,22 +77,22 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\BrdfGen.hlsl">
-      <Filter>shader</Filter>
+      <Filter>rootsignature\shader</Filter>
     </FxCompile>
     <FxCompile Include="shader\CubeMap.hlsl">
-      <Filter>shader</Filter>
+      <Filter>rootsignature\shader</Filter>
     </FxCompile>
     <FxCompile Include="shader\pbr_lighting.hlsl">
-      <Filter>shader</Filter>
+      <Filter>rootsignature\shader</Filter>
     </FxCompile>
     <FxCompile Include="shader\testcolor.hlsl">
-      <Filter>shader</Filter>
+      <Filter>rootsignature\shader</Filter>
     </FxCompile>
     <FxCompile Include="shader\ScreenMask.hlsl">
-      <Filter>shader</Filter>
+      <Filter>rootsignature\shader</Filter>
     </FxCompile>
     <FxCompile Include="shader\boundbox.hlsl">
-      <Filter>shader</Filter>
+      <Filter>rootsignature\shader</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
@@ -130,6 +130,12 @@
       <Filter>rootsignature</Filter>
     </None>
     <None Include="json\pipline_state_object\pso_pbr_bone.json">
+      <Filter>pso</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_pbr_pointcatch.json">
+      <Filter>pso</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_geometry_normal.json">
       <Filter>pso</Filter>
     </None>
   </ItemGroup>

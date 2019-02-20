@@ -265,3 +265,10 @@ __pycache__/
 *.png
 *.dds
 /EngineModelDesign/model
+/EngineModelDesign/export
+/SceneTestSample/model/export
+/EngineModelDesign/json/resource_heap/新建文件夹
+/EngineModelDesign/json/resource_view/新建文件夹
+/SceneTestSample/json/resource_heap/新建文件夹
+/SceneTestSample/json/resource_view/新建文件夹
+/SceneTestSample/model

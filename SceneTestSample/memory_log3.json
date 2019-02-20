@@ -1,0 +1,315 @@
+{
+	"json\\resource_heap\\DynamicBuffer_1048576.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 16777216,
+		"json\\resource_view\\DynamicBufferSub_131072.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 131072
+		},
+		"json\\resource_view\\DynamicBufferSub_65536.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 14,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 2
+			},
+			"per_memory_size" : 65536
+		}
+	},
+	"json\\resource_heap\\DynamicBuffer_16777216.json" : 
+	{
+		"AllHeapNum" : 5,
+		"PerHeapSize" : 16777216,
+		"json\\resource_view\\DynamicBufferSub_1572864.json" : 
+		{
+			"all_memory_num" : 5,
+			"empty_memory_num" : 5,
+			"memory_0" : "empty",
+			"memory_1" : "empty",
+			"memory_2" : "empty",
+			"memory_3" : "empty",
+			"memory_4" : "empty",
+			"per_memory_size" : 1572864
+		}
+	},
+	"json\\resource_heap\\DynamicBuffer_4194304.json" : 
+	{
+		"AllHeapNum" : 2,
+		"PerHeapSize" : 16777216,
+		"json\\resource_view\\DynamicBufferSub_1048576.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 1048576
+		},
+		"json\\resource_view\\DynamicBufferSub_262144.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 262144
+		},
+		"json\\resource_view\\DynamicBufferSub_393216.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 393216
+		},
+		"json\\resource_view\\DynamicBufferSub_524288.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 524288
+		},
+		"json\\resource_view\\DynamicBufferSub_655360.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 655360
+		},
+		"json\\resource_view\\DynamicBufferSub_917504.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 917504
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_1048576.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_1048576.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 1048576
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_131072.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 1048576,
+		"json\\resource_view\\StaticBufferSub_131072.json" : 
+		{
+			"all_memory_num" : 3,
+			"empty_memory_num" : 3,
+			"memory_0" : "empty",
+			"memory_1" : "empty",
+			"memory_2" : "empty",
+			"per_memory_size" : 131072
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_262144.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_262144.json" : 
+		{
+			"all_memory_num" : 4,
+			"empty_memory_num" : 4,
+			"memory_0" : "empty",
+			"memory_1" : "empty",
+			"memory_2" : "empty",
+			"memory_3" : "empty",
+			"per_memory_size" : 262144
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_393216.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_393216.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 393216
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_524288.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_524288.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 524288
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_65536.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 1048576,
+		"json\\resource_view\\StaticBufferSub_65536.json" : 
+		{
+			"all_memory_num" : 3,
+			"empty_memory_num" : 1,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"memory_1" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 1,
+				"sub_memory_data_num" : 1
+			},
+			"memory_2" : "empty",
+			"per_memory_size" : 65536
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_655360.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_655360.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 655360
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_917504.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_917504.json" : 
+		{
+			"all_memory_num" : 2,
+			"empty_memory_num" : 2,
+			"memory_0" : "empty",
+			"memory_1" : "empty",
+			"per_memory_size" : 917504
+		}
+	},
+	"json\\resource_heap\\TextureReadOnly131072.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 1048576,
+		"json\\resource_view\\Subtex_256_256_BC7_UNORM_9mip_GpuReadOnly.json" : 
+		{
+			"all_memory_num" : 3,
+			"empty_memory_num" : 3,
+			"memory_0" : "empty",
+			"memory_1" : "empty",
+			"memory_2" : "empty",
+			"per_memory_size" : 131072
+		}
+	},
+	"json\\resource_heap\\TextureReadOnly1441792.json" : 
+	{
+		"AllHeapNum" : 5,
+		"PerHeapSize" : 16777216,
+		"json\\resource_view\\Subtex_1024_1024_BC7_UNORM_11mip_GpuReadOnly.json" : 
+		{
+			"all_memory_num" : 46,
+			"empty_memory_num" : 46,
+			"memory_0" : "empty",
+			"memory_1" : "empty",
+			"memory_10" : "empty",
+			"memory_11" : "empty",
+			"memory_12" : "empty",
+			"memory_13" : "empty",
+			"memory_14" : "empty",
+			"memory_15" : "empty",
+			"memory_16" : "empty",
+			"memory_17" : "empty",
+			"memory_18" : "empty",
+			"memory_19" : "empty",
+			"memory_2" : "empty",
+			"memory_20" : "empty",
+			"memory_21" : "empty",
+			"memory_22" : "empty",
+			"memory_23" : "empty",
+			"memory_24" : "empty",
+			"memory_25" : "empty",
+			"memory_26" : "empty",
+			"memory_27" : "empty",
+			"memory_28" : "empty",
+			"memory_29" : "empty",
+			"memory_3" : "empty",
+			"memory_30" : "empty",
+			"memory_31" : "empty",
+			"memory_32" : "empty",
+			"memory_33" : "empty",
+			"memory_34" : "empty",
+			"memory_35" : "empty",
+			"memory_36" : "empty",
+			"memory_37" : "empty",
+			"memory_38" : "empty",
+			"memory_39" : "empty",
+			"memory_4" : "empty",
+			"memory_40" : "empty",
+			"memory_41" : "empty",
+			"memory_42" : "empty",
+			"memory_43" : "empty",
+			"memory_44" : "empty",
+			"memory_45" : "empty",
+			"memory_5" : "empty",
+			"memory_6" : "empty",
+			"memory_7" : "empty",
+			"memory_8" : "empty",
+			"memory_9" : "empty",
+			"per_memory_size" : 1441792
+		},
+		"json\\resource_view\\Subtex_1024_1024_BC7_UNORM_SRGB_11mip_GpuReadOnly.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 1441792
+		}
+	},
+	"json\\resource_heap\\TextureReadOnly393216.json" : 
+	{
+		"AllHeapNum" : 3,
+		"PerHeapSize" : 1048576,
+		"json\\resource_view\\Subtex_256_1024_BC7_UNORM_11mip_GpuReadOnly.json" : 
+		{
+			"all_memory_num" : 6,
+			"empty_memory_num" : 6,
+			"memory_0" : "empty",
+			"memory_1" : "empty",
+			"memory_2" : "empty",
+			"memory_3" : "empty",
+			"memory_4" : "empty",
+			"memory_5" : "empty",
+			"per_memory_size" : 393216
+		}
+	},
+	"json\\resource_heap\\TextureReadWrite3735552.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 16777216,
+		"json\\resource_view\\Subtex_1280_720_D24_UNORM_S8_UINT_1mip_GpuReadWrite.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"per_memory_size" : 3735552
+		}
+	}
+}

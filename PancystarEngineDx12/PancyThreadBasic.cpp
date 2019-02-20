@@ -6,11 +6,11 @@ PancyRenderCommandList::PancyRenderCommandList(PancyThreadIdGPU command_list_ID_
 	if_preparing.store(false);
 	if_finish.store(true);
 }
-PancystarEngine::EngineFailReason PancyRenderCommandList::Create(ComPtr<ID3D12CommandAllocator> allocator_use_in, ComPtr<ID3D12PipelineState> pso_use_in, D3D12_COMMAND_LIST_TYPE command_list_type_in)
+PancystarEngine::EngineFailReason PancyRenderCommandList::Create(ID3D12CommandAllocator *allocator_use_in, ID3D12PipelineState *pso_use_in, D3D12_COMMAND_LIST_TYPE command_list_type_in)
 {
 	command_list_type = command_list_type_in;
 	//创建commondlist
-	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandList(0, command_list_type_in, allocator_use_in.Get(), nullptr, IID_PPV_ARGS(&command_list_data));
+	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandList(0, command_list_type_in, allocator_use_in, pso_use_in, IID_PPV_ARGS(&command_list_data));
 	if (FAILED(hr))
 	{
 		PancystarEngine::EngineFailReason error_message(hr, "Create CommandList Error When build commandlist");
@@ -64,7 +64,7 @@ CommandListEngine::CommandListEngine(const D3D12_COMMAND_LIST_TYPE &type_need)
 	//为id号清零
 	command_list_ID_selfadd = 0;
 	engine_type_id = type_need;
-	fence_value_self_add = 0;
+	fence_value_self_add = 1;
 	now_prepare_commandlist = 0;
 	wait_thread_ID = NULL;
 }
@@ -88,7 +88,7 @@ void CommandListEngine::UpdateLastRenderList()
 }
 PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 (
-	ComPtr<ID3D12PipelineState> pso_use_in,
+	ID3D12PipelineState *pso_use_in,
 	PancyRenderCommandList** command_list_data,
 	PancyThreadIdGPU &command_list_ID
 )
@@ -108,7 +108,7 @@ PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 		//从当前空闲的commanlist里获取一个commandlist
 		command_list_ID = command_list_empty.begin()->first;
 		*command_list_data = command_list_empty.begin()->second;
-		(*command_list_data)->LockPrepare(allocator_use, pso_use_in);
+		(*command_list_data)->LockPrepare(allocator_use.Get(), pso_use_in);
 		now_prepare_commandlist = command_list_ID;
 	}
 	else
@@ -116,7 +116,7 @@ PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 		//新建一个空闲的commandlist
 		PancyRenderCommandList *new_render_command_list = new PancyRenderCommandList(command_list_ID_selfadd);
 		PancystarEngine::EngineFailReason check_error;
-		check_error = new_render_command_list->Create(allocator_use, pso_use_in, engine_type_id);
+		check_error = new_render_command_list->Create(allocator_use.Get(), pso_use_in, engine_type_id);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -251,9 +251,9 @@ bool CommandListEngine::CheckGpuBrokenFence(const PancyFenceIdGPU &broken_point_
 	{
 		return false;
 	}
-	//将该GPU断点所控制的所有GPU线程回收
-	auto now_working_list = GPU_broken_point.find(broken_point_id);
-	if (now_working_list != GPU_broken_point.end())
+	//将小于等于该眼位的所有眼位所监视的线程设置为已工作完毕
+	auto now_working_list = GPU_broken_point.begin();
+	while (now_working_list != GPU_broken_point.end() && now_working_list->first <= broken_point_id) 
 	{
 		for (auto working_thread = now_working_list->second.begin(); working_thread != now_working_list->second.end(); ++working_thread)
 		{
@@ -269,6 +269,7 @@ bool CommandListEngine::CheckGpuBrokenFence(const PancyFenceIdGPU &broken_point_
 			command_list_work.erase(work_command_list_use);
 		}
 		GPU_broken_point.erase(now_working_list);
+		now_working_list = GPU_broken_point.begin();
 	}
 	return true;
 }
@@ -286,9 +287,9 @@ PancystarEngine::EngineFailReason CommandListEngine::WaitGpuBrokenFence(const Pa
 			return error_message;
 		}
 		WaitForSingleObject(wait_thread_ID, INFINITE);
-		//将该GPU断点所控制的所有GPU线程回收
-		auto now_working_list = GPU_broken_point.find(broken_point_id);
-		if (now_working_list != GPU_broken_point.end())
+		//将小于等于该眼位的所有眼位所监视的线程设置为已工作完毕
+		auto now_working_list = GPU_broken_point.begin();
+		while (now_working_list != GPU_broken_point.end() && now_working_list->first <= broken_point_id)
 		{
 			for (auto working_thread = now_working_list->second.begin(); working_thread != now_working_list->second.end(); ++working_thread)
 			{
@@ -305,59 +306,139 @@ PancystarEngine::EngineFailReason CommandListEngine::WaitGpuBrokenFence(const Pa
 				command_list_work.erase(work_command_list_use);
 			}
 			GPU_broken_point.erase(now_working_list);
+			now_working_list = GPU_broken_point.begin();
 		}
 	}
 	return PancystarEngine::succeed;
 }
 
-ThreadPoolGPU::ThreadPoolGPU(uint32_t GPUThreadPoolID_in)
+ThreadPoolGPU::ThreadPoolGPU(uint32_t GPUThreadPoolID_in, bool if_rename_in)
 {
 	GPUThreadPoolID = GPUThreadPoolID_in;
+	if_rename = if_rename_in;
+	if (if_rename) 
+	{
+		int32_t frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+		multi_engine_list.resize(frame_num);
+	}
+	else 
+	{
+		multi_engine_list.resize(1);
+	}
 }
 ThreadPoolGPU::~ThreadPoolGPU()
 {
-	ReleaseList(multi_engine_list);
+	for (int32_t i = 0; i < multi_engine_list.size(); ++i) 
+	{
+		ReleaseList(multi_engine_list[i]);
+	}
+}
+PancystarEngine::EngineFailReason ThreadPoolGPU::BuildNewEngine(D3D12_COMMAND_LIST_TYPE engine_type)
+{
+	int32_t frame_num;
+	//获取引擎所使用的最大rename数量
+	if (if_rename) 
+	{
+		frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	}
+	else 
+	{
+		frame_num = 1;
+	}
+	//创建对应类型的commandlist引擎
+	for (int i = 0; i < frame_num; ++i) 
+	{
+		PancystarEngine::EngineFailReason check_error;
+		CommandListEngine *new_engine_list = new CommandListEngine(engine_type);
+		check_error = new_engine_list->Create();
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		multi_engine_list[i].insert(std::pair<PancyEngineIdGPU, CommandListEngine*>(static_cast<PancyEngineIdGPU>(engine_type), new_engine_list));
+	}
+	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason ThreadPoolGPU::Create()
 {
-	//创建direct类型的commandlist引擎
-	PancystarEngine::EngineFailReason check_error;
-	CommandListEngine *new_engine_list_direct = new CommandListEngine(D3D12_COMMAND_LIST_TYPE_DIRECT);
-	check_error = new_engine_list_direct->Create();
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	multi_engine_list.insert(std::pair<PancyEngineIdGPU, CommandListEngine*>(static_cast<PancyEngineIdGPU>(D3D12_COMMAND_LIST_TYPE_DIRECT), new_engine_list_direct));
-
-	//创建copy类型的commandlist引擎
-	CommandListEngine *new_engine_list_copy = new CommandListEngine(D3D12_COMMAND_LIST_TYPE_COPY);
-	check_error = new_engine_list_copy->Create();
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	multi_engine_list.insert(std::pair<PancyEngineIdGPU, CommandListEngine*>(static_cast<PancyEngineIdGPU>(D3D12_COMMAND_LIST_TYPE_COPY), new_engine_list_copy));
-	//创建compute类型的commandlist引擎
-	CommandListEngine *new_engine_list_compute = new CommandListEngine(D3D12_COMMAND_LIST_TYPE_COMPUTE);
-	check_error = new_engine_list_compute->Create();
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	multi_engine_list.insert(std::pair<PancyEngineIdGPU, CommandListEngine*>(static_cast<PancyEngineIdGPU>(D3D12_COMMAND_LIST_TYPE_COMPUTE), new_engine_list_compute));
 	return PancystarEngine::succeed;
 }
-
+CommandListEngine* ThreadPoolGPU::GetThreadPool(D3D12_COMMAND_LIST_TYPE engine_type)
+{
+	int32_t now_frame;
+	if (if_rename) 
+	{
+		now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+	}
+	else 
+	{
+		now_frame = 0;
+	}
+	PancyEngineIdGPU engine_id = static_cast<PancyEngineIdGPU>(engine_type);
+	auto engine_data = multi_engine_list[now_frame].find(engine_id);
+	if (engine_data == multi_engine_list[now_frame].end())
+	{
+		//尚未创建对应类型的存储开辟装置
+		PancystarEngine::EngineFailReason check_error = BuildNewEngine(engine_type);
+		if (check_error.CheckIfSucceed())
+		{
+			engine_data = multi_engine_list[now_frame].find(engine_id);
+			return engine_data->second;
+		}
+		else
+		{
+			return NULL;
+		}
+	}
+	return engine_data->second;
+}
+CommandListEngine* ThreadPoolGPU::GetLastThreadPool(D3D12_COMMAND_LIST_TYPE engine_type) 
+{
+	int32_t now_frame;
+	if (if_rename)
+	{
+		now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+	}
+	else
+	{
+		now_frame = 0;
+	}
+	PancyEngineIdGPU engine_id = static_cast<PancyEngineIdGPU>(engine_type);
+	auto engine_data = multi_engine_list[now_frame].find(engine_id);
+	if (engine_data == multi_engine_list[now_frame].end())
+	{
+		//尚未创建对应类型的存储开辟装置
+		PancystarEngine::EngineFailReason check_error = BuildNewEngine(engine_type);
+		if (check_error.CheckIfSucceed())
+		{
+			engine_data = multi_engine_list[now_frame].find(engine_id);
+			return engine_data->second;
+		}
+		else
+		{
+			return NULL;
+		}
+	}
+	return engine_data->second;
+}
+//线程池管理器
 ThreadPoolGPUControl::ThreadPoolGPUControl()
 {
 	main_contex = NULL;
+	resource_load_contex = NULL;
 	main_contex = new ThreadPoolGPU(0);
-	GPU_thread_pool_self_add = 1;
+	resource_load_contex = new ThreadPoolGPU(1,false);
+	GPU_thread_pool_self_add = 2;
 }
 PancystarEngine::EngineFailReason ThreadPoolGPUControl::Create()
 {
-	auto check_error = main_contex->Create();
+	PancystarEngine::EngineFailReason check_error;
+	check_error = main_contex->Create();
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = resource_load_contex->Create();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -369,6 +450,10 @@ ThreadPoolGPUControl::~ThreadPoolGPUControl()
 	if (main_contex != NULL)
 	{
 		delete main_contex;
+	}
+	if (resource_load_contex != NULL)
+	{
+		delete resource_load_contex;
 	}
 	for (auto data_working = GPU_thread_pool_working.begin(); data_working != GPU_thread_pool_working.end(); ++data_working)
 	{

@@ -46,6 +46,7 @@ using Microsoft::WRL::ComPtr;
 #endif
 #define pancy_resource_id uint16_t
 #define pancy_object_id uint32_t
+#define pancy_resource_size uint64_t
 namespace PancystarEngine
 {
 	enum LogMessageType 
@@ -190,6 +191,7 @@ namespace PancystarEngine
 			return true;
 		}
 	};
+	void DivideFilePath(const std::string &full_file_name_in,std::string &file_path_out,std::string &file_name_out, std::string &file_tail_out);
 	static EngineFailReason succeed;
 }
 

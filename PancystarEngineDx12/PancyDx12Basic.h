@@ -1,6 +1,5 @@
 #pragma once
 #include"PancystarEngineBasicDx12.h"
-#include"PancyResourceBasic.h"
 #include"PancyJsonTool.h"
 
 class PancyDx12DeviceBasic
@@ -84,6 +83,16 @@ public:
 	inline UINT GetNowFrame()
 	{
 		return dx12_swapchain->GetCurrentBackBufferIndex();
+	}
+	inline UINT GetLastFrame()
+	{
+		int32_t now_frame = dx12_swapchain->GetCurrentBackBufferIndex();
+		now_frame -= 1;
+		if (now_frame < 0) 
+		{
+			now_frame += FrameCount;
+		}
+		return now_frame;
 	}
 private:
 	void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);

@@ -1,18 +1,24 @@
 #define PI 3.14159265359f
+#define MaxBoneNum 100
+#define MaxInstanceNum 100
 //常量缓冲区
-cbuffer per_object : register(b0)
+struct instance_data
 {
 	float4x4 world_matrix;
-	float4x4 WVP_matrix;
-	float4x4 UV_matrix;
-	float4x4 normal_matrix;
+	uint4 animation_index;
+	//float4x4 normal_matrix;
+};
+cbuffer per_instance : register(b0)
+{
+	instance_data _Instances[MaxInstanceNum];
 }
 cbuffer per_frame : register(b1)
 {
 	float4x4 view_matrix;
 	float4x4 projectmatrix;
+	float4x4 view_projectmatrix;
 	float4x4 invview_matrix;
-	float4 view_position;
+	float4   view_position;
 }
 //环境光IBL与brdf预计算
 TextureCube environment_IBL_spec    : register(t0);
@@ -29,6 +35,7 @@ struct VSInput
 	float3 tangent  : TANGENT;
 	uint4  tex_id   : TEXID;
 	float4 tex_uv   : TEXUV;
+	uint InstanceId : SV_InstanceID;//instace索引号
 };
 struct PSInput
 {
@@ -39,18 +46,26 @@ struct PSInput
 	uint4  tex_id   : TEXID;
 	float4 tex_uv   : TEXUV;
 };
+struct PSInputNormal
+{
+	float4 position : SV_POSITION;
+	float3 normal   : NORMAL;
+};
+
 PSInput VSMain(VSInput vinput)
 {
 	PSInput result;
-	result.position  = mul(float4(vinput.position, 1.0f), WVP_matrix);
-	result.pos_out   = mul(float4(vinput.position, 1.0), world_matrix);
-	result.normal    = mul(float4(vinput.normal, 0.0), normal_matrix).xyz;
-	result.tangent   = mul(float4(vinput.tangent, 0.0), normal_matrix).xyz;
-	result.tex_id    = vinput.tex_id;
-	result.tex_uv.xy = mul(float4(vinput.tex_uv.xy, 0, 0), UV_matrix).xy;
-	result.tex_uv.zw = mul(float4(vinput.tex_uv.zw, 0, 0), UV_matrix).zw;
+	result.position = mul(float4(vinput.position, 1.0f), _Instances[vinput.InstanceId].world_matrix);
+	result.position = mul(result.position, view_projectmatrix);
+	result.pos_out = mul(float4(vinput.position, 1.0), _Instances[vinput.InstanceId].world_matrix);
+	//模型不做不等缩放,可以使用世界变换作为法线变换
+	result.normal = normalize(mul(float4(vinput.normal, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
+	result.tangent = normalize(mul(float4(vinput.tangent, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
+	result.tex_id = vinput.tex_id;
+	result.tex_uv = vinput.tex_uv;
 	return result;
 }
+
 //菲涅尔系数
 float3 Fresnel_Schlick(float3 specularColor, float3 h, float3 v)
 {
@@ -195,7 +210,7 @@ float3 count_pbr_reflect(
 }
 //计算pbr环境光照
 float3 count_pbr_environment(
-	float tex_roughness, 
+	float tex_roughness,
 	float NoV,
 	float3 reflect_dir,
 	float3 realAlbedo,
@@ -210,17 +225,17 @@ float3 count_pbr_environment(
 
 	float3 specular_out = F0 * EnvBRDF.x + EnvBRDF.y;
 	float3 diffuse_out = realAlbedo / PI;
-	float3 ambient_diffuse = tex_ao * color_diffuse.xyz * (diffuse_out) * (1.0f- specular_out);
+	float3 ambient_diffuse = tex_ao * color_diffuse.xyz * (diffuse_out) * (1.0f - specular_out);
 	float3 ambient_specular = tex_ao * enviornment_color.xyz * (specular_out);
 	return ambient_specular + ambient_diffuse;
 }
 float4 PSMain(PSInput pin) : SV_TARGET
 {
 	//采样模型自带的纹理
-	uint self_id_diffuse   = pin.tex_id.x*pin.tex_id.y;     //漫反射贴图
-	uint self_id_normal    = pin.tex_id.x*pin.tex_id.y + 1; //法线贴图
-	uint self_id_metallic  = pin.tex_id.x*pin.tex_id.y + 2; //金属度贴图
-	uint self_id_roughness = pin.tex_id.x*pin.tex_id.y + 3; //粗糙度贴图
+	uint self_id_diffuse = pin.tex_id.x;     //漫反射贴图
+	uint self_id_normal = pin.tex_id.x + 1; //法线贴图
+	uint self_id_metallic = pin.tex_id.x + 2; //金属度贴图
+	uint self_id_roughness = pin.tex_id.x + 3; //粗糙度贴图
 	float4 diffuse_color = texture_model[self_id_diffuse].Sample(samTex_liner, pin.tex_uv.xy);
 	float4 normal_color = texture_model[self_id_normal].Sample(samTex_liner, pin.tex_uv.xy);
 	float4 metallic_color = texture_model[self_id_metallic].Sample(samTex_liner, pin.tex_uv.xy);
@@ -262,6 +277,5 @@ float4 PSMain(PSInput pin) : SV_TARGET
 		F0,
 		1.0f
 	);
-	//return float4(environment_light_color, 1.0f);
-	return float4(dir_light_color + environment_light_color,1.0f);
+	return float4(dir_light_color + environment_light_color, diffuse_color.a);
 }

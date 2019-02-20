@@ -1,0 +1,22 @@
+{
+	"D3D12_RESOURCE_DESC" : 
+	{
+		"Alignment" : 0,
+		"DepthOrArraySize" : 1,
+		"Dimension" : "D3D12_RESOURCE_DIMENSION_BUFFER",
+		"Flags" : "D3D12_RESOURCE_FLAG_NONE",
+		"Format" : "DXGI_FORMAT_UNKNOWN",
+		"Height" : 1,
+		"Layout" : "D3D12_TEXTURE_LAYOUT_ROW_MAJOR",
+		"MipLevels" : 1,
+		"SampleDesc" : 
+		{
+			"Count" : 1,
+			"Quality" : 0
+		},
+		"Width" : 4194304
+	},
+	"D3D12_RESOURCE_STATES" : "D3D12_RESOURCE_STATE_GENERIC_READ",
+	"ResourceType" : "json\\resource_heap\\DynamicBuffer_4194304.json",
+	"per_block_size" : 1048576
+}
