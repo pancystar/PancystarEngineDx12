@@ -1030,6 +1030,73 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
 		return error_message;
 	}
+	/*临时存储*/
+	
+	for (int i = 0; i < model_need->mNumMeshes; i++)
+	{
+		ofstream fout;
+		fout.open(resource_desc_file+std::to_string(i) + ".txt");
+
+		std::vector<IndexType> index_pack;
+		const aiMesh* paiMesh = model_need->mMeshes[i];
+		string new_data = std::to_string(paiMesh->mNumVertices) + "\n";
+		fout.write(new_data.c_str(), new_data.size() * sizeof(char));
+		for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
+		{
+			//顶点位置
+			string vertex_str = std::to_string(paiMesh->mVertices[j].x);
+			fout.write(vertex_str.c_str(), vertex_str.size() * sizeof(char));
+			fout.write(" ", sizeof(char));
+			vertex_str = std::to_string(paiMesh->mVertices[j].y);
+			fout.write(vertex_str.c_str(), vertex_str.size() * sizeof(char));
+			fout.write(" ", sizeof(char));
+			vertex_str = std::to_string(paiMesh->mVertices[j].z);
+			fout.write(vertex_str.c_str(), vertex_str.size() * sizeof(char));
+			fout.write("\n", sizeof(char));
+			//顶点法线
+			vertex_str = std::to_string(paiMesh->mNormals[j].x);
+			fout.write(vertex_str.c_str(), vertex_str.size() * sizeof(char));
+			fout.write(" ", sizeof(char));
+			vertex_str = std::to_string(paiMesh->mNormals[j].y);
+			fout.write(vertex_str.c_str(), vertex_str.size() * sizeof(char));
+			fout.write(" ", sizeof(char));
+			vertex_str = std::to_string(paiMesh->mNormals[j].z);
+			fout.write(vertex_str.c_str(), vertex_str.size() * sizeof(char));
+			fout.write("\n", sizeof(char));
+			//顶点uv
+			vertex_str = std::to_string(paiMesh->mTextureCoords[0][j].x);
+			fout.write(vertex_str.c_str(), vertex_str.size() * sizeof(char));
+			fout.write(" ", sizeof(char));
+			vertex_str = std::to_string(paiMesh->mTextureCoords[0][j].y);
+			fout.write(vertex_str.c_str(), vertex_str.size() * sizeof(char));
+			fout.write("\n", sizeof(char));
+		}
+		new_data = std::to_string(paiMesh->mNumFaces * 3) + "\n";
+		fout.write(new_data.c_str(), new_data.size() * sizeof(char));
+		for (unsigned int j = 0; j < paiMesh->mNumFaces; j++)
+		{
+			if (paiMesh->mFaces[j].mNumIndices == 3)
+			{
+				string index_str = std::to_string(static_cast<IndexType>(paiMesh->mFaces[j].mIndices[0]));
+				fout.write(index_str.c_str(), index_str.size() * sizeof(char));
+				fout.write(" ", sizeof(char));
+				index_str = std::to_string(static_cast<IndexType>(paiMesh->mFaces[j].mIndices[1]));
+				fout.write(index_str.c_str(), index_str.size() * sizeof(char));
+				fout.write(" ", sizeof(char));
+				index_str = std::to_string(static_cast<IndexType>(paiMesh->mFaces[j].mIndices[2]));
+				fout.write(index_str.c_str(), index_str.size() * sizeof(char));
+				fout.write("\n", sizeof(char));
+			}
+			else
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "model" + resource_desc_file + "find no triangle face");
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+				return error_message;
+			}
+		}
+		fout.close();
+	}
+	
 	//尝试读取顶点动画
 	std::vector<int32_t> vertex_num;
 	std::vector<int32_t> index_num;
