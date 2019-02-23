@@ -113,8 +113,6 @@ namespace PancystarEngine
 		pancy_object_id buffer_ID;
 		//所有成员变量的起始位置
 		std::unordered_map<std::string, CbufferVariable> member_variable;
-		//CPU方面的临时存储单元
-		unsigned char* cbuffer_cpu_data;
 		//常量缓冲区在CPU端的指针
 		UINT8* map_pointer_out;
 	public:
@@ -126,7 +124,6 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data, const pancy_resource_size &offset);
 		PancystarEngine::EngineFailReason SetUint4(const std::string &variable, const DirectX::XMUINT4 &vector_data, const pancy_resource_size &offset);
 		PancystarEngine::EngineFailReason SetStruct(const std::string &variable, const void* struct_data, const pancy_resource_size &data_size, const pancy_resource_size &offset);
-		PancystarEngine::EngineFailReason UpdateCbuffer();
 		PancystarEngine::EngineFailReason GetBufferSubResource(SubMemoryPointer &submemory);
 	private:
 		PancystarEngine::EngineFailReason ErrorVariableNotFind(const std::string &variable_name);

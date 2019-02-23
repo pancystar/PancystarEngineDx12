@@ -5,7 +5,7 @@
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	PSTR szCmdLine, int iCmdShow)
 {
-	//_CrtSetBreakAlloc(10970);
+	//_CrtSetBreakAlloc(348970);
 	engine_windows_main *engine_main = new engine_windows_main(hInstance, hPrevInstance, szCmdLine, iCmdShow);
 	auto new_scene = new scene_test_simple();
 	HRESULT hr = engine_main->game_create(new_scene);

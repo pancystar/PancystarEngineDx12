@@ -25,27 +25,10 @@ class scene_test_simple : public SceneRoot
 	//帧等待fence号码
 	PancyFenceIdGPU last_broken_fence_id;
 	PancyFenceIdGPU broken_fence_id;
-	//资源绑定(天空盒)
-	ResourceViewPointer table_offset[3];
-	SubMemoryPointer cbuffer[2];
-	//资源绑定(待处理模型)
-	ResourceViewPointer table_offset_model[4];
 	//模型ID号
 	uint32_t model_common, model_skinmesh, model_pointmesh;
-	/*
-	cbuffer_per_object
-	cbuffer_per_view
-	diffuse
-	normal
-	metallic/specular
-	roughness/smoothness
-	*/
-	SubMemoryPointer cbuffer_model[2];
-	//模型资源
 	//pbr纹理
 	pancy_object_id tex_brdf_id;
-	pancy_object_id tex_metallic_id;
-	pancy_object_id tex_roughness_id;
 	pancy_object_id tex_ibl_spec_id;
 	pancy_object_id tex_ibl_diffuse_id;
 	//psoID

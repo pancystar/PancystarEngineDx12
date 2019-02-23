@@ -9,6 +9,9 @@ class PancyDx12DeviceBasic
 	HWND hwnd_window;
 	uint32_t width;
 	uint32_t height;
+	//交换链帧使用信息
+	pancy_object_id current_frame_use;//当前帧的帧号
+	pancy_object_id last_frame_use;//上一帧的帧号
 	//dxgi设备(用于更新交换链)
 	ComPtr<IDXGIFactory4> dxgi_factory;
 	//d3d设备
@@ -46,33 +49,45 @@ public:
 	PancystarEngine::EngineFailReason Init();
 	PancystarEngine::EngineFailReason ResetScreen(uint32_t window_width_in, uint32_t window_height_in);
 	//获取com资源信息
-	inline ComPtr<ID3D12Device> GetD3dDevice()
+	inline ID3D12Device* GetD3dDevice()
 	{
-		return m_device;
+		return m_device.Get();
 	};
-	inline ComPtr<ID3D12CommandQueue> GetCommandQueueDirect()
+	inline ID3D12CommandQueue* GetCommandQueueDirect()
 	{
-		return command_queue_direct;
+		return command_queue_direct.Get();
 	}
-	inline ComPtr<ID3D12CommandQueue> GetCommandQueueCopy()
+	inline ID3D12CommandQueue* GetCommandQueueCopy()
 	{
-		return command_queue_copy;
+		return command_queue_copy.Get();
 	}
-	inline ComPtr<ID3D12CommandQueue> GetCommandQueueCompute()
+	inline ID3D12CommandQueue* GetCommandQueueCompute()
 	{
-		return command_queue_compute;
+		return command_queue_compute.Get();
 	}
-	inline ComPtr<IDXGISwapChain3> GetSwapchain()
+	inline PancystarEngine::EngineFailReason SwapChainPresent(  
+		/* [in] */ UINT SyncInterval,
+		/* [in] */ UINT Flags)
 	{
-		return dx12_swapchain;
+		HRESULT hr;
+		hr = dx12_swapchain->Present(SyncInterval, Flags);
+		if (FAILED(hr)) 
+		{
+			PancystarEngine::EngineFailReason error_message(hr,"swapchain present error");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("present frame by Swapchain", error_message);
+			return error_message;
+		}
+		last_frame_use = current_frame_use;
+		current_frame_use = dx12_swapchain->GetCurrentBackBufferIndex();
+		return PancystarEngine::succeed;
 	}
-	inline ComPtr<ID3D12Resource> GetBackBuffer(CD3DX12_CPU_DESCRIPTOR_HANDLE &heap_handle) 
+	inline ID3D12Resource* GetBackBuffer(CD3DX12_CPU_DESCRIPTOR_HANDLE &heap_handle) 
 	{
 		auto now_frame_use = dx12_swapchain->GetCurrentBackBufferIndex();
 		auto rtv_offset = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), now_frame_use, rtv_offset);
 		heap_handle = rtvHandle;
-		return m_renderTargets[now_frame_use];
+		return m_renderTargets[now_frame_use].Get();
 	}
 
 	//获取帧数字
@@ -82,17 +97,11 @@ public:
 	}
 	inline UINT GetNowFrame()
 	{
-		return dx12_swapchain->GetCurrentBackBufferIndex();
+		return current_frame_use;
 	}
 	inline UINT GetLastFrame()
 	{
-		int32_t now_frame = dx12_swapchain->GetCurrentBackBufferIndex();
-		now_frame -= 1;
-		if (now_frame < 0) 
-		{
-			now_frame += FrameCount;
-		}
-		return now_frame;
+		return last_frame_use;
 	}
 private:
 	void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);

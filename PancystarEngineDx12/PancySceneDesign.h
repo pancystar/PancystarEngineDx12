@@ -31,6 +31,16 @@ public:
 	virtual void Update(float delta_time) = 0;
 	virtual ~SceneRoot()
 	{
+		for (int32_t i = 0; i < frame_constant_buffer.size(); ++i) 
+		{
+			for (auto cbuffer_map = frame_constant_buffer[i].begin(); cbuffer_map != frame_constant_buffer[i].end(); ++cbuffer_map)
+			{
+				for (auto cbuffer_data = cbuffer_map->second.begin(); cbuffer_data != cbuffer_map->second.end(); ++cbuffer_data) 
+				{
+					delete cbuffer_data->second;
+				}
+			}
+		}
 	};
 private:
 	virtual PancystarEngine::EngineFailReason Init() = 0;

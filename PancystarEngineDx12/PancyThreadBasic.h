@@ -28,9 +28,9 @@ public:
 	{
 		return command_list_type;
 	}
-	inline ComPtr<PancyNowGraphicsCommandList> GetCommandList()
+	inline PancyNowGraphicsCommandList* GetCommandList()
 	{
-		return command_list_data;
+		return command_list_data.Get();
 	}
 	//检测当前的commandlist是否正处于准备状态(是否正在占据alloctor进行资源分配)
 	inline bool CheckIfPrepare()

@@ -7,12 +7,7 @@
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 1,
-			"memory_0" : 
-			{
-				"empty_sub_memory_num" : 2,
-				"memory_ID" : 0,
-				"sub_memory_data_num" : 6
-			},
+			"memory_0" : "empty",
 			"per_memory_size" : 131072
 		},
 		"json\\resource_view\\DynamicBufferSub_65536.json" : 
@@ -21,9 +16,9 @@
 			"empty_memory_num" : 1,
 			"memory_0" : 
 			{
-				"empty_sub_memory_num" : 13,
+				"empty_sub_memory_num" : 14,
 				"memory_ID" : 0,
-				"sub_memory_data_num" : 3
+				"sub_memory_data_num" : 2
 			},
 			"per_memory_size" : 65536
 		}
@@ -35,37 +30,12 @@
 		"json\\resource_view\\DynamicBufferSub_1572864.json" : 
 		{
 			"all_memory_num" : 5,
-			"empty_memory_num" : 1,
-			"memory_0" : 
-			{
-				"empty_sub_memory_num" : 0,
-				"memory_ID" : 0,
-				"sub_memory_data_num" : 10
-			},
-			"memory_1" : 
-			{
-				"empty_sub_memory_num" : 0,
-				"memory_ID" : 1,
-				"sub_memory_data_num" : 10
-			},
-			"memory_2" : 
-			{
-				"empty_sub_memory_num" : 0,
-				"memory_ID" : 2,
-				"sub_memory_data_num" : 10
-			},
-			"memory_3" : 
-			{
-				"empty_sub_memory_num" : 3,
-				"memory_ID" : 3,
-				"sub_memory_data_num" : 7
-			},
-			"memory_4" : 
-			{
-				"empty_sub_memory_num" : 0,
-				"memory_ID" : 4,
-				"sub_memory_data_num" : 10
-			},
+			"empty_memory_num" : 5,
+			"memory_0" : "empty",
+			"memory_1" : "empty",
+			"memory_2" : "empty",
+			"memory_3" : "empty",
+			"memory_4" : "empty",
 			"per_memory_size" : 1572864
 		}
 	},
@@ -77,72 +47,42 @@
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 1,
-			"memory_0" : 
-			{
-				"empty_sub_memory_num" : 3,
-				"memory_ID" : 0,
-				"sub_memory_data_num" : 1
-			},
+			"memory_0" : "empty",
 			"per_memory_size" : 1048576
 		},
 		"json\\resource_view\\DynamicBufferSub_262144.json" : 
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 1,
-			"memory_0" : 
-			{
-				"empty_sub_memory_num" : 12,
-				"memory_ID" : 0,
-				"sub_memory_data_num" : 4
-			},
+			"memory_0" : "empty",
 			"per_memory_size" : 262144
 		},
 		"json\\resource_view\\DynamicBufferSub_393216.json" : 
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 1,
-			"memory_0" : 
-			{
-				"empty_sub_memory_num" : 3,
-				"memory_ID" : 0,
-				"sub_memory_data_num" : 7
-			},
+			"memory_0" : "empty",
 			"per_memory_size" : 393216
 		},
 		"json\\resource_view\\DynamicBufferSub_524288.json" : 
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 1,
-			"memory_0" : 
-			{
-				"empty_sub_memory_num" : 7,
-				"memory_ID" : 0,
-				"sub_memory_data_num" : 1
-			},
+			"memory_0" : "empty",
 			"per_memory_size" : 524288
 		},
 		"json\\resource_view\\DynamicBufferSub_655360.json" : 
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 1,
-			"memory_0" : 
-			{
-				"empty_sub_memory_num" : 5,
-				"memory_ID" : 0,
-				"sub_memory_data_num" : 1
-			},
+			"memory_0" : "empty",
 			"per_memory_size" : 655360
 		},
 		"json\\resource_view\\DynamicBufferSub_917504.json" : 
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 1,
-			"memory_0" : 
-			{
-				"empty_sub_memory_num" : 2,
-				"memory_ID" : 0,
-				"sub_memory_data_num" : 2
-			},
+			"memory_0" : "empty",
 			"per_memory_size" : 917504
 		}
 	},
