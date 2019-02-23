@@ -181,7 +181,7 @@ PancystarEngine::EngineFailReason CommandListEngine::SubmitRenderlist
 		if (finish_command_list_use != command_list_finish.end())
 		{
 			now_render_list_array.push_back(finish_command_list_use->second);
-			commandlist_array[i] = finish_command_list_use->second->GetCommandList().Get();
+			commandlist_array[i] = finish_command_list_use->second->GetCommandList();
 			//转换commandlist
 			command_list_work.insert(*finish_command_list_use);
 			command_list_finish.erase(finish_command_list_use);
@@ -196,7 +196,7 @@ PancystarEngine::EngineFailReason CommandListEngine::SubmitRenderlist
 	}
 	if (command_list_num != 0)
 	{
-		ComPtr<ID3D12CommandQueue> now_command_queue;
+		ID3D12CommandQueue* now_command_queue;
 		//找到对应的commandqueue
 		if (engine_type_id == D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)
 		{

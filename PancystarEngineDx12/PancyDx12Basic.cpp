@@ -148,6 +148,8 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::ResetScreen(uint32_t win
 		return error_message;
 	}
 	swapChain.As(&dx12_swapchain);
+	last_frame_use = dx12_swapchain->GetCurrentBackBufferIndex();
+	current_frame_use = dx12_swapchain->GetCurrentBackBufferIndex();
 	return PancystarEngine::succeed;
 }
 

@@ -430,7 +430,6 @@ PancyConstantBuffer::PancyConstantBuffer(const std::string &cbuffer_name_in, con
 	cbuffer_name = cbuffer_name_in;
 	cbuffer_effect_name = cbuffer_effect_name_in;
 	cbuffer_size = 0;
-	cbuffer_cpu_data = NULL;
 	map_pointer_out = NULL;
 }
 PancystarEngine::EngineFailReason PancyConstantBuffer::SetMatrix(const std::string &variable, const DirectX::XMFLOAT4X4 &mat_data, const pancy_resource_size &offset)
@@ -443,7 +442,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::SetMatrix(const std::stri
 	//传入Cbuffer中的矩阵需要做转置操作
 	DirectX::XMFLOAT4X4 transpose_mat;
 	DirectX::XMStoreFloat4x4(&transpose_mat, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&mat_data)));
-	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4X4), &transpose_mat, sizeof(transpose_mat));
+	memcpy(map_pointer_out + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4X4), &transpose_mat, sizeof(transpose_mat));
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyConstantBuffer::SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data, const pancy_resource_size &offset)
@@ -453,7 +452,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::SetFloat4(const std::stri
 	{
 		return ErrorVariableNotFind(variable);
 	}
-	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4), &vector_data, sizeof(vector_data));
+	memcpy(map_pointer_out + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4), &vector_data, sizeof(vector_data));
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyConstantBuffer::SetUint4(const std::string &variable, const DirectX::XMUINT4 &vector_data, const pancy_resource_size &offset)
@@ -463,7 +462,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::SetUint4(const std::strin
 	{
 		return ErrorVariableNotFind(variable);
 	}
-	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * sizeof(DirectX::XMUINT4), &vector_data, sizeof(vector_data));
+	memcpy(map_pointer_out + start_pos->second.start_offset + offset * sizeof(DirectX::XMUINT4), &vector_data, sizeof(vector_data));
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyConstantBuffer::SetStruct(const std::string &variable, const void* struct_data, const pancy_resource_size &data_size, const pancy_resource_size &offset)
@@ -473,32 +472,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::SetStruct(const std::stri
 	{
 		return ErrorVariableNotFind(variable);
 	}
-	memcpy(cbuffer_cpu_data + start_pos->second.start_offset + offset * data_size, struct_data, data_size);
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyConstantBuffer::UpdateCbuffer()
-{
-	//PancystarEngine::EngineFailReason check_error;
-	if (cbuffer_cpu_data == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The pre CPU pointer of Cbuffer is NULL");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Cbuffer", error_message);
-		return error_message;
-	}
-	if (map_pointer_out == NULL) 
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL,"The CPU pointer of Cbuffer is NULL");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Cbuffer", error_message);
-		return error_message;
-	}
-	memcpy(map_pointer_out, cbuffer_cpu_data, cbuffer_size);
-	/*
-	check_error = PancyBasicBufferControl::GetInstance()->CopyCpuResourceToGpu(buffer_ID, cbuffer_cpu_data, cbuffer_size, 0);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	*/
+	memcpy(map_pointer_out + start_pos->second.start_offset + offset * data_size, struct_data, data_size);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyConstantBuffer::ErrorVariableNotFind(const std::string &variable_name)
@@ -562,7 +536,6 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 	//读取缓冲区大小
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_desc, "BufferSize", pancy_json_data_type::json_data_int, now_value);
 	cbuffer_size = static_cast<pancy_resource_size>(now_value.int_value);
-	cbuffer_cpu_data = new unsigned char[cbuffer_size];
 	//读取常量缓冲区的所有变量
 	Json::Value value_cbuffer_member = value_cbuffer_desc.get("VariableMember", Json::Value::null);
 	if (value_cbuffer_member == Json::Value::null)
@@ -616,8 +589,4 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetBufferSubResource(SubM
 PancyConstantBuffer::~PancyConstantBuffer()
 {
 	PancyBasicBufferControl::GetInstance()->DeleteResurceReference(buffer_ID);
-	if (cbuffer_cpu_data != NULL) 
-	{
-		delete[] cbuffer_cpu_data;
-	}
 }

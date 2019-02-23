@@ -30,11 +30,13 @@ class MemoryBlockGpu
 	ComPtr<ID3D12Resource> resource_data;//存储块的数据
 	D3D12_HEAP_TYPE resource_usage;
 	UINT8* map_pointer;
+	D3D12_RESOURCE_STATES now_subresource_state;//当前资源的使用格式
 public:
 	MemoryBlockGpu(
 		const uint64_t &memory_size_in,
 		ComPtr<ID3D12Resource> resource_data_in,
-		D3D12_HEAP_TYPE resource_usage_in
+		const D3D12_HEAP_TYPE &resource_usage_in,
+		const D3D12_RESOURCE_STATES &resource_state
 	);
 	~MemoryBlockGpu();
 	inline ComPtr<ID3D12Resource> GetResource() 
@@ -44,6 +46,16 @@ public:
 	inline uint64_t GetSize()
 	{
 		return memory_size;
+	}
+	//查看当前资源的使用格式
+	inline D3D12_RESOURCE_STATES GetResourceState()
+	{
+		return now_subresource_state;
+	}
+	//修改当前资源的使用格式
+	inline void SetResourceState(const D3D12_RESOURCE_STATES &state)
+	{
+		now_subresource_state = state;
 	}
 	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(const pancy_resource_size &pointer_offset, const void* copy_data, const pancy_resource_size data_size);
 	PancystarEngine::EngineFailReason WriteFromCpuToBuffer(
@@ -253,6 +265,7 @@ public:
 	{
 		return static_cast<pancy_object_id>(empty_sub_memory.size());
 	}
+	
 	//获取资源
 	inline MemoryBlockGpu* GetResource()
 	{
@@ -370,6 +383,7 @@ public:
 		const D3D12_RESOURCE_STATES &last_state,
 		const D3D12_RESOURCE_STATES &now_state
 		);
+	PancystarEngine::EngineFailReason GetResourceState(const SubMemoryPointer &src_submemory, D3D12_RESOURCE_STATES &res_state);
 	PancystarEngine::EngineFailReason CaptureTextureDataToWindows(
 		const SubMemoryPointer &tex_data,
 		const bool &if_cube_map,

@@ -37,6 +37,13 @@ PancyBasicModel::~PancyBasicModel()
 	{
 		PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(*id_tex);
 	}
+	for (int32_t i = 0; i < descriptor_map.size(); ++i) 
+	{
+		for (auto descriptor_data = descriptor_map[i].begin(); descriptor_data != descriptor_map[i].end(); ++descriptor_data) 
+		{
+			delete descriptor_data->second;
+		}
+	}
 }
 PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(string filename)
 {
@@ -178,10 +185,16 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 	model_texture_num = rec_value.int_value;
 	for (int i = 0; i < model_texture_num; ++i)
 	{
-		std::string texture_name_now = path_name + file_name + "_tex" + std::to_string(i) + ".json";
+		std::string texture_name_now = path_name + file_name + "_tex" + std::to_string(i) + ".dds";
 		pancy_object_id texture_id;
 		//加载纹理并添加引用计数
-		check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(texture_name_now, texture_id);
+		Json::Value new_texture;
+		PancyJsonTool::GetInstance()->SetJsonValue(new_texture, "FileName", texture_name_now);
+		PancyJsonTool::GetInstance()->SetJsonValue(new_texture, "IfAutoBuildMipMap", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(new_texture, "IfForceSrgb", 0);
+		PancyJsonTool::GetInstance()->SetJsonValue(new_texture, "IfFromFile", 1);
+		PancyJsonTool::GetInstance()->SetJsonValue(new_texture, "MaxSize", 0);
+		check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(texture_name_now, new_texture, texture_id);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -200,6 +213,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 	for (int i = 0; i < material_value.size(); ++i)
 	{
 		std::unordered_map<TexType, pancy_object_id> now_material_need;
+		std::vector<pancy_object_id> now_material_id_need;
 		int32_t material_id;
 		//材质id
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "materialID", pancy_json_data_type::json_data_int, rec_value);
@@ -215,6 +229,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 			return check_error;
 		}
 		now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, rec_value.int_value));
+		now_material_id_need.push_back(rec_value.int_value);
 		//法线纹理
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "Normaltex", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
@@ -222,6 +237,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 			return check_error;
 		}
 		now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, rec_value.int_value));
+		now_material_id_need.push_back(rec_value.int_value);
 		//AO纹理
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "Ambienttex", pancy_json_data_type::json_data_int, rec_value);
 		if (!check_error.CheckIfSucceed())
@@ -229,6 +245,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 			return check_error;
 		}
 		now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_ambient, rec_value.int_value));
+		now_material_id_need.push_back(rec_value.int_value);
 		//PBR纹理
 		if (model_pbr_type == PbrMaterialType::PbrType_MetallicRoughness)
 		{
@@ -239,6 +256,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 				return check_error;
 			}
 			now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_metallic, rec_value.int_value));
+			now_material_id_need.push_back(rec_value.int_value);
 			//粗糙度纹理
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "RoughnessTex", pancy_json_data_type::json_data_int, rec_value);
 			if (!check_error.CheckIfSucceed())
@@ -246,6 +264,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 				return check_error;
 			}
 			now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_roughness, rec_value.int_value));
+			now_material_id_need.push_back(rec_value.int_value);
 		}
 		else if (model_pbr_type == PbrMaterialType::PbrType_SpecularSmoothness)
 		{
@@ -256,8 +275,10 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 				return check_error;
 			}
 			now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_specular_smoothness, rec_value.int_value));
+			now_material_id_need.push_back(rec_value.int_value);
 		}
 		material_list.insert(std::pair<pancy_object_id, std::unordered_map<TexType, pancy_object_id>>(material_id, now_material_need));
+		material_id_list.insert(std::pair<pancy_object_id, std::vector<pancy_object_id>>(material_id, now_material_id_need));
 	}
 	//读取骨骼动画
 	if (if_skinmesh)
@@ -442,15 +463,51 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetRenderDescriptor(
 		{
 
 		}
-		
-		for (int i = 0; i < texture_list.size(); ++i)
+		bool if_need_resource_barrier = false;
+		for (int i = 0; i < material_id_list.size(); ++i)
 		{
-			D3D12_SHADER_RESOURCE_VIEW_DESC new_SRV_desc;
-			SubMemoryPointer now_texture;
-			PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(texture_list[i], now_texture);
-			res_pack.push_back(now_texture);
-			PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(texture_list[i], new_SRV_desc);
-			SRV_pack.push_back(new_SRV_desc);
+			for (int j = 0; j < material_id_list[i].size(); ++j) 
+			{
+				D3D12_SHADER_RESOURCE_VIEW_DESC new_SRV_desc;
+				SubMemoryPointer now_texture;
+				PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(texture_list[material_id_list[i][j]], now_texture);
+				res_pack.push_back(now_texture);
+				D3D12_RESOURCE_STATES test_state;
+				SubresourceControl::GetInstance()->GetResourceState(now_texture, test_state);
+				if (test_state != D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) 
+				{
+					if_need_resource_barrier = true;
+				}
+				PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(texture_list[material_id_list[i][j]], new_SRV_desc);
+				SRV_pack.push_back(new_SRV_desc);
+			}
+		}
+		if (if_need_resource_barrier) 
+		{
+			//有些渲染资源尚未转换为SRV格式，调用主线程统一转换
+			PancyRenderCommandList *m_commandList;
+			PancyThreadIdGPU commdlist_id_use;
+			check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &m_commandList, commdlist_id_use);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			for (int i = 0; i < material_id_list.size(); ++i)
+			{
+				for (int j = 0; j < material_id_list[i].size(); ++j)
+				{
+					SubMemoryPointer now_texture;
+					PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(texture_list[material_id_list[i][j]], now_texture);
+					D3D12_RESOURCE_STATES test_state;
+					SubresourceControl::GetInstance()->GetResourceState(now_texture, test_state);
+					if (test_state != D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
+					{
+						SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, now_texture,D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+					};
+				}
+			}
+			m_commandList->UnlockPrepare();
+			ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1,&commdlist_id_use);
 		}
 		//创建一个新的描述符队列
 		DescriptorObjectList *new_descriptor_List;
@@ -477,9 +534,21 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetRenderDescriptor(
 	}
 	return PancystarEngine::succeed;
 }
+void PancyBasicModel::ResetRenderList()
+{
+	pancy_object_id now_render_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+	PancystarEngine::EngineFailReason check_error;
+	for (auto descriptor_data = descriptor_map[now_render_frame].begin(); descriptor_data != descriptor_map[now_render_frame].end(); ++descriptor_data) 
+	{
+		descriptor_data->second->Reset();
+	}
+}
 //描述符类
 DescriptorObject::DescriptorObject()
 {
+	PSO_pointer = NULL;
+	rootsignature = NULL;
+	descriptor_heap_use = NULL;
 }
 DescriptorObject::~DescriptorObject()
 {
@@ -561,13 +630,24 @@ PancystarEngine::EngineFailReason DescriptorObject::Create(
 	
 	//填充描述符的信息
 	new_point.resource_view_pack_id = descriptor_block_id;
-	//检验传入的资源数量和描述符的数量是否匹配(如果有bindless texture则不做考虑)
+	//检验传入的资源数量和描述符的数量是否匹配(如果有bindless texture则要求资源数量小于等于数组上限)
 	pancy_object_id check_descriptor_size = cbuffer_name_per_object.size() + cbuffer_per_frame.size() + resource_data_per_frame.size() + resource_data_per_object.size();
 	if (resource_data_per_object.size() == 0 && check_descriptor_size != resource_view_num)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource num: " +
 			std::to_string(check_descriptor_size) +
 			" dismatch resource view num: " +
+			std::to_string(resource_view_num) +
+			" in PSO: " + PSO_name
+		);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor object", error_message);
+		return error_message;
+	}
+	else if (resource_view_num < check_descriptor_size)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource num: " +
+			std::to_string(check_descriptor_size) +
+			" bigger than resource view num: " +
 			std::to_string(resource_view_num) +
 			" in PSO: " + PSO_name
 		);
@@ -751,14 +831,16 @@ DescriptorObjectList::~DescriptorObjectList()
 	while (!empty_list.empty())
 	{
 		auto data = empty_list.front();
-		empty_list.pop();
 		delete data;
+		empty_list.pop();
+		
 	}
 	while (!used_list.empty())
 	{
 		auto data = used_list.front();
-		empty_list.pop();
 		delete data;
+		used_list.pop();
+		
 	}
 }
 PancystarEngine::EngineFailReason DescriptorObjectList::Create(
@@ -859,9 +941,27 @@ PancyModelControl::PancyModelControl(const std::string &resource_type_name_in) :
 {
 
 }
+PancystarEngine::EngineFailReason PancyModelControl::GetRenderMesh(const pancy_object_id &model_id, const pancy_object_id &submesh_id, PancySubModel **render_mesh)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto resource_data = GetResource(model_id);
+	if (resource_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource ID: " + std::to_string(model_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Render mesh From Model", error_message);
+		return error_message;
+	}
+	PancyBasicModel *model_pointer = dynamic_cast<PancyBasicModel*>(resource_data);
+	check_error = model_pointer->GetRenderMesh(submesh_id, render_mesh);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason PancyModelControl::GetRenderDescriptor(
-	pancy_object_id model_id,
-	pancy_object_id PSO_id,
+	const pancy_object_id &model_id,
+	const pancy_object_id &PSO_id,
 	const std::vector<std::string> &cbuffer_name_per_object_in,
 	const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
 	const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
@@ -874,6 +974,7 @@ PancystarEngine::EngineFailReason PancyModelControl::GetRenderDescriptor(
 	if (resource_data == NULL)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find resource ID: " + std::to_string(model_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Render Descriptor From Model", error_message);
 		return error_message;
 	}
 	PancyBasicModel *model_pointer = dynamic_cast<PancyBasicModel*>(resource_data);
@@ -890,6 +991,21 @@ PancystarEngine::EngineFailReason PancyModelControl::GetRenderDescriptor(
 		return check_error;
 	}
 	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyModelControl::ResetModelRenderDescriptor(const pancy_object_id &model_id)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto resource_data = GetResource(model_id);
+	if (resource_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource ID: " + std::to_string(model_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Render Descriptor From Model", error_message);
+		return error_message;
+	}
+	PancyBasicModel *model_pointer = dynamic_cast<PancyBasicModel*>(resource_data);
+	model_pointer->ResetRenderList();
+	return PancystarEngine::succeed;
+
 }
 PancystarEngine::EngineFailReason PancyModelControl::BuildResource(
 	const Json::Value &root_value,

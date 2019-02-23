@@ -157,6 +157,22 @@ namespace PancystarEngine
 	public:
 		DescriptorObject();
 		~DescriptorObject();
+		ID3D12PipelineState  *GetPSO() 
+		{
+			return PSO_pointer;
+		}
+		ID3D12RootSignature *GetRootSignature() 
+		{
+			return rootsignature;
+		}
+		ID3D12DescriptorHeap *GetDescriptoHeap() 
+		{
+			return descriptor_heap_use;
+		}
+		std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> GetDescriptorOffset() 
+		{
+			return descriptor_offset;
+		}
 		PancystarEngine::EngineFailReason Create(
 			const std::string &PSO_name,
 			const std::string &descriptor_name,
@@ -234,6 +250,7 @@ namespace PancystarEngine
 		//模型的数据信息
 		std::vector<PancySubModel*> model_resource_list;     //模型的每个子部件
 		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> material_list;
+		std::unordered_map<pancy_object_id, std::vector<pancy_object_id>> material_id_list;
 		std::vector<pancy_object_id> texture_list;
 		//模型的动画信息
 		bool if_skinmesh;
@@ -274,7 +291,17 @@ namespace PancystarEngine
 		{
 			return model_resource_list.size();
 		};
-		void GetRenderMesh(std::vector<PancySubModel*> &render_mesh);
+		inline PancystarEngine::EngineFailReason GetRenderMesh(const pancy_object_id &submesh_id, PancySubModel **render_mesh)
+		{
+			if (submesh_id >= model_resource_list.size()) 
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "submesh id:" + std::to_string(submesh_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: " + resource_name);
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find submesh from model ", error_message);
+				return error_message;
+			}
+			*render_mesh = model_resource_list[submesh_id];
+			return PancystarEngine::succeed;
+		}
 		//获取材质信息
 		inline size_t GetMaterialNum()
 		{
@@ -342,6 +369,8 @@ namespace PancystarEngine
 			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
 			DescriptorObject **descriptor_out
 			);
+		//清空当前的渲染表
+		void ResetRenderList();
 		virtual ~PancyBasicModel();
 	private:
 		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name, ResourceStateType &now_res_state);
@@ -370,7 +399,8 @@ namespace PancystarEngine
 			instream.open(file_name_index, ios::binary);
 			instream.read(reinterpret_cast<char*>(&index_num), sizeof(index_num));
 			IndexType *index_data = new IndexType[index_num];
-			int32_t index_size = vertex_num * sizeof(index_data[0]);
+			int32_t index_size = index_num * sizeof(index_data[0]);
+			
 			instream.read(reinterpret_cast<char*>(index_data), index_size);
 			instream.close();
 			PancySubModel *new_submodel = new PancySubModel();
@@ -400,15 +430,17 @@ namespace PancystarEngine
 			}
 			return this_instance;
 		}
+		PancystarEngine::EngineFailReason GetRenderMesh(const pancy_object_id &model_id, const pancy_object_id &submesh_id, PancySubModel **render_mesh);
 		PancystarEngine::EngineFailReason GetRenderDescriptor(
-			pancy_object_id model_id,
-			pancy_object_id PSO_id,
+			const pancy_object_id &model_id,
+			const pancy_object_id &PSO_id,
 			const std::vector<std::string> &cbuffer_name_per_object_in,
 			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
 			const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
 			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
 			DescriptorObject **descriptor_out
 		);
+		PancystarEngine::EngineFailReason ResetModelRenderDescriptor(const pancy_object_id &model_id);
 	private:
 		PancystarEngine::EngineFailReason BuildResource(
 			const Json::Value &root_value,

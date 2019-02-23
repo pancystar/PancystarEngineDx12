@@ -457,7 +457,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
 			return error_message;
 		}
-		UINT numberOfPlanes = D3D12GetFormatPlaneCount(PancyDx12DeviceBasic::GetInstance()->GetD3dDevice().Get(), format);
+		UINT numberOfPlanes = D3D12GetFormatPlaneCount(PancyDx12DeviceBasic::GetInstance()->GetD3dDevice(), format);
 		if (!numberOfPlanes)
 		{
 			PancystarEngine::EngineFailReason error_message(E_INVALIDARG, "load: " + picture_path_file + " error, device don't support specified format: " + std::to_string(format));
@@ -624,23 +624,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 		return check_error;
 	}
 	check_error = SubresourceControl::GetInstance()->CopyResource(copy_render_list, copy_res_pointer, tex_data, pLayouts,subres_size);
-	/*
-	for (UINT i = 0; i < subres_size; ++i)
-	{
-		CD3DX12_TEXTURE_COPY_LOCATION Dst(tex_data_res->GetResource().Get(), i + 0);
-		CD3DX12_TEXTURE_COPY_LOCATION Src(copy_data_res->GetResource().Get(), pLayouts[i]);
-		copy_render_list->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
-	}
-	copy_render_list->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(tex_data_res->GetResource().Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
-	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &copy_render_list_ID);
-	HeapFree(GetProcessHeap(), 0, pMem);
-	//插眼
-	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(copy_broken_fence);
-	//等待
-	ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(copy_broken_fence);
-	//释放资源
-	SubresourceControl::GetInstance()->FreeSubResource(update_tex_data);
-	*/
+
 	copy_render_list->UnlockPrepare();
 	//提交资源拷贝命令并预测断点号
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
