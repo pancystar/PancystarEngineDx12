@@ -1,5 +1,4 @@
 #include "EngineModelDesign.h"
-
 EngineModelDesign::EngineModelDesign(QWidget *parent)
 	: QMainWindow(parent)
 {
@@ -33,7 +32,7 @@ void EngineModelDesign::on_actionopen_triggered()
 	QString file_name = QFileDialog::getOpenFileName(0,"load model", "./", "JSON File(*.json);;OBJ model(*.obj);;FBX Files(*.fbx)",0, QFileDialog::Option::ReadOnly);
 	if (file_name.toStdString() != "") 
 	{
-		PancystarEngine::EngineFailReason check_error = widget->LoadModel(file_name.toStdString());
+		PancystarEngine::EngineFailReason check_error = widget->LoadModel(string((const char *)file_name.toLocal8Bit()));
 		if (check_error.CheckIfSucceed())
 		{
 			ui.meshpart->clear();
@@ -192,7 +191,7 @@ void EngineModelDesign::on_actionsave_triggered()
 	QString file_name = QFileDialog::getSaveFileName(0, "load model", "./", "JSON File(*.json)", 0, QFileDialog::Option::ReadOnly);
 	if (file_name.toStdString() != "")
 	{
-		PancystarEngine::EngineFailReason check_error = widget->SaveModel(file_name.toStdString());
+		PancystarEngine::EngineFailReason check_error = widget->SaveModel(string((const char *)file_name.toLocal8Bit()));
 		if (!check_error.CheckIfSucceed())
 		{
 			return;

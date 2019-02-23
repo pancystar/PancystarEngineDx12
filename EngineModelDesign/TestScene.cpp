@@ -2045,6 +2045,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		//偏移矩阵
 		out_stream.write((char *)(&bone_num), sizeof(bone_num));
 		out_stream.write((char *)(offset_matrix_array), bone_num * sizeof(offset_matrix_array[0]));
+		//动画的位移信息
+		/*
+		out_stream.write((char *)(&bind_pose_matrix), sizeof(bind_pose_matrix));
+		int32_t bone_name_length = sizeof(model_move_skin->bone_ID);
+		out_stream.write(model_move_skin->bone_ID, bone_name_length);
+		*/
+		//骨骼树
 		SaveBoneTree(root_skin);
 		out_stream.close();
 		//存储动画数据
@@ -2065,19 +2072,26 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 				int32_t bone_name_size = animation_deal->second.data_animition[i].bone_name.size() + 1;
 				out_stream.write(reinterpret_cast<char*>(&bone_name_size), sizeof(bone_name_size));
 				//当前变换的骨骼名称
-				out_stream.write(animation_deal->second.data_animition[i].bone_name.c_str(), bone_name_size * sizeof(char));
+				char *new_name = new char[bone_name_size];
+				memcpy(new_name, animation_deal->second.data_animition[i].bone_name.c_str(), (bone_name_size - 1) * sizeof(char));
+				new_name[bone_name_size - 1] = '\0';
+				out_stream.write(new_name, bone_name_size * sizeof(char));
+				delete[] new_name;
 				//所有旋转数据
 				int32_t rottation_key_size = animation_deal->second.data_animition[i].rotation_key.size();
 				out_stream.write(reinterpret_cast<char*>(&rottation_key_size), sizeof(rottation_key_size));
-				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].rotation_key[0]), animation_deal->second.data_animition[i].rotation_key.size() * sizeof(animation_deal->second.data_animition[i].rotation_key[0]));
+				int32_t size_out = rottation_key_size * sizeof(quaternion_animation);
+				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].rotation_key[0]), size_out);
 				//所有平移数据
 				int32_t translation_key_size = animation_deal->second.data_animition[i].translation_key.size();
 				out_stream.write(reinterpret_cast<char*>(&translation_key_size), sizeof(translation_key_size));
-				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].translation_key[0]), animation_deal->second.data_animition[i].translation_key.size() * sizeof(animation_deal->second.data_animition[i].translation_key[0]));
+				size_out = translation_key_size * sizeof(vector_animation);
+				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].translation_key[0]), size_out);
 				//所有缩放数据
 				int32_t scaling_key_size = animation_deal->second.data_animition[i].scaling_key.size();
 				out_stream.write(reinterpret_cast<char*>(&scaling_key_size), sizeof(scaling_key_size));
-				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].scaling_key[0]), animation_deal->second.data_animition[i].scaling_key.size() * sizeof(animation_deal->second.data_animition[i].scaling_key[0]));
+				size_out = scaling_key_size * sizeof(vector_animation);
+				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].scaling_key[0]), size_out);
 			}
 			out_stream.close();
 		}
