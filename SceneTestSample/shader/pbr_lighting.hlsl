@@ -232,10 +232,10 @@ float3 count_pbr_environment(
 float4 PSMain(PSInput pin) : SV_TARGET
 {
 	//采样模型自带的纹理
-	uint self_id_diffuse = pin.tex_id.x;     //漫反射贴图
-	uint self_id_normal = pin.tex_id.x + 1; //法线贴图
-	uint self_id_metallic = pin.tex_id.x + 2; //金属度贴图
-	uint self_id_roughness = pin.tex_id.x + 3; //粗糙度贴图
+	uint self_id_diffuse = pin.tex_id.x+1;     //漫反射贴图
+	uint self_id_normal = pin.tex_id.x + 2; //法线贴图
+	uint self_id_metallic = pin.tex_id.x + 3; //金属度贴图
+	uint self_id_roughness = pin.tex_id.x + 4; //粗糙度贴图
 	float4 diffuse_color = texture_model[self_id_diffuse].Sample(samTex_liner, pin.tex_uv.xy);
 	float4 normal_color = texture_model[self_id_normal].Sample(samTex_liner, pin.tex_uv.xy);
 	float4 metallic_color = texture_model[self_id_metallic].Sample(samTex_liner, pin.tex_uv.xy);

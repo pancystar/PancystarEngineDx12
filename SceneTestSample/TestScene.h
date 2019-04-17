@@ -31,6 +31,8 @@ class scene_test_simple : public SceneRoot
 	pancy_object_id tex_brdf_id;
 	pancy_object_id tex_ibl_spec_id;
 	pancy_object_id tex_ibl_diffuse_id;
+	//¿Õ°×ÎÆÀí
+	pancy_object_id tex_empty_id;
 	//psoID
 	pancy_object_id PSO_test;
 	pancy_object_id PSO_pbr;

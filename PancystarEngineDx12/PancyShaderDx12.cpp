@@ -190,6 +190,11 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 		ranges = new CD3DX12_DESCRIPTOR_RANGE1[num_parameter];
 		rootParameters = new CD3DX12_ROOT_PARAMETER1[num_parameter];
 	}
+	else 
+	{
+		ranges = NULL;
+		rootParameters = NULL;
+	}
 	int32_t all_descriptor_num = 0;
 	for (int i = 0; i < num_parameter; ++i)
 	{
@@ -272,6 +277,10 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 	if (num_static_sampler > 0)
 	{
 		data_sampledesc = new D3D12_STATIC_SAMPLER_DESC[num_static_sampler];
+	}
+	else 
+	{
+		data_sampledesc = NULL;
 	}
 	for (int i = 0; i < num_static_sampler; ++i)
 	{
