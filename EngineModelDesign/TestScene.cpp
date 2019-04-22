@@ -2065,6 +2065,8 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			out_stream.open(animation_name_now, ios::binary);
 			//将一个动画的每个骨骼的变换信息写入文件
 			int32_t animation_used_bone_num = animation_deal->second.data_animition.size();
+			float animation_length_now = animation_deal->second.animation_length;
+			out_stream.write(reinterpret_cast<char*>(&animation_length_now), sizeof(animation_length_now));
 			out_stream.write(reinterpret_cast<char*>(&animation_used_bone_num),sizeof(animation_used_bone_num));
 			for (int i = 0; i < animation_used_bone_num; ++i)
 			{
