@@ -123,12 +123,12 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	/*
+	
 	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\lion\\lion.json", model_skinmesh);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
-	}
+	}/*
 	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\treetest\\tree.json", model_pointmesh);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -159,7 +159,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log.json");
 
 	PancystarEngine::ResourceStateType now_id_state;
-	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_common, now_id_state);
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_skinmesh, now_id_state);
 	//check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_skinmesh, now_id_state);
 	//check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_pointmesh, now_id_state);
 	/*
@@ -502,7 +502,7 @@ PancystarEngine::EngineFailReason ShowModel();
 void scene_test_simple::Display()
 {
 	PancystarEngine::ResourceStateType now_id_state;
-	auto check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_common, now_id_state);
+	auto check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_skinmesh, now_id_state);
 	if (check_error.CheckIfSucceed() && now_id_state == PancystarEngine::ResourceStateType::resource_state_load_GPU_memory_finish)
 	{
 

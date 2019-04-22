@@ -11,6 +11,7 @@ struct instance_data
 cbuffer per_instance : register(b0)
 {
 	instance_data _Instances[MaxInstanceNum];
+	float4x4 bone_matrix[MaxBoneNum];
 }
 cbuffer per_frame : register(b1)
 {
@@ -24,10 +25,19 @@ cbuffer per_frame : register(b1)
 TextureCube environment_IBL_spec    : register(t0);
 TextureCube environment_IBL_diffuse : register(t1);
 texture2D   environment_brdf        : register(t2);
+//顶点动画
+struct mesh_anim
+{
+	float3 pos;
+	float3 norm;
+	float3 tangent;
+};
+StructuredBuffer<mesh_anim> input_point: register(t3);
 //模型自带的贴图
-texture2D   texture_model[]         : register(t3);
+texture2D   texture_model[]         : register(t4);
 //静态采样器
 SamplerState samTex_liner : register(s0);
+//无动画顶点格式
 struct VSInput
 {
 	float3 position : POSITION;
@@ -35,6 +45,30 @@ struct VSInput
 	float3 tangent  : TANGENT;
 	uint4  tex_id   : TEXID;
 	float4 tex_uv   : TEXUV;
+	uint InstanceId : SV_InstanceID;//instace索引号
+};
+//骨骼动画顶点格式
+struct VSInputBone
+{
+	float3 position     : POSITION;
+	float3 normal       : NORMAL;
+	float3 tangent      : TANGENT;
+	uint4  tex_id       : TEXID;
+	float4 tex_uv       : TEXUV;
+	uint4  bone_id      : BONEID;
+	float4 bone_weight0 : BONEWEIGHTFIR;
+	float4 bone_weight1 : BONEWEIGHTSEC;
+	uint InstanceId : SV_InstanceID;//instace索引号
+};
+//顶点变形动画顶点格式
+struct VSInputCatch
+{
+	float3 position : POSITION;
+	float3 normal   : NORMAL;
+	float3 tangent  : TANGENT;
+	uint4  tex_id   : TEXID;
+	float4 tex_uv   : TEXUV;
+	uint4  anim_id  : ANIMID;
 	uint InstanceId : SV_InstanceID;//instace索引号
 };
 struct PSInput
@@ -61,6 +95,64 @@ PSInput VSMain(VSInput vinput)
 	//模型不做不等缩放,可以使用世界变换作为法线变换
 	result.normal = normalize(mul(float4(vinput.normal, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
 	result.tangent = normalize(mul(float4(vinput.tangent, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
+	result.tex_id = vinput.tex_id;
+	result.tex_uv = vinput.tex_uv;
+	return result;
+}
+PSInput VSMainBone(VSInputBone vinput)
+{
+	PSInput result;
+	//先做骨骼变换
+	int bone_id_mask = MaxBoneNum + 100;
+	int bone_id_use0 = vinput.bone_id[0] / bone_id_mask;
+	int bone_id_use1 = vinput.bone_id[1] / bone_id_mask;
+	int bone_id_use2 = vinput.bone_id[2] / bone_id_mask;
+	int bone_id_use3 = vinput.bone_id[3] / bone_id_mask;
+	int bone_id_use4 = vinput.bone_id[0] % bone_id_mask;
+	int bone_id_use5 = vinput.bone_id[1] % bone_id_mask;
+	int bone_id_use6 = vinput.bone_id[2] % bone_id_mask;
+	int bone_id_use7 = vinput.bone_id[3] % bone_id_mask;
+	float3 positon_bone = float3(0.0f, 0.0f, 0.0f);
+	float3 normal_bone = float3(0.0f, 0.0f, 0.0f);
+	float3 tangent_bone = float3(0.0f, 0.0f, 0.0f);
+	positon_bone += vinput.bone_weight0.x * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use0]).xyz;
+	normal_bone += vinput.bone_weight0.x * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use0]);
+	tangent_bone += vinput.bone_weight0.x * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use0]);
+
+	positon_bone += vinput.bone_weight0.y * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use1]).xyz;
+	normal_bone += vinput.bone_weight0.y * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use1]);
+	tangent_bone += vinput.bone_weight0.y * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use1]);
+
+	positon_bone += vinput.bone_weight0.z * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use2]).xyz;
+	normal_bone += vinput.bone_weight0.z * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use2]);
+	tangent_bone += vinput.bone_weight0.z * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use2]);
+
+	positon_bone += vinput.bone_weight0.w * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use3]).xyz;
+	normal_bone += vinput.bone_weight0.w * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use3]);
+	tangent_bone += vinput.bone_weight0.w * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use3]);
+
+	positon_bone += vinput.bone_weight1.x * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use4]).xyz;
+	normal_bone += vinput.bone_weight1.x * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use4]);
+	tangent_bone += vinput.bone_weight1.x * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use4]);
+
+	positon_bone += vinput.bone_weight1.y * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use5]).xyz;
+	normal_bone += vinput.bone_weight1.y * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use5]);
+	tangent_bone += vinput.bone_weight1.y * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use5]);
+
+	positon_bone += vinput.bone_weight1.z * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use6]).xyz;
+	normal_bone += vinput.bone_weight1.z * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use6]);
+	tangent_bone += vinput.bone_weight1.z * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use6]);
+
+	positon_bone += vinput.bone_weight1.w * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use7]).xyz;
+	normal_bone += vinput.bone_weight1.w * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use7]);
+	tangent_bone += vinput.bone_weight1.w * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use7]);
+
+	result.position = mul(float4(positon_bone, 1.0f), _Instances[vinput.InstanceId].world_matrix);
+	result.position = mul(result.position, view_projectmatrix);
+	result.pos_out = mul(float4(positon_bone, 1.0), _Instances[vinput.InstanceId].world_matrix);
+	//模型不做不等缩放,可以使用世界变换作为法线变换
+	result.normal = normalize(mul(float4(normal_bone, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
+	result.tangent = normalize(mul(float4(tangent_bone, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
 	result.tex_id = vinput.tex_id;
 	result.tex_uv = vinput.tex_uv;
 	return result;
@@ -232,8 +324,8 @@ float3 count_pbr_environment(
 float4 PSMain(PSInput pin) : SV_TARGET
 {
 	//采样模型自带的纹理
-	uint self_id_diffuse = pin.tex_id.x+1;     //漫反射贴图
-	uint self_id_normal = pin.tex_id.x + 2; //法线贴图
+	uint self_id_diffuse = pin.tex_id.x+0;     //漫反射贴图
+	uint self_id_normal = pin.tex_id.x + 1; //法线贴图
 	uint self_id_metallic = pin.tex_id.x + 3; //金属度贴图
 	uint self_id_roughness = pin.tex_id.x + 4; //粗糙度贴图
 	float4 diffuse_color = texture_model[self_id_diffuse].Sample(samTex_liner, pin.tex_uv.xy);
