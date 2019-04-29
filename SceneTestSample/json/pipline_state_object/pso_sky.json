@@ -1,4 +1,5 @@
 {
+  "PSOType": "PSO_TYPE_GRAPHIC",
   "RootSignature": "json\\root_signature\\sky_root_signature.json",
   "VertexShader": "shader\\CubeMap.hlsl",
   "VertexShaderFunc": "VSMain",

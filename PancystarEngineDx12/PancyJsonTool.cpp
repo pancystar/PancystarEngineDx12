@@ -23,8 +23,9 @@ PancyJsonTool::PancyJsonTool()
 		"GeometryShader",
 		"HullShader" ,
 		"DominShader",
+		"ComputeShader",
 	};
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < 6; ++i)
 	{
 		name_shader_type[i] = name_shader_need[i];
 	}

@@ -88,19 +88,7 @@ namespace PancystarEngine
 		float animation_length;                             //动画的长度
 		std::vector<animation_data> data_animition;         //该动画的数据
 	};
-	//顶点动画数据
-	struct mesh_animation_data
-	{
-		DirectX::XMFLOAT3 position;
-		DirectX::XMFLOAT3 normal;
-		DirectX::XMFLOAT3 tangent;
-		mesh_animation_data()
-		{
-			position = DirectX::XMFLOAT3(0, 0, 0);
-			normal = DirectX::XMFLOAT3(0, 0, 0);
-			tangent = DirectX::XMFLOAT3(0, 0, 0);
-		}
-	};
+	
 	class PancySubModel
 	{
 		PancystarEngine::GeometryBasic *model_mesh;
@@ -276,7 +264,7 @@ namespace PancystarEngine
 		DirectX::XMFLOAT4X4 model_translation;
 		PancystarEngine::GeometryBasic *model_boundbox;
 		//骨骼动画信息
-		pancy_object_id root_id;
+		int32_t root_id;
 		std::unordered_map<std::string,pancy_object_id> bone_name_index;//根据骨骼名称索引骨骼ID
 		std::unordered_map<pancy_object_id, bone_struct> bone_tree_data;//骨骼数据
 		int bone_num;//用于蒙皮的骨骼数量
@@ -396,9 +384,8 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name, ResourceStateType &now_res_state);
 		void CheckIfResourceLoadToGpu(ResourceStateType &now_res_state);
 		//读取骨骼树
-		PancystarEngine::EngineFailReason LoadSkinTree(string filename);
-		PancystarEngine::EngineFailReason ReadBoneTree(const int32_t &now_parent_id);
-		void FreeBoneTree(skin_tree *now);
+		PancystarEngine::EngineFailReason LoadSkinTree(const string &filename);
+		PancystarEngine::EngineFailReason ReadBoneTree(int32_t &now_build_id);
 		//更新骨骼的动画数据
 		PancystarEngine::EngineFailReason UpdateAnimData(
 			const pancy_resource_id &animation_ID,
@@ -416,8 +403,8 @@ namespace PancystarEngine
 		//根据四元数获取变换矩阵
 		void GetQuatMatrix(DirectX::XMFLOAT4X4 &resMatrix, const quaternion_animation& pOut);
 		PancystarEngine::EngineFailReason UpdateRoot(
-			pancy_object_id root_id,
-			DirectX::XMFLOAT4X4 matrix_parent,
+			int32_t root_id,
+			const DirectX::XMFLOAT4X4 &matrix_parent,
 			const std::vector<DirectX::XMFLOAT4X4> &matrix_animation,
 			std::vector<DirectX::XMFLOAT4X4> &matrix_combine_save,
 			std::vector<DirectX::XMFLOAT4X4> &matrix_out
@@ -482,6 +469,12 @@ namespace PancystarEngine
 			const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
 			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
 			DescriptorObject **descriptor_out
+		);
+		PancystarEngine::EngineFailReason GetModelBoneMatrix(
+			const pancy_object_id &model_id,
+			const pancy_resource_id &animation_ID,
+			const float &animation_time,
+			std::vector<DirectX::XMFLOAT4X4> &matrix_out
 		);
 		PancystarEngine::EngineFailReason ResetModelRenderDescriptor(const pancy_object_id &model_id);
 	private:

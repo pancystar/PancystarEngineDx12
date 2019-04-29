@@ -42,7 +42,7 @@ PancyBasicModel::~PancyBasicModel()
 	}
 }
 //骨骼动画处理函数
-PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(string filename)
+PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &filename)
 {
 	instream.open(filename, ios::binary);
 	if (!instream.is_open())
@@ -63,6 +63,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(string filename)
 	//ReadBoneTree(root_skin);
 	
 	bone_object_num = bone_num;
+	/*
 	bone_struct root_bone;
 	root_bone.bone_ID_son = NouseAssimpStruct;
 	root_bone.bone_ID_brother = NouseAssimpStruct;
@@ -72,6 +73,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(string filename)
 	root_id = bone_object_num;
 	bone_object_num += 1;
 	bone_name_index.insert(std::pair<std::string, int32_t>(root_bone.bone_name, root_id));
+	*/
 	auto check_error = ReadBoneTree(root_id);
 	if (!check_error.CheckIfSucceed()) 
 	{
@@ -81,76 +83,68 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(string filename)
 	instream.close();
 	return PancystarEngine::succeed;
 }
-
-PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(const int32_t &now_parent_id)
+PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_build_id)
 {
 	char data[11];
 	skin_tree now_bone_data;
 	instream.read(reinterpret_cast<char*>(&now_bone_data), sizeof(now_bone_data));
 	//根据读取到的骨骼节点创建一个骨骼结构并赋予编号
 	bone_struct new_bone;
-	int32_t now_ID;
 	bool if_used_skin = false;;
 	if (now_bone_data.bone_number == NouseAssimpStruct) 
 	{
 		//当前骨骼并未用于蒙皮信息,重新生成一个ID号
-		now_ID = bone_object_num;
+		now_build_id = bone_object_num;
 		bone_object_num += 1;
 	}
 	else 
 	{
 		if_used_skin = true;
-		now_ID = now_bone_data.bone_number;
+		now_build_id = now_bone_data.bone_number;
 	}
 	new_bone.bone_name = now_bone_data.bone_ID;
 	new_bone.bone_ID_son = NouseAssimpStruct;
 	new_bone.bone_ID_brother = NouseAssimpStruct;
 	new_bone.if_used_for_skin = if_used_skin;
-	bone_tree_data.insert(std::pair<int32_t, bone_struct>(now_ID, new_bone));
-	bone_name_index.insert(std::pair<std::string, int32_t>(new_bone.bone_name, now_ID));
+	bone_tree_data.insert(std::pair<int32_t, bone_struct>(now_build_id, new_bone));
+	bone_name_index.insert(std::pair<std::string, int32_t>(new_bone.bone_name, now_build_id));
 	instream.read(data, sizeof(data));
 	while (strcmp(data, "*heaphead*") == 0)
 	{
 		//入栈符号，代表子节点
-		auto check_error = ReadBoneTree(now_ID);
+		int32_t now_son_ID = NouseAssimpStruct;
+		//递归创建子节点
+		auto check_error = ReadBoneTree(now_son_ID);
 		if (!check_error.CheckIfSucceed()) 
 		{
 			return check_error;
 		}
-		auto now_parent_data = bone_tree_data.find(now_parent_id);
-		auto now_data = bone_tree_data.find(now_ID);
-		if (now_parent_data != bone_tree_data.end() && now_data != bone_tree_data.end())
+		auto now_parent_data = bone_tree_data.find(now_build_id);
+		auto now_data = bone_tree_data.find(now_son_ID);
+		if (now_parent_data == bone_tree_data.end() )
+		{
+			//传入的父节点不合理
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find Parent bone ID "+std::to_string(now_build_id));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Model Bone Data From File", error_message);
+			return error_message;
+		}
+		else if (now_data == bone_tree_data.end())
+		{
+			//生成的子节点不合理
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find Son Bone ID " + std::to_string(now_son_ID));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Model Bone Data From File", error_message);
+			return error_message;
+		}
+		else 
 		{
 			//当前节点的兄弟节点存储之前父节点的子节点
 			now_data->second.bone_ID_brother = now_parent_data->second.bone_ID_son;
 			//之前父节点的子节点变为当前节点
-			now_parent_data->second.bone_ID_son = now_ID;
+			now_parent_data->second.bone_ID_son = now_son_ID;
 			instream.read(data, sizeof(data));
-		}
-		else 
-		{
-			//传入的父节点不合理
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find parent bone ID "+std::to_string(now_parent_id));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Model Bone Data From File", error_message);
-			return error_message;
 		}
 	}
 	return PancystarEngine::succeed;
-}
-void PancyBasicModel::FreeBoneTree(skin_tree *now)
-{
-	if (now->brother != NULL)
-	{
-		FreeBoneTree(now->brother);
-	}
-	if (now->son != NULL)
-	{
-		FreeBoneTree(now->son);
-	}
-	if (now != NULL)
-	{
-		free(now);
-	}
 }
 void PancyBasicModel::Interpolate(quaternion_animation& pOut, const quaternion_animation &pStart, const quaternion_animation &pEnd, const float &pFactor)
 {
@@ -258,7 +252,12 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 		return error_message;
 	}
 	std::vector<DirectX::XMFLOAT4X4> matrix_animation_save;
-	matrix_animation_save.resize(500);
+	matrix_animation_save.resize(bone_object_num);
+	for (int i = 0; i < bone_object_num; ++i)
+	{
+		//使用单位矩阵将动画矩阵清空
+		DirectX::XMStoreFloat4x4(&matrix_animation_save[i],DirectX::XMMatrixIdentity());
+	}
 	check_error = UpdateAnimData(animation_ID, animation_time, matrix_animation_save);
 	if (!check_error.CheckIfSucceed()) 
 	{
@@ -271,13 +270,19 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 	//含蒙皮骨骼，因而需要额外的空间存储非蒙皮骨骼的中间信息。
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::vector<DirectX::XMFLOAT4X4> matrix_combine_save;
-	matrix_combine_save.resize(500);
+	matrix_combine_save.resize(bone_object_num);
+	for (int i = 0; i < bone_object_num; ++i)
+	{
+		DirectX::XMStoreFloat4x4(&matrix_combine_save[i], DirectX::XMMatrixIdentity());
+	}
 	std::vector<DirectX::XMFLOAT4X4> matrix_out_save;
 	matrix_out_save.resize(bone_num);
+	bone_final_matrix.resize(bone_num);
 	UpdateRoot(root_id, matrix_identi, matrix_animation_save, matrix_combine_save, matrix_out_save);
 	//将更新后的动画矩阵做偏移
-	for (int i = 0; i < MaxBoneNum; ++i)
+	for (int i = 0; i < bone_num; ++i)
 	{
+		//使用单位矩阵将混合矩阵清空
 		DirectX::XMStoreFloat4x4(&bone_final_matrix[i], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&offset_matrix_array[i]) * DirectX::XMLoadFloat4x4(&matrix_out_save[i])));
 	}
 	return PancystarEngine::succeed;
@@ -354,8 +359,8 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateAnimData(
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicModel::UpdateRoot(
-	pancy_object_id root_id, 
-	DirectX::XMFLOAT4X4 matrix_parent,
+	int32_t root_id, 
+	const DirectX::XMFLOAT4X4 &matrix_parent,
 	const std::vector<DirectX::XMFLOAT4X4> &matrix_animation,
 	std::vector<DirectX::XMFLOAT4X4> &matrix_combine_save,
 	std::vector<DirectX::XMFLOAT4X4> &matrix_out
@@ -379,15 +384,21 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateRoot(
 		matrix_out[root_id] = matrix_combine_save[root_id];
 	}
 	//更新兄弟节点及子节点
-	check_error = UpdateRoot(now_root_bone_data->second.bone_ID_brother, matrix_parent, matrix_animation, matrix_combine_save, matrix_out);
-	if (!check_error.CheckIfSucceed()) 
+	if (now_root_bone_data->second.bone_ID_brother != NouseAssimpStruct) 
 	{
-		return check_error;
+		check_error = UpdateRoot(now_root_bone_data->second.bone_ID_brother, matrix_parent, matrix_animation, matrix_combine_save, matrix_out);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 	}
-	check_error = UpdateRoot(now_root_bone_data->second.bone_ID_son, matrix_combine_save[root_id], matrix_animation, matrix_combine_save, matrix_out);
-	if (!check_error.CheckIfSucceed())
+	if (now_root_bone_data->second.bone_ID_son != NouseAssimpStruct) 
 	{
-		return check_error;
+		check_error = UpdateRoot(now_root_bone_data->second.bone_ID_son, matrix_combine_save[root_id], matrix_animation, matrix_combine_save, matrix_out);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 	}
 	return PancystarEngine::succeed;
 }
@@ -1330,6 +1341,29 @@ PancystarEngine::EngineFailReason PancyModelControl::ResetModelRenderDescriptor(
 	model_pointer->ResetRenderList();
 	return PancystarEngine::succeed;
 
+}
+PancystarEngine::EngineFailReason PancyModelControl::GetModelBoneMatrix(
+	const pancy_object_id &model_id,
+	const pancy_resource_id &animation_ID,
+	const float &animation_time,
+	std::vector<DirectX::XMFLOAT4X4> &matrix_out
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto resource_data = GetResource(model_id);
+	if (resource_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource ID: " + std::to_string(model_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Render Descriptor From Model", error_message);
+		return error_message;
+	}
+	PancyBasicModel *model_pointer = dynamic_cast<PancyBasicModel*>(resource_data);
+	check_error = model_pointer->GetBoneByAnimation(animation_ID, animation_time, matrix_out);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyModelControl::BuildResource(
 	const Json::Value &root_value,

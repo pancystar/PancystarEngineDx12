@@ -135,10 +135,15 @@ private:
 	PancystarEngine::EngineFailReason BuildRootSignature(const std::string &rootsig_config_file);
 	void AddRootSignatureGlobelVariable();
 };
-
+enum PSOType 
+{
+	PSO_TYPE_GRAPHIC = 0,
+	PSO_TYPE_COMPUTE
+};
 //PSO object
 class PancyPiplineStateObjectGraph
 {
+	PSOType pipline_type;
 	std::unordered_set<std::string> Cbuffer_map;
 	pancy_object_id root_signature_ID;
 	PancystarEngine::PancyString pso_name;
