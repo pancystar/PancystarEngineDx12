@@ -25,7 +25,7 @@ TextureCube environment_IBL_spec    : register(t0);
 TextureCube environment_IBL_diffuse : register(t1);
 texture2D   environment_brdf        : register(t2);
 //模型自带的贴图
-texture2D   texture_model[]         : register(t3);
+texture2D   texture_model[]         : register(t4);
 //静态采样器
 SamplerState samTex_liner : register(s0);
 struct VSInput
@@ -232,8 +232,8 @@ float3 count_pbr_environment(
 float4 PSMain(PSInput pin) : SV_TARGET
 {
 	//采样模型自带的纹理
-	uint self_id_diffuse = pin.tex_id.x+1;     //漫反射贴图
-	uint self_id_normal = pin.tex_id.x + 2; //法线贴图
+	uint self_id_diffuse = pin.tex_id.x+0;     //漫反射贴图
+	uint self_id_normal = pin.tex_id.x + 1; //法线贴图
 	uint self_id_metallic = pin.tex_id.x + 3; //金属度贴图
 	uint self_id_roughness = pin.tex_id.x + 4; //粗糙度贴图
 	float4 diffuse_color = texture_model[self_id_diffuse].Sample(samTex_liner, pin.tex_uv.xy);
