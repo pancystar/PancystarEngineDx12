@@ -7,7 +7,12 @@
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 1,
-			"memory_0" : "empty",
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 6,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 2
+			},
 			"per_memory_size" : 131072
 		},
 		"json\\resource_view\\DynamicBufferSub_65536.json" : 
@@ -30,15 +35,25 @@
 		"json\\resource_view\\DynamicBufferSub_1572864.json" : 
 		{
 			"all_memory_num" : 3,
-			"empty_memory_num" : 3,
+			"empty_memory_num" : 1,
 			"memory_0" : 
 			{
-				"empty_sub_memory_num" : 9,
+				"empty_sub_memory_num" : 0,
 				"memory_ID" : 0,
-				"sub_memory_data_num" : 1
+				"sub_memory_data_num" : 10
 			},
-			"memory_1" : "empty",
-			"memory_2" : "empty",
+			"memory_1" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 1,
+				"sub_memory_data_num" : 10
+			},
+			"memory_2" : 
+			{
+				"empty_sub_memory_num" : 5,
+				"memory_ID" : 2,
+				"sub_memory_data_num" : 5
+			},
 			"per_memory_size" : 1572864
 		},
 		"json\\resource_view\\DynamicBufferSub_4194304.json" : 
@@ -56,14 +71,54 @@
 	},
 	"json\\resource_heap\\DynamicBuffer_4194304.json" : 
 	{
-		"AllHeapNum" : 1,
+		"AllHeapNum" : 2,
 		"PerHeapSize" : 16777216,
-		"json\\resource_view\\DynamicBufferSub_393216.json" : 
+		"json\\resource_view\\DynamicBufferSub_1048576.json" : 
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 1,
 			"memory_0" : "empty",
+			"per_memory_size" : 1048576
+		},
+		"json\\resource_view\\DynamicBufferSub_262144.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 262144
+		},
+		"json\\resource_view\\DynamicBufferSub_393216.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 9,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
 			"per_memory_size" : 393216
+		},
+		"json\\resource_view\\DynamicBufferSub_524288.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 524288
+		},
+		"json\\resource_view\\DynamicBufferSub_655360.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 655360
+		},
+		"json\\resource_view\\DynamicBufferSub_917504.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 1,
+			"memory_0" : "empty",
+			"per_memory_size" : 917504
 		}
 	},
 	"json\\resource_heap\\DynamicBuffer_5242880.json" : 
@@ -83,11 +138,11 @@
 			"per_memory_size" : 5242880
 		}
 	},
-	"json\\resource_heap\\StaticBuffer_131072.json" : 
+	"json\\resource_heap\\StaticBuffer_1048576.json" : 
 	{
 		"AllHeapNum" : 1,
-		"PerHeapSize" : 1048576,
-		"json\\resource_view\\StaticBufferSub_131072.json" : 
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_1048576.json" : 
 		{
 			"all_memory_num" : 1,
 			"empty_memory_num" : 0,
@@ -97,7 +152,59 @@
 				"memory_ID" : 0,
 				"sub_memory_data_num" : 1
 			},
+			"per_memory_size" : 1048576
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_131072.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 1048576,
+		"json\\resource_view\\StaticBufferSub_131072.json" : 
+		{
+			"all_memory_num" : 3,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"memory_1" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 1,
+				"sub_memory_data_num" : 1
+			},
+			"memory_2" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 2,
+				"sub_memory_data_num" : 1
+			},
 			"per_memory_size" : 131072
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_262144.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_262144.json" : 
+		{
+			"all_memory_num" : 2,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"memory_1" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 1,
+				"sub_memory_data_num" : 1
+			},
+			"per_memory_size" : 262144
 		}
 	},
 	"json\\resource_heap\\StaticBuffer_393216.json" : 
@@ -115,6 +222,23 @@
 				"sub_memory_data_num" : 1
 			},
 			"per_memory_size" : 393216
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_524288.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_524288.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"per_memory_size" : 524288
 		}
 	},
 	"json\\resource_heap\\StaticBuffer_65536.json" : 
@@ -140,6 +264,40 @@
 			"per_memory_size" : 65536
 		}
 	},
+	"json\\resource_heap\\StaticBuffer_655360.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_655360.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"per_memory_size" : 655360
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_917504.json" : 
+	{
+		"AllHeapNum" : 1,
+		"PerHeapSize" : 4194304,
+		"json\\resource_view\\StaticBufferSub_917504.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"per_memory_size" : 917504
+		}
+	},
 	"json\\resource_heap\\TextureReadOnly131072.json" : 
 	{
 		"AllHeapNum" : 1,
@@ -163,7 +321,7 @@
 		"PerHeapSize" : 16777216,
 		"json\\resource_view\\Subtex_1024_1024_BC7_UNORM_11mip_GpuReadOnly.json" : 
 		{
-			"all_memory_num" : 24,
+			"all_memory_num" : 27,
 			"empty_memory_num" : 0,
 			"memory_0" : 
 			{
@@ -267,6 +425,24 @@
 				"memory_ID" : 23,
 				"sub_memory_data_num" : 1
 			},
+			"memory_24" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 24,
+				"sub_memory_data_num" : 1
+			},
+			"memory_25" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 25,
+				"sub_memory_data_num" : 1
+			},
+			"memory_26" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 26,
+				"sub_memory_data_num" : 1
+			},
 			"memory_3" : 
 			{
 				"empty_sub_memory_num" : 0,
@@ -307,6 +483,18 @@
 			{
 				"empty_sub_memory_num" : 0,
 				"memory_ID" : 9,
+				"sub_memory_data_num" : 1
+			},
+			"per_memory_size" : 1441792
+		},
+		"json\\resource_view\\Subtex_1024_1024_BC7_UNORM_SRGB_11mip_GpuReadOnly.json" : 
+		{
+			"all_memory_num" : 1,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
 				"sub_memory_data_num" : 1
 			},
 			"per_memory_size" : 1441792

@@ -44,6 +44,20 @@ namespace PancystarEngine
 			DirectX::XMStoreFloat4x4(&now_matrix, DirectX::XMMatrixIdentity());
 		}
 	};
+	struct bone_struct 
+	{
+		std::string bone_name;
+		int32_t bone_ID_brother;
+		int32_t bone_ID_son;
+		bool if_used_for_skin;
+		bone_struct() 
+		{
+			bone_name = "";
+			bone_ID_brother = 99999999;
+			bone_ID_son     = 99999999;
+			if_used_for_skin = false;
+		}
+	};
 	enum PbrMaterialType
 	{
 		PbrType_MetallicRoughness = 0,
@@ -64,7 +78,7 @@ namespace PancystarEngine
 	struct animation_data
 	{
 		std::string bone_name;                              //本次变换数据对应的骨骼名称
-		skin_tree *bone_point;                              //本次变换数据对应的骨骼的指针
+		int32_t bone_ID;                                    //本次变换数据对应的骨骼编号
 		std::vector<vector_animation> translation_key;      //各个平移变换数据
 		std::vector<vector_animation> scaling_key;          //各个放缩变换数据
 		std::vector<quaternion_animation> rotation_key;     //各个旋转变换的数据
@@ -74,19 +88,7 @@ namespace PancystarEngine
 		float animation_length;                             //动画的长度
 		std::vector<animation_data> data_animition;         //该动画的数据
 	};
-	//顶点动画数据
-	struct mesh_animation_data
-	{
-		DirectX::XMFLOAT3 position;
-		DirectX::XMFLOAT3 normal;
-		DirectX::XMFLOAT3 tangent;
-		mesh_animation_data()
-		{
-			position = DirectX::XMFLOAT3(0, 0, 0);
-			normal = DirectX::XMFLOAT3(0, 0, 0);
-			tangent = DirectX::XMFLOAT3(0, 0, 0);
-		}
-	};
+	
 	class PancySubModel
 	{
 		PancystarEngine::GeometryBasic *model_mesh;
@@ -262,15 +264,17 @@ namespace PancystarEngine
 		DirectX::XMFLOAT4X4 model_translation;
 		PancystarEngine::GeometryBasic *model_boundbox;
 		//骨骼动画信息
-		skin_tree *root_skin;
-		int bone_num;
-		int root_bone_num = 0;
-		DirectX::XMFLOAT4X4 bone_matrix_array[MaxBoneNum];
+		int32_t root_id;
+		std::unordered_map<std::string,pancy_object_id> bone_name_index;//根据骨骼名称索引骨骼ID
+		std::unordered_map<pancy_object_id, bone_struct> bone_tree_data;//骨骼数据
+		int bone_num;//用于蒙皮的骨骼数量
+		int bone_object_num;//所有的骨骼数量(包括不用于蒙皮的部分)
 		DirectX::XMFLOAT4X4 offset_matrix_array[MaxBoneNum];
-		DirectX::XMFLOAT4X4 final_matrix_array[MaxBoneNum];
-		int tree_node_num[MaxBoneNum][MaxBoneNum];
+
 		std::unordered_map<std::string, pancy_resource_id> skin_animation_name;
 		std::unordered_map<pancy_resource_id, animation_set> skin_animation_map;
+
+
 		float now_animation_play_station;//当前正在播放的动画
 		DirectX::XMFLOAT4X4 bind_pose_matrix;//控制模型位置的根骨骼偏移矩阵
 		skin_tree *model_move_skin;//当前控制模型位置的根骨骼
@@ -346,7 +350,11 @@ namespace PancystarEngine
 			return model_boundbox;
 		}
 		//获取指定动画的指定时间的骨骼数据以及动画的世界偏移矩阵数据
-		void GetBoneByAnimation(const pancy_resource_id &animation_name,const float &animation_time, DirectX::XMFLOAT4X4 *bone_matrix,DirectX::XMFLOAT4X4 &model_pos_matrix);
+		PancystarEngine::EngineFailReason GetBoneByAnimation(
+			const pancy_resource_id &animation_ID,
+			const float &animation_time, 
+			std::vector<DirectX::XMFLOAT4X4> &matrix_out
+		);
 		//获取顶点动画的缓冲区
 		inline SubMemoryPointer GetPointAnimationBuffer(int32_t &buffer_size_in, int32_t &stride_size_in)
 		{
@@ -376,9 +384,31 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name, ResourceStateType &now_res_state);
 		void CheckIfResourceLoadToGpu(ResourceStateType &now_res_state);
 		//读取骨骼树
-		PancystarEngine::EngineFailReason LoadSkinTree(string filename);
-		void ReadBoneTree(skin_tree *now);
-		void FreeBoneTree(skin_tree *now);
+		PancystarEngine::EngineFailReason LoadSkinTree(const string &filename);
+		PancystarEngine::EngineFailReason ReadBoneTree(int32_t &now_build_id);
+		//更新骨骼的动画数据
+		PancystarEngine::EngineFailReason UpdateAnimData(
+			const pancy_resource_id &animation_ID,
+			const float &time_in,
+			std::vector<DirectX::XMFLOAT4X4> &matrix_out
+		);
+		//帧间插值(四元数)
+		void Interpolate(quaternion_animation& pOut, const quaternion_animation &pStart, const quaternion_animation &pEnd, const float &pFactor);
+		//帧间插值(向量)
+		void Interpolate(vector_animation& pOut, const vector_animation &pStart, const vector_animation &pEnd, const float &pFactor);
+		//根据指定的时间，获取其前后两个关键帧数据(四元数)
+		void FindAnimStEd(const float &input_time, int &st, int &ed, const std::vector<quaternion_animation> &input);
+		//根据指定的时间，获取其前后两个关键帧数据(向量)
+		void FindAnimStEd(const float &input_time, int &st, int &ed, const std::vector<vector_animation> &input);
+		//根据四元数获取变换矩阵
+		void GetQuatMatrix(DirectX::XMFLOAT4X4 &resMatrix, const quaternion_animation& pOut);
+		PancystarEngine::EngineFailReason UpdateRoot(
+			int32_t root_id,
+			const DirectX::XMFLOAT4X4 &matrix_parent,
+			const std::vector<DirectX::XMFLOAT4X4> &matrix_animation,
+			std::vector<DirectX::XMFLOAT4X4> &matrix_combine_save,
+			std::vector<DirectX::XMFLOAT4X4> &matrix_out
+		);
 		//读取网格数据
 		template<typename T>
 		PancystarEngine::EngineFailReason LoadMeshData(const std::string &file_name_vertex, const std::string &file_name_index)
@@ -440,6 +470,12 @@ namespace PancystarEngine
 			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
 			DescriptorObject **descriptor_out
 		);
+		PancystarEngine::EngineFailReason GetModelBoneMatrix(
+			const pancy_object_id &model_id,
+			const pancy_resource_id &animation_ID,
+			const float &animation_time,
+			std::vector<DirectX::XMFLOAT4X4> &matrix_out
+		);
 		PancystarEngine::EngineFailReason ResetModelRenderDescriptor(const pancy_object_id &model_id);
 	private:
 		PancystarEngine::EngineFailReason BuildResource(
@@ -447,6 +483,7 @@ namespace PancystarEngine
 			const std::string &name_resource_in,
 			PancyBasicVirtualResource** resource_out
 		);
+		
 	};
 	
 }

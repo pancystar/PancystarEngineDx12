@@ -2,15 +2,20 @@
 	"BufferType" : "Buffer_Constant",
 	"CbufferDesc" : 
 	{
-		"BufferSize" : 8000,
+		"BufferSize" : 14400,
 		"VariableMember" : 
 		[
 			{
 				"Name" : "_Instances",
 				"Size" : 8000,
 				"StartOffset" : 0
+			},
+			{
+				"Name" : "bone_matrix",
+				"Size" : 6400,
+				"StartOffset" : 8000
 			}
 		]
 	},
-	"SubResourceFile" : "json\\resource_view\\DynamicBufferSub_8192.json"
+	"SubResourceFile" : "json\\resource_view\\DynamicBufferSub_15360.json"
 }

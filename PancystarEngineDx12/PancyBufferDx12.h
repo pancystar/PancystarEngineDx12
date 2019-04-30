@@ -129,6 +129,56 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason ErrorVariableNotFind(const std::string &variable_name);
 		PancystarEngine::EngineFailReason GetCbufferDesc(const std::string &file_name,const Json::Value &root_value);
 	};
-	
+	struct SkinAnimationBlock 
+	{
+		pancy_resource_size start_pos;
+		pancy_resource_size block_size;
+	};
+	//顶点动画数据
+	struct mesh_animation_data
+	{
+		DirectX::XMFLOAT3 position;
+		DirectX::XMFLOAT3 normal;
+		DirectX::XMFLOAT3 tangent;
+		mesh_animation_data()
+		{
+			position = DirectX::XMFLOAT3(0, 0, 0);
+			normal = DirectX::XMFLOAT3(0, 0, 0);
+			tangent = DirectX::XMFLOAT3(0, 0, 0);
+		}
+	};
+	//骨骼动画缓冲区
+	class PancySkinAnimationBuffer
+	{
+		//缓冲区的大小
+		pancy_resource_size animation_buffer_size;//存储蒙皮结果的缓冲区的大小
+		pancy_resource_size bone_buffer_size;//存储骨骼矩阵的缓冲区的大小
+		//当前已经被占用的指针位置
+		pancy_resource_size now_used_position_animation;//当前动画结果缓冲区的使用情况指针
+		pancy_resource_size now_used_position_bone;//当前骨骼矩阵缓冲区的使用情况指针
+		//存储每一个骨骼动画的Compute Shader计算位置
+		std::unordered_map<pancy_object_id, SkinAnimationBlock> animation_block_map;
+		//存储每一个骨骼矩阵区域的起始位置
+		std::unordered_map<pancy_object_id, SkinAnimationBlock> bone_block_map;
+		//骨骼动画缓冲区的数据
+		pancy_object_id buffer_ID_animation;//动画结果缓冲区
+		pancy_object_id buffer_ID_bone;     //骨骼矩阵缓冲区
+		//骨骼数据的CPU指针
+		UINT8* bone_data_pointer;
+	public:
+		PancySkinAnimationBuffer(const pancy_resource_size &animation_buffer_size_in, const pancy_resource_size &bone_buffer_size_in);
+		~PancySkinAnimationBuffer();
+		PancystarEngine::EngineFailReason Create();
+		//清空当前所有使用的骨骼动画数据(由于动画数据逐帧重置，不需要考虑随机寻址类型的增删查改)
+		void ClearUsedBuffer();
+		//从当前蒙皮结果缓冲区中请求一块数据区(蒙皮结果数据区由GPU填充数据，因而只需要开辟)
+		PancystarEngine::EngineFailReason BuildAnimationBlock(const pancy_resource_size &vertex_num, pancy_object_id &block_id);
+		//从当前骨骼矩阵缓冲区中请求一块数据区(骨骼矩阵数据区由CPU填充数据，因而需要将填充数据一并传入)
+		PancystarEngine::EngineFailReason BuildBoneBlock(
+			const pancy_resource_size &matrix_num, 
+			pancy_object_id &block_id, 
+			const DirectX::XMFLOAT4X4 *matrix_data
+		);
+	};
 	
 }

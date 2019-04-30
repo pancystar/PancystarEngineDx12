@@ -54,6 +54,7 @@ public:
 private:
 	PancystarEngine::EngineFailReason ShowFloor();
 	PancystarEngine::EngineFailReason ShowModel();
+	PancystarEngine::EngineFailReason ShowSkinModel();
 	PancystarEngine::EngineFailReason Init();
 	PancystarEngine::EngineFailReason ScreenChange();
 	void PopulateCommandListSky();

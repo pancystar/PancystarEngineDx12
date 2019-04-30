@@ -1,7 +1,8 @@
 {
+  "PSOType": "PSO_TYPE_GRAPHIC",
   "RootSignature": "json\\root_signature\\pbr_root_signature.json",
   "VertexShader": "shader\\pbr_lighting.hlsl",
-  "VertexShaderFunc": "VSMain",
+  "VertexShaderFunc": "VSMainBone",
   "PixelShader": "shader\\pbr_lighting.hlsl",
   "PixelShaderFunc": "PSMain",
   "GeometryShader": "0",

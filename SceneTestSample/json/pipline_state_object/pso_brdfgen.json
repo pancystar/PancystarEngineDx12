@@ -1,4 +1,5 @@
 {
+  "PSOType": "PSO_TYPE_GRAPHIC",
   "RootSignature": "json\\root_signature\\brdfgen_root_signature.json",
   "VertexShader": "shader\\BrdfGen.hlsl",
   "VertexShaderFunc": "VSMain",

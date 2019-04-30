@@ -1,4 +1,5 @@
 {
+  "PSOType": "PSO_TYPE_GRAPHIC",
   "RootSignature": "json\\root_signature\\test_root_signature.json",
   "VertexShader": "shader\\testcolor.hlsl",
   "VertexShaderFunc": "VSMain",

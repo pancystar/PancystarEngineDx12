@@ -16,7 +16,8 @@ enum Pancy_json_shader_type
 	json_shader_pixel,
 	json_shader_geometry,
 	json_shader_hull,
-	json_shader_domin
+	json_shader_domin,
+	json_shader_compute
 };
 struct pancy_json_value
 {
@@ -35,7 +36,7 @@ class PancyJsonTool
 	std::unordered_map<std::string, int32_t> globel_variables;
 	std::unordered_map<std::string, std::unordered_map<int32_t, std::string>> enum_name_list;
 	std::string name_value_type[7];
-	std::string name_shader_type[5];
+	std::string name_shader_type[6];
 private:
 	PancyJsonTool();
 public:
