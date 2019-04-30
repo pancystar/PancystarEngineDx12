@@ -1349,8 +1349,13 @@ PancystarEngine::EngineFailReason SubresourceControl::CopyResource(
 	ResourceBarrier(commandlist, dst_submemory, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 	for (UINT i = 0; i < Layout_num; ++i)
 	{
+		
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT real_layout;
+		real_layout.Footprint = pLayouts[i].Footprint;
+		real_layout.Offset = pLayouts[i].Offset + per_memory_size_src * src_submemory.offset;
+		
 		CD3DX12_TEXTURE_COPY_LOCATION Dst(dst_res->GetResource().Get(), i + 0);
-		CD3DX12_TEXTURE_COPY_LOCATION Src(src_res->GetResource().Get(), pLayouts[i]);
+		CD3DX12_TEXTURE_COPY_LOCATION Src(src_res->GetResource().Get(), real_layout);
 		commandlist->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
 	}
 	ResourceBarrier(commandlist, dst_submemory, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);

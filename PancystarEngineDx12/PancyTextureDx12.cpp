@@ -566,7 +566,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const s
 	}
 	else 
 	{
-		PancystarEngine::EngineFailReason error_message(ERROR_INVALID_DATA, "un supported texture type:" + picture_path_file);
+		PancystarEngine::EngineFailReason error_message(ERROR_INVALID_DATA, "unsupported texture type:" + picture_path_file);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
 		return error_message;
 	}
@@ -912,6 +912,27 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Jso
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
+	}
+	//保存纹理资源格式
+	check_error = SubresourceControl::GetInstance()->GetSubResourceDesc(tex_data, desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	tex_srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	tex_srv_desc.Format = desc.Format;
+	tex_srv_desc.Texture2D.MipLevels = 1;
+	if (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE1D)
+	{
+		tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+	}
+	else if (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D)
+	{
+		tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	}
+	else if (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
+	{
+		tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
 	}
 	/*
 	//加载纹理资源

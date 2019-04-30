@@ -93,12 +93,14 @@ namespace PancystarEngine
 		}
 		inline  PancystarEngine::EngineFailReason GetSRVDesc(D3D12_SHADER_RESOURCE_VIEW_DESC &SRV_Desc_out)
 		{
+			/*
 			if (!if_from_file) 
 			{
 				PancystarEngine::EngineFailReason error_message(E_FAIL,"the controler could only build SRV from the texture from file,other texture SRV must build by custom");
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get shader resource view from texture",error_message);
 				return error_message;
 			}
+			*/
 			SRV_Desc_out = tex_srv_desc;
 			return PancystarEngine::succeed;
 		}
