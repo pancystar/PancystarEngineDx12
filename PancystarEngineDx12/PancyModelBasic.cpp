@@ -19,7 +19,7 @@ PancyBasicModel::PancyBasicModel(const std::string &resource_name, const Json::V
 {
 	//根据交换帧的数量决定创建多少组渲染描述符链
 	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	descriptor_map.resize(Frame_num);
+	//descriptor_map.resize(Frame_num);
 }
 PancyBasicModel::~PancyBasicModel()
 {
@@ -33,6 +33,7 @@ PancyBasicModel::~PancyBasicModel()
 	{
 		PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(*id_tex);
 	}
+	/*
 	for (int32_t i = 0; i < descriptor_map.size(); ++i) 
 	{
 		for (auto descriptor_data = descriptor_map[i].begin(); descriptor_data != descriptor_map[i].end(); ++descriptor_data) 
@@ -40,6 +41,7 @@ PancyBasicModel::~PancyBasicModel()
 			delete descriptor_data->second;
 		}
 	}
+	*/
 }
 //骨骼动画处理函数
 PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &filename)
@@ -763,6 +765,7 @@ void PancyBasicModel::CheckIfResourceLoadToGpu(ResourceStateType &now_res_state)
 		now_res_state = ResourceStateType::resource_state_load_GPU_memory_finish;
 	}
 }
+/*
 PancystarEngine::EngineFailReason PancyBasicModel::GetRenderDescriptor(
 	pancy_object_id PSO_id,
 	const std::vector<std::string> &cbuffer_name_per_object_in,
@@ -868,6 +871,68 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetRenderDescriptor(
 	}
 	return PancystarEngine::succeed;
 }
+*/
+PancystarEngine::EngineFailReason PancyBasicModel::GetShaderResourcePerObject(
+	std::vector<SubMemoryPointer> &resource_data_per_frame_out,
+	std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_out
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	//整理模型自带的顶点动画资源
+	if (if_pointmesh)
+	{
+
+	}
+	//整理模型的纹理资源
+	bool if_need_resource_barrier = false;
+	for (int i = 0; i < material_id_list.size(); ++i)
+	{
+		for (int j = 0; j < material_id_list[i].size(); ++j)
+		{
+			D3D12_SHADER_RESOURCE_VIEW_DESC new_SRV_desc;
+			SubMemoryPointer now_texture;
+			PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(texture_list[material_id_list[i][j]], now_texture);
+			resource_data_per_frame_out.push_back(now_texture);
+			D3D12_RESOURCE_STATES test_state;
+			SubresourceControl::GetInstance()->GetResourceState(now_texture, test_state);
+			if (test_state != D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
+			{
+				if_need_resource_barrier = true;
+			}
+			PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(texture_list[material_id_list[i][j]], new_SRV_desc);
+			resource_desc_per_frame_out.push_back(new_SRV_desc);
+		}
+	}
+	if (if_need_resource_barrier)
+	{
+		//有些渲染资源尚未转换为SRV格式，调用主线程统一转换
+		PancyRenderCommandList *m_commandList;
+		PancyThreadIdGPU commdlist_id_use;
+		check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &m_commandList, commdlist_id_use);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		for (int i = 0; i < material_id_list.size(); ++i)
+		{
+			for (int j = 0; j < material_id_list[i].size(); ++j)
+			{
+				SubMemoryPointer now_texture;
+				PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(texture_list[material_id_list[i][j]], now_texture);
+				D3D12_RESOURCE_STATES test_state;
+				SubresourceControl::GetInstance()->GetResourceState(now_texture, test_state);
+				if (test_state != D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
+				{
+					SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, now_texture, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+				};
+			}
+		}
+		m_commandList->UnlockPrepare();
+		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_use);
+	}
+	return PancystarEngine::succeed;
+}
+/*
 void PancyBasicModel::ResetRenderList()
 {
 	pancy_object_id now_render_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
@@ -877,399 +942,7 @@ void PancyBasicModel::ResetRenderList()
 		descriptor_data->second->Reset();
 	}
 }
-
-//描述符类
-DescriptorObject::DescriptorObject()
-{
-	PSO_pointer = NULL;
-	rootsignature = NULL;
-	descriptor_heap_use = NULL;
-}
-DescriptorObject::~DescriptorObject()
-{
-	PancyDescriptorHeapControl::GetInstance()->FreeResourceView(descriptor_block_id);
-	for (auto release_data = per_object_cbuffer.begin(); release_data != per_object_cbuffer.end(); ++release_data)
-	{
-		delete release_data->second;
-	}
-	per_object_cbuffer.clear();
-}
-PancystarEngine::EngineFailReason DescriptorObject::Create(
-	const std::string &PSO_name,
-	const std::string &descriptor_name,
-	const std::vector<std::string> &cbuffer_name_per_object,
-	const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame,
-	const std::vector<SubMemoryPointer> &resource_data_per_frame,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
-	const std::vector<SubMemoryPointer> &resource_data_per_object,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_object_in
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	PSO_name_descriptor = PSO_name;
-	//创建一个对应类型的描述符块
-	ResourceViewPointer new_point;
-	pancy_object_id globel_offset = 0;
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_name, descriptor_block_id, resource_view_num);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//将渲染需要的绑定资源指针一次性全部获取并保存
-	pancy_object_id PSO_id_need;
-	//PSO数据
-	check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id_need);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = PancyEffectGraphic::GetInstance()->GetPSOResource(PSO_id_need,&PSO_pointer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//rootsignature数据
-	check_error = PancyEffectGraphic::GetInstance()->GetRootSignatureResource(PSO_id_need, &rootsignature);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//绑定的描述符堆数据
-	check_error = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(descriptor_block_id,&descriptor_heap_use);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//绑定的描述符堆的偏移
-	std::vector<pancy_object_id> descriptor_distribute;
-	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDistribute(PSO_id_need, descriptor_distribute);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	pancy_object_id now_start_offset = 0;
-	for (int i = 0; i < descriptor_distribute.size(); ++i) 
-	{
-		ResourceViewPointer distribute_point;
-		distribute_point.resource_view_pack_id = descriptor_block_id;
-		CD3DX12_GPU_DESCRIPTOR_HANDLE now_gpu_handle;
-		distribute_point.resource_view_offset_id = now_start_offset;
-		check_error = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(distribute_point, now_gpu_handle);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		descriptor_offset.push_back(now_gpu_handle);
-		now_start_offset += descriptor_distribute[i];
-	}
-	
-	//填充描述符的信息
-	new_point.resource_view_pack_id = descriptor_block_id;
-	//检验传入的资源数量和描述符的数量是否匹配(如果有bindless texture则要求资源数量小于等于数组上限)
-	pancy_object_id check_descriptor_size = cbuffer_name_per_object.size() + cbuffer_per_frame.size() + resource_data_per_frame.size() + resource_data_per_object.size();
-	if (resource_data_per_object.size() == 0 && check_descriptor_size != resource_view_num)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource num: " +
-			std::to_string(check_descriptor_size) +
-			" dismatch resource view num: " +
-			std::to_string(resource_view_num) +
-			" in PSO: " + PSO_name
-		);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor object", error_message);
-		return error_message;
-	}
-	else if (resource_view_num < check_descriptor_size)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource num: " +
-			std::to_string(check_descriptor_size) +
-			" bigger than resource view num: " +
-			std::to_string(resource_view_num) +
-			" in PSO: " + PSO_name
-		);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor object", error_message);
-		return error_message;
-	}
-	//先根据常量缓冲区的名称，绑定object独有的常量缓冲区。
-	for (int i = 0; i < cbuffer_name_per_object.size(); ++i)
-	{
-		auto cbuffer_check = per_object_cbuffer.find(cbuffer_name_per_object[i]);
-		if (cbuffer_check == per_object_cbuffer.end()) 
-		{
-			std::string pso_divide_path;
-			std::string pso_divide_name;
-			std::string pso_divide_tail;
-			PancystarEngine::DivideFilePath(PSO_name, pso_divide_path, pso_divide_name, pso_divide_tail);
-			PancystarEngine::PancyConstantBuffer *new_cbuffer = new PancystarEngine::PancyConstantBuffer(cbuffer_name_per_object[i], pso_divide_name);
-			check_error = new_cbuffer->Create();
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			SubMemoryPointer submemory;
-			check_error = new_cbuffer->GetBufferSubResource(submemory);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			new_point.resource_view_offset_id = globel_offset + i;
-			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_point, submemory);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			per_object_cbuffer.insert(std::pair<std::string, PancystarEngine::PancyConstantBuffer*>(cbuffer_name_per_object[i], new_cbuffer));
-		}
-		
-	}
-	globel_offset += cbuffer_name_per_object.size();
-	//绑定每帧独有的常量缓冲区
-	for (int i = 0; i < cbuffer_per_frame.size(); ++i)
-	{
-		SubMemoryPointer submemory;
-		check_error = cbuffer_per_frame[i]->GetBufferSubResource(submemory);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		new_point.resource_view_offset_id = globel_offset + i;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_point, submemory);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	globel_offset += cbuffer_per_frame.size();
-	//绑定每帧独有的shader资源
-	for (int i = 0; i < resource_data_per_frame.size(); ++i)
-	{
-		new_point.resource_view_offset_id = globel_offset + i;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_point, resource_data_per_frame[i], resource_desc_per_frame_in[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	globel_offset += resource_data_per_frame.size();
-	//绑定每个object独有的shader资源
-	for (int i = 0; i < resource_data_per_object.size(); ++i)
-	{
-		new_point.resource_view_offset_id = globel_offset + i;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_point, resource_data_per_object[i], resource_desc_per_object_in[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorObject::SetCbufferMatrix(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMFLOAT4X4 &data_in,
-	const pancy_resource_size &offset
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end()) 
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL,"Could not find Cbuffer: "+ cbuffer_name +" in DescriptorObject of PSO: " + PSO_name_descriptor);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer Matrix",error_message);
-		return error_message;
-	}
-	check_error = cbuffer_data->second->SetMatrix(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorObject::SetCbufferFloat4(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMFLOAT4 &data_in,
-	const pancy_resource_size &offset
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name_descriptor);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer float4", error_message);
-		return error_message;
-	}
-	check_error = cbuffer_data->second->SetFloat4(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorObject::SetCbufferUint4(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMUINT4 &data_in,
-	const pancy_resource_size &offset
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name_descriptor);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer uint4", error_message);
-		return error_message;
-	}
-	check_error = cbuffer_data->second->SetUint4(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorObject::SetCbufferStructData(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const void* data_in,
-	const pancy_resource_size &data_size,
-	const pancy_resource_size &offset
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name_descriptor);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer struct", error_message);
-		return error_message;
-	}
-	check_error = cbuffer_data->second->SetStruct(variable_name, data_in, data_size,offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-//描述符链
-DescriptorObjectList::DescriptorObjectList(
-	const std::string &PSO_name_in,
-	const std::string &descriptor_name_in
-)
-{
-	PSO_name = PSO_name_in;
-	descriptor_name = descriptor_name_in;
-}
-DescriptorObjectList::~DescriptorObjectList()
-{
-	//删除所有的描述符备份
-	while (!empty_list.empty())
-	{
-		auto data = empty_list.front();
-		delete data;
-		empty_list.pop();
-		
-	}
-	while (!used_list.empty())
-	{
-		auto data = used_list.front();
-		delete data;
-		used_list.pop();
-		
-	}
-}
-PancystarEngine::EngineFailReason DescriptorObjectList::Create(
-	const std::vector<std::string> &cbuffer_name_per_object_in,
-	const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
-	const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
-	const std::vector<SubMemoryPointer> &resource_data_per_object_in,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_object_in
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	//将资源信息拷贝
-	for (int i = 0; i < cbuffer_name_per_object_in.size(); ++i)
-	{
-		//检验传入的每个常量缓冲区名称是否合法
-		pancy_object_id PSO_id;
-		check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id);
-		if (!check_error.CheckIfSucceed()) 
-		{
-			return check_error;
-		}
-		check_error = PancyEffectGraphic::GetInstance()->CheckCbuffer(PSO_id, cbuffer_name_per_object_in[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		cbuffer_name_per_object.push_back(cbuffer_name_per_object_in[i]);
-	}
-	for (int i = 0; i < cbuffer_per_frame_in.size(); ++i)
-	{
-		cbuffer_per_frame.push_back(cbuffer_per_frame_in[i]);
-	}
-	for (int i = 0; i < resource_data_per_frame_in.size(); ++i)
-	{
-		resource_data_per_frame.push_back(resource_data_per_frame_in[i]);
-	}
-	for (int i = 0; i < resource_data_per_object_in.size(); ++i)
-	{
-		resource_data_per_object.push_back(resource_data_per_object_in[i]);
-	}
-	for (int i = 0; i < resource_desc_per_frame_in.size(); ++i)
-	{
-		resource_desc_per_frame.push_back(resource_desc_per_frame_in[i]);
-	}
-	for (int i = 0; i < resource_desc_per_object_in.size(); ++i)
-	{
-		resource_desc_per_per_object.push_back(resource_desc_per_object_in[i]);
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorObjectList::GetEmptyList(DescriptorObject** descripto_res)
-{
-	if (empty_list.size() > 0)
-	{
-		auto empty_descriptor = empty_list.front();
-		empty_list.pop();
-		used_list.push(empty_descriptor);
-		*descripto_res = empty_descriptor;
-	}
-	else
-	{
-		DescriptorObject *new_descriptor_obj;
-		new_descriptor_obj = new DescriptorObject();
-		auto check_error = new_descriptor_obj->Create(
-			PSO_name,
-			descriptor_name,
-			cbuffer_name_per_object,
-			cbuffer_per_frame,
-			resource_data_per_frame,
-			resource_desc_per_frame,
-			resource_data_per_object,
-			resource_desc_per_per_object
-		);
-		if (!check_error.CheckIfSucceed())
-		{
-			*descripto_res = NULL;
-			return check_error;
-		}
-		used_list.push(new_descriptor_obj);
-		*descripto_res = new_descriptor_obj;
-	}
-	return PancystarEngine::succeed;
-}
-void DescriptorObjectList::Reset()
-{
-	//将已经使用完毕的描述符还原
-	while (!used_list.empty())
-	{
-		auto empty_descriptor = used_list.front();
-		used_list.pop();
-		empty_list.push(empty_descriptor);
-	}
-}
+*/
 //模型管理器
 static PancyModelControl* this_instance = NULL;
 PancyModelControl::PancyModelControl(const std::string &resource_type_name_in) :PancyBasicResourceControl(resource_type_name_in)
@@ -1294,6 +967,7 @@ PancystarEngine::EngineFailReason PancyModelControl::GetRenderMesh(const pancy_o
 	}
 	return PancystarEngine::succeed;
 }
+/*
 PancystarEngine::EngineFailReason PancyModelControl::GetRenderDescriptor(
 	const pancy_object_id &model_id,
 	const pancy_object_id &PSO_id,
@@ -1327,6 +1001,30 @@ PancystarEngine::EngineFailReason PancyModelControl::GetRenderDescriptor(
 	}
 	return PancystarEngine::succeed;
 }
+*/
+PancystarEngine::EngineFailReason PancyModelControl::GetShaderResourcePerObject(
+	const pancy_object_id &model_id,
+	std::vector<SubMemoryPointer> &resource_data_per_frame_out,
+	std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_out
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto resource_data = GetResource(model_id);
+	if (resource_data == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource ID: " + std::to_string(model_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Render mesh From Model", error_message);
+		return error_message;
+	}
+	PancyBasicModel *model_pointer = dynamic_cast<PancyBasicModel*>(resource_data);
+	check_error = model_pointer->GetShaderResourcePerObject(resource_data_per_frame_out, resource_desc_per_frame_out);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+/*
 PancystarEngine::EngineFailReason PancyModelControl::ResetModelRenderDescriptor(const pancy_object_id &model_id)
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1342,6 +1040,7 @@ PancystarEngine::EngineFailReason PancyModelControl::ResetModelRenderDescriptor(
 	return PancystarEngine::succeed;
 
 }
+*/
 PancystarEngine::EngineFailReason PancyModelControl::GetModelBoneMatrix(
 	const pancy_object_id &model_id,
 	const pancy_resource_id &animation_ID,

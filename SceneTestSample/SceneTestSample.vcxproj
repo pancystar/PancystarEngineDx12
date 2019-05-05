@@ -154,10 +154,12 @@
   <ItemGroup>
     <None Include="json\pipline_state_object\pso_brdfgen.json" />
     <None Include="json\pipline_state_object\pso_pbr.json" />
+    <None Include="json\pipline_state_object\pso_skinmesh.json" />
     <None Include="json\pipline_state_object\pso_sky.json" />
     <None Include="json\pipline_state_object\pso_test.json" />
     <None Include="json\root_signature\brdfgen_root_signature.json" />
     <None Include="json\root_signature\pbr_root_signature.json" />
+    <None Include="json\root_signature\skinmesh_root_signature.json" />
     <None Include="json\root_signature\sky_root_signature.json" />
     <None Include="json\root_signature\test_root_signature.json" />
   </ItemGroup>

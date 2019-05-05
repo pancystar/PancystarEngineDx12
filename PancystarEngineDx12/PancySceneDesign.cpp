@@ -400,6 +400,7 @@ HRESULT engine_windows_main::game_loop()
 WPARAM engine_windows_main::game_end()
 {
 	delete new_scene;
+	delete PancystarEngine::DescriptorControl::GetInstance();
 	delete PancystarEngine::PancyModelControl::GetInstance();
 	delete PancystarEngine::PancyBasicBufferControl::GetInstance();
 	delete PancyDx12DeviceBasic::GetInstance();

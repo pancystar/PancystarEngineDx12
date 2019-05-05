@@ -2,7 +2,7 @@
 #include"PancystarEngineBasicDx12.h"
 #include"PancyDx12Basic.h"
 #include"PancyGeometryDx12.h"
-#include"PancyModelBasic.h"
+#include"PancyDescriptor.h"
 #include"PancyShaderDx12.h"
 #include"PancyTextureDx12.h"
 #include"PancyThreadBasic.h"
