@@ -703,3 +703,25 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildBoneBlock(
 	block_id = now_ID;
 	return PancystarEngine::succeed;
 }
+//获取矩阵存储缓冲区
+PancystarEngine::EngineFailReason PancySkinAnimationBuffer::GetBoneMatrixResource(SubMemoryPointer &resource_pointer) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	check_error = PancyBasicBufferControl::GetInstance()->GetBufferSubResource(buffer_ID_bone, resource_pointer);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+//获取蒙皮结果缓冲区
+PancystarEngine::EngineFailReason PancySkinAnimationBuffer::GetSkinVertexResource(SubMemoryPointer &resource_pointer) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	check_error = PancyBasicBufferControl::GetInstance()->GetBufferSubResource(buffer_ID_animation, resource_pointer);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}

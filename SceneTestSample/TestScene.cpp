@@ -177,16 +177,23 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 	//加载骨骼动画的描述符信息
 	std::vector<std::string> cbuffer_name_perobj;
 	cbuffer_name_perobj.push_back("per_instance");
-	std::vector<PancystarEngine::PancyConstantBuffer *> cbuffer_data_perframe;
-	PancystarEngine::PancyConstantBuffer *now_used_cbuffer;
-	check_error = GetGlobelCbuffer(PSO_test, "per_frame", &now_used_cbuffer);
+	std::vector<std::vector<PancystarEngine::PancyConstantBuffer *>> cbuffer_data_perframe;
+	std::vector<PancystarEngine::PancyConstantBuffer *> now_used_cbuffer;
+	check_error = GetGlobelCbuffer(PSO_test, "per_frame", now_used_cbuffer);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	cbuffer_data_perframe.push_back(now_used_cbuffer);
-	std::vector<SubMemoryPointer> globel_shader_resource;
-	std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> globel_shader_desc;
+	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	cbuffer_data_perframe.resize(Frame_num);
+	for (int i = 0; i < Frame_num; ++i)
+	{
+		cbuffer_data_perframe[i].push_back(now_used_cbuffer[i]);
+	}
+	std::vector<std::vector<SubMemoryPointer>> globel_shader_resource;
+	std::vector<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>> globel_shader_desc;
+	globel_shader_resource.resize(Frame_num);
+	globel_shader_desc.resize(Frame_num);
 	//绑定全局纹理信息
 	SubMemoryPointer tex_bind_submemory;
 	D3D12_SHADER_RESOURCE_VIEW_DESC tex_bind_SRV_desc;
@@ -196,52 +203,64 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 	{
 		return check_error;
 	}
-	globel_shader_resource.push_back(tex_bind_submemory);
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_ibl_spec_id, tex_bind_SRV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	globel_shader_desc.push_back(tex_bind_SRV_desc);
+	for (int i = 0; i < Frame_num; ++i)
+	{
+		globel_shader_resource[i].push_back(tex_bind_submemory);
+		globel_shader_desc[i].push_back(tex_bind_SRV_desc);
+	}
 	//漫反射IBL
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_ibl_diffuse_id, tex_bind_submemory);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	globel_shader_resource.push_back(tex_bind_submemory);
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_ibl_diffuse_id, tex_bind_SRV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	globel_shader_desc.push_back(tex_bind_SRV_desc);
+	for (int i = 0; i < Frame_num; ++i)
+	{
+		globel_shader_resource[i].push_back(tex_bind_submemory);
+		globel_shader_desc[i].push_back(tex_bind_SRV_desc);
+	}
 	//预处理的全局BRDF
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_brdf_id, tex_bind_submemory);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	globel_shader_resource.push_back(tex_bind_submemory);
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_brdf_id, tex_bind_SRV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	globel_shader_desc.push_back(tex_bind_SRV_desc);
+	for (int i = 0; i < Frame_num; ++i)
+	{
+		globel_shader_resource[i].push_back(tex_bind_submemory);
+		globel_shader_desc[i].push_back(tex_bind_SRV_desc);
+	}
 	//空纹理，由于不需要动画数据缓冲
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_empty_id, tex_bind_submemory);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	globel_shader_resource.push_back(tex_bind_submemory);
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_empty_id, tex_bind_SRV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	globel_shader_desc.push_back(tex_bind_SRV_desc);
+	for (int i = 0; i < Frame_num; ++i)
+	{
+		globel_shader_resource[i].push_back(tex_bind_submemory);
+		globel_shader_desc[i].push_back(tex_bind_SRV_desc);
+	}
 	check_error = PancystarEngine::DescriptorControl::GetInstance()->BuildDescriptorGraph(
 		model_skinmesh,
 		PSO_pbr,

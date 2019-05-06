@@ -47,9 +47,14 @@ private:
 	virtual PancystarEngine::EngineFailReason ScreenChange() = 0;
 protected:
 	PancystarEngine::EngineFailReason GetGlobelCbuffer(
+		const pancy_object_id &PSO_id,
+		const std::string &cbuffer_name,
+		PancystarEngine::PancyConstantBuffer ** cbuffer_data
+	);
+	PancystarEngine::EngineFailReason GetGlobelCbuffer(
 		const pancy_object_id &PSO_id, 
 		const std::string &cbuffer_name, 
-		PancystarEngine::PancyConstantBuffer ** cbuffer_data
+		std::vector<PancystarEngine::PancyConstantBuffer*> &cbuffer_data
 	);
 };
 

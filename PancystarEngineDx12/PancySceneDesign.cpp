@@ -265,6 +265,62 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	*cbuffer_data = cbuffer_out->second;
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
+	const pancy_object_id &PSO_id,
+	const std::string &cbuffer_name,
+	std::vector<PancystarEngine::PancyConstantBuffer*> &cbuffer_data
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	for (int i = 0; i < frame_num; ++i) 
+	{
+		//根据pso的id号查找对应的Cbuffer链表
+		auto PSO_cbuffer_list = frame_constant_buffer[i].find(PSO_id);
+		if (PSO_cbuffer_list == frame_constant_buffer[i].end())
+		{
+			//指定的pso尚未创建cbuffer
+			std::string pso_name_pre;
+			//先检查pso是否存在
+			check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name_pre);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			//添加一个PSO的cbuffer表
+			std::unordered_map<std::string, PancystarEngine::PancyConstantBuffer *> new_pso_cbuffer_list;
+			frame_constant_buffer[i].insert(std::pair<pancy_object_id, std::unordered_map<std::string, PancystarEngine::PancyConstantBuffer *>>(PSO_id, new_pso_cbuffer_list));
+			PSO_cbuffer_list = frame_constant_buffer[i].find(PSO_id);
+		}
+		//根据cbuffer的名称寻找常量缓冲区
+		auto cbuffer_out = PSO_cbuffer_list->second.find(cbuffer_name);
+		if (cbuffer_out == PSO_cbuffer_list->second.end())
+		{
+			//cbuffer未创建，加载一个常量缓冲区
+			std::string pso_name;
+			check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			std::string pso_divide_path;
+			std::string pso_divide_name;
+			std::string pso_divide_tail;
+			PancystarEngine::DivideFilePath(pso_name, pso_divide_path, pso_divide_name, pso_divide_tail);
+			PancystarEngine::PancyConstantBuffer *new_cbuffer = new PancystarEngine::PancyConstantBuffer(cbuffer_name, pso_divide_name);
+			check_error = new_cbuffer->Create();
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			PSO_cbuffer_list->second.insert(std::pair<std::string, PancystarEngine::PancyConstantBuffer *>(cbuffer_name, new_cbuffer));
+			cbuffer_out = PSO_cbuffer_list->second.find(cbuffer_name);
+		}
+		cbuffer_data.push_back(cbuffer_out->second);
+	}
+	
+	return PancystarEngine::succeed;
+}
 LRESULT CALLBACK engine_windows_main::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)

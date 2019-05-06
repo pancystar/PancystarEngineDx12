@@ -179,6 +179,10 @@ namespace PancystarEngine
 			pancy_object_id &block_id, 
 			const DirectX::XMFLOAT4X4 *matrix_data
 		);
+		//获取矩阵存储缓冲区
+		PancystarEngine::EngineFailReason GetBoneMatrixResource(SubMemoryPointer &resource_pointer);
+		//获取蒙皮结果缓冲区
+		PancystarEngine::EngineFailReason GetSkinVertexResource(SubMemoryPointer &resource_pointer);
 	};
 	
 }

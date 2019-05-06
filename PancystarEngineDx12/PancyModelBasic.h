@@ -145,8 +145,6 @@ namespace PancystarEngine
 	//基础模型
 	class PancyBasicModel : public PancyBasicVirtualResource
 	{
-		//模型的渲染描述符数据
-		//std::vector<std::unordered_map<pancy_object_id, DescriptorObjectList*>> descriptor_map;
 		//模型的数据信息
 		std::vector<PancySubModel*> model_resource_list;     //模型的每个子部件
 		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> material_list;
@@ -266,24 +264,11 @@ namespace PancystarEngine
 			perframe_size_in = perframe_size;
 			now_frame = now_animation_play_station * all_frame_num;
 		}
-		//获取一个用于渲染的描述符结构
-		/*
-		PancystarEngine::EngineFailReason GetRenderDescriptor(
-			pancy_object_id PSO_id,
-			const std::vector<std::string> &cbuffer_name_per_object_in,
-			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
-			const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
-			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
-			DescriptorObject **descriptor_out
-			);
-			*/
 		//获取渲染描述符的每个对象的独有资源
 		PancystarEngine::EngineFailReason GetShaderResourcePerObject(
 			std::vector<SubMemoryPointer> &resource_data_per_frame_out,
 			std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_out
 		);
-		//清空当前的渲染表
-		//void ResetRenderList();
 		virtual ~PancyBasicModel();
 	private:
 		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name, ResourceStateType &now_res_state);
@@ -366,17 +351,6 @@ namespace PancystarEngine
 			return this_instance;
 		}
 		PancystarEngine::EngineFailReason GetRenderMesh(const pancy_object_id &model_id, const pancy_object_id &submesh_id, PancySubModel **render_mesh);
-		/*
-		PancystarEngine::EngineFailReason GetRenderDescriptor(
-			const pancy_object_id &model_id,
-			const pancy_object_id &PSO_id,
-			const std::vector<std::string> &cbuffer_name_per_object_in,
-			const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
-			const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
-			const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
-			DescriptorObject **descriptor_out
-		);
-		*/
 		PancystarEngine::EngineFailReason GetShaderResourcePerObject(
 			const pancy_object_id &model_id,
 			std::vector<SubMemoryPointer> &resource_data_per_frame_out,
@@ -388,7 +362,6 @@ namespace PancystarEngine
 			const float &animation_time,
 			std::vector<DirectX::XMFLOAT4X4> &matrix_out
 		);
-		//PancystarEngine::EngineFailReason ResetModelRenderDescriptor(const pancy_object_id &model_id);
 	private:
 		PancystarEngine::EngineFailReason BuildResource(
 			const Json::Value &root_value,
@@ -397,73 +370,5 @@ namespace PancystarEngine
 		);
 		
 	};
-	//骨骼动画管理器
-	class PancySkinAnimationControl 
-	{
-		pancy_resource_size animation_buffer_size;                    //存储动画结果的缓冲区大小
-		pancy_resource_size bone_buffer_size;                         //存储骨骼矩阵的缓冲区大小
-		pancy_object_id PSO_skinmesh;                                 //骨骼动画的渲染状态表
-		std::vector<PancySkinAnimationBuffer*> skin_naimation_buffer; //骨骼动画的缓冲区信息
-		//std::vector<DescriptorObjectList*> compute_descriptor;        //用于计算蒙皮效果的描述符信息
-	public:
-		PancySkinAnimationControl(
-			const pancy_resource_size &animation_buffer_size_in,
-			const pancy_resource_size &bone_buffer_size_in
-		);
-		PancystarEngine::EngineFailReason Create();
-		~PancySkinAnimationControl();
-	};
-	/*
-	PancySkinAnimationControl::PancySkinAnimationControl(
-		const pancy_resource_size &animation_buffer_size_in,
-		const pancy_resource_size &bone_buffer_size_in
-	)
-	{
-		animation_buffer_size = animation_buffer_size_in;
-		bone_buffer_size = bone_buffer_size_in;
-		pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-		skin_naimation_buffer.resize(Frame_num);
-		compute_descriptor.resize(Frame_num);
-	}
 	
-	PancystarEngine::EngineFailReason PancySkinAnimationControl::Create() 
-	{
-		PancystarEngine::EngineFailReason check_error;
-		//加载PSO
-		check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json", PSO_skinmesh);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		//加载缓冲区及描述符
-		pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-		for (int i = 0; i < Frame_num; ++i) 
-		{
-			skin_naimation_buffer[i] = new PancySkinAnimationBuffer(animation_buffer_size, bone_buffer_size);
-			check_error = skin_naimation_buffer[i]->Create();
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			std::string descriptor_name;
-			check_error = PancyEffectGraphic::GetInstance()->GetPSODescriptorName(PSO_skinmesh, descriptor_name);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			compute_descriptor[i] = new DescriptorObjectList("json\\pipline_state_object\\pso_test.json", descriptor_name);
-			std::vector<std::string> Cbuffer_name_per_object;
-			std::vector<PancystarEngine::PancyConstantBuffer *> Cbuffer_per_frame;
-			Cbuffer_name_per_object.push_back("per_object");
-			check_error = compute_descriptor[i]->Create(
-				Cbuffer_name_per_object,
-				Cbuffer_per_frame,
-				resource_data_per_frame_in,
-				resource_desc_per_frame_in,
-				res_pack,
-				SRV_pack
-			);
-		}
-	}
-	*/
 }

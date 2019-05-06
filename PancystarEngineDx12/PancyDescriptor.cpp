@@ -286,128 +286,6 @@ PancystarEngine::EngineFailReason DescriptorObject::SetCbufferStructData(
 	}
 	return PancystarEngine::succeed;
 }
-/*
-//描述符链
-DescriptorObjectList::DescriptorObjectList(
-	const std::string &PSO_name_in,
-	const std::string &descriptor_name_in
-)
-{
-	PSO_name = PSO_name_in;
-	descriptor_name = descriptor_name_in;
-}
-DescriptorObjectList::~DescriptorObjectList()
-{
-	//删除所有的描述符备份
-	while (!empty_list.empty())
-	{
-		auto data = empty_list.front();
-		delete data;
-		empty_list.pop();
-
-	}
-	while (!used_list.empty())
-	{
-		auto data = used_list.front();
-		delete data;
-		used_list.pop();
-
-	}
-}
-PancystarEngine::EngineFailReason DescriptorObjectList::Create(
-	const std::vector<std::string> &cbuffer_name_per_object_in,
-	const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
-	const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
-	const std::vector<SubMemoryPointer> &resource_data_per_object_in,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_object_in
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	//将资源信息拷贝
-	for (int i = 0; i < cbuffer_name_per_object_in.size(); ++i)
-	{
-		//检验传入的每个常量缓冲区名称是否合法
-		pancy_object_id PSO_id;
-		check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		check_error = PancyEffectGraphic::GetInstance()->CheckCbuffer(PSO_id, cbuffer_name_per_object_in[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		cbuffer_name_per_object.push_back(cbuffer_name_per_object_in[i]);
-	}
-	for (int i = 0; i < cbuffer_per_frame_in.size(); ++i)
-	{
-		cbuffer_per_frame.push_back(cbuffer_per_frame_in[i]);
-	}
-	for (int i = 0; i < resource_data_per_frame_in.size(); ++i)
-	{
-		resource_data_per_frame.push_back(resource_data_per_frame_in[i]);
-	}
-	for (int i = 0; i < resource_data_per_object_in.size(); ++i)
-	{
-		resource_data_per_object.push_back(resource_data_per_object_in[i]);
-	}
-	for (int i = 0; i < resource_desc_per_frame_in.size(); ++i)
-	{
-		resource_desc_per_frame.push_back(resource_desc_per_frame_in[i]);
-	}
-	for (int i = 0; i < resource_desc_per_object_in.size(); ++i)
-	{
-		resource_desc_per_per_object.push_back(resource_desc_per_object_in[i]);
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorObjectList::GetEmptyList(DescriptorObject** descripto_res)
-{
-	if (empty_list.size() > 0)
-	{
-		auto empty_descriptor = empty_list.front();
-		empty_list.pop();
-		used_list.push(empty_descriptor);
-		*descripto_res = empty_descriptor;
-	}
-	else
-	{
-		DescriptorObject *new_descriptor_obj;
-		new_descriptor_obj = new DescriptorObject();
-		auto check_error = new_descriptor_obj->Create(
-			PSO_name,
-			descriptor_name,
-			cbuffer_name_per_object,
-			cbuffer_per_frame,
-			resource_data_per_frame,
-			resource_desc_per_frame,
-			resource_data_per_object,
-			resource_desc_per_per_object
-		);
-		if (!check_error.CheckIfSucceed())
-		{
-			*descripto_res = NULL;
-			return check_error;
-		}
-		used_list.push(new_descriptor_obj);
-		*descripto_res = new_descriptor_obj;
-	}
-	return PancystarEngine::succeed;
-}
-void DescriptorObjectList::Reset()
-{
-	//将已经使用完毕的描述符还原
-	while (!used_list.empty())
-	{
-		auto empty_descriptor = used_list.front();
-		used_list.pop();
-		empty_list.push(empty_descriptor);
-	}
-}
-
-*/
 DescriptorControl::DescriptorControl()
 {
 	now_object_id_top = 0;
@@ -417,11 +295,11 @@ DescriptorControl::DescriptorControl()
 PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorCompute(
 	const pancy_object_id &PSO_id,
 	const std::vector<std::string> &cbuffer_name_per_object_in,
-	const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
-	const std::vector<SubMemoryPointer> &SRV_per_frame_in,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc_per_frame_in,
-	const std::vector<SubMemoryPointer> &UAV_per_frame_in,
-	const std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> &UAV_desc_per_frame_in,
+	const std::vector<std::vector<PancystarEngine::PancyConstantBuffer *>> &cbuffer_per_frame_in,
+	const std::vector<std::vector<SubMemoryPointer>> &SRV_per_frame_in,
+	const std::vector<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>> &SRV_desc_per_frame_in,
+	const std::vector<std::vector<SubMemoryPointer>> &UAV_per_frame_in,
+	const std::vector<std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC>> &UAV_desc_per_frame_in,
 	pancy_object_id &descriptor_ID
 )
 {
@@ -462,11 +340,11 @@ PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorCompute(
 			PSO_name,
 			descriptor_name,
 			cbuffer_name_per_object_in,
-			cbuffer_per_frame_in,
-			SRV_per_frame_in,
-			SRV_desc_per_frame_in,
-			UAV_per_frame_in,
-			UAV_desc_per_frame_in,
+			cbuffer_per_frame_in[i],
+			SRV_per_frame_in[i],
+			SRV_desc_per_frame_in[i],
+			UAV_per_frame_in[i],
+			UAV_desc_per_frame_in[i],
 			resource_data_per_object,
 			resource_desc_per_per_object
 		);
@@ -490,9 +368,9 @@ PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorGraph(
 	const pancy_object_id &model_id,
 	const pancy_object_id &PSO_id,
 	const std::vector<std::string> &cbuffer_name_per_object_in,
-	const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame_in,
-	const std::vector<SubMemoryPointer> &resource_data_per_frame_in,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
+	const std::vector<std::vector<PancystarEngine::PancyConstantBuffer *>> &cbuffer_per_frame_in,
+	const std::vector<std::vector<SubMemoryPointer>> &resource_data_per_frame_in,
+	const std::vector<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>> &resource_desc_per_frame_in,
 	pancy_object_id &descriptor_ID
 )
 {
@@ -540,9 +418,9 @@ PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorGraph(
 			PSO_name,
 			descriptor_name,
 			cbuffer_name_per_object_in,
-			cbuffer_per_frame_in,
-			resource_data_per_frame_in,
-			resource_desc_per_frame_in,
+			cbuffer_per_frame_in[i],
+			resource_data_per_frame_in[i],
+			resource_desc_per_frame_in[i],
 			UAV_per_frame_in,
 			UAV_desc_per_frame_in,
 			resource_data_per_object,
