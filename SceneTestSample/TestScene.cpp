@@ -169,6 +169,11 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
+	check_error = BuildSkinmeshComputeDescriptor();
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
@@ -270,6 +275,29 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 		globel_shader_desc,
 		skinmesh_descriptor
 		);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshComputeDescriptor()
+{
+	PancystarEngine::EngineFailReason check_error;
+	//获取作为输入的顶点缓冲区
+	PancystarEngine::PancySubModel* model_resource_render;
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetRenderMesh(model_skinmesh, 0, &model_resource_render);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//根据输入顶点缓冲区创建一个蒙皮计算描述符
+	check_error = PancystarEngine::PancySkinAnimationControl::GetInstance()->BuildDescriptor(
+		model_resource_render->GetVertexBuffer(),
+		model_resource_render->GetVertexNum(),
+		sizeof(PancystarEngine::PointSkinCommon8),
+		skinmesh_compute_descriptor
+	);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -416,6 +444,56 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowFloor()
 PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 {
 	PancystarEngine::EngineFailReason check_error;
+	static float time = 0.0f;
+	time += 0.01;
+	//测试计算着色器进行骨骼蒙皮
+	PancystarEngine::SkinAnimationBlock animation_block_pos;
+	PancystarEngine::PancySkinAnimationControl::GetInstance()->ClearUsedBuffer();
+	std::vector<DirectX::XMFLOAT4X4> matrix_out_bone;
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetModelBoneMatrix(model_skinmesh, 4, time, matrix_out_bone);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	PancystarEngine::PancySubModel* model_resource_render;
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetRenderMesh(model_skinmesh, 0, &model_resource_render);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	
+	PancyRenderCommandList *m_commandList_skin;
+	PancyThreadIdGPU commdlist_id_skin;
+	PancystarEngine::DescriptorObject *data_descriptor_skinmesh;
+	check_error = PancystarEngine::DescriptorControl::GetInstance()->GetDescriptor(
+		skinmesh_compute_descriptor,
+		&data_descriptor_skinmesh
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(data_descriptor_skinmesh->GetPSO(), &m_commandList_skin, commdlist_id_skin);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancystarEngine::PancySkinAnimationControl::GetInstance()->BuildCommandList(
+		model_resource_render->GetVertexBuffer(),
+		model_resource_render->GetVertexNum(),
+		skinmesh_compute_descriptor,
+		matrix_out_bone.size(),
+		&matrix_out_bone[0],
+		animation_block_pos,
+		m_commandList_skin
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_skin);
+	
+	//渲染骨骼动画
 	PancystarEngine::DescriptorObject *data_descriptor_test;
 	check_error = PancystarEngine::DescriptorControl::GetInstance()->GetDescriptor(
 		skinmesh_descriptor,
@@ -434,17 +512,10 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	{
 		return check_error;
 	}
-	static float time = 0.0f;
-	time += 0.01;
+	
 	if (time > 1.0f) 
 	{
 		time -= 1.0f;
-	}
-	std::vector<DirectX::XMFLOAT4X4> matrix_out_bone;
-	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetModelBoneMatrix(model_skinmesh,4, time, matrix_out_bone);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
 	}
 	check_error = data_descriptor_test->SetCbufferStructData("per_instance", "bone_matrix", &matrix_out_bone[0], matrix_out_bone.size()*sizeof(matrix_out_bone[0]), 0);
 	if (!check_error.CheckIfSucceed())
@@ -484,12 +555,6 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 	//设置渲染单元
 	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	PancystarEngine::PancySubModel* model_resource_render;
-	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetRenderMesh(model_skinmesh, 0, &model_resource_render);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
 	m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &model_resource_render->GetVertexBufferView());
 	m_commandList->GetCommandList()->IASetIndexBuffer(&model_resource_render->GetIndexBufferView());
 	m_commandList->GetCommandList()->DrawIndexedInstanced(model_resource_render->GetIndexNum(), 1, 0, 0, 0);
@@ -599,6 +664,7 @@ void scene_test_simple::Update(float delta_time)
 		PSO_pbr_cbuffer->SetFloat4("view_position", view_pos, 0);
 	}
 }
+
 scene_test_simple::~scene_test_simple()
 {
 	WaitForPreviousFrame();

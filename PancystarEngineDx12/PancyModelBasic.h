@@ -141,6 +141,10 @@ namespace PancystarEngine
 		{
 			return model_mesh->CheckGeometryState(load_state);
 		}
+		inline pancy_object_id GetVertexBuffer() 
+		{
+			return model_mesh->GetVertexBufferID();
+		};
 	};
 	//»ù´¡Ä£ÐÍ
 	class PancyBasicModel : public PancyBasicVirtualResource

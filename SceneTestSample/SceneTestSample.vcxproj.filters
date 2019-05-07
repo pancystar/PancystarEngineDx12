@@ -78,7 +78,7 @@
     <FxCompile Include="shader\BrdfGen.hlsl">
       <Filter>shader</Filter>
     </FxCompile>
-    <FxCompile Include="skinmesh.hlsl">
+    <FxCompile Include="shader\skinmesh.hlsl">
       <Filter>shader</Filter>
     </FxCompile>
   </ItemGroup>

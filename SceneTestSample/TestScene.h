@@ -38,6 +38,7 @@ class scene_test_simple : public SceneRoot
 	pancy_object_id PSO_pbr;
 	//¹Ç÷À¶¯»­ÃèÊö·û
 	pancy_object_id skinmesh_descriptor;
+	pancy_object_id skinmesh_compute_descriptor;
 public:
 	scene_test_simple()
 	{
@@ -58,6 +59,7 @@ private:
 	PancystarEngine::EngineFailReason ShowSkinModel();
 	PancystarEngine::EngineFailReason Init();
 	PancystarEngine::EngineFailReason BuildSkinmeshDescriptor();
+	PancystarEngine::EngineFailReason BuildSkinmeshComputeDescriptor();
 	PancystarEngine::EngineFailReason ScreenChange();
 	void PopulateCommandListSky();
 	void PopulateCommandListModelDeal();

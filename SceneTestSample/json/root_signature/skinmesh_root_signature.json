@@ -38,8 +38,10 @@
     }
   ],
   "NumStaticSamplers": 0,
+  "D3D12_STATIC_SAMPLER_DESC": [
+  ],
   "RootSignatureFlags": [
     "D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT"
   ],
-  "MaxDescriptorBlockNum" :  1024
+  "MaxDescriptorBlockNum": 1024
 }

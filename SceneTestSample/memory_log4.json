@@ -1,8 +1,8 @@
 {
 	"json\\resource_heap\\DynamicBuffer_1048576.json" : 
 	{
-		"AllHeapNum" : 1,
-		"PerHeapSize" : 16777216,
+		"AllHeapNum" : 2,
+		"PerHeapSize" : 1048576,
 		"json\\resource_view\\DynamicBufferSub_131072.json" : 
 		{
 			"all_memory_num" : 1,
@@ -71,8 +71,8 @@
 	},
 	"json\\resource_heap\\DynamicBuffer_4194304.json" : 
 	{
-		"AllHeapNum" : 2,
-		"PerHeapSize" : 16777216,
+		"AllHeapNum" : 6,
+		"PerHeapSize" : 4194304,
 		"json\\resource_view\\DynamicBufferSub_1048576.json" : 
 		{
 			"all_memory_num" : 1,
@@ -124,7 +124,7 @@
 	"json\\resource_heap\\DynamicBuffer_5242880.json" : 
 	{
 		"AllHeapNum" : 1,
-		"PerHeapSize" : 16777216,
+		"PerHeapSize" : 5242880,
 		"json\\resource_view\\DynamicBufferSub_5242880.json" : 
 		{
 			"all_memory_num" : 1,
@@ -136,6 +136,29 @@
 				"sub_memory_data_num" : 1
 			},
 			"per_memory_size" : 5242880
+		}
+	},
+	"json\\resource_heap\\DynamicBuffer_68157440.json" : 
+	{
+		"AllHeapNum" : 2,
+		"PerHeapSize" : 68157440,
+		"json\\resource_view\\DynamicBufferSub_68157440.json" : 
+		{
+			"all_memory_num" : 2,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"memory_1" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 1,
+				"sub_memory_data_num" : 1
+			},
+			"per_memory_size" : 68157440
 		}
 	},
 	"json\\resource_heap\\StaticBuffer_1048576.json" : 
@@ -182,6 +205,29 @@
 				"sub_memory_data_num" : 1
 			},
 			"per_memory_size" : 131072
+		}
+	},
+	"json\\resource_heap\\StaticBuffer_134217728.json" : 
+	{
+		"AllHeapNum" : 2,
+		"PerHeapSize" : 134217728,
+		"json\\resource_view\\StaticBufferSub_134217728.json" : 
+		{
+			"all_memory_num" : 2,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"memory_1" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 1,
+				"sub_memory_data_num" : 1
+			},
+			"per_memory_size" : 134217728
 		}
 	},
 	"json\\resource_heap\\StaticBuffer_262144.json" : 

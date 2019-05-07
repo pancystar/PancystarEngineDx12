@@ -3,7 +3,7 @@
 	[
 		"D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS"
 	],
-	"heap_size" : 16777216,
+	"heap_size" : 4194304,
 	"heap_type_in" : "D3D12_HEAP_TYPE_UPLOAD",
 	"per_block_size" : 4194304
 }

@@ -237,9 +237,9 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 		{
 			subresources_size = ((subresources_size / subresource_alize_size) + 1) * subresource_alize_size;
 		}
-		all_heap_size = MaxWasteSpace;
+		all_heap_size = heap_alize_size;
 	}
-	else if (buffer_type == Buffer_ShaderResource_static || buffer_type == Buffer_Vertex || buffer_type == Buffer_Index) 
+	else if (buffer_type == Buffer_ShaderResource_static || buffer_type == Buffer_Vertex || buffer_type == Buffer_Index || buffer_type == Buffer_UnorderedAccess_static)
 	{
 		all_heap_size = 0;
 		//根据当前资源的大小，决定使用哪种对齐方式
@@ -289,7 +289,7 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 	//计算存储堆和存储单元的名称
 	std::string bufferblock_file_name = "";
 	std::string heap_name = "";
-	if (buffer_type == Buffer_ShaderResource_static || buffer_type == Buffer_Vertex || buffer_type == Buffer_Index)
+	if (buffer_type == Buffer_ShaderResource_static || buffer_type == Buffer_Vertex || buffer_type == Buffer_Index || buffer_type == Buffer_UnorderedAccess_static)
 	{
 		resource_create_state = D3D12_RESOURCE_STATE_COMMON;
 		heap_type = D3D12_HEAP_TYPE_DEFAULT;
@@ -347,7 +347,15 @@ PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildBufferTypeJson(
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "MipLevels", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Format", "DXGI_FORMAT_UNKNOWN");
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Layout", "D3D12_TEXTURE_LAYOUT_ROW_MAJOR");
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Flags", "D3D12_RESOURCE_FLAG_NONE");
+		if (buffer_type == Buffer_UnorderedAccess_static) 
+		{
+			
+			PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Flags", "D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS");
+		}
+		else 
+		{
+			PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "Flags", "D3D12_RESOURCE_FLAG_NONE");
+		}
 		Json::Value json_data_sample_desc;
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Count", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Quality", 0);
@@ -612,14 +620,14 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 	Json::Value root_value;
 	std::string buffer_subresource_name;
 	//创建存储蒙皮结果的缓冲区资源(静态缓冲区)
-	check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(Buffer_ShaderResource_static, animation_buffer_size, buffer_subresource_name);
+	check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(Buffer_UnorderedAccess_static, animation_buffer_size, buffer_subresource_name);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	PancyJsonTool::GetInstance()->SetJsonValue(root_value,"BufferType","Buffer_ShaderResource_static");
 	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "SubResourceFile", buffer_subresource_name);
-	check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, buffer_ID_animation, true);
+	check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, root_value, buffer_ID_animation, true);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -633,7 +641,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 	}
 	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "BufferType", "Buffer_ShaderResource_dynamic");
 	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "SubResourceFile", buffer_subresource_name);
-	check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, buffer_ID_bone, true);
+	check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, root_value, buffer_ID_bone, true);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -654,10 +662,12 @@ void PancySkinAnimationBuffer::ClearUsedBuffer()
 	bone_block_map.clear();
 }
 //从当前缓冲区中请求一块骨骼动画数据
-PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildAnimationBlock(const pancy_resource_size &vertex_num, pancy_object_id &block_id)
+PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildAnimationBlock(
+	const pancy_resource_size &vertex_num, 
+	pancy_object_id &block_id,
+	SkinAnimationBlock &new_animation_block)
 {
 	pancy_resource_size now_ask_size = vertex_num * sizeof(mesh_animation_data);
-	SkinAnimationBlock new_animation_block;
 	new_animation_block.start_pos = now_used_position_animation;
 	new_animation_block.block_size = now_ask_size;
 	//判断当前的动画缓冲区是否能够开出请求的顶点存储块
@@ -678,12 +688,12 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildAnimationBlock(
 //从当前骨骼矩阵缓冲区中请求一块数据区
 PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildBoneBlock(
 	const pancy_resource_size &matrix_num, 
+	const DirectX::XMFLOAT4X4 *matrix_data,
 	pancy_object_id &block_id,
-	const DirectX::XMFLOAT4X4 *matrix_data
+	SkinAnimationBlock &new_bone_block
 )
 {
 	pancy_resource_size now_ask_size = matrix_num * sizeof(DirectX::XMFLOAT4X4);
-	SkinAnimationBlock new_bone_block;
 	new_bone_block.start_pos = now_used_position_bone;
 	new_bone_block.block_size = now_ask_size;
 	//判断当前的动画缓冲区是否能够开出请求的顶点存储块

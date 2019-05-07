@@ -1,6 +1,7 @@
 #pragma once
-
+#define AnimationSize
 #include"PancyModelBasic.h"
+#define threadBlockSize 128
 namespace PancystarEngine 
 {
 	//描述符对象
@@ -127,137 +128,70 @@ namespace PancystarEngine
 		pancy_resource_size bone_buffer_size;                         //存储骨骼矩阵的缓冲区大小
 		pancy_object_id PSO_skinmesh;                                 //骨骼动画的渲染状态表
 		std::vector<PancySkinAnimationBuffer*> skin_naimation_buffer; //骨骼动画的缓冲区信息
-		pancy_object_id compute_descriptor;                           //用于计算蒙皮效果的描述符信息
-	public:
 		PancySkinAnimationControl(
 			const pancy_resource_size &animation_buffer_size_in,
 			const pancy_resource_size &bone_buffer_size_in
 		);
 		PancystarEngine::EngineFailReason Create();
+	public:
+		static PancySkinAnimationControl *this_instance;
+		static PancystarEngine::EngineFailReason SingleCreate(
+			const pancy_resource_size &animation_buffer_size_in,
+			const pancy_resource_size &bone_buffer_size_in
+		)
+		{
+			if (this_instance != NULL)
+			{
+
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "the d3d input instance have been created before");
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create directx input object", error_message);
+				return error_message;
+			}
+			else
+			{
+				this_instance = new PancySkinAnimationControl(animation_buffer_size_in, bone_buffer_size_in);
+				PancystarEngine::EngineFailReason check_error = this_instance->Create();
+				return check_error;
+			}
+		}
+		static PancySkinAnimationControl * GetInstance()
+		{
+			return this_instance;
+		}
+		
 		PancystarEngine::EngineFailReason BuildDescriptor(
 			const pancy_object_id &mesh_buffer,
 			const UINT &vertex_num,
 			const UINT &per_vertex_size,
 			pancy_object_id &descriptor_id
 		);
+		//清空当前帧的缓冲区使用信息
+		void ClearUsedBuffer();
+		//填充渲染commandlist
+		PancystarEngine::EngineFailReason BuildCommandList(
+			const pancy_object_id &mesh_buffer,
+			const pancy_object_id &vertex_num,
+			const pancy_object_id &descriptor_id,
+			const pancy_resource_size &matrix_num,
+			const DirectX::XMFLOAT4X4 *matrix_data,
+			SkinAnimationBlock &new_animation_block,
+			PancyRenderCommandList *m_commandList_skin
+		);
 		~PancySkinAnimationControl();
+	private:
+		//从当前蒙皮结果缓冲区中请求一块数据区(蒙皮结果数据区由GPU填充数据，因而只需要开辟)
+		PancystarEngine::EngineFailReason BuildAnimationBlock(
+			const pancy_resource_size &vertex_num,
+			pancy_object_id &block_id,
+			SkinAnimationBlock &animation_block_pos
+		);
+		//从当前骨骼矩阵缓冲区中请求一块数据区(骨骼矩阵数据区由CPU填充数据，因而需要将填充数据一并传入)
+		PancystarEngine::EngineFailReason BuildBoneBlock(
+			const pancy_resource_size &matrix_num,
+			const DirectX::XMFLOAT4X4 *matrix_data,
+			pancy_object_id &block_id,
+			SkinAnimationBlock &new_bone_block
+		);
 	};
-	
-	PancySkinAnimationControl::PancySkinAnimationControl(
-		const pancy_resource_size &animation_buffer_size_in,
-		const pancy_resource_size &bone_buffer_size_in
-	)
-	{
-		animation_buffer_size = animation_buffer_size_in;
-		bone_buffer_size = bone_buffer_size_in;
-		pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-		skin_naimation_buffer.resize(Frame_num);
-	}
-
-	PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
-	{
-		PancystarEngine::EngineFailReason check_error;
-		//加载PSO
-		check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json", PSO_skinmesh);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		//创建骨骼动画缓冲区
-		pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-		for (int i = 0; i < Frame_num; ++i) 
-		{
-			skin_naimation_buffer[i] = new PancySkinAnimationBuffer(animation_buffer_size, bone_buffer_size);
-			check_error = skin_naimation_buffer[i]->Create();
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-		}
-		return PancystarEngine::succeed;
-	}
-	PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildDescriptor(
-		const pancy_object_id &mesh_buffer,
-		const UINT &vertex_num,
-		const UINT &per_vertex_size,
-		pancy_object_id &descriptor_id
-	)
-	{
-		PancystarEngine::EngineFailReason check_error;
-		//根据缓冲区的ID号获取其对应的显存资源
-		SubMemoryPointer now_buffer_data;
-		check_error = PancystarEngine::PancyBasicBufferControl::GetInstance()->GetBufferSubResource(mesh_buffer, now_buffer_data);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		//为输入缓冲区创建描述符
-		std::vector<std::string> Cbuffer_name_per_object;
-		std::vector<std::vector<PancystarEngine::PancyConstantBuffer *>> Cbuffer_per_frame;
-		Cbuffer_name_per_object.push_back("per_object");
-		//全局的缓冲区/纹理输入
-		std::vector<std::vector<SubMemoryPointer>> SRV_per_frame;
-		std::vector<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>> SRV_desc_per_frame;
-		//全局输出缓冲区/纹理(UAV)
-		std::vector<std::vector<SubMemoryPointer>> UAV_per_frame;
-		std::vector<std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC>> UAV_desc_per_frame;
-		pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-		for (int i = 0; i < Frame_num; ++i) 
-		{
-			//当前的输入模型顶点信息
-			D3D12_SHADER_RESOURCE_VIEW_DESC  now_buffer_desc = {};
-			now_buffer_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			now_buffer_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
-			now_buffer_desc.Buffer.StructureByteStride = per_vertex_size;
-			now_buffer_desc.Buffer.NumElements = vertex_num;
-			now_buffer_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-			now_buffer_desc.Buffer.FirstElement = 0;
-
-			SRV_per_frame[i].push_back(now_buffer_data);
-			SRV_desc_per_frame[i].push_back(now_buffer_desc);
-			//骨骼矩阵缓冲区
-			SubMemoryPointer bone_matrix_buffer_res;
-			D3D12_SHADER_RESOURCE_VIEW_DESC  bone_matrix_buffer_desc = {};
-			skin_naimation_buffer[i]->GetBoneMatrixResource(bone_matrix_buffer_res);
-			SRV_per_frame[i].push_back(bone_matrix_buffer_res);
-
-			bone_matrix_buffer_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			bone_matrix_buffer_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
-			bone_matrix_buffer_desc.Buffer.StructureByteStride = sizeof(DirectX::XMFLOAT4X4);
-			pancy_resource_size matrix_num = bone_buffer_size / sizeof(DirectX::XMFLOAT4X4);
-			bone_matrix_buffer_desc.Buffer.NumElements = matrix_num;
-			bone_matrix_buffer_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-			bone_matrix_buffer_desc.Buffer.FirstElement = 0;
-
-			SRV_desc_per_frame[i].push_back(bone_matrix_buffer_desc);
-			//蒙皮结果缓冲区
-			SubMemoryPointer skin_vertex_buffer_res;
-			skin_naimation_buffer[i]->GetSkinVertexResource(skin_vertex_buffer_res);
-			UAV_per_frame[i].push_back(skin_vertex_buffer_res);
-			D3D12_UNORDERED_ACCESS_VIEW_DESC skin_vertex_buffer_desc = {};
-			skin_vertex_buffer_desc.ViewDimension = D3D12_UAV_DIMENSION::D3D12_UAV_DIMENSION_BUFFER;
-			skin_vertex_buffer_desc.Buffer.StructureByteStride = sizeof(mesh_animation_data);
-			pancy_resource_size vertex_num = animation_buffer_size / sizeof(mesh_animation_data);
-			skin_vertex_buffer_desc.Buffer.NumElements = vertex_num;
-			skin_vertex_buffer_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-			skin_vertex_buffer_desc.Buffer.FirstElement = 0;
-			UAV_desc_per_frame[i].push_back(skin_vertex_buffer_desc);
-		}
-		check_error = PancystarEngine::DescriptorControl::GetInstance()->BuildDescriptorCompute(
-			PSO_skinmesh,
-			Cbuffer_name_per_object,
-			Cbuffer_per_frame,
-			SRV_per_frame,
-			SRV_desc_per_frame,
-			UAV_per_frame,
-			UAV_desc_per_frame,
-			descriptor_id
-			);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		return PancystarEngine::succeed;
-	}
 	
 }

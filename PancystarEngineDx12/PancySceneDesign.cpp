@@ -1,4 +1,6 @@
 #include"PancySceneDesign.h"
+#define MEMORY_64MB 67108876
+#define MEMORY_128MB 134217728
 SceneRoot::SceneRoot()
 {
 	If_dsv_loaded = false;
@@ -411,6 +413,11 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	SubresourceControl::GetInstance();
 	PancyInput::SingleCreate(hwnd, hInstance);
 	PancyCamera::GetInstance();
+	check_error = PancystarEngine::PancySkinAnimationControl::SingleCreate(MEMORY_128MB, MEMORY_64MB);
+	if (!check_error.CheckIfSucceed())
+	{
+		return E_FAIL;
+	}
 	//创建线程池管理
 	check_error = ThreadPoolGPUControl::SingleCreate();
 	if (!check_error.CheckIfSucceed())
@@ -456,6 +463,7 @@ HRESULT engine_windows_main::game_loop()
 WPARAM engine_windows_main::game_end()
 {
 	delete new_scene;
+	delete PancystarEngine::PancySkinAnimationControl::GetInstance();
 	delete PancystarEngine::DescriptorControl::GetInstance();
 	delete PancystarEngine::PancyModelControl::GetInstance();
 	delete PancystarEngine::PancyBasicBufferControl::GetInstance();
