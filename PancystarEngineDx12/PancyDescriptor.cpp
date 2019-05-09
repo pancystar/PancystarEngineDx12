@@ -401,6 +401,8 @@ PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorGraph(
 		now_id_use = now_object_id_top;
 	}
 	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	const std::vector<std::vector<SubMemoryPointer>> resource_data_per_frame;
+	const std::vector<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>> resource_desc_per_frame;
 	for (int i = 0; i < Frame_num; ++i)
 	{
 		//创建一个描述符表
@@ -410,8 +412,12 @@ PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorGraph(
 		std::vector<SubMemoryPointer> UAV_per_frame_in;
 		std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> UAV_desc_per_frame_in;
 		std::vector<SubMemoryPointer> resource_data_per_object;
-		std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> resource_desc_per_per_object;
-		check_error = PancystarEngine::PancyModelControl::GetInstance()->GetShaderResourcePerObject(model_id, resource_data_per_object, resource_desc_per_per_object);
+		std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> resource_desc_per_object;
+		check_error = PancystarEngine::PancyModelControl::GetInstance()->GetShaderResourcePerObject(
+			model_id,
+			resource_data_per_object,
+			resource_desc_per_object
+		);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -426,7 +432,7 @@ PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorGraph(
 			UAV_per_frame_in,
 			UAV_desc_per_frame_in,
 			resource_data_per_object,
-			resource_desc_per_per_object
+			resource_desc_per_object
 		);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -616,6 +622,18 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildDescriptor(
 	{
 		return check_error;
 	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancySkinAnimationControl::GetSkinAnimationBuffer(std::vector<SubMemoryPointer> &skin_animation_data, pancy_resource_size &animation_buffer_size_in)
+{
+	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	for (int i = 0; i < Frame_num; ++i) 
+	{
+		SubMemoryPointer now_resource;
+		skin_naimation_buffer[i]->GetSkinVertexResource(now_resource);
+		skin_animation_data.push_back(now_resource);
+	}
+	animation_buffer_size_in = animation_buffer_size;
 	return PancystarEngine::succeed;
 }
 void PancySkinAnimationControl::ClearUsedBuffer()

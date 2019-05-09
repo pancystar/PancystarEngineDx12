@@ -746,11 +746,6 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetShaderResourcePerObject(
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//整理模型自带的顶点动画资源
-	if (if_pointmesh)
-	{
-
-	}
 	//整理模型的纹理资源
 	bool if_need_resource_barrier = false;
 	for (int i = 0; i < material_id_list.size(); ++i)
@@ -839,7 +834,10 @@ PancystarEngine::EngineFailReason PancyModelControl::GetShaderResourcePerObject(
 		return error_message;
 	}
 	PancyBasicModel *model_pointer = dynamic_cast<PancyBasicModel*>(resource_data);
-	check_error = model_pointer->GetShaderResourcePerObject(resource_data_per_frame_out, resource_desc_per_frame_out);
+	check_error = model_pointer->GetShaderResourcePerObject(
+		resource_data_per_frame_out,
+		resource_desc_per_frame_out
+	);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;

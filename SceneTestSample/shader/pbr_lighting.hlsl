@@ -1,17 +1,14 @@
 #define PI 3.14159265359f
-#define MaxBoneNum 100
 #define MaxInstanceNum 100
 //常量缓冲区
 struct instance_data
 {
 	float4x4 world_matrix;
-	uint4 animation_index;
-	//float4x4 normal_matrix;
+	uint4 animation_offset;
 };
 cbuffer per_instance : register(b0)
 {
 	instance_data _Instances[MaxInstanceNum];
-	float4x4 bone_matrix[MaxBoneNum];
 }
 cbuffer per_frame : register(b1)
 {
@@ -47,6 +44,7 @@ struct VSInput
 	float4 tex_uv   : TEXUV;
 	uint InstanceId : SV_InstanceID;//instace索引号
 };
+
 //骨骼动画顶点格式
 struct VSInputBone
 {
@@ -58,8 +56,10 @@ struct VSInputBone
 	uint4  bone_id      : BONEID;
 	float4 bone_weight0 : BONEWEIGHTFIR;
 	float4 bone_weight1 : BONEWEIGHTSEC;
-	uint InstanceId : SV_InstanceID;//instace索引号
+	uint   InstanceId : SV_InstanceID;//实例ID号
+	uint   VertexID   : SV_VertexID;  //顶点ID号
 };
+
 //顶点变形动画顶点格式
 struct VSInputCatch
 {
@@ -99,65 +99,30 @@ PSInput VSMain(VSInput vinput)
 	result.tex_uv = vinput.tex_uv;
 	return result;
 }
+
 PSInput VSMainBone(VSInputBone vinput)
 {
 	PSInput result;
-	//先做骨骼变换
-	int bone_id_mask = MaxBoneNum + 100;
-	int bone_id_use0 = vinput.bone_id[0] / bone_id_mask;
-	int bone_id_use1 = vinput.bone_id[1] / bone_id_mask;
-	int bone_id_use2 = vinput.bone_id[2] / bone_id_mask;
-	int bone_id_use3 = vinput.bone_id[3] / bone_id_mask;
-	int bone_id_use4 = vinput.bone_id[0] % bone_id_mask;
-	int bone_id_use5 = vinput.bone_id[1] % bone_id_mask;
-	int bone_id_use6 = vinput.bone_id[2] % bone_id_mask;
-	int bone_id_use7 = vinput.bone_id[3] % bone_id_mask;
-	float3 positon_bone = float3(0.0f, 0.0f, 0.0f);
-	float3 normal_bone = float3(0.0f, 0.0f, 0.0f);
-	float3 tangent_bone = float3(0.0f, 0.0f, 0.0f);
-	positon_bone += vinput.bone_weight0.x * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use0]).xyz;
-	normal_bone += vinput.bone_weight0.x * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use0]);
-	tangent_bone += vinput.bone_weight0.x * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use0]);
-
-	positon_bone += vinput.bone_weight0.y * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use1]).xyz;
-	normal_bone += vinput.bone_weight0.y * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use1]);
-	tangent_bone += vinput.bone_weight0.y * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use1]);
-
-	positon_bone += vinput.bone_weight0.z * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use2]).xyz;
-	normal_bone += vinput.bone_weight0.z * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use2]);
-	tangent_bone += vinput.bone_weight0.z * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use2]);
-
-	positon_bone += vinput.bone_weight0.w * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use3]).xyz;
-	normal_bone += vinput.bone_weight0.w * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use3]);
-	tangent_bone += vinput.bone_weight0.w * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use3]);
-
-	positon_bone += vinput.bone_weight1.x * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use4]).xyz;
-	normal_bone += vinput.bone_weight1.x * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use4]);
-	tangent_bone += vinput.bone_weight1.x * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use4]);
-
-	positon_bone += vinput.bone_weight1.y * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use5]).xyz;
-	normal_bone += vinput.bone_weight1.y * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use5]);
-	tangent_bone += vinput.bone_weight1.y * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use5]);
-
-	positon_bone += vinput.bone_weight1.z * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use6]).xyz;
-	normal_bone += vinput.bone_weight1.z * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use6]);
-	tangent_bone += vinput.bone_weight1.z * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use6]);
-
-	positon_bone += vinput.bone_weight1.w * mul(float4(vinput.position, 1.0f), bone_matrix[bone_id_use7]).xyz;
-	normal_bone += vinput.bone_weight1.w * mul(vinput.normal, (float3x3)bone_matrix[bone_id_use7]);
-	tangent_bone += vinput.bone_weight1.w * mul(vinput.tangent.xyz, (float3x3)bone_matrix[bone_id_use7]);
-
-	result.position = mul(float4(positon_bone, 1.0f), _Instances[vinput.InstanceId].world_matrix);
+	//根据cbuffer中的顶点动画偏移以及顶点的ID号获取当前顶点的动画数据位置
+	uint index_anim = _Instances[vinput.InstanceId].animation_offset.x + vinput.VertexID;
+	//获取当前顶点骨骼变换后的结果数据
+	float3 used_position = input_point[index_anim].pos;
+	float3 used_normal = normalize(input_point[index_anim].norm);
+	float3 used_tangent = normalize(input_point[index_anim].tangent);
+	//使用获取到的蒙皮数据进行几何变换
+	result.position = mul(float4(used_position, 1.0f), _Instances[vinput.InstanceId].world_matrix);
 	result.position = mul(result.position, view_projectmatrix);
-	result.pos_out = mul(float4(positon_bone, 1.0), _Instances[vinput.InstanceId].world_matrix);
-	//模型不做不等缩放,可以使用世界变换作为法线变换
-	result.normal = normalize(mul(float4(normal_bone, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
-	result.tangent = normalize(mul(float4(tangent_bone, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
+	result.pos_out = mul(float4(used_position, 1.0), _Instances[vinput.InstanceId].world_matrix);
+	result.normal = normalize(mul(float4(used_normal, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
+	result.tangent = normalize(mul(float4(used_tangent, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
 	result.tex_id = vinput.tex_id;
 	result.tex_uv = vinput.tex_uv;
 	return result;
 }
 
+PSInput VSMainPointCatch(VSInputCatch vinput)
+{
+}
 //菲涅尔系数
 float3 Fresnel_Schlick(float3 specularColor, float3 h, float3 v)
 {

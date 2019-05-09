@@ -85,7 +85,7 @@ void CSMain(uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
 		//根据instance以及当前的顶点位置获取存储顶点动画数据的位置
 		uint vertex_result_index = data_offset.y + groupId.y * data_num.x + now_vertex_index;
 		mesh_anim_data[vertex_result_index].position = positon_bone;
-		mesh_anim_data[vertex_result_index].normal = positon_bone;
-		mesh_anim_data[vertex_result_index].tangent = positon_bone;
+		mesh_anim_data[vertex_result_index].normal = normal_bone;
+		mesh_anim_data[vertex_result_index].tangent = tangent_bone;
 	}
 }

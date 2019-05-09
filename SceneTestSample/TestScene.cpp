@@ -250,12 +250,35 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 		globel_shader_resource[i].push_back(tex_bind_submemory);
 		globel_shader_desc[i].push_back(tex_bind_SRV_desc);
 	}
+	//获取蒙皮结果缓冲区
+	std::vector<SubMemoryPointer> skin_animation_buffer;
+	pancy_resource_size animation_buffer_size;
+	check_error = PancystarEngine::PancySkinAnimationControl::GetInstance()->GetSkinAnimationBuffer(skin_animation_buffer, animation_buffer_size);
+	pancy_object_id number_vertex_num = animation_buffer_size / sizeof(PancystarEngine::mesh_animation_data);
+	D3D12_SHADER_RESOURCE_VIEW_DESC  skin_animation_buffer_desc = {};
+	skin_animation_buffer_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	skin_animation_buffer_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+	skin_animation_buffer_desc.Buffer.StructureByteStride = sizeof(PancystarEngine::mesh_animation_data);
+	skin_animation_buffer_desc.Buffer.NumElements = number_vertex_num;
+	skin_animation_buffer_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	skin_animation_buffer_desc.Buffer.FirstElement = 0;
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	for (int i = 0; i < Frame_num; ++i)
+	{
+		globel_shader_resource[i].push_back(skin_animation_buffer[i]);
+		globel_shader_desc[i].push_back(skin_animation_buffer_desc);
+	}
+	/*
 	//空纹理，由于不需要动画数据缓冲
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_empty_id, tex_bind_submemory);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_empty_id, tex_bind_SRV_desc);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -266,6 +289,7 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 		globel_shader_resource[i].push_back(tex_bind_submemory);
 		globel_shader_desc[i].push_back(tex_bind_SRV_desc);
 	}
+	*/
 	check_error = PancystarEngine::DescriptorControl::GetInstance()->BuildDescriptorGraph(
 		model_skinmesh,
 		PSO_pbr,
@@ -505,22 +529,16 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	}
 	//为测试渲染描述符填充专用的cbuffer
 	instance_value new_data;
-	new_data.animation_index = DirectX::XMUINT4(0, 0, 0, 0);
+	new_data.animation_index = DirectX::XMUINT4(animation_block_pos.start_pos/sizeof(PancystarEngine::mesh_animation_data), 0, 0, 0);
 	DirectX::XMStoreFloat4x4(&new_data.world_mat, DirectX::XMMatrixScaling(0.1,0.1,0.1));
 	check_error = data_descriptor_test->SetCbufferStructData("per_instance", "_Instances", &new_data, sizeof(new_data), 0);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	
 	if (time > 1.0f) 
 	{
 		time -= 1.0f;
-	}
-	check_error = data_descriptor_test->SetCbufferStructData("per_instance", "bone_matrix", &matrix_out_bone[0], matrix_out_bone.size()*sizeof(matrix_out_bone[0]), 0);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
 	}
 	//绑定并制造commandlist
 	PancyRenderCommandList *m_commandList;

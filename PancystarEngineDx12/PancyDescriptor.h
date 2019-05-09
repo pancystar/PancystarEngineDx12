@@ -165,6 +165,8 @@ namespace PancystarEngine
 			const UINT &per_vertex_size,
 			pancy_object_id &descriptor_id
 		);
+		//获取蒙皮结果缓冲区
+		PancystarEngine::EngineFailReason GetSkinAnimationBuffer(std::vector<SubMemoryPointer> &skin_animation_data, pancy_resource_size &animation_buffer_size_in);
 		//清空当前帧的缓冲区使用信息
 		void ClearUsedBuffer();
 		//填充渲染commandlist
