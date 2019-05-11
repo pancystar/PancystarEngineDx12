@@ -60,6 +60,9 @@
     <ClInclude Include="PancyModelBasic.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="PancyDescriptor.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PancyDx12Basic.cpp">
@@ -102,6 +105,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="PancyModelBasic.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PancyDescriptor.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

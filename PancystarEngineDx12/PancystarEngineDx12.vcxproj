@@ -153,6 +153,7 @@
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="PancyBufferDx12.h" />
     <ClInclude Include="PancyCamera.h" />
+    <ClInclude Include="PancyDescriptor.h" />
     <ClInclude Include="PancyDx12Basic.h" />
     <ClInclude Include="PancyGeometryDx12.h" />
     <ClInclude Include="PancyInput.h" />
@@ -171,6 +172,7 @@
   <ItemGroup>
     <ClCompile Include="PancyBufferDx12.cpp" />
     <ClCompile Include="PancyCamera.cpp" />
+    <ClCompile Include="PancyDescriptor.cpp" />
     <ClCompile Include="PancyDx12Basic.cpp" />
     <ClCompile Include="PancyGeometryDx12.cpp" />
     <ClCompile Include="PancyInput.cpp" />

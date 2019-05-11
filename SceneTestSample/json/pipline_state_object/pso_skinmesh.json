@@ -1,0 +1,6 @@
+{
+  "PSOType": "PSO_TYPE_COMPUTE",
+  "RootSignature": "json\\root_signature\\skinmesh_root_signature.json",
+  "ComputeShader": "shader\\skinmesh.hlsl",
+  "ComputeShaderFunc": "CSMain"
+}

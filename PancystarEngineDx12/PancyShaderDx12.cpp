@@ -1189,6 +1189,14 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			}
 			//填充shader信息
 			desc_out.CS = CD3DX12_SHADER_BYTECODE(shader_data.Get());
+			//创建资源
+			HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateComputePipelineState(&desc_out, IID_PPV_ARGS(&pso_data));
+			if (FAILED(hr))
+			{
+				PancystarEngine::EngineFailReason error_message(hr, "Create PSO error name " + pso_name.GetAsciiString());
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build PSO", error_message);
+				return error_message;
+			}
 		}
 	}
 	return PancystarEngine::succeed;

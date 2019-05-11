@@ -29,7 +29,8 @@ namespace PancystarEngine
 		Buffer_ShaderResource_dynamic,
 		Buffer_Constant,
 		Buffer_Vertex,
-		Buffer_Index
+		Buffer_Index,
+		Buffer_UnorderedAccess_static
 	};
 	//缓冲区资源
 	class PancyBasicBuffer : public PancyBasicVirtualResource
@@ -172,13 +173,22 @@ namespace PancystarEngine
 		//清空当前所有使用的骨骼动画数据(由于动画数据逐帧重置，不需要考虑随机寻址类型的增删查改)
 		void ClearUsedBuffer();
 		//从当前蒙皮结果缓冲区中请求一块数据区(蒙皮结果数据区由GPU填充数据，因而只需要开辟)
-		PancystarEngine::EngineFailReason BuildAnimationBlock(const pancy_resource_size &vertex_num, pancy_object_id &block_id);
+		PancystarEngine::EngineFailReason BuildAnimationBlock(
+			const pancy_resource_size &vertex_num,
+			pancy_object_id &block_id,
+			SkinAnimationBlock &new_animation_block
+		);
 		//从当前骨骼矩阵缓冲区中请求一块数据区(骨骼矩阵数据区由CPU填充数据，因而需要将填充数据一并传入)
 		PancystarEngine::EngineFailReason BuildBoneBlock(
 			const pancy_resource_size &matrix_num, 
-			pancy_object_id &block_id, 
-			const DirectX::XMFLOAT4X4 *matrix_data
+			const DirectX::XMFLOAT4X4 *matrix_data,
+			pancy_object_id &block_id,
+			SkinAnimationBlock &new_bone_block
 		);
+		//获取矩阵存储缓冲区
+		PancystarEngine::EngineFailReason GetBoneMatrixResource(SubMemoryPointer &resource_pointer);
+		//获取蒙皮结果缓冲区
+		PancystarEngine::EngineFailReason GetSkinVertexResource(SubMemoryPointer &resource_pointer);
 	};
 	
 }

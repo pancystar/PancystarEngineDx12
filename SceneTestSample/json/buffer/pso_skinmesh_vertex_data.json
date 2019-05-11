@@ -1,0 +1,16 @@
+{
+	"BufferType" : "Buffer_Constant",
+	"CbufferDesc" : 
+	{
+		"BufferSize" : 116,
+		"VariableMember" : 
+		[
+			{
+				"Name" : "$Element",
+				"Size" : 116,
+				"StartOffset" : 0
+			}
+		]
+	},
+	"SubResourceFile" : "json\\resource_view\\DynamicBufferSub_256.json"
+}

@@ -2,7 +2,7 @@
 #include"PancystarEngineBasicDx12.h"
 #include"PancyDx12Basic.h"
 #include"PancyGeometryDx12.h"
-#include"PancyModelBasic.h"
+#include"PancyDescriptor.h"
 #include"PancyShaderDx12.h"
 #include"PancyTextureDx12.h"
 #include"PancyThreadBasic.h"
@@ -47,9 +47,14 @@ private:
 	virtual PancystarEngine::EngineFailReason ScreenChange() = 0;
 protected:
 	PancystarEngine::EngineFailReason GetGlobelCbuffer(
+		const pancy_object_id &PSO_id,
+		const std::string &cbuffer_name,
+		PancystarEngine::PancyConstantBuffer ** cbuffer_data
+	);
+	PancystarEngine::EngineFailReason GetGlobelCbuffer(
 		const pancy_object_id &PSO_id, 
 		const std::string &cbuffer_name, 
-		PancystarEngine::PancyConstantBuffer ** cbuffer_data
+		std::vector<PancystarEngine::PancyConstantBuffer*> &cbuffer_data
 	);
 };
 

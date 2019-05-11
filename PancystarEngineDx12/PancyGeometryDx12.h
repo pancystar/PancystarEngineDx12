@@ -124,6 +124,10 @@ namespace PancystarEngine
 		{
 			return geometry_index_buffer_view;
 		};
+		inline pancy_object_id GetVertexBufferID() 
+		{
+			return geometry_vertex_buffer;
+		};
 		PancystarEngine::EngineFailReason CheckGeometryState(ResourceStateType &now_state);
 	protected:
 		virtual PancystarEngine::EngineFailReason InitGeometryDesc(

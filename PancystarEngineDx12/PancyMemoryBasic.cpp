@@ -1522,9 +1522,12 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildUnorderedAccessView(
 		return error_message;
 	}
 	//´´½¨ÃèÊö·û
-	/*
-	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateUnorderedAccessView(resource_data->GetResource().Get(), &UAV_desc, cpuHandle);
-	*/
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateUnorderedAccessView(
+		data_submemory->GetResource().Get(),
+		NULL,
+		&UAV_desc,
+		DestDescriptor
+	);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason SubresourceControl::BuildDepthStencilView(

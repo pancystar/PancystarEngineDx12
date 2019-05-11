@@ -58,6 +58,12 @@
     <None Include="json\pipline_state_object\pso_brdfgen.json">
       <Filter>json</Filter>
     </None>
+    <None Include="json\root_signature\skinmesh_root_signature.json">
+      <Filter>json</Filter>
+    </None>
+    <None Include="json\pipline_state_object\pso_skinmesh.json">
+      <Filter>json</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\testcolor.hlsl">
@@ -72,7 +78,7 @@
     <FxCompile Include="shader\BrdfGen.hlsl">
       <Filter>shader</Filter>
     </FxCompile>
-    <FxCompile Include="skinmesh.hlsl">
+    <FxCompile Include="shader\skinmesh.hlsl">
       <Filter>shader</Filter>
     </FxCompile>
   </ItemGroup>
