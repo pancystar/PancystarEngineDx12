@@ -14,6 +14,7 @@
 #endif
 #define MaxBoneNum 100
 #define NouseAssimpStruct -12138
+#define VertexAnimationID uint32_t
 struct per_view_pack
 {
 	DirectX::XMFLOAT4X4 view_matrix;
@@ -236,6 +237,7 @@ struct mesh_animation_data
 	DirectX::XMFLOAT3 position;
 	DirectX::XMFLOAT3 normal;
 	DirectX::XMFLOAT3 tangent;
+	float delta_time;
 	mesh_animation_data()
 	{
 		position = DirectX::XMFLOAT3(0, 0, 0);
@@ -285,7 +287,12 @@ public:
 		}
 		return anim_point_num;
 	}
-	void GetMeshAnimData(mesh_animation_data *data);
+	//获取顶点动画的数据(压缩后的数据，包括一个压缩过的关键帧记录数据以及记录关键帧位置的指针数据，压缩质量越高，压缩率越低)
+	void GetMeshAnimData(
+		std::vector<std::vector<mesh_animation_data>> &now_check_point_all,
+		std::vector<std::vector<VertexAnimationID>> &now_ID_save_all,
+		float compress_quality = 0.999f
+	);
 	inline int32_t GetMeshSizePerFrame()
 	{
 		return vertex_pack_num;
@@ -345,7 +352,10 @@ class PancyModelAssimp : public PancyModelBasic
 	bool if_animation_choose;
 	//顶点动画信息
 	mesh_animation_FBX *FBXanim_import;
-	SubMemoryPointer vertex_anim_buffer;
+	SubMemoryPointer vertex_anim_buffer;//用于存储压缩后的顶点动画数据
+	SubMemoryPointer vertex_anim_ID_buffer;//用于存储负责解压顶点数据的ID数据
+	int32_t mesh_animation_buffer_size;
+	int32_t mesh_animation_ID_buffer_size;
 	PancyFenceIdGPU upload_fence_value;
 	PancystarEngine::EngineFailReason BuildDefaultBuffer(
 		ID3D12GraphicsCommandList* cmdList,
@@ -421,14 +431,20 @@ public:
 	}
 	inline SubMemoryPointer GetPointAnimationBuffer(int32_t &buffer_size, int32_t &stride_size)
 	{
-		buffer_size = FBXanim_import->GetMeshAnimNumber();
+		buffer_size = mesh_animation_buffer_size;
 		stride_size = sizeof(mesh_animation_data);
 		return vertex_anim_buffer;
 	}
-	inline void GetPointAnimationFrame(uint32_t &now_frame,uint32_t &perframe_size) 
+	inline SubMemoryPointer GetPointAnimationIDBuffer(int32_t &buffer_size, int32_t &stride_size)
 	{
-		uint32_t all_frame_num = FBXanim_import->get_frame_num();
-		perframe_size = FBXanim_import->GetMeshSizePerFrame();
+		buffer_size = mesh_animation_ID_buffer_size;
+		stride_size = sizeof(VertexAnimationID);
+		return vertex_anim_ID_buffer;
+	}
+	inline void GetPointAnimationFrame(uint32_t &now_frame,uint32_t &all_frame_num)
+	{
+		all_frame_num = FBXanim_import->get_frame_num();
+		//perframe_size = FBXanim_import->GetMeshSizePerFrame();
 		now_frame = now_animation_play_station * all_frame_num;
 	}
 private:
@@ -573,7 +589,7 @@ class scene_test_simple : public SceneRoot
 	ResourceViewPointer table_offset[3];
 	SubMemoryPointer cbuffer[2];
 	//资源绑定(待处理模型)
-	ResourceViewPointer table_offset_model[5];
+	ResourceViewPointer table_offset_model[6];
 	/*
 	cbuffer_per_object
 	cbuffer_per_view

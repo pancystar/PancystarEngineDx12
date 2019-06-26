@@ -704,13 +704,70 @@ void mesh_animation_FBX::UpdateVertexPosition(
 	anim_data_list[animation_id].push_back(now_frame_data);
 	int a = 0;
 }
-void mesh_animation_FBX::GetMeshAnimData(mesh_animation_data *data)
+void mesh_animation_FBX::GetMeshAnimData(
+	std::vector<std::vector<mesh_animation_data>> &now_check_point_all,
+	std::vector<std::vector<VertexAnimationID>> &now_ID_save_all,
+	float compress_quality
+)
 {
 	int32_t count_data = 0;
+	std::vector<std::vector<DirectX::XMFLOAT3>> new_check_vec_all;
+	int check_all_use = 0;
+	for (int i = 0; i < anim_data_list.size(); ++i)
+	{
+		for (int j = 0; j < anim_data_list[i][0].size(); ++j)
+		{
+			std::vector<DirectX::XMFLOAT3> new_check_vec;
+			std::vector<mesh_animation_data> now_check_point;
+			std::vector<VertexAnimationID> now_ID_save;
+			//初始化用于检测运动轨迹的方向向量，第一个关键点必须记录
+			anim_data_list[i][0][j].delta_time = 0.0f;
+			now_check_point.push_back(anim_data_list[i][0][j]);
+			DirectX::XMFLOAT3 last_vector = DirectX::XMFLOAT3(1, 1, 1);
+			//now_ID_save.push_back(0);
+			for (int k = 1; k < frame_num; ++k)
+			{
+				DirectX::XMFLOAT3 now_check_data, normalize_data;
+				now_check_data.x = anim_data_list[i][k][j].position.x - anim_data_list[i][k - 1][j].position.x;
+				now_check_data.y = anim_data_list[i][k][j].position.y - anim_data_list[i][k - 1][j].position.y;
+				now_check_data.z = anim_data_list[i][k][j].position.z - anim_data_list[i][k - 1][j].position.z;
+				DirectX::XMStoreFloat3(&normalize_data, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&now_check_data)));
+				new_check_vec.push_back(normalize_data);
+				//存储每一个顶点在每一帧的偏移寻址位置(16位即可)
+				now_ID_save.push_back(now_check_point.size() - 1);
+				//检测该顶点是否产生了移动(顶点未移动说明没有存储意义)
+				float check_if_move = normalize_data.x + normalize_data.y + normalize_data.z;
+				if (check_if_move > 0.001f)
+				{
+					//检测该顶点的移动方向是否发生了变化(移动方向未产生变化也没有存储意义)
+					float dot_dir = normalize_data.x*last_vector.x + normalize_data.y*last_vector.y + normalize_data.z*last_vector.z;
+					if (dot_dir < compress_quality && k != 1)
+					{
+						//移动方向产生变化，记录该关键点
+						anim_data_list[i][k - 1][j].delta_time = static_cast<float>(k - 1) / static_cast<float>(frame_num - 1);
+						now_check_point.push_back(anim_data_list[i][k - 1][j]);
+					}
+					last_vector = normalize_data;
+				}
+
+			}
+			now_ID_save.push_back(now_check_point.size() - 1);
+			//保证最后一个关键点必须记录
+			anim_data_list[i][frame_num - 1][j].delta_time = 1.0f;
+			now_check_point.push_back(anim_data_list[i][frame_num - 1][j]);
+			//完成一个顶点的数据压缩
+			check_all_use += now_check_point.size();
+			new_check_vec_all.push_back(new_check_vec);
+			now_check_point_all.push_back(now_check_point);
+			now_ID_save_all.push_back(now_ID_save);
+		}
+	}
+	/*
 	for (int i = 0; i < frame_num; ++i)
 	{
 		for (int j = 0; j < anim_data_list.size(); ++j)
 		{
+
 			for (int k = 0; k < anim_data_list[j][i].size(); ++k)
 			{
 				data[count_data] = anim_data_list[j][i][k];
@@ -718,6 +775,7 @@ void mesh_animation_FBX::GetMeshAnimData(mesh_animation_data *data)
 			}
 		}
 	}
+	*/
 }
 /*
 void mesh_animation_FBX::compute_normal()
@@ -871,7 +929,6 @@ pancy_object_id PancyModelAssimp::insert_new_texture(std::vector<pancy_object_id
 }
 void PancyModelAssimp::SaveBoneTree(skin_tree *bone_data)
 {
-	//骨骼树
 	out_stream.write("*heaphead*", sizeof("*heaphead*"));
 	out_stream.write(reinterpret_cast<char *>(bone_data), sizeof(*bone_data));
 	if (bone_data->son != NULL)
@@ -1249,7 +1306,22 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
 		return error_message;
 	}
-
+	/*
+	ofstream out_stream;
+	for (int i = 0; i < model_need->mNumMeshes; i++)
+	{
+		const aiMesh* paiMesh = model_need->mMeshes[i];
+		string now_file_name = "point_data.txt";
+		out_stream.open(now_file_name);
+		out_stream<< paiMesh->mNumVertices  <<endl;
+		for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
+		{
+			out_stream << paiMesh->mVertices[j].x << " " << paiMesh->mVertices[j].y << " " << paiMesh->mVertices[j].z << endl;
+			out_stream << paiMesh->mNormals[j].x <<" "<< paiMesh->mNormals[j].y << " " << paiMesh->mNormals[j].z << endl;
+		}
+		out_stream.close();
+	}
+	*/
 	std::vector<int32_t> vertex_num;
 	std::vector<int32_t> index_num;
 	std::vector<std::vector<IndexType>> index_data;
@@ -1482,6 +1554,8 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		model_lod_divide.push_back(Lod_block_list);
 	}
 	//加载顶点动画信息
+	std::vector<std::vector<mesh_animation_data>> now_check_point_all;
+	std::vector<std::vector<VertexAnimationID>> now_ID_save_all;
 	if (if_pointmesh)
 	{
 		//尝试读取顶点动画
@@ -1491,19 +1565,64 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		{
 			return check_error;
 		}
-		int point_number = FBXanim_import->GetMeshAnimNumber();
-		mesh_animation_data *new_data = new mesh_animation_data[point_number];
-		FBXanim_import->GetMeshAnimData(new_data);
+		//int point_number = FBXanim_import->GetMeshAnimNumber();
+		//mesh_animation_data *new_data = new mesh_animation_data[point_number];
+		FBXanim_import->GetMeshAnimData(now_check_point_all, now_ID_save_all);
+		int all_point_num = 0;
+		int all_ID_num = now_ID_save_all.size() * now_ID_save_all[0].size();
+		for (int i = 0; i < now_check_point_all.size(); ++i) 
+		{
+			all_point_num += now_check_point_all[i].size();
+		}
+		mesh_animation_buffer_size = all_point_num;
+		mesh_animation_ID_buffer_size = all_ID_num;
+		mesh_animation_data *new_data = new mesh_animation_data[all_point_num];
+		VertexAnimationID *new_id_data = new VertexAnimationID[all_ID_num];
+		int count_verex = 0;
+		for (int i = 0; i < now_check_point_all.size(); ++i)
+		{
+			for (int j = 0; j < now_check_point_all[i].size(); ++j)
+			{
+				new_data[count_verex] = now_check_point_all[i][j];
+				count_verex += 1;
+			}
+		}
+		count_verex = 0;
+		for (int i = 0; i < now_ID_save_all.size(); ++i)
+		{
+			for (int j = 0; j < now_ID_save_all[i].size(); ++j)
+			{
+				new_id_data[count_verex] = now_ID_save_all[i][j];
+				count_verex += 1;
+			}
+		}
 		//拷贝顶点动画数据到buffer
 		SubMemoryPointer vertex_buffer_upload;
 		PancyRenderCommandList *copy_render_list;
 		uint32_t copy_render_list_ID;
 		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
-		check_error = BuildDefaultBuffer(copy_render_list->GetCommandList().Get(), 4194304, 131072, vertex_anim_buffer, vertex_buffer_upload, new_data, point_number * sizeof(mesh_animation_data), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		check_error = BuildDefaultBuffer(copy_render_list->GetCommandList().Get(), 4194304, 131072, vertex_anim_buffer, vertex_buffer_upload, new_data, all_point_num * sizeof(mesh_animation_data), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
+		SubMemoryPointer vertex_ID_buffer_upload;
+		check_error = BuildDefaultBuffer(copy_render_list->GetCommandList().Get(), 4194304, 131072, vertex_anim_ID_buffer, vertex_ID_buffer_upload, new_id_data, all_ID_num * sizeof(VertexAnimationID), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		int64_t per_memory_size;
+		auto dest_res = SubresourceControl::GetInstance()->GetResourceData(vertex_anim_buffer, per_memory_size);
+		//todo:这里两个subbuffer块恰好处于一个缓冲区中，因而只需要进行一次资源绑定，在主引擎中已经修改了为默认状态为command来处理，之后重写模型编辑器的时候可以考虑修改
+		copy_render_list->GetCommandList().Get()->ResourceBarrier(
+			1,
+			&CD3DX12_RESOURCE_BARRIER::Transition(
+				dest_res->GetResource().Get(),
+				D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+			)
+		);
 		//完成渲染队列并提交拷贝
 		copy_render_list->UnlockPrepare();
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &copy_render_list_ID);
@@ -1513,7 +1632,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(upload_fence_value);
 		//删除动态资源
 		SubresourceControl::GetInstance()->FreeSubResource(vertex_buffer_upload);
+		SubresourceControl::GetInstance()->FreeSubResource(vertex_ID_buffer_upload);
 		delete[] new_data;
+		delete[] new_id_data;
 	}
 	//预加载骨骼信息
 	if (if_skinmesh)
@@ -1524,6 +1645,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	int now_used_bone_num = 0;
 
 	int mesh_vertex_offset = 0;
+	int now_point_anim_offset = 0;//顶点动画的缓冲区偏移，无顶点动画的时候不参与使用
 	for (int i = 0; i < model_need->mNumMeshes; i++)
 	{
 		const aiMesh* paiMesh = model_need->mMeshes[i];
@@ -1737,8 +1859,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			//填充动画数据
 			for (int j = 0; j < paiMesh->mNumVertices; ++j)
 			{
-				point_need[j].anim_id.x = 1;
-				point_need[j].anim_id.y = mesh_vertex_offset + j;
+				point_need[j].anim_id.x = now_point_anim_offset;//第一位代表当前顶点的偏移位置
+				point_need[j].anim_id.y = (mesh_vertex_offset + j)*now_ID_save_all[0].size();//第二位代表当前顶点的解压缩起始寻址位置
+				now_point_anim_offset += now_check_point_all[mesh_vertex_offset + j].size();
 			}
 			PancySubModel *new_submodel = new PancySubModel();
 			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
@@ -2007,51 +2130,25 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "IfHavePoinAnimation", if_pointmesh);
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "PbrType", PancyJsonTool::GetInstance()->GetEnumName(typeid(model_pbr_type).name(), model_pbr_type));
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "model_num", model_lod_divide.size());
-	//PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "material_num", material_list.size());
+	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "material_num", material_list.size());
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "texture_num", texture_list.size());
 	for (int i = 0; i < texture_list.size(); ++i)
 	{
 		//存储每一张纹理数据
 		std::string now_tex_file_name = file_root_name + "_tex" + std::to_string(i) + ".dds";
 		std::string now_tex_file_real_name = file_root_real_name + "_tex" + std::to_string(i) + ".dds";
-		//PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "texture_file", file_root_real_name + "_tex" + std::to_string(i) + ".json");
+		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "texture_file", now_tex_file_real_name);
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->SaveTextureToFile(device_pancy, texture_list[i], now_tex_file_name, true, true);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//创建导出的json文件数据
-		string json_file_out = file_root_name + "_tex" + std::to_string(i) + ".json";
-		//为非json纹理创建一个纹理格式符
-		Json::Value json_data_out;
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 1);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "FileName", now_tex_file_real_name);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfAutoBuildMipMap", 0);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfForceSrgb", 0);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "MaxSize", 0);
-		check_error = PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, json_file_out);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		//将文件标记为已经创建
-		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(json_file_out);
 	}
 	//填充动画信息
 	if (if_skinmesh)
 	{
 		//存储骨骼数据
 		out_stream.open(file_root_name + ".bone", ios::binary);
-		//偏移矩阵
-		out_stream.write((char *)(&bone_num), sizeof(bone_num));
-		out_stream.write((char *)(offset_matrix_array), bone_num * sizeof(offset_matrix_array[0]));
-		//动画的位移信息
-		/*
-		out_stream.write((char *)(&bind_pose_matrix), sizeof(bind_pose_matrix));
-		int32_t bone_name_length = sizeof(model_move_skin->bone_ID);
-		out_stream.write(model_move_skin->bone_ID, bone_name_length);
-		*/
-		//骨骼树
 		SaveBoneTree(root_skin);
 		out_stream.close();
 		//存储动画数据
@@ -2064,44 +2161,34 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			std::string animation_name_now = file_root_name + "_anim_" + animation_deal->first + ".skinanim";
 			out_stream.open(animation_name_now, ios::binary);
 			//将一个动画的每个骨骼的变换信息写入文件
-			int32_t animation_used_bone_num = animation_deal->second.data_animition.size();
-			float animation_length_now = animation_deal->second.animation_length;
-			out_stream.write(reinterpret_cast<char*>(&animation_length_now), sizeof(animation_length_now));
-			out_stream.write(reinterpret_cast<char*>(&animation_used_bone_num),sizeof(animation_used_bone_num));
-			for (int i = 0; i < animation_used_bone_num; ++i)
+			for (int i = 0; i < animation_deal->second.data_animition.size(); ++i)
 			{
 				//当前变换的骨骼名称的长度
-				int32_t bone_name_size = animation_deal->second.data_animition[i].bone_name.size() + 1;
+				auto bone_name_size = animation_deal->second.data_animition[i].bone_name.size();
 				out_stream.write(reinterpret_cast<char*>(&bone_name_size), sizeof(bone_name_size));
 				//当前变换的骨骼名称
-				char *new_name = new char[bone_name_size];
-				memcpy(new_name, animation_deal->second.data_animition[i].bone_name.c_str(), (bone_name_size - 1) * sizeof(char));
-				new_name[bone_name_size - 1] = '\0';
-				out_stream.write(new_name, bone_name_size * sizeof(char));
-				delete[] new_name;
+				out_stream.write(animation_deal->second.data_animition[i].bone_name.c_str(), animation_deal->second.data_animition[i].bone_name.size() * sizeof(char));
 				//所有旋转数据
-				int32_t rottation_key_size = animation_deal->second.data_animition[i].rotation_key.size();
+				auto rottation_key_size = animation_deal->second.data_animition[i].rotation_key.size();
 				out_stream.write(reinterpret_cast<char*>(&rottation_key_size), sizeof(rottation_key_size));
-				int32_t size_out = rottation_key_size * sizeof(quaternion_animation);
-				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].rotation_key[0]), size_out);
+				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].rotation_key[0]), animation_deal->second.data_animition[i].rotation_key.size() * sizeof(animation_deal->second.data_animition[i].rotation_key[0]));
 				//所有平移数据
-				int32_t translation_key_size = animation_deal->second.data_animition[i].translation_key.size();
+				auto translation_key_size = animation_deal->second.data_animition[i].translation_key.size();
 				out_stream.write(reinterpret_cast<char*>(&translation_key_size), sizeof(translation_key_size));
-				size_out = translation_key_size * sizeof(vector_animation);
-				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].translation_key[0]), size_out);
+				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].translation_key[0]), animation_deal->second.data_animition[i].translation_key.size() * sizeof(animation_deal->second.data_animition[i].translation_key[0]));
 				//所有缩放数据
-				int32_t scaling_key_size = animation_deal->second.data_animition[i].scaling_key.size();
+				auto scaling_key_size = animation_deal->second.data_animition[i].scaling_key.size();
 				out_stream.write(reinterpret_cast<char*>(&scaling_key_size), sizeof(scaling_key_size));
-				size_out = scaling_key_size * sizeof(vector_animation);
-				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].scaling_key[0]), size_out);
+				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].scaling_key[0]), animation_deal->second.data_animition[i].scaling_key.size() * sizeof(animation_deal->second.data_animition[i].scaling_key[0]));
 			}
 			out_stream.close();
 		}
 	}
 	else if (if_pointmesh)
 	{
+		/*
 		//存储顶点动画数据
-		int32_t point_number = FBXanim_import->GetMeshAnimNumber();
+		int point_number = FBXanim_import->GetMeshAnimNumber();
 		mesh_animation_data *new_data = new mesh_animation_data[point_number];
 		FBXanim_import->GetMeshAnimData(new_data);
 		//将动画信息写入json
@@ -2110,18 +2197,16 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		//将动画细节导入到文件
 		std::string animation_name_now = file_root_name + "_anim_" + "basic" + ".pointcatch";
 		out_stream.open(animation_name_now, ios::binary);
-		int32_t all_frame_num = FBXanim_import->get_frame_num();
-		int32_t perframe_size = FBXanim_import->GetMeshSizePerFrame();
-		int32_t fps_need = FBXanim_import->get_FPS();
+		auto all_frame_num = FBXanim_import->get_frame_num();
+		auto perframe_size = FBXanim_import->GetMeshSizePerFrame();
 		out_stream.write(reinterpret_cast<char*>(&all_frame_num), sizeof(all_frame_num));
 		out_stream.write(reinterpret_cast<char*>(&perframe_size), sizeof(perframe_size));
 		out_stream.write(reinterpret_cast<char*>(&point_number), sizeof(point_number));
-		out_stream.write(reinterpret_cast<char*>(&fps_need), sizeof(fps_need));
 		int32_t size_need = point_number * sizeof(mesh_animation_data);
 		out_stream.write(reinterpret_cast<char*>(new_data), size_need);
 
 		out_stream.close();
-		delete[] new_data;
+		delete[] new_data;*/
 	}
 	//整合顶点数据
 	for (int i = 0; i < model_lod_divide.size(); ++i)
@@ -2149,13 +2234,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			}
 			//存储顶点及索引
 			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
-			int32_t vertex_size = vertex_data_pack.size();
-			out_stream.write(reinterpret_cast<char*>(&vertex_size), sizeof(vertex_size));
+			int32_t vertex_num = vertex_data_pack.size();
+			int32_t index_num = index_data_pack.size();
+			out_stream.write(reinterpret_cast<char*>(&vertex_num), sizeof(vertex_num));
 			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
 			out_stream.close();
 			out_stream.open(file_root_name + std::to_string(i) + ".index", ios::binary);
-			int32_t index_size = index_data_pack.size();
-			out_stream.write(reinterpret_cast<char*>(&index_size), sizeof(index_size));
+			out_stream.write(reinterpret_cast<char*>(&index_num), sizeof(index_num));
 			out_stream.write(reinterpret_cast<char*>(&index_data_pack[0]), index_data_pack.size() * sizeof(index_data_pack[0]));
 			out_stream.close();
 		}
@@ -2182,13 +2267,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			}
 			//存储顶点及索引
 			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
-			int32_t vertex_size = vertex_data_pack.size();
-			out_stream.write(reinterpret_cast<char*>(&vertex_size), sizeof(vertex_size));
+			int32_t vertex_num = vertex_data_pack.size();
+			int32_t index_num = index_data_pack.size();
+			out_stream.write(reinterpret_cast<char*>(&vertex_num), sizeof(vertex_num));
 			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
 			out_stream.close();
 			out_stream.open(file_root_name + std::to_string(i) + ".index", ios::binary);
-			int32_t index_size = index_data_pack.size();
-			out_stream.write(reinterpret_cast<char*>(&index_size), sizeof(index_size));
+			out_stream.write(reinterpret_cast<char*>(&index_num), sizeof(index_num));
 			out_stream.write(reinterpret_cast<char*>(&index_data_pack[0]), index_data_pack.size() * sizeof(index_data_pack[0]));
 			out_stream.close();
 		}
@@ -2215,13 +2300,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			}
 			//存储顶点及索引
 			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
-			int32_t vertex_size = vertex_data_pack.size();
-			out_stream.write(reinterpret_cast<char*>(&vertex_size),sizeof(vertex_size));
+			int32_t vertex_num = vertex_data_pack.size();
+			int32_t index_num = index_data_pack.size();
+			out_stream.write(reinterpret_cast<char*>(&vertex_num), sizeof(vertex_num));
 			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
 			out_stream.close();
 			out_stream.open(file_root_name + std::to_string(i) + ".index", ios::binary);
-			int32_t index_size = index_data_pack.size();
-			out_stream.write(reinterpret_cast<char*>(&index_size), sizeof(index_size));
+			out_stream.write(reinterpret_cast<char*>(&index_num), sizeof(index_num));
 			out_stream.write(reinterpret_cast<char*>(&index_data_pack[0]), index_data_pack.size() * sizeof(index_data_pack[0]));
 			out_stream.close();
 		}
@@ -2462,15 +2547,6 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 	}
 	//将上传缓冲区的数据拷贝到显存缓冲区
 	cmdList->CopyBufferRegion(dest_res->GetResource().Get(), default_buffer.offset * per_memory_size, copy_res->GetResource().Get(), upload_buffer.offset*per_memory_size, buffer_block_size);
-	//修改缓冲区格式
-	cmdList->ResourceBarrier(
-		1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			dest_res->GetResource().Get(),
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			buffer_type
-		)
-	);
 	return PancystarEngine::succeed;
 }
 //骨骼动画
@@ -3293,6 +3369,8 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 	table_offset_model[3].resource_view_offset_id = descriptor_use_data[0].table_offset[3];
 	table_offset_model[4].resource_view_pack_id = globel_var;
 	table_offset_model[4].resource_view_offset_id = descriptor_use_data[0].table_offset[4];
+	table_offset_model[5].resource_view_pack_id = globel_var;
+	table_offset_model[5].resource_view_offset_id = descriptor_use_data[0].table_offset[5];
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
@@ -3318,8 +3396,18 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 		{
 			return check_error;
 		}
+
+		ResourceViewPointer animation_buffer_id_pointer = table_offset_model[4];
+		SubMemoryPointer buffer_ID_need = pointer->GetPointAnimationIDBuffer(buffer_size, stride_size);
+		SRV_desc.Buffer.StructureByteStride = stride_size;
+		SRV_desc.Buffer.NumElements = buffer_size;
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(animation_buffer_id_pointer, buffer_ID_need, SRV_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 	}
-	ResourceViewPointer new_rvp = table_offset_model[4];
+	ResourceViewPointer new_rvp = table_offset_model[5];
 	SubMemoryPointer texture_need;
 	D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
 	for (int i = 0; i < model_deal->GetMaterialNum(); ++i)
@@ -3880,7 +3968,7 @@ void scene_test_simple::PopulateCommandListReadBack()
 	}
 	//bindless texture
 	CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
-	auto heap_offset_bindless = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(table_offset_model[4], srvHandle);
+	auto heap_offset_bindless = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(table_offset_model[3], srvHandle);
 	m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(2, srvHandle);
 	//渲染目标
 	int64_t per_memory_size;
@@ -3965,7 +4053,7 @@ void scene_test_simple::PopulateCommandListModelDeal()
 	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset_model[0].resource_view_pack_id.descriptor_heap_type_id).Get();
 	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
 	//设置描述符堆的偏移
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < 6; ++i)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
 		auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(table_offset_model[i], srvHandle);
