@@ -23,14 +23,16 @@ struct mesh_anim
 	float3 pos;
 	float3 norm;
 	float3 tangent;
+	float delta_time;
 };
 //环境光IBL与brdf预计算
 TextureCube environment_IBL_spec    : register(t0);
 TextureCube environment_IBL_diffuse : register(t1);
 texture2D   environment_brdf        : register(t2);
 StructuredBuffer<mesh_anim> input_point: register(t3);
+StructuredBuffer<uint> input_point_id: register(t4);
 //模型自带的贴图
-texture2D   texture_model[]         : register(t4);
+texture2D   texture_model[]         : register(t5);
 //静态采样器
 SamplerState samTex_liner : register(s0);
 struct VSInput
@@ -153,6 +155,21 @@ PSInput VSMain(VSInput vinput)
 PSInput VSMainPointCatch(VSInputCatch vinput)
 {
 	PSInput result;
+	//首先根据起始解压缩位置以及帧号的偏移，找到当前顶点的当前帧的真正帧数据的相对起始点
+	uint now_used_id = input_point_id[vinput.anim_id.y + point_animation_time.x];
+	//根据当前顶点的起始动画位置，加上上面的真实的帧偏移量，得到真正的动画段的位置。
+	uint now_real_id = vinput.anim_id.x + now_used_id;
+	//获取当前动画段的起始位置和终止位置，然后根据当前的时间信息获取插值信息插值
+	mesh_anim new_point_st = input_point[now_real_id];
+	mesh_anim new_point_ed = input_point[now_real_id+1];
+	float new_position_lerp = (float)(point_animation_time.x) / (float)(point_animation_time.y-1);
+	float final_lerp = (new_position_lerp - new_point_st.delta_time) / (new_point_ed.delta_time- new_point_st.delta_time);
+	//根据插值信息，插值获得顶点的新坐标，法线和切线信息
+	float3 now_used_position = lerp(new_point_st.pos, new_point_ed.pos, final_lerp);
+	float3 now_used_normal = normalize(lerp(new_point_st.norm, new_point_ed.norm, final_lerp));
+	float3 now_used_tangent = normalize(lerp(new_point_st.tangent, new_point_ed.tangent, final_lerp));
+
+	/*
 	float delta_change = (float)(vinput.anim_id.x);
 	int index_anim = point_animation_time.x * point_animation_time.y + vinput.anim_id.y;
 	float3 new_position = input_point[index_anim].pos;
@@ -161,12 +178,12 @@ PSInput VSMainPointCatch(VSInputCatch vinput)
 	float3 used_normal = new_normal * delta_change + vinput.normal * (1.0f - delta_change);
 	float3 new_tangent = normalize(input_point[index_anim].tangent);
 	float3 used_tangent = new_tangent * delta_change + vinput.tangent * (1.0f - delta_change);
+	*/
 
-
-	result.position = mul(float4(used_position, 1.0f), WVP_matrix);
-	result.pos_out = mul(float4(used_position, 1.0), world_matrix);
-	result.normal = mul(float4(used_normal, 0.0), normal_matrix).xyz;
-	result.tangent = mul(float4(used_tangent, 0.0), normal_matrix).xyz;
+	result.position = mul(float4(now_used_position, 1.0f), WVP_matrix);
+	result.pos_out = mul(float4(now_used_position, 1.0), world_matrix);
+	result.normal = mul(float4(now_used_normal, 0.0), normal_matrix).xyz;
+	result.tangent = mul(float4(now_used_tangent, 0.0), normal_matrix).xyz;
 	result.tex_id = vinput.tex_id;
 	result.tex_uv.xy = mul(float4(vinput.tex_uv.xy, 0, 0), UV_matrix).xy;
 	result.tex_uv.zw = mul(float4(vinput.tex_uv.zw, 0, 0), UV_matrix).zw;
