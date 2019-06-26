@@ -2139,12 +2139,12 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 				for (int k = 0; k < index_data_in.size(); ++k)
 				{
 					//添加索引号
-					index_data_pack.push_back(index_data_in[i] + vertex_data_pack.size());
+					index_data_pack.push_back(index_data_in[k] + vertex_data_pack.size());
 				}
 				for (int k = 0; k < vertex_data_in.size(); ++k)
 				{
 					//添加顶点信息
-					vertex_data_pack.push_back(vertex_data_in[i]);
+					vertex_data_pack.push_back(vertex_data_in[k]);
 				}
 			}
 			//存储顶点及索引
@@ -2172,12 +2172,12 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 				for (int k = 0; k < index_data_in.size(); ++k)
 				{
 					//添加索引号
-					index_data_pack.push_back(index_data_in[i] + vertex_data_pack.size());
+					index_data_pack.push_back(index_data_in[k] + vertex_data_pack.size());
 				}
 				for (int k = 0; k < vertex_data_in.size(); ++k)
 				{
 					//添加顶点信息
-					vertex_data_pack.push_back(vertex_data_in[i]);
+					vertex_data_pack.push_back(vertex_data_in[k]);
 				}
 			}
 			//存储顶点及索引
@@ -2205,12 +2205,12 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 				for (int k = 0; k < index_data_in.size(); ++k)
 				{
 					//添加索引号
-					index_data_pack.push_back(index_data_in[i] + vertex_data_pack.size());
+					index_data_pack.push_back(index_data_in[k] + vertex_data_pack.size());
 				}
 				for (int k = 0; k < vertex_data_in.size(); ++k)
 				{
 					//添加顶点信息
-					vertex_data_pack.push_back(vertex_data_in[i]);
+					vertex_data_pack.push_back(vertex_data_in[k]);
 				}
 			}
 			//存储顶点及索引
