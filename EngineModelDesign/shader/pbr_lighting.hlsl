@@ -336,7 +336,7 @@ float3 count_pbr_reflect(
 	//漫反射强度(albedo的漫反射分量)
 	float3 diffuse_out = realAlbedo / PI;
 	//视线与法线的夹角
-	float view_angle = dot(direction_view, normal);
+	float view_angle = max(0.03f,dot(direction_view, normal));
 	//菲涅尔系数
 	float3 fresnel = Fresnel_CookTorrance(F0, direction_view, h_vec);
 	//NDF法线扰乱项
@@ -383,6 +383,7 @@ float3 count_pbr_environment(
 	float3 ambient_specular = tex_ao * enviornment_color.xyz * (specular_out);
 	return ambient_specular + ambient_diffuse;
 }
+
 float4 PSMain(PSInput pin) : SV_TARGET
 {
 	//采样模型自带的纹理
@@ -438,3 +439,59 @@ float4 PSMain(PSInput pin) : SV_TARGET
 	}
 	return float4(pin.normal, 1.0f);
 }
+/*
+float4 PSMain(PSInput pin) : SV_TARGET
+{
+	//采样模型自带的纹理
+	uint self_id_diffuse = pin.tex_id.x;     //漫反射贴图
+	uint self_id_normal = pin.tex_id.x + 1; //法线贴图
+	uint self_id_metallic = pin.tex_id.x + 2; //金属度贴图
+	uint self_id_roughness = pin.tex_id.x + 3; //粗糙度贴图
+	float4 diffuse_color = texture_model[self_id_diffuse].Sample(samTex_liner, pin.tex_uv.xy);
+	float4 normal_color = texture_model[self_id_normal].Sample(samTex_liner, pin.tex_uv.xy);
+	float4 metallic_color = texture_model[self_id_metallic].Sample(samTex_liner, pin.tex_uv.xy);
+	//法线变换计算真实的细节法线
+	float3 N = pin.normal;
+	float3 T = normalize(pin.tangent - N * pin.tangent * N);
+	float3 B = cross(N, T);
+	float3x3 T2W = float3x3(T, B, N);
+	float3 real_normal = 2 * normal_color.rgb - 1;
+	real_normal = normalize(mul(real_normal, T2W));
+	//虚拟方向光光源
+	float3 light_color = float3(1.0, 1.0, 1.0);
+	float3 light_dir = normalize(float3(1,1,0));
+	//计算直接光照所需的pbr参数
+	float3 view_dir = normalize(view_position.xyz - pin.pos_out.xyz);
+	float3 realAlbedo = diffuse_color.rgb;
+	float3 F0 = metallic_color.rgb;
+	float alpha = (1.0f- metallic_color.a)*(1.0f - metallic_color.a);
+	float diffuse_angle = max(0.0f,dot(real_normal, light_dir));
+	float3 reflect_dir = normalize(reflect(-view_dir, real_normal));
+	float NoV = dot(real_normal, view_dir);
+	float3 dir_light_color = max(0.0f, count_pbr_reflect(
+		light_color,
+		realAlbedo,
+		F0,
+		alpha,
+		light_dir,
+		real_normal,
+		view_dir,
+		diffuse_angle,
+		reflect_dir
+	));
+	float3 environment_light_color = count_pbr_environment(
+		1.0f - metallic_color.a,
+		NoV,
+		reflect_dir,
+		realAlbedo,
+		F0,
+		1.0f
+	);
+	//return float4(environment_light_color, 1.0f);
+	if (point_animation_time.z == 0)
+	{
+		return float4(dir_light_color + environment_light_color, diffuse_color.a);
+	}
+	return float4(pin.normal, 1.0f);
+}
+*/

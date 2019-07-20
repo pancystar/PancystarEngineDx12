@@ -2186,6 +2186,47 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 	}
 	else if (if_pointmesh)
 	{
+		std::vector<std::vector<mesh_animation_data>> now_check_point_all;
+		std::vector<std::vector<VertexAnimationID>> now_ID_save_all;
+		FBXanim_import->GetMeshAnimData(now_check_point_all, now_ID_save_all);
+		mesh_animation_data *new_data = new mesh_animation_data[mesh_animation_buffer_size];
+		VertexAnimationID *new_id_data = new VertexAnimationID[mesh_animation_ID_buffer_size];
+		int count_verex = 0;
+		for (int i = 0; i < now_check_point_all.size(); ++i)
+		{
+			for (int j = 0; j < now_check_point_all[i].size(); ++j)
+			{
+				new_data[count_verex] = now_check_point_all[i][j];
+				count_verex += 1;
+			}
+		}
+		count_verex = 0;
+		for (int i = 0; i < now_ID_save_all.size(); ++i)
+		{
+			for (int j = 0; j < now_ID_save_all[i].size(); ++j)
+			{
+				new_id_data[count_verex] = now_ID_save_all[i][j];
+				count_verex += 1;
+			}
+		}
+
+		//将动画信息写入json
+		std::string animation_real_name_now = file_root_real_name + "_anim_" + "basic" + ".pointcatch";
+		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "PointAnimation", animation_real_name_now);
+		//将动画细节导入到文件
+		std::string animation_name_now = file_root_name + "_anim_" + "basic" + ".pointcatch";
+		out_stream.open(animation_name_now, ios::binary);
+		auto all_frame_num = FBXanim_import->get_frame_num();
+		out_stream.write(reinterpret_cast<char*>(&all_frame_num), sizeof(all_frame_num));
+		out_stream.write(reinterpret_cast<char*>(&mesh_animation_buffer_size), sizeof(mesh_animation_buffer_size));
+		out_stream.write(reinterpret_cast<char*>(&mesh_animation_ID_buffer_size), sizeof(mesh_animation_ID_buffer_size));
+		int32_t size_need = mesh_animation_buffer_size * sizeof(mesh_animation_data);
+		int32_t size_id_need = mesh_animation_ID_buffer_size * sizeof(VertexAnimationID);
+		out_stream.write(reinterpret_cast<char*>(new_data), size_need);
+		out_stream.write(reinterpret_cast<char*>(new_id_data), size_need);
+		out_stream.close();
+		delete[] new_data;
+		delete[] new_id_data;
 		/*
 		//存储顶点动画数据
 		int point_number = FBXanim_import->GetMeshAnimNumber();
