@@ -239,12 +239,12 @@ float3 count_pbr_reflect(
 	//漫反射强度(albedo的漫反射分量)
 	float3 diffuse_out = realAlbedo / PI;
 	//视线与法线的夹角
-	float view_angle = dot(direction_view, normal);
+	float view_angle = max(0.03f, dot(direction_view, normal));
 	//菲涅尔系数
 	float3 fresnel = Fresnel_CookTorrance(F0, direction_view, h_vec);
 	//NDF法线扰乱项
 	//float alpha = max(0.001f, roughness * roughness);
-	float nh_mul = dot(normal, h_vec);
+	float nh_mul = saturate(dot(normal, h_vec));
 	float ndf = NormalDistribution_GGX(alpha, nh_mul);
 	/*
 	float divide_ndf1 = nh_mul * nh_mul * (alpha * alpha - 1.0f) + 1.0f;

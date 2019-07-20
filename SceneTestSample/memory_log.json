@@ -9,9 +9,9 @@
 			"empty_memory_num" : 1,
 			"memory_0" : 
 			{
-				"empty_sub_memory_num" : 4,
+				"empty_sub_memory_num" : 2,
 				"memory_ID" : 0,
-				"sub_memory_data_num" : 4
+				"sub_memory_data_num" : 6
 			},
 			"per_memory_size" : 131072
 		},
@@ -21,20 +21,20 @@
 			"empty_memory_num" : 1,
 			"memory_0" : 
 			{
-				"empty_sub_memory_num" : 14,
+				"empty_sub_memory_num" : 13,
 				"memory_ID" : 0,
-				"sub_memory_data_num" : 2
+				"sub_memory_data_num" : 3
 			},
 			"per_memory_size" : 65536
 		}
 	},
 	"json\\resource_heap\\DynamicBuffer_16777216.json" : 
 	{
-		"AllHeapNum" : 4,
+		"AllHeapNum" : 6,
 		"PerHeapSize" : 16777216,
 		"json\\resource_view\\DynamicBufferSub_1572864.json" : 
 		{
-			"all_memory_num" : 3,
+			"all_memory_num" : 5,
 			"empty_memory_num" : 1,
 			"memory_0" : 
 			{
@@ -50,9 +50,21 @@
 			},
 			"memory_2" : 
 			{
-				"empty_sub_memory_num" : 1,
+				"empty_sub_memory_num" : 0,
 				"memory_ID" : 2,
-				"sub_memory_data_num" : 9
+				"sub_memory_data_num" : 10
+			},
+			"memory_3" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 3,
+				"sub_memory_data_num" : 10
+			},
+			"memory_4" : 
+			{
+				"empty_sub_memory_num" : 2,
+				"memory_ID" : 4,
+				"sub_memory_data_num" : 8
 			},
 			"per_memory_size" : 1572864
 		},
@@ -91,9 +103,9 @@
 			"empty_memory_num" : 1,
 			"memory_0" : 
 			{
-				"empty_sub_memory_num" : 14,
+				"empty_sub_memory_num" : 12,
 				"memory_ID" : 0,
-				"sub_memory_data_num" : 2
+				"sub_memory_data_num" : 4
 			},
 			"per_memory_size" : 262144
 		},
@@ -103,9 +115,9 @@
 			"empty_memory_num" : 1,
 			"memory_0" : 
 			{
-				"empty_sub_memory_num" : 9,
+				"empty_sub_memory_num" : 3,
 				"memory_ID" : 0,
-				"sub_memory_data_num" : 1
+				"sub_memory_data_num" : 7
 			},
 			"per_memory_size" : 393216
 		},
@@ -139,9 +151,9 @@
 			"empty_memory_num" : 1,
 			"memory_0" : 
 			{
-				"empty_sub_memory_num" : 3,
+				"empty_sub_memory_num" : 2,
 				"memory_ID" : 0,
-				"sub_memory_data_num" : 1
+				"sub_memory_data_num" : 2
 			},
 			"per_memory_size" : 917504
 		}
@@ -261,7 +273,7 @@
 		"PerHeapSize" : 4194304,
 		"json\\resource_view\\StaticBufferSub_262144.json" : 
 		{
-			"all_memory_num" : 2,
+			"all_memory_num" : 4,
 			"empty_memory_num" : 0,
 			"memory_0" : 
 			{
@@ -273,6 +285,18 @@
 			{
 				"empty_sub_memory_num" : 0,
 				"memory_ID" : 1,
+				"sub_memory_data_num" : 1
+			},
+			"memory_2" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 2,
+				"sub_memory_data_num" : 1
+			},
+			"memory_3" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 3,
 				"sub_memory_data_num" : 1
 			},
 			"per_memory_size" : 262144
@@ -318,7 +342,7 @@
 		"PerHeapSize" : 1048576,
 		"json\\resource_view\\StaticBufferSub_65536.json" : 
 		{
-			"all_memory_num" : 2,
+			"all_memory_num" : 3,
 			"empty_memory_num" : 0,
 			"memory_0" : 
 			{
@@ -330,6 +354,12 @@
 			{
 				"empty_sub_memory_num" : 0,
 				"memory_ID" : 1,
+				"sub_memory_data_num" : 1
+			},
+			"memory_2" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 2,
 				"sub_memory_data_num" : 1
 			},
 			"per_memory_size" : 65536
@@ -358,12 +388,18 @@
 		"PerHeapSize" : 4194304,
 		"json\\resource_view\\StaticBufferSub_917504.json" : 
 		{
-			"all_memory_num" : 1,
+			"all_memory_num" : 2,
 			"empty_memory_num" : 0,
 			"memory_0" : 
 			{
 				"empty_sub_memory_num" : 0,
 				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"memory_1" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 1,
 				"sub_memory_data_num" : 1
 			},
 			"per_memory_size" : 917504
@@ -375,7 +411,7 @@
 		"PerHeapSize" : 1048576,
 		"json\\resource_view\\Subtex_256_256_BC7_UNORM_9mip_GpuReadOnly.json" : 
 		{
-			"all_memory_num" : 1,
+			"all_memory_num" : 3,
 			"empty_memory_num" : 0,
 			"memory_0" : 
 			{
@@ -383,16 +419,28 @@
 				"memory_ID" : 0,
 				"sub_memory_data_num" : 1
 			},
+			"memory_1" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 1,
+				"sub_memory_data_num" : 1
+			},
+			"memory_2" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 2,
+				"sub_memory_data_num" : 1
+			},
 			"per_memory_size" : 131072
 		}
 	},
 	"json\\resource_heap\\TextureReadOnly1441792.json" : 
 	{
-		"AllHeapNum" : 3,
+		"AllHeapNum" : 5,
 		"PerHeapSize" : 16777216,
 		"json\\resource_view\\Subtex_1024_1024_BC7_UNORM_11mip_GpuReadOnly.json" : 
 		{
-			"all_memory_num" : 27,
+			"all_memory_num" : 46,
 			"empty_memory_num" : 0,
 			"memory_0" : 
 			{
@@ -514,16 +562,130 @@
 				"memory_ID" : 26,
 				"sub_memory_data_num" : 1
 			},
+			"memory_27" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 27,
+				"sub_memory_data_num" : 1
+			},
+			"memory_28" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 28,
+				"sub_memory_data_num" : 1
+			},
+			"memory_29" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 29,
+				"sub_memory_data_num" : 1
+			},
 			"memory_3" : 
 			{
 				"empty_sub_memory_num" : 0,
 				"memory_ID" : 3,
 				"sub_memory_data_num" : 1
 			},
+			"memory_30" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 30,
+				"sub_memory_data_num" : 1
+			},
+			"memory_31" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 31,
+				"sub_memory_data_num" : 1
+			},
+			"memory_32" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 32,
+				"sub_memory_data_num" : 1
+			},
+			"memory_33" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 33,
+				"sub_memory_data_num" : 1
+			},
+			"memory_34" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 34,
+				"sub_memory_data_num" : 1
+			},
+			"memory_35" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 35,
+				"sub_memory_data_num" : 1
+			},
+			"memory_36" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 36,
+				"sub_memory_data_num" : 1
+			},
+			"memory_37" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 37,
+				"sub_memory_data_num" : 1
+			},
+			"memory_38" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 38,
+				"sub_memory_data_num" : 1
+			},
+			"memory_39" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 39,
+				"sub_memory_data_num" : 1
+			},
 			"memory_4" : 
 			{
 				"empty_sub_memory_num" : 0,
 				"memory_ID" : 4,
+				"sub_memory_data_num" : 1
+			},
+			"memory_40" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 40,
+				"sub_memory_data_num" : 1
+			},
+			"memory_41" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 41,
+				"sub_memory_data_num" : 1
+			},
+			"memory_42" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 42,
+				"sub_memory_data_num" : 1
+			},
+			"memory_43" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 43,
+				"sub_memory_data_num" : 1
+			},
+			"memory_44" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 44,
+				"sub_memory_data_num" : 1
+			},
+			"memory_45" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 45,
 				"sub_memory_data_num" : 1
 			},
 			"memory_5" : 
@@ -586,6 +748,53 @@
 				"sub_memory_data_num" : 1
 			},
 			"per_memory_size" : 1572864
+		}
+	},
+	"json\\resource_heap\\TextureReadOnly393216.json" : 
+	{
+		"AllHeapNum" : 3,
+		"PerHeapSize" : 1048576,
+		"json\\resource_view\\Subtex_256_1024_BC7_UNORM_11mip_GpuReadOnly.json" : 
+		{
+			"all_memory_num" : 6,
+			"empty_memory_num" : 0,
+			"memory_0" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 0,
+				"sub_memory_data_num" : 1
+			},
+			"memory_1" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 1,
+				"sub_memory_data_num" : 1
+			},
+			"memory_2" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 2,
+				"sub_memory_data_num" : 1
+			},
+			"memory_3" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 3,
+				"sub_memory_data_num" : 1
+			},
+			"memory_4" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 4,
+				"sub_memory_data_num" : 1
+			},
+			"memory_5" : 
+			{
+				"empty_sub_memory_num" : 0,
+				"memory_ID" : 5,
+				"sub_memory_data_num" : 1
+			},
+			"per_memory_size" : 393216
 		}
 	},
 	"json\\resource_heap\\TextureReadOnly4194304.json" : 
