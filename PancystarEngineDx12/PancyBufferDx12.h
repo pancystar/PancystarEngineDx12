@@ -141,6 +141,7 @@ namespace PancystarEngine
 		DirectX::XMFLOAT3 position;
 		DirectX::XMFLOAT3 normal;
 		DirectX::XMFLOAT3 tangent;
+		float delta_time;
 		mesh_animation_data()
 		{
 			position = DirectX::XMFLOAT3(0, 0, 0);
@@ -154,9 +155,11 @@ namespace PancystarEngine
 		//缓冲区的大小
 		pancy_resource_size animation_buffer_size;//存储蒙皮结果的缓冲区的大小
 		pancy_resource_size bone_buffer_size;//存储骨骼矩阵的缓冲区的大小
+
 		//当前已经被占用的指针位置
 		pancy_resource_size now_used_position_animation;//当前动画结果缓冲区的使用情况指针
 		pancy_resource_size now_used_position_bone;//当前骨骼矩阵缓冲区的使用情况指针
+
 		//存储每一个骨骼动画的Compute Shader计算位置
 		std::unordered_map<pancy_object_id, SkinAnimationBlock> animation_block_map;
 		//存储每一个骨骼矩阵区域的起始位置
@@ -164,6 +167,7 @@ namespace PancystarEngine
 		//骨骼动画缓冲区的数据
 		pancy_object_id buffer_ID_animation;//动画结果缓冲区
 		pancy_object_id buffer_ID_bone;     //骨骼矩阵缓冲区
+
 		//骨骼数据的CPU指针
 		UINT8* bone_data_pointer;
 	public:

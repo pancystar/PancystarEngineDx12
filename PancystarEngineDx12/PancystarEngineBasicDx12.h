@@ -21,6 +21,7 @@ using Microsoft::WRL::ComPtr;
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+#include<time.h>
 //STLÈÝÆ÷
 #include <iostream>
 #include <algorithm>

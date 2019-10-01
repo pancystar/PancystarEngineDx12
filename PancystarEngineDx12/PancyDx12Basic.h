@@ -1,7 +1,7 @@
 #pragma once
 #include"PancystarEngineBasicDx12.h"
 #include"PancyJsonTool.h"
-
+#include"PancyTimeBasic.h"
 class PancyDx12DeviceBasic
 {
 	UINT FrameCount;

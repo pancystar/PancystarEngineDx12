@@ -500,6 +500,49 @@ public:
 		const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
 	);
 };
+
+
+struct ResourceViewPointer
+{
+	pancy_resource_id resource_view_offset;
+	pancy_resource_id resource_view_num ;
+};
+//用于在描述符堆上进行快速存储区域开辟的指针数据
+
+struct DescriptorHeapPointer
+{
+	//资源块的起始指针位置
+	pancy_resource_size resource_pointer_start;
+	//资源块的当前开辟指针位置(默认从后往前生长)
+	pancy_resource_size resource_pointer_now;
+	//资源块的结束指针位置
+	pancy_resource_size resource_pointer_end;
+	//资源块的待释放位置
+	pancy_resource_size resource_pointer_free;
+	DescriptorHeapPointer()
+	{
+		resource_pointer_start = 0;
+		resource_pointer_now = 0;
+		resource_pointer_end = 0;
+		resource_pointer_free = 0;
+	}
+};
+class PancyDescriptorHeap 
+{
+	string descriptor_heap_name;  // 描述符管理堆的名称
+	int globel_resource_view_num; //描述符管理堆最大支持的全局描述符数量
+	int constant_buffer_view_num; // 描述符管理堆最大支持的常量缓冲区描述符数量
+	DescriptorHeapPointer private_resource_view_num_8;  //8个一组的连续描述符包
+	DescriptorHeapPointer private_resource_view_num_16; //16个一组的连续描述符包
+	DescriptorHeapPointer private_resource_view_num_32; //32个一组的连续描述符包
+	DescriptorHeapPointer private_resource_view_num_64; //64个一组的连续描述符包
+	//所有描述符的数据
+	std::unordered_map<pancy_object_id, ResourceViewPointer> resource_view_heap_block;
+public:
+	PancyDescriptorHeap();
+	PancystarEngine::EngineFailReason BuildDescriptorGlobel();
+
+};
 //资源描述符管理堆
 class PancyDescriptorHeap 
 {

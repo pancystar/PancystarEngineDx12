@@ -6,6 +6,7 @@ namespace PancystarEngine
 {
 #define MaxBoneNum 100
 #define NouseAssimpStruct -12138
+#define VertexAnimationID uint32_t
 	enum TexType
 	{
 		tex_diffuse = 0,
@@ -170,11 +171,8 @@ namespace PancystarEngine
 		int bone_num;//用于蒙皮的骨骼数量
 		int bone_object_num;//所有的骨骼数量(包括不用于蒙皮的部分)
 		DirectX::XMFLOAT4X4 offset_matrix_array[MaxBoneNum];
-
 		std::unordered_map<std::string, pancy_resource_id> skin_animation_name;
 		std::unordered_map<pancy_resource_id, animation_set> skin_animation_map;
-
-
 		float now_animation_play_station;//当前正在播放的动画
 		DirectX::XMFLOAT4X4 bind_pose_matrix;//控制模型位置的根骨骼偏移矩阵
 		skin_tree *model_move_skin;//当前控制模型位置的根骨骼
@@ -182,10 +180,13 @@ namespace PancystarEngine
 		//顶点动画信息
 		SubMemoryPointer vertex_anim_buffer;
 		PancyFenceIdGPU upload_fence_value;
-		int32_t buffer_size;
-		uint32_t perframe_size;
+		uint32_t mesh_animation_buffer_size;
+		uint32_t mesh_animation_ID_buffer_size;
 		uint32_t all_frame_num;
-		uint32_t fps_point_catch;
+		pancy_object_id point_animation_id_self_add=0;
+		std::unordered_map<std::string, pancy_object_id> Point_animation_name;
+		std::unordered_map<pancy_object_id, pancy_object_id> Point_animation_buffer;
+		std::unordered_map<pancy_object_id, pancy_object_id> Point_animation_id_buffer;
 		//文件读取器
 		ifstream instream;
 	public:
@@ -255,6 +256,7 @@ namespace PancystarEngine
 			const float &animation_time, 
 			std::vector<DirectX::XMFLOAT4X4> &matrix_out
 		);
+		/*
 		//获取顶点动画的缓冲区
 		inline SubMemoryPointer GetPointAnimationBuffer(int32_t &buffer_size_in, int32_t &stride_size_in)
 		{
@@ -268,6 +270,7 @@ namespace PancystarEngine
 			perframe_size_in = perframe_size;
 			now_frame = now_animation_play_station * all_frame_num;
 		}
+		*/
 		//获取渲染描述符的每个对象的独有资源
 		PancystarEngine::EngineFailReason GetShaderResourcePerObject(
 			std::vector<SubMemoryPointer> &resource_data_per_frame_out,

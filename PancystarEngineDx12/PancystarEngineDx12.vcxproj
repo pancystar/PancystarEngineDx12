@@ -168,6 +168,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="PancyThreadBasic.h" />
+    <ClInclude Include="PancyTimeBasic.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PancyBufferDx12.cpp" />
@@ -187,6 +188,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="PancyThreadBasic.cpp" />
+    <ClCompile Include="PancyTimeBasic.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

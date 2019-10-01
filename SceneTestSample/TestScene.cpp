@@ -130,7 +130,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 		return check_error;
 	}
 	
-	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\coconat\\plant.json", model_pointmesh);
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\test_tree\\test_tree.json", model_pointmesh);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -166,6 +166,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_skinmesh, now_id_state);
 	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log4.json");
 	check_error = BuildSkinmeshDescriptor();
+	
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -201,6 +202,7 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 	globel_shader_resource.resize(Frame_num);
 	globel_shader_desc.resize(Frame_num);
 	//绑定全局纹理信息
+	
 	SubMemoryPointer tex_bind_submemory;
 	D3D12_SHADER_RESOURCE_VIEW_DESC tex_bind_SRV_desc;
 	//镜面反射IBL
@@ -252,6 +254,7 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 		globel_shader_desc[i].push_back(tex_bind_SRV_desc);
 	}
 	//获取蒙皮结果缓冲区
+	
 	std::vector<SubMemoryPointer> skin_animation_buffer;
 	pancy_resource_size animation_buffer_size;
 	check_error = PancystarEngine::PancySkinAnimationControl::GetInstance()->GetSkinAnimationBuffer(skin_animation_buffer, animation_buffer_size);
@@ -272,25 +275,7 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 		globel_shader_resource[i].push_back(skin_animation_buffer[i]);
 		globel_shader_desc[i].push_back(skin_animation_buffer_desc);
 	}
-	/*
-	//空纹理，由于不需要动画数据缓冲
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_empty_id, tex_bind_submemory);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
 	
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_empty_id, tex_bind_SRV_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	for (int i = 0; i < Frame_num; ++i)
-	{
-		globel_shader_resource[i].push_back(tex_bind_submemory);
-		globel_shader_desc[i].push_back(tex_bind_SRV_desc);
-	}
-	*/
 	check_error = PancystarEngine::DescriptorControl::GetInstance()->BuildDescriptorGraph(
 		model_skinmesh,
 		PSO_pbr,
@@ -304,6 +289,7 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 	{
 		return check_error;
 	}
+	
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshComputeDescriptor()

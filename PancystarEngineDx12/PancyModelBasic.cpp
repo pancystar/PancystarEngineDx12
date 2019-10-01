@@ -16,8 +16,6 @@ PancySubModel::~PancySubModel()
 //模型类
 PancyBasicModel::PancyBasicModel(const std::string &resource_name, const Json::Value &root_value) : PancyBasicVirtualResource(resource_name, root_value)
 {
-	//根据交换帧的数量决定创建多少组渲染描述符链
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
 }
 PancyBasicModel::~PancyBasicModel()
 {
@@ -30,6 +28,14 @@ PancyBasicModel::~PancyBasicModel()
 	for (auto id_tex = texture_list.begin(); id_tex != texture_list.end(); ++id_tex)
 	{
 		PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(*id_tex);
+	}
+	for (auto data = Point_animation_buffer.begin(); data != Point_animation_buffer.end(); ++data)
+	{
+		PancyBasicBufferControl::GetInstance()->DeleteResurceReference(data->second);
+	}
+	for (auto data = Point_animation_id_buffer.begin(); data != Point_animation_id_buffer.end(); ++data)
+	{
+		PancyBasicBufferControl::GetInstance()->DeleteResurceReference(data->second);
 	}
 }
 //骨骼动画处理函数
@@ -684,17 +690,54 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 			std::string now_animation_name = path_name + rec_value.string_value;
 			instream.open(now_animation_name, ios::binary);
 			instream.read(reinterpret_cast<char*>(&all_frame_num), sizeof(all_frame_num));
-			instream.read(reinterpret_cast<char*>(&perframe_size), sizeof(perframe_size));
-			instream.read(reinterpret_cast<char*>(&buffer_size), sizeof(buffer_size));
-			instream.read(reinterpret_cast<char*>(&fps_point_catch), sizeof(fps_point_catch));
-			int32_t size_need = buffer_size * sizeof(mesh_animation_data);
+			instream.read(reinterpret_cast<char*>(&mesh_animation_buffer_size), sizeof(mesh_animation_buffer_size));
+			instream.read(reinterpret_cast<char*>(&mesh_animation_ID_buffer_size), sizeof(mesh_animation_ID_buffer_size));
+			int32_t buffer_size = mesh_animation_buffer_size * sizeof(mesh_animation_data);
+			int32_t buffer_id_size = mesh_animation_ID_buffer_size * sizeof(VertexAnimationID);
 			mesh_animation_data *new_point_catch_data = new mesh_animation_data[buffer_size];
-			instream.read(reinterpret_cast<char*>(new_point_catch_data), size_need);
+			instream.read(reinterpret_cast<char*>(new_point_catch_data), buffer_size);
+			VertexAnimationID *new_point_id_data = new VertexAnimationID[buffer_id_size];
+			instream.read(reinterpret_cast<char*>(new_point_id_data), buffer_id_size);
 			instream.close();
 			/*
 			加载数据
 			*/
+			pancy_object_id point_aimation_buffer_pointer;
+			pancy_object_id point_aimation_id_buffer_pointer;
+			Json::Value point_animation_buffer_type;
+			std::string buffer_subresource_name;
+			check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(Buffer_ShaderResource_static, buffer_size, buffer_subresource_name);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			PancyJsonTool::GetInstance()->SetJsonValue(point_animation_buffer_type, "BufferType", "Buffer_ShaderResource_static");
+			PancyJsonTool::GetInstance()->SetJsonValue(point_animation_buffer_type, "SubResourceFile", buffer_subresource_name);
+			check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, point_animation_buffer_type, point_aimation_buffer_pointer, true);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+
+			Json::Value point_animation_buffer_id_type;
+			check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(Buffer_ShaderResource_static, buffer_id_size, buffer_subresource_name);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			PancyJsonTool::GetInstance()->SetJsonValue(point_animation_buffer_id_type, "BufferType", "Buffer_ShaderResource_static");
+			PancyJsonTool::GetInstance()->SetJsonValue(point_animation_buffer_id_type, "SubResourceFile", buffer_subresource_name);
+			check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, point_animation_buffer_id_type, point_aimation_id_buffer_pointer, true);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
 			delete[] new_point_catch_data;
+			delete[] new_point_id_data;
+			Point_animation_name.insert(std::pair<std::string, pancy_object_id>(now_animation_name, point_animation_id_self_add));
+			Point_animation_buffer.insert(std::pair<pancy_object_id, pancy_object_id>(point_animation_id_self_add, point_aimation_buffer_pointer));
+			Point_animation_id_buffer.insert(std::pair<pancy_object_id, pancy_object_id>(point_animation_id_self_add, point_aimation_id_buffer_pointer));
+			point_animation_id_self_add += 1;
 		}
 	}
 	now_res_state = ResourceStateType::resource_state_load_CPU_memory_finish;

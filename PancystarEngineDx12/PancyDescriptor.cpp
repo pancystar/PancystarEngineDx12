@@ -33,6 +33,9 @@ PancystarEngine::EngineFailReason DescriptorObject::Create(
 	PancystarEngine::EngineFailReason check_error;
 	PSO_name_descriptor = PSO_name;
 	//创建一个对应类型的描述符块
+	__int64 t1, t2;
+	double dt;
+	t1 = GlobelTimeCount::GetInstance()->GetSystemTime();
 	ResourceViewPointer new_point;
 	pancy_object_id globel_offset = 0;
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_name, descriptor_block_id, resource_view_num);
@@ -40,6 +43,8 @@ PancystarEngine::EngineFailReason DescriptorObject::Create(
 	{
 		return check_error;
 	}
+	
+	
 	//将渲染需要的绑定资源指针一次性全部获取并保存
 	pancy_object_id PSO_id_need;
 	//PSO数据
@@ -87,7 +92,9 @@ PancystarEngine::EngineFailReason DescriptorObject::Create(
 		descriptor_offset.push_back(now_gpu_handle);
 		now_start_offset += descriptor_distribute[i];
 	}
-
+	t2 = GlobelTimeCount::GetInstance()->GetSystemTime();
+	dt = (t2 - t1) * (double)GlobelTimeCount::GetInstance()->GetSystemFreq();
+	//MessageBox(0, std::to_wstring(dt * 1000).c_str(), L"check", MB_OK);
 	//填充描述符的信息
 	new_point.resource_view_pack_id = descriptor_block_id;
 	//检验传入的资源数量和描述符的数量是否匹配(如果有bindless texture则要求资源数量小于等于数组上限)
@@ -422,18 +429,24 @@ PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorGraph(
 		{
 			return check_error;
 		}
-		check_error = new_descriptor_obj->Create(
-			PSO_name,
-			descriptor_name,
-			cbuffer_name_per_object_in,
-			cbuffer_per_frame_in[i],
-			resource_data_per_frame_in[i],
-			resource_desc_per_frame_in[i],
-			UAV_per_frame_in,
-			UAV_desc_per_frame_in,
-			resource_data_per_object,
-			resource_desc_per_object
-		);
+		
+		for (int k= 0; k <100; ++k) 
+		{
+			check_error = new_descriptor_obj->Create(
+				PSO_name,
+				descriptor_name,
+				cbuffer_name_per_object_in,
+				cbuffer_per_frame_in[i],
+				resource_data_per_frame_in[i],
+				resource_desc_per_frame_in[i],
+				UAV_per_frame_in,
+				UAV_desc_per_frame_in,
+				resource_data_per_object,
+				resource_desc_per_object
+			);
+		}
+		
+		
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
