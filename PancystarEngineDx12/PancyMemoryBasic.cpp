@@ -14,13 +14,13 @@ MemoryBlockGpu::MemoryBlockGpu(
 	{
 		CD3DX12_RANGE readRange(0, 0);
 		HRESULT hr = resource_data->Map(0, &readRange, reinterpret_cast<void**>(&map_pointer));
-		if (FAILED(hr)) 
+		if (FAILED(hr))
 		{
-			PancystarEngine::EngineFailReason error_message(hr,"map dynamic buffer to cpu error");
+			PancystarEngine::EngineFailReason error_message(hr, "map dynamic buffer to cpu error");
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build memory block gpu", error_message);
 		}
 	}
-	else 
+	else
 	{
 		map_pointer = NULL;
 	}
@@ -28,7 +28,7 @@ MemoryBlockGpu::MemoryBlockGpu(
 }
 PancystarEngine::EngineFailReason MemoryBlockGpu::WriteFromCpuToBuffer(const pancy_resource_size &pointer_offset, const void* copy_data, const pancy_resource_size data_size)
 {
-	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD) 
+	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("copy CPU resource to memory block gpu", error_message);
@@ -78,7 +78,7 @@ MemoryBlockGpu::~MemoryBlockGpu()
 {
 	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 	{
-		resource_data->Unmap(0,NULL);
+		resource_data->Unmap(0, NULL);
 	}
 }
 //GPU资源堆
@@ -164,7 +164,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::BuildMemoryResource(
 			IID_PPV_ARGS(&ppvResourc)
 		);
 	}
-	else if(resource_desc.Format == DXGI_FORMAT_R8G8B8A8_UINT)
+	else if (resource_desc.Format == DXGI_FORMAT_R8G8B8A8_UINT)
 	{
 		D3D12_CLEAR_VALUE clearValue;
 		clearValue.Format = resource_desc.Format;
@@ -181,7 +181,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::BuildMemoryResource(
 			IID_PPV_ARGS(&ppvResourc)
 		);
 	}
-	else 
+	else
 	{
 		D3D12_CLEAR_VALUE clearValue;
 		clearValue.Format = resource_desc.Format;
@@ -199,7 +199,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::BuildMemoryResource(
 			IID_PPV_ARGS(&ppvResourc)
 		);
 	}
-	
+
 	if (FAILED(hr))
 	{
 		PancystarEngine::EngineFailReason check_error(hr, "Allocate Memory From Heap " + heap_type_name + "error");
@@ -213,13 +213,13 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::BuildMemoryResource(
 	memory_heap_block.insert(std::pair<pancy_resource_id, MemoryBlockGpu*>(memory_block_ID, new_memory_block_data));
 	return PancystarEngine::succeed;
 }
-MemoryBlockGpu* MemoryHeapGpu::GetMemoryResource(const pancy_resource_id &memory_block_ID) 
+MemoryBlockGpu* MemoryHeapGpu::GetMemoryResource(const pancy_resource_id &memory_block_ID)
 {
 	auto check_data = memory_heap_block.find(memory_block_ID);
-	if (check_data == memory_heap_block.end()) 
+	if (check_data == memory_heap_block.end())
 	{
 		PancystarEngine::EngineFailReason check_error(E_FAIL, "The memory block ID " + std::to_string(memory_block_ID) + " Haven't been allocated or illegal memory id");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free Memorty From Heap"+ heap_type_name, check_error);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free Memorty From Heap" + heap_type_name, check_error);
 		return NULL;
 	}
 	return check_data->second;
@@ -240,7 +240,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpu::FreeMemoryReference(const pancy
 		return check_error;
 	}
 	auto memory_data = memory_heap_block.find(memory_block_ID);
-	if (memory_data == memory_heap_block.end()) 
+	if (memory_data == memory_heap_block.end())
 	{
 		PancystarEngine::EngineFailReason check_error(E_FAIL, "The memory block ID " + std::to_string(memory_block_ID) + " Haven't been allocated or illegal memory id");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free Memorty From Heap", check_error);
@@ -314,7 +314,7 @@ PancystarEngine::EngineFailReason MemoryHeapLinear::BuildMemoryResource(
 MemoryBlockGpu* MemoryHeapLinear::GetMemoryResource(
 	const pancy_resource_id &memory_heap_ID,//显存段地址指针
 	const pancy_resource_id &memory_block_ID//显存块地址指针
-	
+
 )
 {
 	//根据段指针找到显存段
@@ -362,25 +362,25 @@ MemoryHeapLinear::~MemoryHeapLinear()
 //GPU资源堆管理器
 MemoryHeapGpuControl::MemoryHeapGpuControl()
 {
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_TYPE_DEFAULT", static_cast<int32_t>(D3D12_HEAP_TYPE_DEFAULT),typeid(D3D12_HEAP_TYPE_DEFAULT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_TYPE_UPLOAD", static_cast<int32_t>(D3D12_HEAP_TYPE_UPLOAD),typeid(D3D12_HEAP_TYPE_UPLOAD).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_TYPE_READBACK", static_cast<int32_t>(D3D12_HEAP_TYPE_READBACK),typeid(D3D12_HEAP_TYPE_READBACK).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_TYPE_CUSTOM", static_cast<int32_t>(D3D12_HEAP_TYPE_CUSTOM),typeid(D3D12_HEAP_TYPE_CUSTOM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_TYPE_DEFAULT", static_cast<int32_t>(D3D12_HEAP_TYPE_DEFAULT), typeid(D3D12_HEAP_TYPE_DEFAULT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_TYPE_UPLOAD", static_cast<int32_t>(D3D12_HEAP_TYPE_UPLOAD), typeid(D3D12_HEAP_TYPE_UPLOAD).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_TYPE_READBACK", static_cast<int32_t>(D3D12_HEAP_TYPE_READBACK), typeid(D3D12_HEAP_TYPE_READBACK).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_TYPE_CUSTOM", static_cast<int32_t>(D3D12_HEAP_TYPE_CUSTOM), typeid(D3D12_HEAP_TYPE_CUSTOM).name());
 
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_NONE", static_cast<int32_t>(D3D12_HEAP_FLAG_NONE),typeid(D3D12_HEAP_FLAG_NONE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_SHARED", static_cast<int32_t>(D3D12_HEAP_FLAG_SHARED),typeid(D3D12_HEAP_FLAG_SHARED).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_DENY_BUFFERS", static_cast<int32_t>(D3D12_HEAP_FLAG_DENY_BUFFERS),typeid(D3D12_HEAP_FLAG_DENY_BUFFERS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_DISPLAY", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_DISPLAY),typeid(D3D12_HEAP_FLAG_ALLOW_DISPLAY).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER", static_cast<int32_t>(D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER),typeid(D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES),typeid(D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES),typeid(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_HARDWARE_PROTECTED", static_cast<int32_t>(D3D12_HEAP_FLAG_HARDWARE_PROTECTED),typeid(D3D12_HEAP_FLAG_HARDWARE_PROTECTED).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH),typeid(D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS),typeid(D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES),typeid(D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS),typeid(D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES),typeid(D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES),typeid(D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_NONE", static_cast<int32_t>(D3D12_HEAP_FLAG_NONE), typeid(D3D12_HEAP_FLAG_NONE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_SHARED", static_cast<int32_t>(D3D12_HEAP_FLAG_SHARED), typeid(D3D12_HEAP_FLAG_SHARED).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_DENY_BUFFERS", static_cast<int32_t>(D3D12_HEAP_FLAG_DENY_BUFFERS), typeid(D3D12_HEAP_FLAG_DENY_BUFFERS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_DISPLAY", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_DISPLAY), typeid(D3D12_HEAP_FLAG_ALLOW_DISPLAY).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER", static_cast<int32_t>(D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER), typeid(D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES), typeid(D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES), typeid(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_HARDWARE_PROTECTED", static_cast<int32_t>(D3D12_HEAP_FLAG_HARDWARE_PROTECTED), typeid(D3D12_HEAP_FLAG_HARDWARE_PROTECTED).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH), typeid(D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS), typeid(D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES), typeid(D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS), typeid(D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES), typeid(D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES", static_cast<int32_t>(D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES), typeid(D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES).name());
 }
 PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResourceCommit(
 	const D3D12_HEAP_TYPE &heap_type_in,
@@ -429,7 +429,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResourceCommit(
 }
 MemoryBlockGpu* MemoryHeapGpuControl::GetMemoryResource(const VirtualMemoryPointer &virtual_pointer)
 {
-	if (virtual_pointer.if_heap) 
+	if (virtual_pointer.if_heap)
 	{
 		return GetMemoryResourceFromHeap(virtual_pointer.heap_type, virtual_pointer.heap_list_id, virtual_pointer.memory_block_id);
 	}
@@ -565,7 +565,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::BuildResourceFromHeap(
 			return check_error;
 		}
 	}
-	else 
+	else
 	{
 		virtual_pointer.heap_type = heap_list_id->second;
 	}
@@ -581,7 +581,7 @@ MemoryBlockGpu* MemoryHeapGpuControl::GetMemoryResourceFromHeap(
 	const pancy_resource_id &memory_heap_list_ID,//显存域地址指针
 	const pancy_resource_id &memory_heap_ID,//显存段地址指针
 	const pancy_resource_id &memory_block_ID//显存块地址指针
-) 
+)
 {
 	auto heap_list_data = resource_heap_list.find(memory_heap_list_ID);
 	if (heap_list_data == resource_heap_list.end())
@@ -606,7 +606,7 @@ PancystarEngine::EngineFailReason MemoryHeapGpuControl::FreeResourceFromHeap(
 		return error_message;
 	}
 	auto check_error = heap_list_data->second->FreeMemoryReference(memory_heap_ID, memory_block_ID);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
@@ -619,7 +619,7 @@ void MemoryHeapGpuControl::GetHeapDesc(const pancy_resource_id &heap_id, pancy_o
 	{
 		heap_num = 0;
 		per_heap_size = 0;
-		PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find heap ID: " + std::to_string(heap_id),PancystarEngine::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find heap ID: " + std::to_string(heap_id), PancystarEngine::LOG_MESSAGE_WARNING);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Heap Desc", error_message);
 	}
 	heap_num = heap_data->second->GetHeapNum();
@@ -628,7 +628,7 @@ void MemoryHeapGpuControl::GetHeapDesc(const pancy_resource_id &heap_id, pancy_o
 void MemoryHeapGpuControl::GetHeapDesc(const std::string &heap_name, pancy_object_id &heap_num, pancy_resource_size &per_heap_size)
 {
 	auto heap_id = resource_init_list.find(heap_name);
-	if (heap_id == resource_init_list.end()) 
+	if (heap_id == resource_init_list.end())
 	{
 		heap_num = 0;
 		per_heap_size = 0;
@@ -703,7 +703,7 @@ void SubMemoryData::GetLogMessage(std::vector<std::string> &log_message)
 void SubMemoryData::GetLogMessage(Json::Value &root_value, bool &if_empty)
 {
 	if_empty = true;
-	if (sub_memory_data.size() != 0) 
+	if (sub_memory_data.size() != 0)
 	{
 		if_empty = false;
 		PancyJsonTool::GetInstance()->SetJsonValue(root_value, "empty_sub_memory_num", empty_sub_memory.size());
@@ -769,22 +769,22 @@ void SubresourceLiner::GetLogMessage(std::vector<std::string> &log_message)
 		data_log->second->GetLogMessage(log_message);
 	}
 }
-void SubresourceLiner::GetLogMessage(Json::Value &root_value) 
+void SubresourceLiner::GetLogMessage(Json::Value &root_value)
 {
 	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "all_memory_num", submemory_list.size());
 	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "empty_memory_num", empty_memory_heap.size());
-	
+
 	for (auto data_log = submemory_list.begin(); data_log != submemory_list.end(); ++data_log)
 	{
 		Json::Value submemory_member_value;
 		PancyJsonTool::GetInstance()->SetJsonValue(submemory_member_value, "memory_ID", data_log->first);
 		bool if_empty = true;
 		data_log->second->GetLogMessage(submemory_member_value, if_empty);
-		if (!if_empty) 
+		if (!if_empty)
 		{
 			PancyJsonTool::GetInstance()->SetJsonValue(root_value, "memory_" + std::to_string(data_log->first), submemory_member_value);
 		}
-		else 
+		else
 		{
 			PancyJsonTool::GetInstance()->SetJsonValue(root_value, "memory_" + std::to_string(data_log->first), "empty");
 		}
@@ -886,174 +886,174 @@ SubresourceControl::SubresourceControl()
 {
 	subresource_id_self_add = 0;
 	//资源状态
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_COMMON", static_cast<int32_t>(D3D12_RESOURCE_STATE_COMMON),typeid(D3D12_RESOURCE_STATE_COMMON).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER", static_cast<int32_t>(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER),typeid(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_INDEX_BUFFER", static_cast<int32_t>(D3D12_RESOURCE_STATE_INDEX_BUFFER),typeid(D3D12_RESOURCE_STATE_INDEX_BUFFER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_RENDER_TARGET", static_cast<int32_t>(D3D12_RESOURCE_STATE_RENDER_TARGET),typeid(D3D12_RESOURCE_STATE_RENDER_TARGET).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_UNORDERED_ACCESS", static_cast<int32_t>(D3D12_RESOURCE_STATE_UNORDERED_ACCESS),typeid(D3D12_RESOURCE_STATE_UNORDERED_ACCESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_DEPTH_WRITE", static_cast<int32_t>(D3D12_RESOURCE_STATE_DEPTH_WRITE),typeid(D3D12_RESOURCE_STATE_DEPTH_WRITE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_DEPTH_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_DEPTH_READ),typeid(D3D12_RESOURCE_STATE_DEPTH_READ).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),typeid(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE),typeid(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_STREAM_OUT", static_cast<int32_t>(D3D12_RESOURCE_STATE_STREAM_OUT),typeid(D3D12_RESOURCE_STATE_STREAM_OUT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT", static_cast<int32_t>(D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT),typeid(D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_COPY_DEST", static_cast<int32_t>(D3D12_RESOURCE_STATE_COPY_DEST),typeid(D3D12_RESOURCE_STATE_COPY_DEST).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_COPY_SOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_COPY_SOURCE),typeid(D3D12_RESOURCE_STATE_COPY_SOURCE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_RESOLVE_DEST", static_cast<int32_t>(D3D12_RESOURCE_STATE_RESOLVE_DEST),typeid(D3D12_RESOURCE_STATE_RESOLVE_DEST).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_RESOLVE_SOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_RESOLVE_SOURCE),typeid(D3D12_RESOURCE_STATE_RESOLVE_SOURCE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_GENERIC_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_GENERIC_READ),typeid(D3D12_RESOURCE_STATE_GENERIC_READ).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_PRESENT", static_cast<int32_t>(D3D12_RESOURCE_STATE_PRESENT),typeid(D3D12_RESOURCE_STATE_PRESENT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_PREDICATION", static_cast<int32_t>(D3D12_RESOURCE_STATE_PREDICATION),typeid(D3D12_RESOURCE_STATE_PREDICATION).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_DECODE_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_DECODE_READ),typeid(D3D12_RESOURCE_STATE_VIDEO_DECODE_READ).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE),typeid(D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ),typeid(D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE),typeid(D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_COMMON", static_cast<int32_t>(D3D12_RESOURCE_STATE_COMMON), typeid(D3D12_RESOURCE_STATE_COMMON).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER", static_cast<int32_t>(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER), typeid(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_INDEX_BUFFER", static_cast<int32_t>(D3D12_RESOURCE_STATE_INDEX_BUFFER), typeid(D3D12_RESOURCE_STATE_INDEX_BUFFER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_RENDER_TARGET", static_cast<int32_t>(D3D12_RESOURCE_STATE_RENDER_TARGET), typeid(D3D12_RESOURCE_STATE_RENDER_TARGET).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_UNORDERED_ACCESS", static_cast<int32_t>(D3D12_RESOURCE_STATE_UNORDERED_ACCESS), typeid(D3D12_RESOURCE_STATE_UNORDERED_ACCESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_DEPTH_WRITE", static_cast<int32_t>(D3D12_RESOURCE_STATE_DEPTH_WRITE), typeid(D3D12_RESOURCE_STATE_DEPTH_WRITE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_DEPTH_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_DEPTH_READ), typeid(D3D12_RESOURCE_STATE_DEPTH_READ).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE), typeid(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE), typeid(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_STREAM_OUT", static_cast<int32_t>(D3D12_RESOURCE_STATE_STREAM_OUT), typeid(D3D12_RESOURCE_STATE_STREAM_OUT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT", static_cast<int32_t>(D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT), typeid(D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_COPY_DEST", static_cast<int32_t>(D3D12_RESOURCE_STATE_COPY_DEST), typeid(D3D12_RESOURCE_STATE_COPY_DEST).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_COPY_SOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_COPY_SOURCE), typeid(D3D12_RESOURCE_STATE_COPY_SOURCE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_RESOLVE_DEST", static_cast<int32_t>(D3D12_RESOURCE_STATE_RESOLVE_DEST), typeid(D3D12_RESOURCE_STATE_RESOLVE_DEST).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_RESOLVE_SOURCE", static_cast<int32_t>(D3D12_RESOURCE_STATE_RESOLVE_SOURCE), typeid(D3D12_RESOURCE_STATE_RESOLVE_SOURCE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_GENERIC_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_GENERIC_READ), typeid(D3D12_RESOURCE_STATE_GENERIC_READ).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_PRESENT", static_cast<int32_t>(D3D12_RESOURCE_STATE_PRESENT), typeid(D3D12_RESOURCE_STATE_PRESENT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_PREDICATION", static_cast<int32_t>(D3D12_RESOURCE_STATE_PREDICATION), typeid(D3D12_RESOURCE_STATE_PREDICATION).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_DECODE_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_DECODE_READ), typeid(D3D12_RESOURCE_STATE_VIDEO_DECODE_READ).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE), typeid(D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ), typeid(D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE", static_cast<int32_t>(D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE), typeid(D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE).name());
 	//资源格式demention
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_UNKNOWN", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_UNKNOWN),typeid(D3D12_RESOURCE_DIMENSION_UNKNOWN).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_BUFFER", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_BUFFER),typeid(D3D12_RESOURCE_DIMENSION_BUFFER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_TEXTURE1D", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_TEXTURE1D),typeid(D3D12_RESOURCE_DIMENSION_TEXTURE1D).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_TEXTURE2D", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_TEXTURE2D),typeid(D3D12_RESOURCE_DIMENSION_TEXTURE2D).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_TEXTURE3D", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_TEXTURE3D),typeid(D3D12_RESOURCE_DIMENSION_TEXTURE3D).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_UNKNOWN", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_UNKNOWN), typeid(D3D12_RESOURCE_DIMENSION_UNKNOWN).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_BUFFER", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_BUFFER), typeid(D3D12_RESOURCE_DIMENSION_BUFFER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_TEXTURE1D", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_TEXTURE1D), typeid(D3D12_RESOURCE_DIMENSION_TEXTURE1D).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_TEXTURE2D", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_TEXTURE2D), typeid(D3D12_RESOURCE_DIMENSION_TEXTURE2D).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_DIMENSION_TEXTURE3D", static_cast<int32_t>(D3D12_RESOURCE_DIMENSION_TEXTURE3D), typeid(D3D12_RESOURCE_DIMENSION_TEXTURE3D).name());
 	//资源格式DXGI格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_UNKNOWN", static_cast<int32_t>(DXGI_FORMAT_UNKNOWN),typeid(DXGI_FORMAT_UNKNOWN).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_TYPELESS),typeid(DXGI_FORMAT_R32G32B32A32_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_FLOAT),typeid(DXGI_FORMAT_R32G32B32A32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_UINT),typeid(DXGI_FORMAT_R32G32B32A32_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_SINT),typeid(DXGI_FORMAT_R32G32B32A32_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_TYPELESS),typeid(DXGI_FORMAT_R32G32B32_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_FLOAT),typeid(DXGI_FORMAT_R32G32B32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_UINT),typeid(DXGI_FORMAT_R32G32B32_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_SINT),typeid(DXGI_FORMAT_R32G32B32_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_TYPELESS),typeid(DXGI_FORMAT_R16G16B16A16_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_FLOAT),typeid(DXGI_FORMAT_R16G16B16A16_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UNORM),typeid(DXGI_FORMAT_R16G16B16A16_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UINT),typeid(DXGI_FORMAT_R16G16B16A16_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SNORM),typeid(DXGI_FORMAT_R16G16B16A16_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SINT),typeid(DXGI_FORMAT_R16G16B16A16_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32_TYPELESS),typeid(DXGI_FORMAT_R32G32_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32_FLOAT),typeid(DXGI_FORMAT_R32G32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_UINT),typeid(DXGI_FORMAT_R32G32_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_SINT),typeid(DXGI_FORMAT_R32G32_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G8X24_TYPELESS),typeid(DXGI_FORMAT_R32G8X24_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT_S8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT_S8X24_UINT),typeid(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS),typeid(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X32_TYPELESS_G8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT),typeid(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_TYPELESS),typeid(DXGI_FORMAT_R10G10B10A2_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UNORM),typeid(DXGI_FORMAT_R10G10B10A2_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UINT", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UINT),typeid(DXGI_FORMAT_R10G10B10A2_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R11G11B10_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R11G11B10_FLOAT),typeid(DXGI_FORMAT_R11G11B10_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_TYPELESS),typeid(DXGI_FORMAT_R8G8B8A8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM),typeid(DXGI_FORMAT_R8G8B8A8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB),typeid(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UINT),typeid(DXGI_FORMAT_R8G8B8A8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SNORM),typeid(DXGI_FORMAT_R8G8B8A8_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SINT),typeid(DXGI_FORMAT_R8G8B8A8_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16_TYPELESS),typeid(DXGI_FORMAT_R16G16_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16_FLOAT),typeid(DXGI_FORMAT_R16G16_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_UNORM),typeid(DXGI_FORMAT_R16G16_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_UINT),typeid(DXGI_FORMAT_R16G16_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_SNORM),typeid(DXGI_FORMAT_R16G16_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_SINT),typeid(DXGI_FORMAT_R16G16_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_TYPELESS),typeid(DXGI_FORMAT_R32_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT),typeid(DXGI_FORMAT_D32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT),typeid(DXGI_FORMAT_R32_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32_UINT),typeid(DXGI_FORMAT_R32_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32_SINT),typeid(DXGI_FORMAT_R32_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24G8_TYPELESS),typeid(DXGI_FORMAT_R24G8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D24_UNORM_S8_UINT", static_cast<int32_t>(DXGI_FORMAT_D24_UNORM_S8_UINT),typeid(DXGI_FORMAT_D24_UNORM_S8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24_UNORM_X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24_UNORM_X8_TYPELESS),typeid(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X24_TYPELESS_G8_UINT", static_cast<int32_t>(DXGI_FORMAT_X24_TYPELESS_G8_UINT),typeid(DXGI_FORMAT_X24_TYPELESS_G8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8_TYPELESS),typeid(DXGI_FORMAT_R8G8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_UNORM),typeid(DXGI_FORMAT_R8G8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_UINT),typeid(DXGI_FORMAT_R8G8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_SNORM),typeid(DXGI_FORMAT_R8G8_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_SINT),typeid(DXGI_FORMAT_R8G8_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16_TYPELESS),typeid(DXGI_FORMAT_R16_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16_FLOAT),typeid(DXGI_FORMAT_R16_FLOAT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D16_UNORM", static_cast<int32_t>(DXGI_FORMAT_D16_UNORM),typeid(DXGI_FORMAT_D16_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16_UNORM),typeid(DXGI_FORMAT_R16_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16_UINT),typeid(DXGI_FORMAT_R16_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16_SNORM),typeid(DXGI_FORMAT_R16_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16_SINT),typeid(DXGI_FORMAT_R16_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8_TYPELESS),typeid(DXGI_FORMAT_R8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8_UNORM),typeid(DXGI_FORMAT_R8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8_UINT),typeid(DXGI_FORMAT_R8_UINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8_SNORM),typeid(DXGI_FORMAT_R8_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8_SINT),typeid(DXGI_FORMAT_R8_SINT).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_A8_UNORM),typeid(DXGI_FORMAT_A8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R1_UNORM", static_cast<int32_t>(DXGI_FORMAT_R1_UNORM),typeid(DXGI_FORMAT_R1_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R9G9B9E5_SHAREDEXP", static_cast<int32_t>(DXGI_FORMAT_R9G9B9E5_SHAREDEXP),typeid(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_B8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_B8G8_UNORM),typeid(DXGI_FORMAT_R8G8_B8G8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_G8R8_G8B8_UNORM", static_cast<int32_t>(DXGI_FORMAT_G8R8_G8B8_UNORM),typeid(DXGI_FORMAT_G8R8_G8B8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC1_TYPELESS),typeid(DXGI_FORMAT_BC1_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM),typeid(DXGI_FORMAT_BC1_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM_SRGB),typeid(DXGI_FORMAT_BC1_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC2_TYPELESS),typeid(DXGI_FORMAT_BC2_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM),typeid(DXGI_FORMAT_BC2_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM_SRGB),typeid(DXGI_FORMAT_BC2_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC3_TYPELESS),typeid(DXGI_FORMAT_BC3_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM),typeid(DXGI_FORMAT_BC3_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM_SRGB),typeid(DXGI_FORMAT_BC3_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC4_TYPELESS),typeid(DXGI_FORMAT_BC4_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_UNORM),typeid(DXGI_FORMAT_BC4_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_SNORM),typeid(DXGI_FORMAT_BC4_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC5_TYPELESS),typeid(DXGI_FORMAT_BC5_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_UNORM),typeid(DXGI_FORMAT_BC5_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_SNORM),typeid(DXGI_FORMAT_BC5_SNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G6R5_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G6R5_UNORM),typeid(DXGI_FORMAT_B5G6R5_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G5R5A1_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G5R5A1_UNORM),typeid(DXGI_FORMAT_B5G5R5A1_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM),typeid(DXGI_FORMAT_B8G8R8A8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM),typeid(DXGI_FORMAT_B8G8R8X8_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM),typeid(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_TYPELESS),typeid(DXGI_FORMAT_B8G8R8A8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB),typeid(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_TYPELESS),typeid(DXGI_FORMAT_B8G8R8X8_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB),typeid(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC6H_TYPELESS),typeid(DXGI_FORMAT_BC6H_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_UF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_UF16),typeid(DXGI_FORMAT_BC6H_UF16).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_SF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_SF16),typeid(DXGI_FORMAT_BC6H_SF16).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC7_TYPELESS),typeid(DXGI_FORMAT_BC7_TYPELESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM),typeid(DXGI_FORMAT_BC7_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM_SRGB),typeid(DXGI_FORMAT_BC7_UNORM_SRGB).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AYUV", static_cast<int32_t>(DXGI_FORMAT_AYUV),typeid(DXGI_FORMAT_AYUV).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y410", static_cast<int32_t>(DXGI_FORMAT_Y410),typeid(DXGI_FORMAT_Y410).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y416", static_cast<int32_t>(DXGI_FORMAT_Y416),typeid(DXGI_FORMAT_Y416).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV12", static_cast<int32_t>(DXGI_FORMAT_NV12),typeid(DXGI_FORMAT_NV12).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P010", static_cast<int32_t>(DXGI_FORMAT_P010),typeid(DXGI_FORMAT_P010).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P016", static_cast<int32_t>(DXGI_FORMAT_P016),typeid(DXGI_FORMAT_P016).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_420_OPAQUE", static_cast<int32_t>(DXGI_FORMAT_420_OPAQUE),typeid(DXGI_FORMAT_420_OPAQUE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_YUY2", static_cast<int32_t>(DXGI_FORMAT_YUY2),typeid(DXGI_FORMAT_YUY2).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y210", static_cast<int32_t>(DXGI_FORMAT_Y210),typeid(DXGI_FORMAT_Y210).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y216", static_cast<int32_t>(DXGI_FORMAT_Y216),typeid(DXGI_FORMAT_Y216).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV11", static_cast<int32_t>(DXGI_FORMAT_NV11),typeid(DXGI_FORMAT_NV11).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AI44", static_cast<int32_t>(DXGI_FORMAT_AI44),typeid(DXGI_FORMAT_AI44).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_IA44", static_cast<int32_t>(DXGI_FORMAT_IA44),typeid(DXGI_FORMAT_IA44).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P8", static_cast<int32_t>(DXGI_FORMAT_P8),typeid(DXGI_FORMAT_P8).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8P8", static_cast<int32_t>(DXGI_FORMAT_A8P8),typeid(DXGI_FORMAT_A8P8).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B4G4R4A4_UNORM", static_cast<int32_t>(DXGI_FORMAT_B4G4R4A4_UNORM),typeid(DXGI_FORMAT_B4G4R4A4_UNORM).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P208", static_cast<int32_t>(DXGI_FORMAT_P208),typeid(DXGI_FORMAT_P208).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V208", static_cast<int32_t>(DXGI_FORMAT_V208),typeid(DXGI_FORMAT_V208).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V408", static_cast<int32_t>(DXGI_FORMAT_V408),typeid(DXGI_FORMAT_V408).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_FORCE_UINT", static_cast<int32_t>(DXGI_FORMAT_FORCE_UINT),typeid(DXGI_FORMAT_FORCE_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_UNKNOWN", static_cast<int32_t>(DXGI_FORMAT_UNKNOWN), typeid(DXGI_FORMAT_UNKNOWN).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_TYPELESS), typeid(DXGI_FORMAT_R32G32B32A32_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_FLOAT), typeid(DXGI_FORMAT_R32G32B32A32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_UINT), typeid(DXGI_FORMAT_R32G32B32A32_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32A32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32A32_SINT), typeid(DXGI_FORMAT_R32G32B32A32_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_TYPELESS), typeid(DXGI_FORMAT_R32G32B32_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_FLOAT), typeid(DXGI_FORMAT_R32G32B32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_UINT), typeid(DXGI_FORMAT_R32G32B32_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32B32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32B32_SINT), typeid(DXGI_FORMAT_R32G32B32_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_TYPELESS), typeid(DXGI_FORMAT_R16G16B16A16_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_FLOAT), typeid(DXGI_FORMAT_R16G16B16A16_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UNORM), typeid(DXGI_FORMAT_R16G16B16A16_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_UINT), typeid(DXGI_FORMAT_R16G16B16A16_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SNORM), typeid(DXGI_FORMAT_R16G16B16A16_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16B16A16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16B16A16_SINT), typeid(DXGI_FORMAT_R16G16B16A16_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G32_TYPELESS), typeid(DXGI_FORMAT_R32G32_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32G32_FLOAT), typeid(DXGI_FORMAT_R32G32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_UINT), typeid(DXGI_FORMAT_R32G32_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32G32_SINT), typeid(DXGI_FORMAT_R32G32_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32G8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32G8X24_TYPELESS), typeid(DXGI_FORMAT_R32G8X24_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT_S8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT_S8X24_UINT), typeid(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS), typeid(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X32_TYPELESS_G8X24_UINT", static_cast<int32_t>(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT), typeid(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_TYPELESS), typeid(DXGI_FORMAT_R10G10B10A2_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UNORM), typeid(DXGI_FORMAT_R10G10B10A2_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10A2_UINT", static_cast<int32_t>(DXGI_FORMAT_R10G10B10A2_UINT), typeid(DXGI_FORMAT_R10G10B10A2_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R11G11B10_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R11G11B10_FLOAT), typeid(DXGI_FORMAT_R11G11B10_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_TYPELESS), typeid(DXGI_FORMAT_R8G8B8A8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM), typeid(DXGI_FORMAT_R8G8B8A8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB), typeid(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_UINT), typeid(DXGI_FORMAT_R8G8B8A8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SNORM), typeid(DXGI_FORMAT_R8G8B8A8_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8B8A8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8B8A8_SINT), typeid(DXGI_FORMAT_R8G8B8A8_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16G16_TYPELESS), typeid(DXGI_FORMAT_R16G16_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16G16_FLOAT), typeid(DXGI_FORMAT_R16G16_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_UNORM), typeid(DXGI_FORMAT_R16G16_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_UINT), typeid(DXGI_FORMAT_R16G16_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16G16_SNORM), typeid(DXGI_FORMAT_R16G16_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16G16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16G16_SINT), typeid(DXGI_FORMAT_R16G16_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R32_TYPELESS), typeid(DXGI_FORMAT_R32_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_D32_FLOAT), typeid(DXGI_FORMAT_D32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R32_FLOAT), typeid(DXGI_FORMAT_R32_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_UINT", static_cast<int32_t>(DXGI_FORMAT_R32_UINT), typeid(DXGI_FORMAT_R32_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R32_SINT", static_cast<int32_t>(DXGI_FORMAT_R32_SINT), typeid(DXGI_FORMAT_R32_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24G8_TYPELESS), typeid(DXGI_FORMAT_R24G8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D24_UNORM_S8_UINT", static_cast<int32_t>(DXGI_FORMAT_D24_UNORM_S8_UINT), typeid(DXGI_FORMAT_D24_UNORM_S8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R24_UNORM_X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R24_UNORM_X8_TYPELESS), typeid(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_X24_TYPELESS_G8_UINT", static_cast<int32_t>(DXGI_FORMAT_X24_TYPELESS_G8_UINT), typeid(DXGI_FORMAT_X24_TYPELESS_G8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8G8_TYPELESS), typeid(DXGI_FORMAT_R8G8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_UNORM), typeid(DXGI_FORMAT_R8G8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_UINT), typeid(DXGI_FORMAT_R8G8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_SNORM), typeid(DXGI_FORMAT_R8G8_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8G8_SINT), typeid(DXGI_FORMAT_R8G8_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R16_TYPELESS), typeid(DXGI_FORMAT_R16_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_FLOAT", static_cast<int32_t>(DXGI_FORMAT_R16_FLOAT), typeid(DXGI_FORMAT_R16_FLOAT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_D16_UNORM", static_cast<int32_t>(DXGI_FORMAT_D16_UNORM), typeid(DXGI_FORMAT_D16_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UNORM", static_cast<int32_t>(DXGI_FORMAT_R16_UNORM), typeid(DXGI_FORMAT_R16_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_UINT", static_cast<int32_t>(DXGI_FORMAT_R16_UINT), typeid(DXGI_FORMAT_R16_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SNORM", static_cast<int32_t>(DXGI_FORMAT_R16_SNORM), typeid(DXGI_FORMAT_R16_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R16_SINT", static_cast<int32_t>(DXGI_FORMAT_R16_SINT), typeid(DXGI_FORMAT_R16_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_R8_TYPELESS), typeid(DXGI_FORMAT_R8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8_UNORM), typeid(DXGI_FORMAT_R8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_UINT", static_cast<int32_t>(DXGI_FORMAT_R8_UINT), typeid(DXGI_FORMAT_R8_UINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SNORM", static_cast<int32_t>(DXGI_FORMAT_R8_SNORM), typeid(DXGI_FORMAT_R8_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8_SINT", static_cast<int32_t>(DXGI_FORMAT_R8_SINT), typeid(DXGI_FORMAT_R8_SINT).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_A8_UNORM), typeid(DXGI_FORMAT_A8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R1_UNORM", static_cast<int32_t>(DXGI_FORMAT_R1_UNORM), typeid(DXGI_FORMAT_R1_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R9G9B9E5_SHAREDEXP", static_cast<int32_t>(DXGI_FORMAT_R9G9B9E5_SHAREDEXP), typeid(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R8G8_B8G8_UNORM", static_cast<int32_t>(DXGI_FORMAT_R8G8_B8G8_UNORM), typeid(DXGI_FORMAT_R8G8_B8G8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_G8R8_G8B8_UNORM", static_cast<int32_t>(DXGI_FORMAT_G8R8_G8B8_UNORM), typeid(DXGI_FORMAT_G8R8_G8B8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC1_TYPELESS), typeid(DXGI_FORMAT_BC1_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM), typeid(DXGI_FORMAT_BC1_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC1_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC1_UNORM_SRGB), typeid(DXGI_FORMAT_BC1_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC2_TYPELESS), typeid(DXGI_FORMAT_BC2_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM), typeid(DXGI_FORMAT_BC2_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC2_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC2_UNORM_SRGB), typeid(DXGI_FORMAT_BC2_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC3_TYPELESS), typeid(DXGI_FORMAT_BC3_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM), typeid(DXGI_FORMAT_BC3_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC3_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC3_UNORM_SRGB), typeid(DXGI_FORMAT_BC3_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC4_TYPELESS), typeid(DXGI_FORMAT_BC4_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_UNORM), typeid(DXGI_FORMAT_BC4_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC4_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC4_SNORM), typeid(DXGI_FORMAT_BC4_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC5_TYPELESS), typeid(DXGI_FORMAT_BC5_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_UNORM), typeid(DXGI_FORMAT_BC5_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC5_SNORM", static_cast<int32_t>(DXGI_FORMAT_BC5_SNORM), typeid(DXGI_FORMAT_BC5_SNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G6R5_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G6R5_UNORM), typeid(DXGI_FORMAT_B5G6R5_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B5G5R5A1_UNORM", static_cast<int32_t>(DXGI_FORMAT_B5G5R5A1_UNORM), typeid(DXGI_FORMAT_B5G5R5A1_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM), typeid(DXGI_FORMAT_B8G8R8A8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM), typeid(DXGI_FORMAT_B8G8R8X8_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM", static_cast<int32_t>(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM), typeid(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_TYPELESS), typeid(DXGI_FORMAT_B8G8R8A8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8A8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB), typeid(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_TYPELESS), typeid(DXGI_FORMAT_B8G8R8X8_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B8G8R8X8_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB), typeid(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC6H_TYPELESS), typeid(DXGI_FORMAT_BC6H_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_UF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_UF16), typeid(DXGI_FORMAT_BC6H_UF16).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC6H_SF16", static_cast<int32_t>(DXGI_FORMAT_BC6H_SF16), typeid(DXGI_FORMAT_BC6H_SF16).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_TYPELESS", static_cast<int32_t>(DXGI_FORMAT_BC7_TYPELESS), typeid(DXGI_FORMAT_BC7_TYPELESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM), typeid(DXGI_FORMAT_BC7_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_BC7_UNORM_SRGB", static_cast<int32_t>(DXGI_FORMAT_BC7_UNORM_SRGB), typeid(DXGI_FORMAT_BC7_UNORM_SRGB).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AYUV", static_cast<int32_t>(DXGI_FORMAT_AYUV), typeid(DXGI_FORMAT_AYUV).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y410", static_cast<int32_t>(DXGI_FORMAT_Y410), typeid(DXGI_FORMAT_Y410).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y416", static_cast<int32_t>(DXGI_FORMAT_Y416), typeid(DXGI_FORMAT_Y416).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV12", static_cast<int32_t>(DXGI_FORMAT_NV12), typeid(DXGI_FORMAT_NV12).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P010", static_cast<int32_t>(DXGI_FORMAT_P010), typeid(DXGI_FORMAT_P010).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P016", static_cast<int32_t>(DXGI_FORMAT_P016), typeid(DXGI_FORMAT_P016).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_420_OPAQUE", static_cast<int32_t>(DXGI_FORMAT_420_OPAQUE), typeid(DXGI_FORMAT_420_OPAQUE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_YUY2", static_cast<int32_t>(DXGI_FORMAT_YUY2), typeid(DXGI_FORMAT_YUY2).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y210", static_cast<int32_t>(DXGI_FORMAT_Y210), typeid(DXGI_FORMAT_Y210).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_Y216", static_cast<int32_t>(DXGI_FORMAT_Y216), typeid(DXGI_FORMAT_Y216).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_NV11", static_cast<int32_t>(DXGI_FORMAT_NV11), typeid(DXGI_FORMAT_NV11).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_AI44", static_cast<int32_t>(DXGI_FORMAT_AI44), typeid(DXGI_FORMAT_AI44).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_IA44", static_cast<int32_t>(DXGI_FORMAT_IA44), typeid(DXGI_FORMAT_IA44).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P8", static_cast<int32_t>(DXGI_FORMAT_P8), typeid(DXGI_FORMAT_P8).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_A8P8", static_cast<int32_t>(DXGI_FORMAT_A8P8), typeid(DXGI_FORMAT_A8P8).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_B4G4R4A4_UNORM", static_cast<int32_t>(DXGI_FORMAT_B4G4R4A4_UNORM), typeid(DXGI_FORMAT_B4G4R4A4_UNORM).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_P208", static_cast<int32_t>(DXGI_FORMAT_P208), typeid(DXGI_FORMAT_P208).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V208", static_cast<int32_t>(DXGI_FORMAT_V208), typeid(DXGI_FORMAT_V208).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_V408", static_cast<int32_t>(DXGI_FORMAT_V408), typeid(DXGI_FORMAT_V408).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("DXGI_FORMAT_FORCE_UINT", static_cast<int32_t>(DXGI_FORMAT_FORCE_UINT), typeid(DXGI_FORMAT_FORCE_UINT).name());
 	//资源格式layout格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_UNKNOWN", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_UNKNOWN),typeid(D3D12_TEXTURE_LAYOUT_UNKNOWN).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_ROW_MAJOR", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_ROW_MAJOR),typeid(D3D12_TEXTURE_LAYOUT_ROW_MAJOR).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE),typeid(D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE),typeid(D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_UNKNOWN", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_UNKNOWN), typeid(D3D12_TEXTURE_LAYOUT_UNKNOWN).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_ROW_MAJOR", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_ROW_MAJOR), typeid(D3D12_TEXTURE_LAYOUT_ROW_MAJOR).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE), typeid(D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE", static_cast<int32_t>(D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE), typeid(D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE).name());
 	//资源格式flag格式
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_NONE", static_cast<int32_t>(D3D12_RESOURCE_FLAG_NONE),typeid(D3D12_RESOURCE_FLAG_NONE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET),typeid(D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),typeid(D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),typeid(D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE", static_cast<int32_t>(D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE),typeid(D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER),typeid(D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS),typeid(D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY", static_cast<int32_t>(D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY),typeid(D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_NONE", static_cast<int32_t>(D3D12_RESOURCE_FLAG_NONE), typeid(D3D12_RESOURCE_FLAG_NONE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET), typeid(D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL), typeid(D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS), typeid(D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE", static_cast<int32_t>(D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE), typeid(D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER), typeid(D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS", static_cast<int32_t>(D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS), typeid(D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY", static_cast<int32_t>(D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY), typeid(D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY).name());
 }
 PancystarEngine::EngineFailReason SubresourceControl::BuildSubresourceFromFile(
 	const std::string &resource_name_in,
 	SubMemoryPointer &submemory_pointer
-) 
+)
 {
 	PancystarEngine::EngineFailReason check_error;
 	D3D12_RESOURCE_DESC res_desc;
@@ -1064,12 +1064,12 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildSubresourceFromFile(
 	//加载json文件
 	Json::Value root_value;
 	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_name_in, root_value);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//加载资源状态
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in,root_value,"D3D12_RESOURCE_STATES",pancy_json_data_type::json_data_enum, value_root);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, root_value, "D3D12_RESOURCE_STATES", pancy_json_data_type::json_data_enum, value_root);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -1091,7 +1091,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildSubresourceFromFile(
 	resource_heap_name = value_root.string_value;
 	//加载资源格式
 	pancy_json_value value_res_desc;
-	Json::Value resource_desc_value = root_value.get("D3D12_RESOURCE_DESC",Json::Value::null);
+	Json::Value resource_desc_value = root_value.get("D3D12_RESOURCE_DESC", Json::Value::null);
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name_in, resource_desc_value, "Alignment", pancy_json_data_type::json_data_int, value_res_desc);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -1170,7 +1170,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildSubresourceFromFile(
 	}
 	res_desc.SampleDesc.Quality = value_res_sample.int_value;
 	//创建资源
-	check_error = BuildSubresource(resource_name_in,resource_heap_name, res_desc, res_states, per_memory_size, submemory_pointer);
+	check_error = BuildSubresource(resource_name_in, resource_heap_name, res_desc, res_states, per_memory_size, submemory_pointer);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -1218,7 +1218,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildSubresource(
 	auto check_data = subresource_init_list.find(hash_name);
 	if (check_data == subresource_init_list.end())
 	{
-		InitSubResourceType(hash_name,heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in, submemory_pointer.type_id);
+		InitSubResourceType(hash_name, heap_name_in, resource_desc_in, resource_state_in, per_memory_size_in, submemory_pointer.type_id);
 	}
 	else
 	{
@@ -1237,18 +1237,18 @@ PancystarEngine::EngineFailReason SubresourceControl::WriteFromCpuToBuffer(
 	const pancy_resource_size &pointer_offset,
 	const void* copy_data,
 	const pancy_resource_size data_size
-) 
+)
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_resource_size per_memory_size;
 	auto memory_block = GetResourceData(submemory_pointer, per_memory_size);
-	if (memory_block == NULL) 
+	if (memory_block == NULL)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL,"could not find submemory, check log for detail");
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find submemory, check log for detail");
 		return error_message;
 	}
 	check_error = memory_block->WriteFromCpuToBuffer(submemory_pointer.offset* per_memory_size + pointer_offset, copy_data, data_size);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
@@ -1257,7 +1257,7 @@ PancystarEngine::EngineFailReason SubresourceControl::WriteFromCpuToBuffer(
 PancystarEngine::EngineFailReason SubresourceControl::GetBufferCpuPointer(
 	const SubMemoryPointer &submemory_pointer,
 	UINT8** map_pointer_out
-) 
+)
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_resource_size per_memory_size;
@@ -1278,7 +1278,7 @@ PancystarEngine::EngineFailReason SubresourceControl::WriteFromCpuToBuffer(
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
 	UINT64* pRowSizesInBytes,
 	UINT* pNumRows
-) 
+)
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_resource_size per_memory_size;
@@ -1308,7 +1308,7 @@ PancystarEngine::EngineFailReason SubresourceControl::CopyResource(
 	const pancy_resource_size &src_offset,
 	const pancy_resource_size &dst_offset,
 	const pancy_resource_size &data_size
-) 
+)
 {
 	pancy_resource_size per_memory_size_src;
 	pancy_resource_size per_memory_size_dst;
@@ -1322,7 +1322,7 @@ PancystarEngine::EngineFailReason SubresourceControl::CopyResource(
 	ResourceBarrier(commandlist, dst_submemory, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 	commandlist->GetCommandList()->CopyBufferRegion(
 		dst_res->GetResource().Get(),
-		dst_submemory.offset * per_memory_size_dst + dst_offset, 
+		dst_submemory.offset * per_memory_size_dst + dst_offset,
 		src_res->GetResource().Get(),
 		src_submemory.offset*per_memory_size_src + src_offset,
 		data_size);
@@ -1335,7 +1335,7 @@ PancystarEngine::EngineFailReason SubresourceControl::CopyResource(
 	const SubMemoryPointer &dst_submemory,
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
 	const pancy_object_id &Layout_num
-) 
+)
 {
 	pancy_resource_size per_memory_size_src;
 	pancy_resource_size per_memory_size_dst;
@@ -1349,11 +1349,11 @@ PancystarEngine::EngineFailReason SubresourceControl::CopyResource(
 	ResourceBarrier(commandlist, dst_submemory, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 	for (UINT i = 0; i < Layout_num; ++i)
 	{
-		
+
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT real_layout;
 		real_layout.Footprint = pLayouts[i].Footprint;
 		real_layout.Offset = pLayouts[i].Offset + per_memory_size_src * src_submemory.offset;
-		
+
 		CD3DX12_TEXTURE_COPY_LOCATION Dst(dst_res->GetResource().Get(), i + 0);
 		CD3DX12_TEXTURE_COPY_LOCATION Src(src_res->GetResource().Get(), real_layout);
 		commandlist->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
@@ -1366,7 +1366,7 @@ PancystarEngine::EngineFailReason SubresourceControl::ResourceBarrier(
 	const SubMemoryPointer &src_submemory,
 	const D3D12_RESOURCE_STATES &last_state,
 	const D3D12_RESOURCE_STATES &now_state
-) 
+)
 {
 	pancy_resource_size per_memory_size;
 	auto dst_res = GetResourceData(src_submemory, per_memory_size);
@@ -1427,7 +1427,7 @@ PancystarEngine::EngineFailReason SubresourceControl::CaptureTextureDataToWindow
 		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
 	);
-	if (FAILED(hr)) 
+	if (FAILED(hr))
 	{
 		PancystarEngine::EngineFailReason error_message(hr, "could not Capture texture to windows desc");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("capture texture data for saving", error_message);
@@ -1438,7 +1438,7 @@ PancystarEngine::EngineFailReason SubresourceControl::CaptureTextureDataToWindow
 PancystarEngine::EngineFailReason SubresourceControl::GetSubResourceDesc(
 	const SubMemoryPointer & tex_data,
 	D3D12_RESOURCE_DESC &resource_desc
-) 
+)
 {
 	pancy_resource_size per_block_size;
 	auto res_data = GetResourceData(tex_data, per_block_size);
@@ -1453,7 +1453,7 @@ PancystarEngine::EngineFailReason SubresourceControl::GetSubResourceDesc(
 PancystarEngine::EngineFailReason SubresourceControl::BuildConstantBufferView(
 	const SubMemoryPointer &src_submemory,
 	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor
-) 
+)
 {
 	//根据资源指针获取资源
 	pancy_resource_size per_block_size;
@@ -1475,7 +1475,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildShaderResourceView(
 	const SubMemoryPointer &src_submemory,
 	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
 	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
-) 
+)
 {
 	//根据资源指针获取资源
 	pancy_resource_size per_block_size;
@@ -1493,7 +1493,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildRenderTargetView(
 	const SubMemoryPointer &src_submemory,
 	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
 	const D3D12_RENDER_TARGET_VIEW_DESC  &RTV_desc
-) 
+)
 {
 	//根据资源指针获取资源
 	pancy_resource_size per_block_size;
@@ -1511,7 +1511,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildUnorderedAccessView(
 	const SubMemoryPointer &src_submemory,
 	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
 	const D3D12_UNORDERED_ACCESS_VIEW_DESC  &UAV_desc
-) 
+)
 {
 	//根据资源指针获取资源
 	pancy_resource_size per_block_size;
@@ -1534,7 +1534,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildDepthStencilView(
 	const SubMemoryPointer &src_submemory,
 	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
 	const D3D12_DEPTH_STENCIL_VIEW_DESC  &DSV_desc
-) 
+)
 {
 	//根据资源指针获取资源
 	pancy_resource_size per_block_size;
@@ -1552,7 +1552,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildVertexBufferView(
 	const SubMemoryPointer &src_submemory,
 	UINT StrideInBytes,
 	D3D12_VERTEX_BUFFER_VIEW &VBV_out
-) 
+)
 {
 	//根据资源指针获取资源
 	pancy_resource_size per_block_size;
@@ -1572,7 +1572,7 @@ PancystarEngine::EngineFailReason SubresourceControl::BuildIndexBufferView(
 	const SubMemoryPointer &src_submemory,
 	DXGI_FORMAT StrideInBytes,
 	D3D12_INDEX_BUFFER_VIEW &IBV_out
-) 
+)
 {
 	//根据资源指针获取资源
 	pancy_resource_size per_block_size;
@@ -1605,7 +1605,7 @@ PancystarEngine::EngineFailReason SubresourceControl::FreeSubResource(const SubM
 	}
 	return PancystarEngine::succeed;
 }
-MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &submemory_pointer,pancy_resource_size &per_memory_size)
+MemoryBlockGpu*  SubresourceControl::GetResourceData(const SubMemoryPointer &submemory_pointer, pancy_resource_size &per_memory_size)
 {
 	auto submemory_list = subresource_list_map.find(submemory_pointer.type_id);
 	if (submemory_list == subresource_list_map.end())
@@ -1625,7 +1625,7 @@ void SubresourceControl::WriteSubMemoryMessageToFile(const std::string &log_file
 	{
 		std::vector<std::string> log_message;
 		data_submemory->second->GetLogMessage(log_message);
-		for (int i = 0; i < log_message.size(); ++i) 
+		for (int i = 0; i < log_message.size(); ++i)
 		{
 			write_stream<< log_message[i]<<endl;
 		}
@@ -1652,12 +1652,12 @@ void SubresourceControl::WriteSubMemoryMessageToFile(const std::string &log_file
 			PancyJsonTool::GetInstance()->SetJsonValue(new_heap_json, "PerHeapSize", per_heap_size);
 			PancyJsonTool::GetInstance()->SetJsonValue(root_value, data_submemory->second->GetHeapName(), new_heap_json);
 		}
-		else 
+		else
 		{
 			PancyJsonTool::GetInstance()->SetJsonValue(heap_json, data_submemory->second->GetResourceName(), list_value);
 			PancyJsonTool::GetInstance()->SetJsonValue(root_value, data_submemory->second->GetHeapName(), heap_json);
 		}
-		
+
 	}
 	PancyJsonTool::GetInstance()->WriteValueToJson(root_value, log_file_name);
 }
@@ -1671,627 +1671,1446 @@ SubresourceControl::~SubresourceControl()
 	subresource_init_list.clear();
 	subresource_free_id.clear();
 }
-//资源描述视图
-PancyResourceView::PancyResourceView(
-	ComPtr<ID3D12DescriptorHeap> heap_data_in,
-	const int32_t &heap_offset_in,
-	D3D12_DESCRIPTOR_HEAP_TYPE &resource_type_in,
-	const int32_t &view_number_in
+
+//解绑定描述符段，用于描述符段里的所有描述符页的分配和管理
+BindlessResourceViewSegmental::BindlessResourceViewSegmental(
+	const pancy_object_id &max_descriptor_num_in,
+	const pancy_object_id &segmental_offset_position_in,
+	const pancy_object_id &per_descriptor_size_in,
+	const ComPtr<ID3D12DescriptorHeap> descriptor_heap_data_in
 )
 {
-	heap_data = heap_data_in;
-	heap_offset = heap_offset_in;
-	resource_view_number = view_number_in;
-	resource_type = resource_type_in;
-	resource_block_size = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetDescriptorHandleIncrementSize(resource_type);
+	max_descriptor_num = max_descriptor_num_in;
+	segmental_offset_position = segmental_offset_position_in;
+	now_descriptor_pack_id_self_add = 0;
+	now_pointer_offset = 0;
+	per_descriptor_size = per_descriptor_size_in;
+	descriptor_data.rehash(max_descriptor_num);
+	now_pointer_refresh = max_descriptor_num_in;
+	descriptor_heap_data = descriptor_heap_data_in.Get();
 }
-PancystarEngine::EngineFailReason PancyResourceView::BuildSRV(
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in,
-	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
-)
+//根据描述符页的指针信息，在描述符堆开辟描述符
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildShaderResourceView(const BindlessResourceViewPointer &resource_view_pointer)
 {
-	PancystarEngine::EngineFailReason check_error;
-	//检验偏移是否合法
-	if (self_offset >= resource_view_number)
+	for (int i = 0; i < resource_view_pointer.resource_view_num; ++i)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the srv id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add SRV to descriptor heap block", error_message);
-		return error_message;
-	}
-	//创建描述符
-	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
-	cpuHandle.Offset(heap_start_pos);
-	check_error = SubresourceControl::GetInstance()->BuildShaderResourceView(resource_in, cpuHandle, SRV_desc);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
+		//计算当前的描述符在整个描述符堆的偏移量(段首地址偏移+页首地址偏移+自偏移)
+		pancy_object_id resource_view_heap_offset = segmental_offset_position + resource_view_pointer.resource_view_offset + i;
+		//计算虚拟偏移量对应的真实地址偏移量
+		pancy_resource_size real_offset = static_cast<pancy_resource_size>(resource_view_heap_offset) * static_cast<pancy_resource_size>(per_descriptor_size);
+		//根据真实地址偏移量，创建SRV描述符
+		PancystarEngine::EngineFailReason check_error;
+		//创建描述符
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
+		cpuHandle.Offset(real_offset);
+		check_error = SubresourceControl::GetInstance()->BuildShaderResourceView(resource_view_pointer.describe_memory_data[i], cpuHandle, resource_view_pointer.SRV_desc[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyResourceView::BuildCBV(
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in
+//从描述符段里开辟一组bindless描述符页
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildBindlessShaderResourceViewPack(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	const std::vector<SubMemoryPointer> &describe_memory_data,
+	const pancy_object_id &SRV_pack_size,
+	pancy_object_id &SRV_pack_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//检验偏移是否合法
-	if (self_offset >= resource_view_number)
+	//检查当前空闲的描述符数量是否足以开辟出当前请求的描述符页
+	pancy_object_id now_empty_descriptor = max_descriptor_num - now_pointer_offset;
+	if (now_empty_descriptor < SRV_pack_size)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the CBV id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add CBV to descriptor heap block", error_message);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Descriptor Segmental Is Not Enough to build a new descriptor pack");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Descriptor pack from Segmental", error_message);
 		return error_message;
 	}
-	//创建描述符
-	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
-	cpuHandle.Offset(heap_start_pos);
-	check_error = SubresourceControl::GetInstance()->BuildConstantBufferView(resource_in, cpuHandle);
+	//根据当前的描述符段的偏移情况，创建一个新的描述符组
+	BindlessResourceViewPointer new_resource_view_pack;
+	new_resource_view_pack.resource_view_num = SRV_pack_size;
+	new_resource_view_pack.resource_view_offset = now_pointer_offset;
+	for (auto SRV_desc_data = SRV_desc.begin(); SRV_desc_data != SRV_desc.end(); ++SRV_desc_data)
+	{
+		//复制所有的描述符格式
+		new_resource_view_pack.SRV_desc.push_back(*SRV_desc_data);
+	}
+	for (auto resource_data = describe_memory_data.begin(); resource_data != describe_memory_data.end(); ++resource_data)
+	{
+		//复制所有的资源二级地址
+		new_resource_view_pack.describe_memory_data.push_back(*resource_data);
+	}
+	//开始创建SRV
+	check_error = BuildShaderResourceView(new_resource_view_pack);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//根据新的描述符页所包含的描述符数量来偏移描述符段的指针
+	now_pointer_offset += SRV_pack_size;
+	//为新的描述符来生成一个新的ID
+	if (!now_descriptor_pack_id_reuse.empty())
+	{
+		SRV_pack_id = now_descriptor_pack_id_reuse.front();
+		now_descriptor_pack_id_reuse.pop();
+	}
+	else
+	{
+		SRV_pack_id = now_descriptor_pack_id_self_add;
+		now_descriptor_pack_id_self_add += 1;
+	}
+	//将新生成的数据添加到表单进行记录
+	descriptor_data.insert(std::pair<pancy_resource_id, BindlessResourceViewPointer>(SRV_pack_id, new_resource_view_pack));
+	return PancystarEngine::succeed;
+}
+//从描述符段里删除一组bindless描述符页
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessShaderResourceViewPack(const pancy_object_id &SRV_pack_id)
+{
+	//找到当前描述符页的所在区域
+	auto descriptor_page = descriptor_data.find(SRV_pack_id);
+	if (descriptor_page == descriptor_data.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the descriptor page ID: " + std::to_string(SRV_pack_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete descriptor page from Segmental", error_message);
+		return error_message;
+	}
+	if (descriptor_page->second.resource_view_offset < now_pointer_refresh)
+	{
+		//如果当前删除的描述符页处于描述符段的靠前位置，则标记下一次整理描述符碎片的时候从当前位置开始整理
+		now_pointer_refresh = descriptor_page->second.resource_view_offset;
+	}
+	//销毁当前描述符页
+	descriptor_data.erase(SRV_pack_id);
+	return PancystarEngine::succeed;
+}
+//为描述符段执行一次碎片整理操作
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::RefreshBindlessShaderResourceViewPack()
+{
+	PancystarEngine::EngineFailReason check_error;
+	if (now_pointer_refresh >= max_descriptor_num)
+	{
+		//在此之前描述符段没有经过任何删除操作，不需要进行碎片整理
+		return PancystarEngine::succeed;
+	}
+	now_pointer_offset = now_pointer_refresh;
+	//遍历描述符段内的所有描述符页进行描述符碎片的整理
+	for (auto descriptor_page_check = descriptor_data.begin(); descriptor_page_check != descriptor_data.end(); ++descriptor_page_check)
+	{
+		if (descriptor_page_check->second.resource_view_offset > now_pointer_refresh)
+		{
+			//如果该描述符页处于需要调整的位置则对这一页的所有描述符进行调整
+			descriptor_page_check->second.resource_view_offset = now_pointer_offset;
+			//生成新的SRV
+			check_error = BuildShaderResourceView(descriptor_page_check->second);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			//标记当前被占用的描述符位置
+			now_pointer_offset += descriptor_page_check->second.resource_view_num;
+			if (now_pointer_offset > max_descriptor_num)
+			{
+				//调整过程中出现调整后描述符数量反而高于调整前的异常情况
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor Segmental could not build desciptor more than : " + std::to_string(max_descriptor_num));
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh descriptor page from Segmental", error_message);
+				return error_message;
+			}
+		}
+	}
+	//还原刷新调整
+	now_pointer_refresh = max_descriptor_num;
+	return PancystarEngine::succeed;
+}
+//为描述符段删除一组bindless描述符页，同时整理一次描述符碎片
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessShaderResourceViewPackAndRefresh(const pancy_object_id &SRV_pack_id)
+{
+	auto check_error = DeleteBindlessShaderResourceViewPack(SRV_pack_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = RefreshBindlessShaderResourceViewPack();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyResourceView::BuildUAV(
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in,
-	const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
-)
+//用于描述符堆资源的容量排序
+bool BindlessDescriptorID::operator<(const BindlessDescriptorID& other)  const
 {
-	PancystarEngine::EngineFailReason check_error;
-	//检验偏移是否合法
-	if (self_offset >= resource_view_number)
+	if (empty_resource_size != other.empty_resource_size)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the UAV id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add UAV to descriptor heap block", error_message);
-		return error_message;
+		return (empty_resource_size < other.empty_resource_size);
 	}
-	//创建描述符
-	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
-	cpuHandle.Offset(heap_start_pos);
-	//创建描述符
-	check_error = SubresourceControl::GetInstance()->BuildUnorderedAccessView(resource_in, cpuHandle, UAV_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
+	return (bindless_id < other.bindless_id);
 }
-PancystarEngine::EngineFailReason PancyResourceView::BuildRTV(
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in,
-	const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
-)
+//描述符堆管理器，用于从描述符上分配描述符
+PancyDescriptorHeap::PancyDescriptorHeap()
 {
-	PancystarEngine::EngineFailReason check_error;
-	//检验偏移是否合法
-	if (self_offset >= resource_view_number)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the RTV id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add RTV to descriptor heap block", error_message);
-		return error_message;
-	}
-	//创建描述符
-	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
-	cpuHandle.Offset(heap_start_pos);
-	check_error = SubresourceControl::GetInstance()->BuildRenderTargetView(resource_in, cpuHandle, RTV_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
+
+
 }
-PancystarEngine::EngineFailReason PancyResourceView::BuildDSV(
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in,
-	const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	//检验偏移是否合法
-	if (self_offset >= resource_view_number)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the DSV id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add DSV to descriptor heap block", error_message);
-		return error_message;
-	}
-	//创建描述符
-	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
-	cpuHandle.Offset(heap_start_pos);
-	check_error = SubresourceControl::GetInstance()->BuildDepthStencilView(resource_in, cpuHandle, DSV_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-//资源描述符管理堆
-PancyDescriptorHeap::PancyDescriptorHeap(
+PancystarEngine::EngineFailReason PancyDescriptorHeap::Create(
+	const D3D12_DESCRIPTOR_HEAP_DESC &descriptor_heap_desc,
 	const std::string &descriptor_heap_name_in,
-	const pancy_object_id &heap_block_size_in,
-	const D3D12_DESCRIPTOR_HEAP_DESC &heap_desc_in
+	const pancy_object_id &globel_descriptor_num_in,
+	const pancy_object_id &bind_descriptor_num_in,
+	const pancy_object_id &bindless_descriptor_num_in,
+	const pancy_object_id &per_segmental_size_in
 )
 {
+	descriptor_desc = descriptor_heap_desc;
 	descriptor_heap_name = descriptor_heap_name_in;
-	heap_block_size = heap_block_size_in;
-	heap_block_num = heap_desc_in.NumDescriptors / heap_block_size_in;
-	heap_desc = heap_desc_in;
-	per_offset_size = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetDescriptorHandleIncrementSize(heap_desc.Type);
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::Create()
-{
-	//创建描述符堆
-	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&heap_data));
+	bind_descriptor_num = bind_descriptor_num_in;
+	bindless_descriptor_num = bindless_descriptor_num_in;
+	per_segmental_size = per_segmental_size_in;
+	//计算每一个描述符的大小
+	per_descriptor_size = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetDescriptorHandleIncrementSize(descriptor_desc.Type);
+	//根据描述符堆格式创建描述符堆
+	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateDescriptorHeap(&descriptor_heap_desc, IID_PPV_ARGS(&descriptor_heap_data));
 	if (FAILED(hr))
 	{
 		PancystarEngine::EngineFailReason error_message(hr, "create descriptor heap error");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap", error_message);
 		return error_message;
 	}
-	//将描述符堆内的数据全部赋为空闲状态
-	for (pancy_object_id i = 0; i < heap_block_num; ++i)
+	//初始化所有的全局描述符ID
+	for (int i = 0; i < bind_descriptor_num; ++i)
 	{
-		empty_view_block.insert(i);
+		bind_descriptor_offset_reuse.push(i);
 	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildHeapBlock(pancy_resource_id &resource_view_ID)
-{
-	/*
-	if (resource_view_ID > heap_block_num)
+	//为bindless描述符区域初始化每个描述符段
+	pancy_object_id globel_offset = bind_descriptor_num;
+	pancy_object_id segmantal_id_self_add = 0;
+	for (int i = 0; i < bindless_descriptor_num; i += per_segmental_size)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap resource id: " + std::to_string(resource_view_ID) + " is bigger than the descriptor heap" + descriptor_heap_name + " size: " + std::to_string(heap_block_num));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("build resource view from desciptor heap", error_message);
-		return error_message;
-	}
-	if (resource_view_heap_block.find(resource_view_ID) != resource_view_heap_block.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap resource id: " + std::to_string(resource_view_ID) + " is already build do not rebuild resource in heap: " + descriptor_heap_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("build resource view from desciptor heap", error_message);
-		return error_message;
-	}
-	*/
-	if (empty_view_block.size() == 0)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap" + descriptor_heap_name + " do not have enough space to build a new resource view");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("build resource view from desciptor heap", error_message);
-		return error_message;
-	}
-	resource_view_ID = *empty_view_block.begin();
-	PancyResourceView *new_data = new PancyResourceView(heap_data, resource_view_ID, heap_desc.Type, heap_block_size);
-	resource_view_heap_block.insert(std::pair<pancy_object_id, PancyResourceView*>(resource_view_ID, new_data));
-	empty_view_block.erase(resource_view_ID);
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::FreeHeapBlock(const pancy_resource_id &resource_view_ID)
-{
-	auto now_resource_remove = resource_view_heap_block.find(resource_view_ID);
-	if (now_resource_remove == resource_view_heap_block.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find heap resource id: " + std::to_string(resource_view_ID) + " in descriptor heap: " + descriptor_heap_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("remove resource view from desciptor heap", error_message);
-		return error_message;
-	}
-	delete now_resource_remove->second;
-	empty_view_block.insert(now_resource_remove->first);
-	resource_view_heap_block.erase(now_resource_remove);
-	return PancystarEngine::succeed;
-}
-PancyResourceView* PancyDescriptorHeap::GetHeapBlock(const pancy_resource_id &resource_view_ID, PancystarEngine::EngineFailReason &check_error)
-{
-	auto now_resource_remove = resource_view_heap_block.find(resource_view_ID);
-	if (now_resource_remove == resource_view_heap_block.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find heap resource id: " + std::to_string(resource_view_ID) + " in descriptor heap: " + descriptor_heap_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("remove resource view from desciptor heap", error_message);
-		check_error = error_message;
-		return NULL;
-	}
-	check_error = PancystarEngine::succeed;
-	return now_resource_remove->second;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::GetDescriptorHeap(ID3D12DescriptorHeap **descriptor_heap_use)
-{
-	if (heap_data == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the discriptor heap haven't succeed inited");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get desciptor heap real pointer", error_message);
-		*descriptor_heap_use = NULL;
-		return error_message;
-	}
-	*descriptor_heap_use = heap_data.Get();
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildSRV(
-	const pancy_object_id &descriptor_block_id,
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in,
-	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = descriptor_heap_use->BuildSRV(self_offset, resource_in, SRV_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildCBV(
-	const pancy_object_id &descriptor_block_id,
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = descriptor_heap_use->BuildCBV(self_offset, resource_in);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildUAV(
-	const pancy_object_id &descriptor_block_id,
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in,
-	const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = descriptor_heap_use->BuildUAV(self_offset, resource_in, UAV_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildRTV(
-	const pancy_object_id &descriptor_block_id,
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in,
-	const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = descriptor_heap_use->BuildRTV(self_offset, resource_in, RTV_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildDSV(
-	const pancy_object_id &descriptor_block_id,
-	const pancy_object_id &self_offset,
-	const SubMemoryPointer &resource_in,
-	const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = descriptor_heap_use->BuildDSV(self_offset, resource_in, DSV_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
+		BindlessResourceViewSegmental *new_segmental = new BindlessResourceViewSegmental(per_segmental_size, globel_offset + i, per_descriptor_size, descriptor_heap_data);
+		if (new_segmental == NULL)
+		{
+			//开辟描述符段失败
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "Build bindless texture segmental failed with NULL return");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bindless texture segmental", error_message);
+			return error_message;
+		}
+		if (new_segmental->GetEmptyDescriptorNum() != per_segmental_size)
+		{
+			//开辟描述符段得到的描述符数量不等于预期的描述符数量
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "Build bindless texture segmental failed with Wrong dscriptor num,ask: " + std::to_string(per_segmental_size) + " but find: " + std::to_string(new_segmental->GetEmptyDescriptorNum()));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bindless texture segmental", error_message);
+			return error_message;
+		}
+		//将新的描述符段保留到存储描述符段的表中
+		BindlessDescriptorID new_descriptor_segmental_id;
+		new_descriptor_segmental_id.bindless_id = segmantal_id_self_add;
+		new_descriptor_segmental_id.empty_resource_size = per_segmental_size;
+		bindless_descriptor_id_map.insert(std::pair<pancy_object_id, BindlessDescriptorID>(new_descriptor_segmental_id.bindless_id, new_descriptor_segmental_id));
+		descriptor_segmental_map.insert(std::pair<BindlessDescriptorID, BindlessResourceViewSegmental*>(new_descriptor_segmental_id, new_segmental));
+		segmantal_id_self_add += 1;
 	}
 	return PancystarEngine::succeed;
 }
 PancyDescriptorHeap::~PancyDescriptorHeap()
 {
-	for (auto free_data = resource_view_heap_block.begin(); free_data != resource_view_heap_block.end(); ++free_data)
-	{
-		delete free_data->second;
-	}
-	resource_view_heap_block.clear();
 }
-//资源描述符堆管理器
-PancyDescriptorHeapControl::PancyDescriptorHeapControl()
-{
-	descriptor_heap_id_selfadd = 0;
-	//描述符类型
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_RTV", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_RTV),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_RTV).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_DSV", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_DSV),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_DSV).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_FLAG_NONE", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_FLAG_NONE),typeid(D3D12_DESCRIPTOR_HEAP_FLAG_NONE).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE),typeid(D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE).name());
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildDescriptorHeap(
-	const std::string &descriptor_heap_name_in,
-	const pancy_object_id &heap_block_size_in,
-	const D3D12_DESCRIPTOR_HEAP_DESC &heap_desc_in,
-	ResourceViewPack &RSV_pack_id
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindlessShaderResourceViewPage(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	const std::vector<SubMemoryPointer> &describe_memory_data,
+	const pancy_object_id &SRV_pack_size,
+	BindlessResourceViewID &descriptor_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//没有对应的描述符堆，先创建一个
-	if (resource_init_list.find(descriptor_heap_name_in) == resource_init_list.end())
+	if (SRV_pack_size <= 0)
 	{
-		pancy_object_id new_heap_id;
-		if (resource_memory_free_id.size() != 0)
+		//需要创建的SRV数量小于等于0
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture with size:" + SRV_pack_size);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV for bindless texture", error_message);
+		return error_message;
+	}
+	//先挑选一个合适的bindless描述符段(要求剩余描述符足够，且尽量在其他描述符中的空余值最小)
+	BindlessResourceViewSegmental* RSV_segmental = NULL;
+	BindlessDescriptorID check_min_size_id;
+	check_min_size_id.bindless_id = 0;
+	check_min_size_id.empty_resource_size = SRV_pack_size;
+	auto min_resource_data = descriptor_segmental_map.lower_bound(check_min_size_id);
+	if (min_resource_data != descriptor_segmental_map.end())
+	{
+		//描述符堆中存在符合要求的描述符段，直接在该描述符段上开辟描述符页
+		descriptor_id.segmental_id = min_resource_data->first.bindless_id;
+		RSV_segmental = min_resource_data->second;
+	}
+	else
+	{
+		//描述符堆已满
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture,the heap is full，ask number: " + std::to_string(SRV_pack_size));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV for bindless texture", error_message);
+		return error_message;
+	}
+	//在描述符段上开辟一个描述符页
+	check_error = RSV_segmental->BuildBindlessShaderResourceViewPack(SRV_desc, describe_memory_data, SRV_pack_size, descriptor_id.page_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//修改描述符页的大小(先从map中删除老的描述符页，再将新的描述符页插入到map中,实现通过Map维护描述符页大小的功能)
+	check_error = RefreshBindlessResourcesegmentalSize(min_resource_data->first.bindless_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessResourcesegmentalSize(const pancy_object_id &resourc_id)
+{
+
+	auto now_resource_data = bindless_descriptor_id_map.find(resourc_id);
+	if (now_resource_data == bindless_descriptor_id_map.end())
+	{
+		//需要刷新的资源id不存在
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless resource segmental id" + std::to_string(resourc_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV size", error_message);
+		return error_message;
+	}
+	auto RSV_segmental = descriptor_segmental_map.find(now_resource_data->second);
+	if (RSV_segmental == descriptor_segmental_map.end())
+	{
+		//需要刷新的资源不存在
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless resource segmental resource" + std::to_string(resourc_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV size", error_message);
+		return error_message;
+	}
+	//记录当前需要更替的资源的新地址与旧地址
+	BindlessDescriptorID old_size_id;
+	BindlessDescriptorID new_size_id;
+	BindlessResourceViewSegmental *segmental_resource;
+	new_size_id.bindless_id = resourc_id;
+	new_size_id.empty_resource_size = RSV_segmental->second->GetEmptyDescriptorNum();
+	old_size_id = now_resource_data->second;
+	segmental_resource = RSV_segmental->second;
+	//刷新ID
+	bindless_descriptor_id_map.erase(old_size_id.bindless_id);
+	bindless_descriptor_id_map.insert(std::pair<pancy_object_id, BindlessDescriptorID>(new_size_id.bindless_id, new_size_id));
+	//刷新内容
+	descriptor_segmental_map.erase(old_size_id);
+	descriptor_segmental_map.insert(std::pair<BindlessDescriptorID, BindlessResourceViewSegmental*>(new_size_id, segmental_resource));
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindlessShaderResourceViewPage(
+	const BindlessResourceViewID &descriptor_id,
+	bool is_refresh_segmental
+)
+{
+	auto resource_id = bindless_descriptor_id_map.find(descriptor_id.segmental_id);
+	if (resource_id == bindless_descriptor_id_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bindless SRV from segmental", error_message);
+		return error_message;
+	}
+	auto descriptor_resource = descriptor_segmental_map.find(resource_id->second);
+	if (descriptor_resource == descriptor_segmental_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bindless SRV from segmental", error_message);
+		return error_message;
+	}
+	PancystarEngine::EngineFailReason check_error;
+	if (is_refresh_segmental)
+	{
+		//要求删除页信息后立即刷新段信息
+		check_error = descriptor_resource->second->DeleteBindlessShaderResourceViewPackAndRefresh(descriptor_id.page_id);
+	}
+	else
+	{
+		//删除页信息后不立即刷新段信息
+		check_error = descriptor_resource->second->DeleteBindlessShaderResourceViewPack(descriptor_id.page_id);
+	}
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//重新计算页的大小并刷新页表
+	check_error = RefreshBindlessResourcesegmentalSize(descriptor_id.segmental_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessShaderResourceViewSegmental()
+{
+	PancystarEngine::EngineFailReason check_error;
+	int size = bindless_descriptor_id_map.size();
+	for (int i = 0; i < size; ++i)
+	{
+		BindlessDescriptorID new_id = bindless_descriptor_id_map[i];
+		auto bindlessresource = descriptor_segmental_map.find(new_id);
+		if (bindlessresource == descriptor_segmental_map.end())
 		{
-			new_heap_id = *resource_memory_free_id.begin();
-			resource_memory_free_id.erase(new_heap_id);
+			//未找到请求的资源
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(i));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV segmental", error_message);
+			return error_message;
 		}
-		else
-		{
-			new_heap_id = descriptor_heap_id_selfadd;
-			descriptor_heap_id_selfadd += 1;
-		}
-		PancyDescriptorHeap *new_heap = new PancyDescriptorHeap(descriptor_heap_name_in, heap_block_size_in, heap_desc_in);
-		check_error = new_heap->Create();
+		check_error = bindlessresource->second->RefreshBindlessShaderResourceViewPack();
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		resource_init_list.insert(std::pair<std::string, pancy_resource_id>(descriptor_heap_name_in, new_heap_id));
-		resource_heap_list.insert(std::pair<pancy_resource_id, PancyDescriptorHeap*>(new_heap_id, new_heap));
+		check_error = RefreshBindlessResourcesegmentalSize(i);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 	}
-	//在描述符下创建一个资源描述包
-	RSV_pack_id.descriptor_heap_type_id = resource_init_list.find(descriptor_heap_name_in)->second;
-	auto resview_heap_data = resource_heap_list.find(RSV_pack_id.descriptor_heap_type_id);
-	check_error = resview_heap_data->second->BuildHeapBlock(RSV_pack_id.descriptor_heap_offset);
+	return PancystarEngine::succeed;
+}
+//创建全局描述符
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelShaderResourceView(
+	const std::string &globel_name,
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	const std::vector <SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer
+) 
+{
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了同名的全局描述符
+	if (check_if_has_data != descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel SRV: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//创建一个普通的绑定描述符
+	pancy_object_id bind_resource_id;
+	PancystarEngine::EngineFailReason check_error;
+	check_error = BuildBindShaderResourceView(SRV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	//将绑定描述符与全局变量进行绑定
+	descriptor_globel_map[globel_name] = bind_resource_id;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelRenderTargetView(
+	const std::string &globel_name,
+	const std::vector<D3D12_RENDER_TARGET_VIEW_DESC> &RTV_desc,
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer
+) 
+{
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了同名的全局描述符
+	if (check_if_has_data != descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel RTV: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//创建一个普通的绑定描述符
+	pancy_object_id bind_resource_id;
+	PancystarEngine::EngineFailReason check_error;
+	check_error = BuildBindRenderTargetView(RTV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	//将绑定描述符与全局变量进行绑定
+	descriptor_globel_map[globel_name] = bind_resource_id;
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildResourceViewFromFile(
-	const std::string &file_name,
-	ResourceViewPack &RSV_pack_id,
-	pancy_object_id &per_resource_view_pack_size
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelUnorderedAccessView(
+	const std::string &globel_name,
+	const std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> &UAV_desc,
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer
+) 
+{
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了同名的全局描述符
+	if (check_if_has_data != descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel UAV: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//创建一个普通的绑定描述符
+	pancy_object_id bind_resource_id;
+	PancystarEngine::EngineFailReason check_error;
+	check_error = BuildBindUnorderedAccessView(UAV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//将绑定描述符与全局变量进行绑定
+	descriptor_globel_map[globel_name] = bind_resource_id;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelDepthStencilView(
+	const std::string &globel_name,
+	const std::vector < D3D12_DEPTH_STENCIL_VIEW_DESC> &DSV_desc,
+	const std::vector <SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer
+) 
+{
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了同名的全局描述符
+	if (check_if_has_data != descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel DSV: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//创建一个普通的绑定描述符
+	pancy_object_id bind_resource_id;
+	PancystarEngine::EngineFailReason check_error;
+	check_error = BuildBindDepthStencilView(DSV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//将绑定描述符与全局变量进行绑定
+	descriptor_globel_map[globel_name] = bind_resource_id;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelConstantBufferView(
+	const std::string &globel_name,
+	const std::vector <SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer
+) 
+{
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了同名的全局描述符
+	if (check_if_has_data != descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel DSV: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//创建一个普通的绑定描述符
+	pancy_object_id bind_resource_id;
+	PancystarEngine::EngineFailReason check_error;
+	check_error = BuildBindConstantBufferView(memory_data, if_build_multi_buffer, bind_resource_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//将绑定描述符与全局变量进行绑定
+	descriptor_globel_map[globel_name] = bind_resource_id;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteGlobelDescriptor(const std::string &globel_name)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了同名的全局描述符
+	if (check_if_has_data == descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find globel descriptor: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//先删除描述符资源
+	check_error = DeleteGlobelDescriptor(check_if_has_data->second);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	//再删除描述符资源的命名关联
+	descriptor_globel_map.erase(globel_name);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::PreBuildBindDescriptor(
+	const D3D12_DESCRIPTOR_HEAP_TYPE &descriptor_type,
+	const bool if_build_multi_buffer,
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> &descriptor_cpu_handle,
+	CommonDescriptorPointer &new_descriptor_data
+)
+{
+	pancy_object_id multibuffer_num = static_cast<pancy_object_id>(PancyDx12DeviceBasic::GetInstance()->GetFrameNum());
+	PancystarEngine::EngineFailReason check_error;
+	//检测是否还有空余的描述符位置
+	if (bind_descriptor_offset_reuse.size() == 0 || (if_build_multi_buffer && bind_descriptor_offset_reuse.size() < multibuffer_num))
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap is full, could not build new bind descriptor: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//检测需要创建的描述符数量(允许创建多个缓冲区则置1，否则根据当前程序渲染帧的数量创建多组资源)
+	pancy_object_id build_descriptor_num = 1;
+	if (if_build_multi_buffer)
+	{
+		build_descriptor_num = multibuffer_num;
+		new_descriptor_data.if_multi_buffer = true;
+	}
+	//根据需要创建的描述符的数量来计算每个描述符在描述符堆内的真正偏移量
+	descriptor_cpu_handle.clear();
+	for (int i = 0; i < build_descriptor_num; ++i)
+	{
+		new_descriptor_data.descriptor_offset.push_back(bind_descriptor_offset_reuse.front());
+		new_descriptor_data.descriptor_type = descriptor_type;
+		//计算描述符真正的位置
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
+		pancy_resource_size real_descriptor_offset = static_cast<pancy_resource_size>(bind_descriptor_offset_reuse.front()) * static_cast<pancy_resource_size>(per_descriptor_size);
+		cpuHandle.Offset(real_descriptor_offset);
+		descriptor_cpu_handle.push_back(cpuHandle);
+		//删除当前可用的一个ID号
+		bind_descriptor_offset_reuse.pop();
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindShaderResourceView(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer,
+	pancy_object_id &descriptor_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	D3D12_DESCRIPTOR_HEAP_DESC descriptor_heap_desc;
-	pancy_json_value root_data;
-	//加载json文件
-	Json::Value root_value;
-	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(file_name, root_value);
-	if (!check_error.CheckIfSucceed())
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
+	CommonDescriptorPointer new_descriptor_data;
+	//检测当前的描述符堆格式是否与期望的描述符一致
+	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
 	{
-		return check_error;
-	}
-	//读取每个resourceview绑定包的大小
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, root_value, "heap_block_size", pancy_json_data_type::json_data_int, root_data);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	per_resource_view_pack_size = static_cast<pancy_object_id>(root_data.int_value);
-	//读取描述符堆的格式
-	Json::Value heap_desc_value = root_value.get("D3D12_DESCRIPTOR_HEAP_DESC", Json::Value::null);
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "Type", pancy_json_data_type::json_data_enum, root_data);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	descriptor_heap_desc.Type = static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(root_data.int_value);
-
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "NumDescriptors", pancy_json_data_type::json_data_int, root_data);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	descriptor_heap_desc.NumDescriptors = root_data.int_value;
-
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "NodeMask", pancy_json_data_type::json_data_int, root_data);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	descriptor_heap_desc.NodeMask = root_data.int_value;
-
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "Flags", pancy_json_data_type::json_data_enum, root_data);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	descriptor_heap_desc.Flags = static_cast<D3D12_DESCRIPTOR_HEAP_FLAGS>(root_data.int_value);
-	//创建描述符数据
-	check_error = BuildDescriptorHeap(file_name, per_resource_view_pack_size, descriptor_heap_desc, RSV_pack_id);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::FreeDescriptorHeap(pancy_resource_id &descriptor_heap_id)
-{
-	if (resource_heap_list.find(descriptor_heap_id) == resource_heap_list.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(descriptor_heap_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free descriptor heap", error_message);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not SRV, could not build bind descriptor: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
 		return error_message;
 	}
-	auto now_free_data = resource_heap_list.find(descriptor_heap_id);
-	//删除资源的名称存档
-	resource_init_list.erase(now_free_data->second->GetDescriptorName());
-	//释放资源的id到空闲队列
-	resource_memory_free_id.insert(descriptor_heap_id);
-	//删除资源
-	delete now_free_data->second;
-	//删除资源的记录
-	resource_heap_list.erase(now_free_data);
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetDescriptorHeap(const ResourceViewPack &heap_id, ID3D12DescriptorHeap **descriptor_heap_use)
-{
-	auto heap_data = resource_heap_list.find(heap_id.descriptor_heap_type_id);
-	if (heap_data == resource_heap_list.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap ID: " + std::to_string(heap_id.descriptor_heap_type_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor heap", error_message);
-		*descriptor_heap_use = NULL;
-		return error_message;
-	}
-	return heap_data->second->GetDescriptorHeap(descriptor_heap_use);
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildSRV(
-	const ResourceViewPointer &RSV_point,
-	const SubMemoryPointer &resource_in,
-	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
-)
-{
-	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
-	if (descriptor_heap_use == resource_heap_list.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
-		return error_message;
-	}
-	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildSRV(
-		RSV_point.resource_view_pack_id.descriptor_heap_offset, 
-		RSV_point.resource_view_offset_id, 
-		resource_in, 
-		SRV_desc
+	//预处理描述符在描述符堆中的位置
+	check_error = PreBuildBindDescriptor(
+		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		if_build_multi_buffer,
+		cpuHandle,
+		new_descriptor_data
 	);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	//创建SRV
+	for (int i = 0; i < memory_data.size(); ++i)
+	{
+		check_error = SubresourceControl::GetInstance()->BuildShaderResourceView(memory_data[i], cpuHandle[i], SRV_desc[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	//将新创建的描述符加入到map中
+	descriptor_id = new_descriptor_data.descriptor_offset[0];
+	descriptor_bind_map[descriptor_id] = new_descriptor_data;
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCBV(
-	const ResourceViewPointer &RSV_point,
-	const SubMemoryPointer &resource_in
-)
-{
-	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
-	if (descriptor_heap_use == resource_heap_list.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
-		return error_message;
-	}
-	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildCBV(
-		RSV_point.resource_view_pack_id.descriptor_heap_offset, 
-		RSV_point.resource_view_offset_id, 
-		resource_in
-	);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildUAV(
-	const ResourceViewPointer &RSV_point,
-	const SubMemoryPointer &resource_in,
-	const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
-)
-{
-	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
-	if (descriptor_heap_use == resource_heap_list.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
-		return error_message;
-	}
-	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildUAV(
-		RSV_point.resource_view_pack_id.descriptor_heap_offset, 
-		RSV_point.resource_view_offset_id, 
-		resource_in, 
-		UAV_desc
-	);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildRTV(
-	const ResourceViewPointer &RSV_point,
-	const SubMemoryPointer &resource_in,
-	const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
-)
-{
-	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
-	if (descriptor_heap_use == resource_heap_list.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
-		return error_message;
-	}
-	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildRTV(
-		RSV_point.resource_view_pack_id.descriptor_heap_offset, 
-		RSV_point.resource_view_offset_id, 
-		resource_in,
-		RTV_desc
-	);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildDSV(
-	const ResourceViewPointer &RSV_point,
-	const SubMemoryPointer &resource_in,
-	const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindRenderTargetView(
+	const std::vector<D3D12_RENDER_TARGET_VIEW_DESC> &RTV_desc,
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer,
+	pancy_object_id &descriptor_id
 ) 
 {
-	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
-	if (descriptor_heap_use == resource_heap_list.end())
+	PancystarEngine::EngineFailReason check_error;
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
+	CommonDescriptorPointer new_descriptor_data;
+	//检测当前的描述符堆格式是否与期望的描述符一致
+	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not RTV, could not build bind descriptor: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
 		return error_message;
 	}
-	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildDSV(
-		RSV_point.resource_view_pack_id.descriptor_heap_offset,
-		RSV_point.resource_view_offset_id,
-		resource_in,
-		DSV_desc
+	//预处理描述符在描述符堆中的位置
+	check_error = PreBuildBindDescriptor(
+		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+		if_build_multi_buffer,
+		cpuHandle,
+		new_descriptor_data
 	);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	//创建RTV
+	for (int i = 0; i < memory_data.size(); ++i)
+	{
+		check_error = SubresourceControl::GetInstance()->BuildRenderTargetView(memory_data[i], cpuHandle[i], RTV_desc[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	//将新创建的描述符加入到map中
+	descriptor_id = new_descriptor_data.descriptor_offset[0];
+	descriptor_bind_map[descriptor_id] = new_descriptor_data;
 	return PancystarEngine::succeed;
 }
-PancyDescriptorHeapControl::~PancyDescriptorHeapControl()
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindUnorderedAccessView(
+	const std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> &UAV_desc,
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer,
+	pancy_object_id &descriptor_id
+) 
 {
-	std::vector<pancy_resource_id> free_id_list;
-	for (auto data_free = resource_heap_list.begin(); data_free != resource_heap_list.end(); ++data_free)
+	PancystarEngine::EngineFailReason check_error;
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
+	CommonDescriptorPointer new_descriptor_data;
+	//检测当前的描述符堆格式是否与期望的描述符一致
+	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
 	{
-		free_id_list.push_back(data_free->first);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not UAV, could not build bind descriptor: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
+		return error_message;
 	}
-	for (int i = 0; i < free_id_list.size(); ++i)
+	//预处理描述符在描述符堆中的位置
+	check_error = PreBuildBindDescriptor(
+		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		if_build_multi_buffer,
+		cpuHandle,
+		new_descriptor_data
+	);
+	if (!check_error.CheckIfSucceed())
 	{
-		FreeDescriptorHeap(free_id_list[i]);
+		return check_error;
 	}
-	resource_memory_free_id.clear();
+	//创建UAV
+	for (int i = 0; i < memory_data.size(); ++i)
+	{
+		check_error = SubresourceControl::GetInstance()->BuildUnorderedAccessView(memory_data[i], cpuHandle[i], UAV_desc[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	//将新创建的描述符加入到map中
+	descriptor_id = new_descriptor_data.descriptor_offset[0];
+	descriptor_bind_map[descriptor_id] = new_descriptor_data;
+	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindDepthStencilView(
+	const std::vector<D3D12_DEPTH_STENCIL_VIEW_DESC> &DSV_desc,
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer,
+	pancy_object_id &descriptor_id
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
+	CommonDescriptorPointer new_descriptor_data;
+	//检测当前的描述符堆格式是否与期望的描述符一致
+	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not DSV, could not build bind descriptor: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
+		return error_message;
+	}
+	//预处理描述符在描述符堆中的位置
+	check_error = PreBuildBindDescriptor(
+		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+		if_build_multi_buffer,
+		cpuHandle,
+		new_descriptor_data
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//创建DSV
+	for (int i = 0; i < memory_data.size(); ++i)
+	{
+		check_error = SubresourceControl::GetInstance()->BuildDepthStencilView(memory_data[i], cpuHandle[i], DSV_desc[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	//将新创建的描述符加入到map中
+	descriptor_id = new_descriptor_data.descriptor_offset[0];
+	descriptor_bind_map[descriptor_id] = new_descriptor_data;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindConstantBufferView(
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer,
+	pancy_object_id &descriptor_id
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
+	CommonDescriptorPointer new_descriptor_data;
+	//检测当前的描述符堆格式是否与期望的描述符一致
+	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not CBV, could not build bind descriptor: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
+		return error_message;
+	}
+	//预处理描述符在描述符堆中的位置
+	check_error = PreBuildBindDescriptor(
+		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		if_build_multi_buffer,
+		cpuHandle,
+		new_descriptor_data
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//创建UAV
+	for (int i = 0; i < memory_data.size(); ++i)
+	{
+		check_error = SubresourceControl::GetInstance()->BuildConstantBufferView(memory_data[i], cpuHandle[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	//将新创建的描述符加入到map中
+	descriptor_id = new_descriptor_data.descriptor_offset[0];
+	descriptor_bind_map[descriptor_id] = new_descriptor_data;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteGlobelDescriptor(const pancy_object_id &descriptor_id)
+{
+	auto check_if_has_data = descriptor_bind_map.find(descriptor_id);
+	//先检查待删除的描述符是否存在
+	if (check_if_has_data == descriptor_bind_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find bind descriptor: " + std::to_string(descriptor_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bind descriptor from heap", error_message);
+		return error_message;
+	}
+	//删除当前的描述符数据
+	descriptor_bind_map.erase(descriptor_id);
+	//将删除完毕的描述符ID还给描述符ID池再利用
+	bind_descriptor_offset_reuse.push(descriptor_id);
+	return PancystarEngine::succeed;
+}
+////资源描述视图
+//PancyResourceView::PancyResourceView(
+//	ComPtr<ID3D12DescriptorHeap> heap_data_in,
+//	const int32_t &heap_offset_in,
+//	D3D12_DESCRIPTOR_HEAP_TYPE &resource_type_in,
+//	const int32_t &view_number_in
+//)
+//{
+//	heap_data = heap_data_in;
+//	heap_offset = heap_offset_in;
+//	resource_view_number = view_number_in;
+//	resource_type = resource_type_in;
+//	resource_block_size = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetDescriptorHandleIncrementSize(resource_type);
+//}
+//PancystarEngine::EngineFailReason PancyResourceView::BuildSRV(
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	//检验偏移是否合法
+//	if (self_offset >= resource_view_number)
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "the srv id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add SRV to descriptor heap block", error_message);
+//		return error_message;
+//	}
+//	//创建描述符
+//	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
+//	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
+//	cpuHandle.Offset(heap_start_pos);
+//	check_error = SubresourceControl::GetInstance()->BuildShaderResourceView(resource_in, cpuHandle, SRV_desc);
+//	if (!check_error.CheckIfSucceed()) 
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyResourceView::BuildCBV(
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	//检验偏移是否合法
+//	if (self_offset >= resource_view_number)
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "the CBV id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add CBV to descriptor heap block", error_message);
+//		return error_message;
+//	}
+//	//创建描述符
+//	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
+//	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
+//	cpuHandle.Offset(heap_start_pos);
+//	check_error = SubresourceControl::GetInstance()->BuildConstantBufferView(resource_in, cpuHandle);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyResourceView::BuildUAV(
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	//检验偏移是否合法
+//	if (self_offset >= resource_view_number)
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "the UAV id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add UAV to descriptor heap block", error_message);
+//		return error_message;
+//	}
+//	//创建描述符
+//	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
+//	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
+//	cpuHandle.Offset(heap_start_pos);
+//	//创建描述符
+//	check_error = SubresourceControl::GetInstance()->BuildUnorderedAccessView(resource_in, cpuHandle, UAV_desc);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyResourceView::BuildRTV(
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	//检验偏移是否合法
+//	if (self_offset >= resource_view_number)
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "the RTV id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add RTV to descriptor heap block", error_message);
+//		return error_message;
+//	}
+//	//创建描述符
+//	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
+//	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
+//	cpuHandle.Offset(heap_start_pos);
+//	check_error = SubresourceControl::GetInstance()->BuildRenderTargetView(resource_in, cpuHandle, RTV_desc);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyResourceView::BuildDSV(
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
+//) 
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	//检验偏移是否合法
+//	if (self_offset >= resource_view_number)
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "the DSV id: " + std::to_string(self_offset) + " is bigger than the max id of descriptor heap block");
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add DSV to descriptor heap block", error_message);
+//		return error_message;
+//	}
+//	//创建描述符
+//	int32_t heap_start_pos = heap_offset * resource_view_number * static_cast<int32_t>(resource_block_size) + static_cast<int32_t>(self_offset) * static_cast<int32_t>(resource_block_size);
+//	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(heap_data->GetCPUDescriptorHandleForHeapStart());
+//	cpuHandle.Offset(heap_start_pos);
+//	check_error = SubresourceControl::GetInstance()->BuildDepthStencilView(resource_in, cpuHandle, DSV_desc);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+////资源描述符管理堆
+//PancyDescriptorHeap::PancyDescriptorHeap(
+//	const std::string &descriptor_heap_name_in,
+//	const pancy_object_id &heap_block_size_in,
+//	const D3D12_DESCRIPTOR_HEAP_DESC &heap_desc_in
+//)
+//{
+//	descriptor_heap_name = descriptor_heap_name_in;
+//	heap_block_size = heap_block_size_in;
+//	heap_block_num = heap_desc_in.NumDescriptors / heap_block_size_in;
+//	heap_desc = heap_desc_in;
+//	per_offset_size = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetDescriptorHandleIncrementSize(heap_desc.Type);
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeap::Create()
+//{
+//	//创建描述符堆
+//	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&heap_data));
+//	if (FAILED(hr))
+//	{
+//		PancystarEngine::EngineFailReason error_message(hr, "create descriptor heap error");
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap", error_message);
+//		return error_message;
+//	}
+//	//将描述符堆内的数据全部赋为空闲状态
+//	for (pancy_object_id i = 0; i < heap_block_num; ++i)
+//	{
+//		empty_view_block.insert(i);
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildHeapBlock(pancy_resource_id &resource_view_ID)
+//{
+//	/*
+//	if (resource_view_ID > heap_block_num)
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap resource id: " + std::to_string(resource_view_ID) + " is bigger than the descriptor heap" + descriptor_heap_name + " size: " + std::to_string(heap_block_num));
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("build resource view from desciptor heap", error_message);
+//		return error_message;
+//	}
+//	if (resource_view_heap_block.find(resource_view_ID) != resource_view_heap_block.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap resource id: " + std::to_string(resource_view_ID) + " is already build do not rebuild resource in heap: " + descriptor_heap_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("build resource view from desciptor heap", error_message);
+//		return error_message;
+//	}
+//	*/
+//	if (empty_view_block.size() == 0)
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap" + descriptor_heap_name + " do not have enough space to build a new resource view");
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("build resource view from desciptor heap", error_message);
+//		return error_message;
+//	}
+//	resource_view_ID = *empty_view_block.begin();
+//	PancyResourceView *new_data = new PancyResourceView(heap_data, resource_view_ID, heap_desc.Type, heap_block_size);
+//	resource_view_heap_block.insert(std::pair<pancy_object_id, PancyResourceView*>(resource_view_ID, new_data));
+//	empty_view_block.erase(resource_view_ID);
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeap::FreeHeapBlock(const pancy_resource_id &resource_view_ID)
+//{
+//	auto now_resource_remove = resource_view_heap_block.find(resource_view_ID);
+//	if (now_resource_remove == resource_view_heap_block.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find heap resource id: " + std::to_string(resource_view_ID) + " in descriptor heap: " + descriptor_heap_name);
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("remove resource view from desciptor heap", error_message);
+//		return error_message;
+//	}
+//	delete now_resource_remove->second;
+//	empty_view_block.insert(now_resource_remove->first);
+//	resource_view_heap_block.erase(now_resource_remove);
+//	return PancystarEngine::succeed;
+//}
+//PancyResourceView* PancyDescriptorHeap::GetHeapBlock(const pancy_resource_id &resource_view_ID, PancystarEngine::EngineFailReason &check_error)
+//{
+//	auto now_resource_remove = resource_view_heap_block.find(resource_view_ID);
+//	if (now_resource_remove == resource_view_heap_block.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find heap resource id: " + std::to_string(resource_view_ID) + " in descriptor heap: " + descriptor_heap_name);
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("remove resource view from desciptor heap", error_message);
+//		check_error = error_message;
+//		return NULL;
+//	}
+//	check_error = PancystarEngine::succeed;
+//	return now_resource_remove->second;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeap::GetDescriptorHeap(ID3D12DescriptorHeap **descriptor_heap_use)
+//{
+//	if (heap_data == NULL)
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "the discriptor heap haven't succeed inited");
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get desciptor heap real pointer", error_message);
+//		*descriptor_heap_use = NULL;
+//		return error_message;
+//	}
+//	*descriptor_heap_use = heap_data.Get();
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildSRV(
+//	const pancy_object_id &descriptor_block_id,
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	check_error = descriptor_heap_use->BuildSRV(self_offset, resource_in, SRV_desc);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildCBV(
+//	const pancy_object_id &descriptor_block_id,
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	check_error = descriptor_heap_use->BuildCBV(self_offset, resource_in);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildUAV(
+//	const pancy_object_id &descriptor_block_id,
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	check_error = descriptor_heap_use->BuildUAV(self_offset, resource_in, UAV_desc);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildRTV(
+//	const pancy_object_id &descriptor_block_id,
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	check_error = descriptor_heap_use->BuildRTV(self_offset, resource_in, RTV_desc);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildDSV(
+//	const pancy_object_id &descriptor_block_id,
+//	const pancy_object_id &self_offset,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
+//) 
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	PancyResourceView *descriptor_heap_use = GetHeapBlock(descriptor_block_id, check_error);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	check_error = descriptor_heap_use->BuildDSV(self_offset, resource_in, DSV_desc);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancyDescriptorHeap::~PancyDescriptorHeap()
+//{
+//	for (auto free_data = resource_view_heap_block.begin(); free_data != resource_view_heap_block.end(); ++free_data)
+//	{
+//		delete free_data->second;
+//	}
+//	resource_view_heap_block.clear();
+//}
+////资源描述符堆管理器
+//PancyDescriptorHeapControl::PancyDescriptorHeapControl()
+//{
+//	descriptor_heap_id_selfadd = 0;
+//	//描述符类型
+//	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV).name());
+//	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER).name());
+//	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_RTV", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_RTV),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_RTV).name());
+//	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_DSV", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_DSV),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_DSV).name());
+//	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES),typeid(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES).name());
+//	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_FLAG_NONE", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_FLAG_NONE),typeid(D3D12_DESCRIPTOR_HEAP_FLAG_NONE).name());
+//	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE),typeid(D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE).name());
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildDescriptorHeap(
+//	const std::string &descriptor_heap_name_in,
+//	const pancy_object_id &heap_block_size_in,
+//	const D3D12_DESCRIPTOR_HEAP_DESC &heap_desc_in,
+//	ResourceViewPack &RSV_pack_id
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	//没有对应的描述符堆，先创建一个
+//	if (resource_init_list.find(descriptor_heap_name_in) == resource_init_list.end())
+//	{
+//		pancy_object_id new_heap_id;
+//		if (resource_memory_free_id.size() != 0)
+//		{
+//			new_heap_id = *resource_memory_free_id.begin();
+//			resource_memory_free_id.erase(new_heap_id);
+//		}
+//		else
+//		{
+//			new_heap_id = descriptor_heap_id_selfadd;
+//			descriptor_heap_id_selfadd += 1;
+//		}
+//		PancyDescriptorHeap *new_heap = new PancyDescriptorHeap(descriptor_heap_name_in, heap_block_size_in, heap_desc_in);
+//		check_error = new_heap->Create();
+//		if (!check_error.CheckIfSucceed())
+//		{
+//			return check_error;
+//		}
+//		resource_init_list.insert(std::pair<std::string, pancy_resource_id>(descriptor_heap_name_in, new_heap_id));
+//		resource_heap_list.insert(std::pair<pancy_resource_id, PancyDescriptorHeap*>(new_heap_id, new_heap));
+//	}
+//	//在描述符下创建一个资源描述包
+//	RSV_pack_id.descriptor_heap_type_id = resource_init_list.find(descriptor_heap_name_in)->second;
+//	auto resview_heap_data = resource_heap_list.find(RSV_pack_id.descriptor_heap_type_id);
+//	check_error = resview_heap_data->second->BuildHeapBlock(RSV_pack_id.descriptor_heap_offset);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildResourceViewFromFile(
+//	const std::string &file_name,
+//	ResourceViewPack &RSV_pack_id,
+//	pancy_object_id &per_resource_view_pack_size
+//)
+//{
+//	PancystarEngine::EngineFailReason check_error;
+//	D3D12_DESCRIPTOR_HEAP_DESC descriptor_heap_desc;
+//	pancy_json_value root_data;
+//	//加载json文件
+//	Json::Value root_value;
+//	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(file_name, root_value);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	//读取每个resourceview绑定包的大小
+//	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, root_value, "heap_block_size", pancy_json_data_type::json_data_int, root_data);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	per_resource_view_pack_size = static_cast<pancy_object_id>(root_data.int_value);
+//	//读取描述符堆的格式
+//	Json::Value heap_desc_value = root_value.get("D3D12_DESCRIPTOR_HEAP_DESC", Json::Value::null);
+//	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "Type", pancy_json_data_type::json_data_enum, root_data);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	descriptor_heap_desc.Type = static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(root_data.int_value);
+//
+//	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "NumDescriptors", pancy_json_data_type::json_data_int, root_data);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	descriptor_heap_desc.NumDescriptors = root_data.int_value;
+//
+//	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "NodeMask", pancy_json_data_type::json_data_int, root_data);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	descriptor_heap_desc.NodeMask = root_data.int_value;
+//
+//	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, heap_desc_value, "Flags", pancy_json_data_type::json_data_enum, root_data);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	descriptor_heap_desc.Flags = static_cast<D3D12_DESCRIPTOR_HEAP_FLAGS>(root_data.int_value);
+//	//创建描述符数据
+//	check_error = BuildDescriptorHeap(file_name, per_resource_view_pack_size, descriptor_heap_desc, RSV_pack_id);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeapControl::FreeDescriptorHeap(pancy_resource_id &descriptor_heap_id)
+//{
+//	if (resource_heap_list.find(descriptor_heap_id) == resource_heap_list.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(descriptor_heap_id));
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free descriptor heap", error_message);
+//		return error_message;
+//	}
+//	auto now_free_data = resource_heap_list.find(descriptor_heap_id);
+//	//删除资源的名称存档
+//	resource_init_list.erase(now_free_data->second->GetDescriptorName());
+//	//释放资源的id到空闲队列
+//	resource_memory_free_id.insert(descriptor_heap_id);
+//	//删除资源
+//	delete now_free_data->second;
+//	//删除资源的记录
+//	resource_heap_list.erase(now_free_data);
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetDescriptorHeap(const ResourceViewPack &heap_id, ID3D12DescriptorHeap **descriptor_heap_use)
+//{
+//	auto heap_data = resource_heap_list.find(heap_id.descriptor_heap_type_id);
+//	if (heap_data == resource_heap_list.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap ID: " + std::to_string(heap_id.descriptor_heap_type_id));
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor heap", error_message);
+//		*descriptor_heap_use = NULL;
+//		return error_message;
+//	}
+//	return heap_data->second->GetDescriptorHeap(descriptor_heap_use);
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildSRV(
+//	const ResourceViewPointer &RSV_point,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
+//)
+//{
+//	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
+//	if (descriptor_heap_use == resource_heap_list.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
+//		return error_message;
+//	}
+//	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildSRV(
+//		RSV_point.resource_view_pack_id.descriptor_heap_offset, 
+//		RSV_point.resource_view_offset_id, 
+//		resource_in, 
+//		SRV_desc
+//	);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCBV(
+//	const ResourceViewPointer &RSV_point,
+//	const SubMemoryPointer &resource_in
+//)
+//{
+//	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
+//	if (descriptor_heap_use == resource_heap_list.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
+//		return error_message;
+//	}
+//	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildCBV(
+//		RSV_point.resource_view_pack_id.descriptor_heap_offset, 
+//		RSV_point.resource_view_offset_id, 
+//		resource_in
+//	);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildUAV(
+//	const ResourceViewPointer &RSV_point,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_UNORDERED_ACCESS_VIEW_DESC &UAV_desc
+//)
+//{
+//	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
+//	if (descriptor_heap_use == resource_heap_list.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
+//		return error_message;
+//	}
+//	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildUAV(
+//		RSV_point.resource_view_pack_id.descriptor_heap_offset, 
+//		RSV_point.resource_view_offset_id, 
+//		resource_in, 
+//		UAV_desc
+//	);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildRTV(
+//	const ResourceViewPointer &RSV_point,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_RENDER_TARGET_VIEW_DESC    &RTV_desc
+//)
+//{
+//	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
+//	if (descriptor_heap_use == resource_heap_list.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
+//		return error_message;
+//	}
+//	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildRTV(
+//		RSV_point.resource_view_pack_id.descriptor_heap_offset, 
+//		RSV_point.resource_view_offset_id, 
+//		resource_in,
+//		RTV_desc
+//	);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildDSV(
+//	const ResourceViewPointer &RSV_point,
+//	const SubMemoryPointer &resource_in,
+//	const D3D12_DEPTH_STENCIL_VIEW_DESC    &DSV_desc
+//) 
+//{
+//	auto descriptor_heap_use = resource_heap_list.find(RSV_point.resource_view_pack_id.descriptor_heap_type_id);
+//	if (descriptor_heap_use == resource_heap_list.end())
+//	{
+//		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the descriptor heap id: " + std::to_string(RSV_point.resource_view_pack_id.descriptor_heap_type_id));
+//		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Resource view from descriptor heap", error_message);
+//		return error_message;
+//	}
+//	PancystarEngine::EngineFailReason check_error = descriptor_heap_use->second->BuildDSV(
+//		RSV_point.resource_view_pack_id.descriptor_heap_offset,
+//		RSV_point.resource_view_offset_id,
+//		resource_in,
+//		DSV_desc
+//	);
+//	if (!check_error.CheckIfSucceed())
+//	{
+//		return check_error;
+//	}
+//	return PancystarEngine::succeed;
+//}
+//PancyDescriptorHeapControl::~PancyDescriptorHeapControl()
+//{
+//	std::vector<pancy_resource_id> free_id_list;
+//	for (auto data_free = resource_heap_list.begin(); data_free != resource_heap_list.end(); ++data_free)
+//	{
+//		free_id_list.push_back(data_free->first);
+//	}
+//	for (int i = 0; i < free_id_list.size(); ++i)
+//	{
+//		FreeDescriptorHeap(free_id_list[i]);
+//	}
+//	resource_memory_free_id.clear();
+//}
