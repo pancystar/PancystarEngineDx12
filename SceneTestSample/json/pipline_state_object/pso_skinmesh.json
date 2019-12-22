@@ -2,5 +2,23 @@
   "PSOType": "PSO_TYPE_COMPUTE",
   "RootSignature": "json\\root_signature\\skinmesh_root_signature.json",
   "ComputeShader": "shader\\skinmesh.hlsl",
-  "ComputeShaderFunc": "CSMain"
+  "ComputeShaderFunc": "CSMain",
+  "DescriptorType": [
+    {
+      "name": "per_object",
+      "type": "CbufferPrivate"
+    },
+    {
+      "name": "vertex_data",
+      "type": "SRVPrivate"
+    },
+    {
+      "name": "bone_matrix_buffer",
+      "type": "SRVGlobel"
+    },
+    {
+      "name": "mesh_anim_data",
+      "type": "SRVGlobel"
+    }
+  ]
 }

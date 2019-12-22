@@ -1838,6 +1838,20 @@ PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessS
 	}
 	return PancystarEngine::succeed;
 }
+const BindlessResourceViewPointer BindlessResourceViewSegmental::GetDescriptorPageOffset(const pancy_object_id &descriptor_page_id)
+{
+	auto check_descriptor_page = descriptor_data.find(descriptor_page_id);
+	if (check_descriptor_page == descriptor_data.end())
+	{
+		BindlessResourceViewPointer error_pointer;
+		error_pointer.resource_view_offset = 0;
+		error_pointer.resource_view_num = 0;
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the descriptor page ID: " + std::to_string(descriptor_page_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor page from Segmental", error_message);
+		return error_pointer;
+	}
+	return check_descriptor_page->second;
+}
 //用于描述符堆资源的容量排序
 bool BindlessDescriptorID::operator<(const BindlessDescriptorID& other)  const
 {
@@ -1847,7 +1861,7 @@ bool BindlessDescriptorID::operator<(const BindlessDescriptorID& other)  const
 	}
 	return (bindless_id < other.bindless_id);
 }
-//描述符堆管理器，用于从描述符上分配描述符
+//描述符堆，用于从描述符上分配描述符
 PancyDescriptorHeap::PancyDescriptorHeap()
 {
 
@@ -1856,7 +1870,6 @@ PancyDescriptorHeap::PancyDescriptorHeap()
 PancystarEngine::EngineFailReason PancyDescriptorHeap::Create(
 	const D3D12_DESCRIPTOR_HEAP_DESC &descriptor_heap_desc,
 	const std::string &descriptor_heap_name_in,
-	const pancy_object_id &globel_descriptor_num_in,
 	const pancy_object_id &bind_descriptor_num_in,
 	const pancy_object_id &bindless_descriptor_num_in,
 	const pancy_object_id &per_segmental_size_in
@@ -1914,6 +1927,10 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::Create(
 }
 PancyDescriptorHeap::~PancyDescriptorHeap()
 {
+	for (auto release_data = descriptor_segmental_map.begin(); release_data != descriptor_segmental_map.end(); ++release_data) 
+	{
+		delete release_data->second;
+	}
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindlessShaderResourceViewPage(
 	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
@@ -2071,132 +2088,25 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessShaderReso
 	return PancystarEngine::succeed;
 }
 //创建全局描述符
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelShaderResourceView(
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelDescriptor(
 	const std::string &globel_name,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	const std::vector<BasicDescriptorDesc> &SRV_desc,
 	const std::vector <SubMemoryPointer>& memory_data,
 	const bool if_build_multi_buffer
-) 
+)
 {
 	auto check_if_has_data = descriptor_globel_map.find(globel_name);
 	//先检查是否已经创建了同名的全局描述符
 	if (check_if_has_data != descriptor_globel_map.end())
 	{
-		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel SRV: " + globel_name);
+		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel descriptor: " + globel_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
 		return error_message;
 	}
 	//创建一个普通的绑定描述符
 	pancy_object_id bind_resource_id;
 	PancystarEngine::EngineFailReason check_error;
-	check_error = BuildBindShaderResourceView(SRV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
-	}
-	//将绑定描述符与全局变量进行绑定
-	descriptor_globel_map[globel_name] = bind_resource_id;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelRenderTargetView(
-	const std::string &globel_name,
-	const std::vector<D3D12_RENDER_TARGET_VIEW_DESC> &RTV_desc,
-	const std::vector<SubMemoryPointer>& memory_data,
-	const bool if_build_multi_buffer
-) 
-{
-	auto check_if_has_data = descriptor_globel_map.find(globel_name);
-	//先检查是否已经创建了同名的全局描述符
-	if (check_if_has_data != descriptor_globel_map.end())
-	{
-		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel RTV: " + globel_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
-		return error_message;
-	}
-	//创建一个普通的绑定描述符
-	pancy_object_id bind_resource_id;
-	PancystarEngine::EngineFailReason check_error;
-	check_error = BuildBindRenderTargetView(RTV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//将绑定描述符与全局变量进行绑定
-	descriptor_globel_map[globel_name] = bind_resource_id;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelUnorderedAccessView(
-	const std::string &globel_name,
-	const std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> &UAV_desc,
-	const std::vector<SubMemoryPointer>& memory_data,
-	const bool if_build_multi_buffer
-) 
-{
-	auto check_if_has_data = descriptor_globel_map.find(globel_name);
-	//先检查是否已经创建了同名的全局描述符
-	if (check_if_has_data != descriptor_globel_map.end())
-	{
-		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel UAV: " + globel_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
-		return error_message;
-	}
-	//创建一个普通的绑定描述符
-	pancy_object_id bind_resource_id;
-	PancystarEngine::EngineFailReason check_error;
-	check_error = BuildBindUnorderedAccessView(UAV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//将绑定描述符与全局变量进行绑定
-	descriptor_globel_map[globel_name] = bind_resource_id;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelDepthStencilView(
-	const std::string &globel_name,
-	const std::vector < D3D12_DEPTH_STENCIL_VIEW_DESC> &DSV_desc,
-	const std::vector <SubMemoryPointer>& memory_data,
-	const bool if_build_multi_buffer
-) 
-{
-	auto check_if_has_data = descriptor_globel_map.find(globel_name);
-	//先检查是否已经创建了同名的全局描述符
-	if (check_if_has_data != descriptor_globel_map.end())
-	{
-		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel DSV: " + globel_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
-		return error_message;
-	}
-	//创建一个普通的绑定描述符
-	pancy_object_id bind_resource_id;
-	PancystarEngine::EngineFailReason check_error;
-	check_error = BuildBindDepthStencilView(DSV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//将绑定描述符与全局变量进行绑定
-	descriptor_globel_map[globel_name] = bind_resource_id;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelConstantBufferView(
-	const std::string &globel_name,
-	const std::vector <SubMemoryPointer>& memory_data,
-	const bool if_build_multi_buffer
-) 
-{
-	auto check_if_has_data = descriptor_globel_map.find(globel_name);
-	//先检查是否已经创建了同名的全局描述符
-	if (check_if_has_data != descriptor_globel_map.end())
-	{
-		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel DSV: " + globel_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
-		return error_message;
-	}
-	//创建一个普通的绑定描述符
-	pancy_object_id bind_resource_id;
-	PancystarEngine::EngineFailReason check_error;
-	check_error = BuildBindConstantBufferView(memory_data, if_build_multi_buffer, bind_resource_id);
+	check_error = BuildBindDescriptor(SRV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -2209,7 +2119,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteGlobelDescriptor(co
 {
 	PancystarEngine::EngineFailReason check_error;
 	auto check_if_has_data = descriptor_globel_map.find(globel_name);
-	//先检查是否已经创建了同名的全局描述符
+	//先检查是否已经创建了全局描述符
 	if (check_if_has_data == descriptor_globel_map.end())
 	{
 		PancystarEngine::EngineFailReason error_message(S_OK, "could not find globel descriptor: " + globel_name);
@@ -2217,13 +2127,77 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteGlobelDescriptor(co
 		return error_message;
 	}
 	//先删除描述符资源
-	check_error = DeleteGlobelDescriptor(check_if_has_data->second);
-	if (!check_error.CheckIfSucceed()) 
+	check_error = DeleteBindDescriptor(check_if_has_data->second);
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//再删除描述符资源的命名关联
 	descriptor_globel_map.erase(globel_name);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::GetGlobelDesciptorID(const std::string &globel_name, pancy_object_id &descriptor_id)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了全局描述符
+	if (check_if_has_data == descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find globel descriptor: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get globel descriptor from heap", error_message);
+		return error_message;
+	}
+	descriptor_id = check_if_has_data->second;
+	return PancystarEngine::succeed;
+}
+
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindDescriptor(
+	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer,
+	pancy_object_id &descriptor_id
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
+	CommonDescriptorPointer new_descriptor_data;
+	//检测当前的描述符堆格式是否与期望的描述符一致
+	D3D12_DESCRIPTOR_HEAP_TYPE now_descriptor_heap = GetDescriptorHeapTypeOfDescriptor(now_descriptor_desc_in[0]);
+	if (descriptor_desc.Type != now_descriptor_heap)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not same as heap, could not build bind descriptor: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
+		return error_message;
+	}
+	//预处理描述符在描述符堆中的位置
+	check_error = PreBuildBindDescriptor(
+		now_descriptor_heap,
+		if_build_multi_buffer,
+		cpuHandle,
+		new_descriptor_data
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	if (cpuHandle.size() != memory_data.size()) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "descriptor_number: "+std::to_string(cpuHandle.size())+"do not match resource number: "+ std::to_string(memory_data.size())+" checking if need to build multi buffer");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BuildBindDescriptor", error_message);
+		return error_message;
+	}
+	//创建描述符
+	for (int i = 0; i < memory_data.size(); ++i)
+	{
+		check_error = BuildDescriptorData(now_descriptor_desc_in[i], memory_data[i], cpuHandle[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	//将新创建的描述符加入到map中
+	descriptor_id = new_descriptor_data.descriptor_offset[0];
+	descriptor_bind_map[descriptor_id] = new_descriptor_data;
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeap::PreBuildBindDescriptor(
@@ -2265,216 +2239,62 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::PreBuildBindDescriptor(
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindShaderResourceView(
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
-	const std::vector<SubMemoryPointer>& memory_data,
-	const bool if_build_multi_buffer,
-	pancy_object_id &descriptor_id
+D3D12_DESCRIPTOR_HEAP_TYPE PancyDescriptorHeap::GetDescriptorHeapTypeOfDescriptor(const BasicDescriptorDesc &descriptor_desc)
+{
+	switch (descriptor_desc.basic_descriptor_type)
+	{
+	case PancyDescriptorType::DescriptorTypeShaderResourceView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		break;
+	case PancyDescriptorType::DescriptorTypeUnorderedAccessView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		break;
+	case PancyDescriptorType::DescriptorTypeConstantBufferView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		break;
+	case PancyDescriptorType::DescriptorTypeRenderTargetView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		break;
+	case PancyDescriptorType::DescriptorTypeDepthStencilView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		break;
+	default:
+		break;
+	}
+	return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildDescriptorData(
+	const BasicDescriptorDesc &descriptor_data,
+	const SubMemoryPointer &submemory_data,
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE &cpuHandle
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
-	CommonDescriptorPointer new_descriptor_data;
-	//检测当前的描述符堆格式是否与期望的描述符一致
-	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
+	switch (descriptor_data.basic_descriptor_type)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not SRV, could not build bind descriptor: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
-		return error_message;
+	case PancyDescriptorType::DescriptorTypeShaderResourceView:
+		check_error = SubresourceControl::GetInstance()->BuildShaderResourceView(submemory_data, cpuHandle, descriptor_data.shader_resource_view_desc);
+		break;
+	case PancyDescriptorType::DescriptorTypeUnorderedAccessView:
+		check_error = SubresourceControl::GetInstance()->BuildUnorderedAccessView(submemory_data, cpuHandle, descriptor_data.unordered_access_view_desc);
+		break;
+	case PancyDescriptorType::DescriptorTypeConstantBufferView:
+		check_error = SubresourceControl::GetInstance()->BuildConstantBufferView(submemory_data, cpuHandle);
+		break;
+	case PancyDescriptorType::DescriptorTypeRenderTargetView:
+		check_error = SubresourceControl::GetInstance()->BuildRenderTargetView(submemory_data, cpuHandle, descriptor_data.render_target_view_desc);
+		break;
+	case PancyDescriptorType::DescriptorTypeDepthStencilView:
+		check_error = SubresourceControl::GetInstance()->BuildDepthStencilView(submemory_data, cpuHandle, descriptor_data.depth_stencil_view_desc);
+		break;
+	default:
+		check_error = PancystarEngine::EngineFailReason(E_FAIL, "could not recognized descriptor type:");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor Data", check_error);
+		break;
 	}
-	//预处理描述符在描述符堆中的位置
-	check_error = PreBuildBindDescriptor(
-		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		if_build_multi_buffer,
-		cpuHandle,
-		new_descriptor_data
-	);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//创建SRV
-	for (int i = 0; i < memory_data.size(); ++i)
-	{
-		check_error = SubresourceControl::GetInstance()->BuildShaderResourceView(memory_data[i], cpuHandle[i], SRV_desc[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	//将新创建的描述符加入到map中
-	descriptor_id = new_descriptor_data.descriptor_offset[0];
-	descriptor_bind_map[descriptor_id] = new_descriptor_data;
-	return PancystarEngine::succeed;
+	return check_error;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindRenderTargetView(
-	const std::vector<D3D12_RENDER_TARGET_VIEW_DESC> &RTV_desc,
-	const std::vector<SubMemoryPointer>& memory_data,
-	const bool if_build_multi_buffer,
-	pancy_object_id &descriptor_id
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
-	CommonDescriptorPointer new_descriptor_data;
-	//检测当前的描述符堆格式是否与期望的描述符一致
-	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_RTV)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not RTV, could not build bind descriptor: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
-		return error_message;
-	}
-	//预处理描述符在描述符堆中的位置
-	check_error = PreBuildBindDescriptor(
-		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-		if_build_multi_buffer,
-		cpuHandle,
-		new_descriptor_data
-	);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//创建RTV
-	for (int i = 0; i < memory_data.size(); ++i)
-	{
-		check_error = SubresourceControl::GetInstance()->BuildRenderTargetView(memory_data[i], cpuHandle[i], RTV_desc[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	//将新创建的描述符加入到map中
-	descriptor_id = new_descriptor_data.descriptor_offset[0];
-	descriptor_bind_map[descriptor_id] = new_descriptor_data;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindUnorderedAccessView(
-	const std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> &UAV_desc,
-	const std::vector<SubMemoryPointer>& memory_data,
-	const bool if_build_multi_buffer,
-	pancy_object_id &descriptor_id
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
-	CommonDescriptorPointer new_descriptor_data;
-	//检测当前的描述符堆格式是否与期望的描述符一致
-	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not UAV, could not build bind descriptor: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
-		return error_message;
-	}
-	//预处理描述符在描述符堆中的位置
-	check_error = PreBuildBindDescriptor(
-		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		if_build_multi_buffer,
-		cpuHandle,
-		new_descriptor_data
-	);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//创建UAV
-	for (int i = 0; i < memory_data.size(); ++i)
-	{
-		check_error = SubresourceControl::GetInstance()->BuildUnorderedAccessView(memory_data[i], cpuHandle[i], UAV_desc[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	//将新创建的描述符加入到map中
-	descriptor_id = new_descriptor_data.descriptor_offset[0];
-	descriptor_bind_map[descriptor_id] = new_descriptor_data;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindDepthStencilView(
-	const std::vector<D3D12_DEPTH_STENCIL_VIEW_DESC> &DSV_desc,
-	const std::vector<SubMemoryPointer>& memory_data,
-	const bool if_build_multi_buffer,
-	pancy_object_id &descriptor_id
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
-	CommonDescriptorPointer new_descriptor_data;
-	//检测当前的描述符堆格式是否与期望的描述符一致
-	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not DSV, could not build bind descriptor: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
-		return error_message;
-	}
-	//预处理描述符在描述符堆中的位置
-	check_error = PreBuildBindDescriptor(
-		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
-		if_build_multi_buffer,
-		cpuHandle,
-		new_descriptor_data
-	);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//创建DSV
-	for (int i = 0; i < memory_data.size(); ++i)
-	{
-		check_error = SubresourceControl::GetInstance()->BuildDepthStencilView(memory_data[i], cpuHandle[i], DSV_desc[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	//将新创建的描述符加入到map中
-	descriptor_id = new_descriptor_data.descriptor_offset[0];
-	descriptor_bind_map[descriptor_id] = new_descriptor_data;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindConstantBufferView(
-	const std::vector<SubMemoryPointer>& memory_data,
-	const bool if_build_multi_buffer,
-	pancy_object_id &descriptor_id
-) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
-	CommonDescriptorPointer new_descriptor_data;
-	//检测当前的描述符堆格式是否与期望的描述符一致
-	if (descriptor_desc.Type != D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not CBV, could not build bind descriptor: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
-		return error_message;
-	}
-	//预处理描述符在描述符堆中的位置
-	check_error = PreBuildBindDescriptor(
-		D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		if_build_multi_buffer,
-		cpuHandle,
-		new_descriptor_data
-	);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//创建UAV
-	for (int i = 0; i < memory_data.size(); ++i)
-	{
-		check_error = SubresourceControl::GetInstance()->BuildConstantBufferView(memory_data[i], cpuHandle[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	//将新创建的描述符加入到map中
-	descriptor_id = new_descriptor_data.descriptor_offset[0];
-	descriptor_bind_map[descriptor_id] = new_descriptor_data;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteGlobelDescriptor(const pancy_object_id &descriptor_id)
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindDescriptor(const pancy_object_id &descriptor_id)
 {
 	auto check_if_has_data = descriptor_bind_map.find(descriptor_id);
 	//先检查待删除的描述符是否存在
@@ -2488,6 +2308,620 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteGlobelDescriptor(co
 	descriptor_bind_map.erase(descriptor_id);
 	//将删除完毕的描述符ID还给描述符ID池再利用
 	bind_descriptor_offset_reuse.push(descriptor_id);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BindGlobelDescriptor(
+	const std::string &globel_name,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	//先获取描述符堆的CPU指针
+	pancy_object_id bind_id_descriptor;
+	check_error = GetGlobelDesciptorID(globel_name, bind_id_descriptor);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//获取全局描述符的偏移量
+	check_error = BindCommonDescriptor(bind_id_descriptor, render_param_type, m_commandList, root_signature_offset);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BindCommonDescriptor(
+	const pancy_object_id &descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	//检测输入的ID号是否合法
+	if (descriptor_id >= bind_descriptor_num)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor id: " + std::to_string(descriptor_id) + " is bigger than the max id of descriptor heap: " + std::to_string(bind_descriptor_num));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindCommonDescriptor", error_message);
+		return error_message;
+	}
+	//先获取描述符堆的CPU指针
+	CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(descriptor_heap_data->GetGPUDescriptorHandleForHeapStart());
+	//获取全局描述符的信息
+	auto resource_id = descriptor_bind_map.find(descriptor_id);
+	if (resource_id == descriptor_bind_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bind descriptor :" + std::to_string(descriptor_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BindCommonDescriptor", error_message);
+		return error_message;
+	}
+	//根据描述符是否是交换帧类型来决定是否切帧（即老版本的rename操作）
+	pancy_object_id real_offset_descriptor;
+	if (resource_id->second.if_multi_buffer)
+	{
+		pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+		real_offset_descriptor = resource_id->second.descriptor_offset[now_frame_id];
+	}
+	else
+	{
+		real_offset_descriptor = resource_id->second.descriptor_offset[0];
+	}
+	//获取全局描述符的偏移量
+	pancy_object_id id_offset = real_offset_descriptor * per_descriptor_size;
+	srvHandle.Offset(id_offset);
+	//开始绑定描述符与commandlist
+	switch (render_param_type)
+	{
+	case D3D12_COMMAND_LIST_TYPE_DIRECT:
+		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(root_signature_offset, srvHandle);
+		break;
+	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+		m_commandList->GetCommandList()->SetComputeRootDescriptorTable(root_signature_offset, srvHandle);
+		break;
+	default:
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could only bind descriptor to graph/cpmpute commondlist:" + std::to_string(descriptor_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BindCommonDescriptor", error_message);
+		return error_message;
+		break;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::GetCommonDescriptorCpuOffset(const pancy_object_id &descriptor_id, CD3DX12_CPU_DESCRIPTOR_HANDLE &Cpu_Handle)
+{
+	//检测输入的ID号是否合法
+	if (descriptor_id >= bind_descriptor_num)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor id: " + std::to_string(descriptor_id) + " is bigger than the max id of descriptor heap: " + std::to_string(bind_descriptor_num));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindCommonDescriptor", error_message);
+		return error_message;
+	}
+	//先获取描述符堆的CPU指针
+	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
+	//获取全局描述符的信息
+	auto resource_id = descriptor_bind_map.find(descriptor_id);
+	if (resource_id == descriptor_bind_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bind descriptor :" + std::to_string(descriptor_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Bind bind descriptor from segmental", error_message);
+		return error_message;
+	}
+	//根据描述符是否是交换帧类型来决定是否切帧（即老版本的rename操作）
+	pancy_object_id real_offset_descriptor;
+	if (resource_id->second.if_multi_buffer)
+	{
+		pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
+		real_offset_descriptor = resource_id->second.descriptor_offset[now_frame_id];
+	}
+	else
+	{
+		real_offset_descriptor = resource_id->second.descriptor_offset[0];
+	}
+	//获取全局描述符的偏移量
+	pancy_object_id id_offset = real_offset_descriptor * per_descriptor_size;
+	srvHandle.Offset(id_offset);
+	Cpu_Handle = srvHandle;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BindBindlessDescriptor(
+	const BindlessResourceViewID &descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	//先获取描述符堆的CPU指针
+	if (descriptor_id.segmental_id >= bindless_descriptor_num)
+	{
+		//请求的描述符段位置超过了段地址的最大值
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the bindless descriptor segmental id: " + std::to_string(descriptor_id.segmental_id) + " is bigger than the max bindless segmental id of descriptor heap: " + std::to_string(bindless_descriptor_num));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindBindlessDescriptor", error_message);
+		return error_message;
+	}
+	else if (descriptor_id.page_id > per_segmental_size)
+	{
+		//请求的描述符页位置超过了每段地址的最大容量
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the bindless descriptor page id: " + std::to_string(descriptor_id.page_id) + " is bigger than the max bindless per_segmental_size id of descriptor heap: " + std::to_string(per_segmental_size));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindBindlessDescriptor", error_message);
+		return error_message;
+	}
+	pancy_object_id bind_id_descriptor;
+	//查找当前描述符页对应的数据
+	auto resource_id = bindless_descriptor_id_map.find(descriptor_id.segmental_id);
+	if (resource_id == bindless_descriptor_id_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Bind bindless SRV from segmental", error_message);
+		return error_message;
+	}
+	auto descriptor_resource = descriptor_segmental_map.find(resource_id->second);
+	if (descriptor_resource == descriptor_segmental_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Bind bindless SRV from segmental", error_message);
+		return error_message;
+	}
+	//获取描述符页的真实偏移
+	const BindlessResourceViewPointer &descriptor_page_real_pos = descriptor_resource->second->GetDescriptorPageOffset(descriptor_id.page_id);
+	//计算解绑顶描述符的起始位置在描述符堆中的偏移（初始偏移+所有段间的偏移+段内偏移）
+	bind_id_descriptor = bind_descriptor_num + descriptor_id.segmental_id * per_segmental_size + descriptor_page_real_pos.resource_view_offset;
+	//先获取描述符堆的CPU指针
+	CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(descriptor_heap_data->GetGPUDescriptorHandleForHeapStart());
+	//获取全局描述符的偏移量
+	pancy_object_id id_offset = bind_id_descriptor * per_descriptor_size;
+	srvHandle.Offset(id_offset);
+	//开始绑定描述符与commandlist
+	switch (render_param_type)
+	{
+	case D3D12_COMMAND_LIST_TYPE_DIRECT:
+		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(root_signature_offset, srvHandle);
+		break;
+	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+		m_commandList->GetCommandList()->SetComputeRootDescriptorTable(root_signature_offset, srvHandle);
+		break;
+	default:
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could only bind descriptor to graph/cpmpute commondlist");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BindBindlessDescriptor", error_message);
+		return error_message;
+		break;
+	}
+	return PancystarEngine::succeed;
+}
+//描述符堆管理器
+PancyDescriptorHeapControl::PancyDescriptorHeapControl()
+{
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), typeid(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER), typeid(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_RTV", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_RTV), typeid(D3D12_DESCRIPTOR_HEAP_TYPE_RTV).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_DSV", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_DSV), typeid(D3D12_DESCRIPTOR_HEAP_TYPE_DSV).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES), typeid(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_FLAG_NONE", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_FLAG_NONE), typeid(D3D12_DESCRIPTOR_HEAP_FLAG_NONE).name());
+	PancyJsonTool::GetInstance()->SetGlobelVraiable("D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE", static_cast<int32_t>(D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE), typeid(D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE).name());
+	//创建三个基础的描述符堆
+	PancystarEngine::EngineFailReason check_error;
+	check_error = BuildNewDescriptorHeapFromJson("EngineResource\\BasicDescriptorHeap\\DesciptorHeapShaderResource.json", common_descriptor_heap_shader_resource);
+	if (!check_error.CheckIfSucceed())
+	{
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init Descriptor Heap Controler", check_error);
+	}
+	check_error = BuildNewDescriptorHeapFromJson("EngineResource\\BasicDescriptorHeap\\DesciptorHeapRenderTarget.json", common_descriptor_heap_render_target);
+	if (!check_error.CheckIfSucceed())
+	{
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init Descriptor Heap Controler", check_error);
+	}
+	check_error = BuildNewDescriptorHeapFromJson("EngineResource\\BasicDescriptorHeap\\DesciptorHeapDepthStencil.json", common_descriptor_heap_depth_stencil);
+	if (!check_error.CheckIfSucceed())
+	{
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init Descriptor Heap Controler", check_error);
+	}
+}
+PancyDescriptorHeapControl::~PancyDescriptorHeapControl() 
+{
+	for (auto release_heap = descriptor_heap_map.begin(); release_heap != descriptor_heap_map.end(); ++release_heap) 
+	{
+		delete release_heap->second;
+	}
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptorHeapFromJson(const std::string &json_name, const Json::Value &root_value, pancy_resource_id &descriptor_heap_id)
+{
+	PancystarEngine::EngineFailReason check_error;
+	PancyDescriptorHeap *descriptor_SRV = new PancyDescriptorHeap();
+	D3D12_DESCRIPTOR_HEAP_DESC descriptor_heap_desc;
+	pancy_json_value value_root;
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "Flags", pancy_json_data_type::json_data_enum, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.Flags = static_cast<D3D12_DESCRIPTOR_HEAP_FLAGS>(value_root.int_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "NodeMask", pancy_json_data_type::json_data_int, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.NodeMask = value_root.int_value;
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "Type", pancy_json_data_type::json_data_enum, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.Type = static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(value_root.int_value);
+	pancy_object_id bind_descriptor_num;
+	pancy_object_id bindless_descriptor_num;
+	pancy_object_id per_segmental_size;
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "BindDescriptorNum", pancy_json_data_type::json_data_int, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	bind_descriptor_num = static_cast<pancy_object_id>(value_root.int_value);
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "BindlessDescriptorNum", pancy_json_data_type::json_data_int, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	bindless_descriptor_num = static_cast<pancy_object_id>(value_root.int_value);
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "PerSegmentalSize", pancy_json_data_type::json_data_int, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	per_segmental_size = static_cast<pancy_object_id>(value_root.int_value);
+	descriptor_heap_desc.NumDescriptors = bind_descriptor_num + bindless_descriptor_num;
+	check_error = descriptor_SRV->Create(descriptor_heap_desc, json_name, bind_descriptor_num, bindless_descriptor_num, per_segmental_size);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	if (!descriptor_heap_id_reuse.empty())
+	{
+		descriptor_heap_id = descriptor_heap_id_reuse.front();
+		descriptor_heap_id_reuse.pop();
+	}
+	else
+	{
+		descriptor_heap_id = descriptor_heap_id_self_add;
+		descriptor_heap_id_self_add += 1;
+	}
+	descriptor_heap_map[descriptor_heap_id] = descriptor_SRV;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptorHeapFromJson(const std::string &json_file_name, pancy_resource_id &descriptor_heap_id)
+{
+	PancystarEngine::EngineFailReason check_error;
+	Json::Value root_value;
+	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(json_file_name, root_value);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = BuildNewDescriptorHeapFromJson(json_file_name, root_value, descriptor_heap_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::DeleteDescriptorHeap(const pancy_resource_id &descriptor_heap_id)
+{
+	auto descriptor_data = descriptor_heap_map.find(descriptor_heap_id);
+	if (descriptor_data == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find descriptor heap: " + std::to_string(descriptor_heap_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete descriptor heap from heap", error_message);
+		return error_message;
+	}
+	//删除描述符堆资源，并将ID号还给描述符堆管理器
+	delete descriptor_heap_map[descriptor_heap_id];
+	descriptor_heap_map.erase(descriptor_heap_id);
+	descriptor_heap_id_reuse.push(descriptor_heap_id);
+	return PancystarEngine::succeed;
+}
+pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const BasicDescriptorDesc &descriptor_desc)
+{
+	return GetCommonDescriptorHeapID(descriptor_desc.basic_descriptor_type);
+}
+pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const PancyDescriptorType &descriptor_type)
+{
+	switch (descriptor_type)
+	{
+	case PancyDescriptorType::DescriptorTypeShaderResourceView:
+		return common_descriptor_heap_shader_resource;
+		break;
+	case PancyDescriptorType::DescriptorTypeUnorderedAccessView:
+		return common_descriptor_heap_shader_resource;
+		break;
+	case PancyDescriptorType::DescriptorTypeConstantBufferView:
+		return common_descriptor_heap_shader_resource;
+		break;
+	case PancyDescriptorType::DescriptorTypeRenderTargetView:
+		return common_descriptor_heap_render_target;
+		break;
+	case PancyDescriptorType::DescriptorTypeDepthStencilView:
+		return common_descriptor_heap_depth_stencil;
+		break;
+	default:
+		break;
+	}
+	return common_descriptor_heap_shader_resource;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonDescriptor(
+	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer,
+	BindDescriptorPointer &descriptor_id
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id now_used_descriptor_heap = GetCommonDescriptorHeapID(now_descriptor_desc_in[0]);
+	auto common_descriptor_heap = descriptor_heap_map.find(now_used_descriptor_heap);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	descriptor_id.descriptor_heap_id = now_used_descriptor_heap;
+	check_error = common_descriptor_heap->second->BuildBindDescriptor(now_descriptor_desc_in, memory_data, if_build_multi_buffer, descriptor_id.descriptor_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonBindlessShaderResourceView(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	const std::vector<SubMemoryPointer> &describe_memory_data,
+	const pancy_object_id &SRV_pack_size,
+	BindlessDescriptorPointer &descriptor_id
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto common_srv_heap = descriptor_heap_map.find(common_descriptor_heap_shader_resource);
+	if (common_srv_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic SRV descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV descriptor heap from heap", error_message);
+		return error_message;
+	}
+	descriptor_id.descriptor_heap_id = common_descriptor_heap_shader_resource;
+	check_error = common_srv_heap->second->BuildBindlessShaderResourceViewPage(SRV_desc, describe_memory_data, SRV_pack_size, descriptor_id.descriptor_pack_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonGlobelDescriptor(
+	const std::string &globel_srv_name,
+	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+	const std::vector<SubMemoryPointer>& memory_data,
+	const bool if_build_multi_buffer
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id now_used_descriptor_heap = GetCommonDescriptorHeapID(now_descriptor_desc_in[0]);
+	auto common_descriptor_heap = descriptor_heap_map.find(now_used_descriptor_heap);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->BuildGlobelDescriptor(globel_srv_name, now_descriptor_desc_in, memory_data, if_build_multi_buffer);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetCommonGlobelDescriptorID(
+	PancyDescriptorType basic_descriptor_type,
+	const std::string &globel_srv_name,
+	BindDescriptorPointer &descriptor_id
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id now_used_descriptor_heap = GetCommonDescriptorHeapID(basic_descriptor_type);
+	auto common_descriptor_heap = descriptor_heap_map.find(now_used_descriptor_heap);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	descriptor_id.descriptor_heap_id = now_used_descriptor_heap;
+	check_error = common_descriptor_heap->second->GetGlobelDesciptorID(globel_srv_name, descriptor_id.descriptor_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetBasicDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_TYPE &descriptor_heap_type, ID3D12DescriptorHeap **descriptor_heap_out)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id common_descriptor_heap_id = 999999999;
+	switch (descriptor_heap_type)
+	{
+	case D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
+		common_descriptor_heap_id = common_descriptor_heap_shader_resource;
+		break;
+	case D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_RTV:
+		common_descriptor_heap_id = common_descriptor_heap_render_target;
+		break;
+	case D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+		common_descriptor_heap_id = common_descriptor_heap_depth_stencil;
+		break;
+	default:
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not get common descriptor heap,type not defined");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Common Descriptor Heap", error_message);
+		return error_message;
+		break;
+	}
+	auto common_descriptor_heap = descriptor_heap_map.find(common_descriptor_heap_id);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Common Descriptor Heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->GetDescriptorHeapData(descriptor_heap_out);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonGlobelDescriptor(
+	PancyDescriptorType basic_descriptor_type,
+	const std::string &globel_name,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id now_used_descriptor_heap = GetCommonDescriptorHeapID(basic_descriptor_type);
+	auto common_descriptor_heap = descriptor_heap_map.find(now_used_descriptor_heap);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->BindGlobelDescriptor(globel_name, render_param_type, m_commandList, root_signature_offset);
+	if (check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonDescriptor(
+	const BindDescriptorPointer &descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto common_descriptor_heap = descriptor_heap_map.find(descriptor_id.descriptor_heap_id);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find descriptor heap ID: " + std::to_string(descriptor_id.descriptor_heap_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->BindCommonDescriptor(descriptor_id.descriptor_id, render_param_type, m_commandList, root_signature_offset);
+	if (check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindBindlessDescriptor(
+	const BindlessDescriptorPointer &descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto common_descriptor_heap = descriptor_heap_map.find(descriptor_id.descriptor_heap_id);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find descriptor heap ID: " + std::to_string(descriptor_id.descriptor_heap_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->BindBindlessDescriptor(descriptor_id.descriptor_pack_id, render_param_type, m_commandList, root_signature_offset);
+	if (check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonRenderTargetUncontiguous(
+	const std::vector<pancy_object_id> rendertarget_list,
+	const pancy_object_id depthstencil_descriptor,
+	PancyRenderCommandList *m_commandList,
+	const bool &if_have_rendertarget,
+	const bool &if_have_depthstencil
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id rtv_number = 0;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE *rtvHandle;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	auto render_target_heap = descriptor_heap_map.find(common_descriptor_heap_render_target);
+	auto depth_stencil_heap = descriptor_heap_map.find(common_descriptor_heap_depth_stencil);
+	if (render_target_heap == descriptor_heap_map.end() || depth_stencil_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "haven't init common descriptor heap");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeapControl::BindCommonRenderTargetUncontiguous", error_message);
+		return error_message;
+	}
+	//获取所有渲染目标的偏移量
+	if (!if_have_rendertarget)
+	{
+		rtvHandle = NULL;
+	}
+	else
+	{
+		rtvHandle = new CD3DX12_CPU_DESCRIPTOR_HANDLE[rendertarget_list.size()];
+		for (int i = 0; i < rendertarget_list.size(); ++i)
+		{
+			check_error = render_target_heap->second->GetCommonDescriptorCpuOffset(rendertarget_list[i], rtvHandle[i]);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+		}
+		rtv_number = rendertarget_list.size();
+	}
+	//获取深度缓冲区偏移量
+	if (!if_have_depthstencil)
+	{
+		m_commandList->GetCommandList()->OMSetRenderTargets(rtv_number, rtvHandle, FALSE, NULL);
+	}
+	else
+	{
+		check_error = depth_stencil_heap->second->GetCommonDescriptorCpuOffset(depthstencil_descriptor, dsvHandle);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		m_commandList->GetCommandList()->OMSetRenderTargets(rtv_number, rtvHandle, FALSE, &dsvHandle);
+	}
+	delete[] rtvHandle;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetCommonDepthStencilBufferOffset(
+	const pancy_object_id depthstencil_descriptor,
+	CD3DX12_CPU_DESCRIPTOR_HANDLE &dsvHandle
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto depth_stencil_heap = descriptor_heap_map.find(common_descriptor_heap_depth_stencil);
+	if (depth_stencil_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "haven't init common descriptor heap");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeapControl::BindCommonRenderTargetUncontiguous", error_message);
+		return error_message;
+	}
+	check_error = depth_stencil_heap->second->GetCommonDescriptorCpuOffset(depthstencil_descriptor, dsvHandle);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 ////资源描述视图

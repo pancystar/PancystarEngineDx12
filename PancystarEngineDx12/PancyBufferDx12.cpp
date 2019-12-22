@@ -489,22 +489,25 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::ErrorVariableNotFind(cons
 	PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer Variable", error_message);
 	return error_message;
 }
-PancystarEngine::EngineFailReason PancyConstantBuffer::Create()
+PancystarEngine::EngineFailReason PancyConstantBuffer::Create(const Json::Value &root_value)
 {
-	std::string file_name = "json\\buffer\\" + cbuffer_effect_name + "_" + cbuffer_name+".json";
 	PancystarEngine::EngineFailReason check_error;
+	/*std::string file_name = "json\\buffer\\" + cbuffer_effect_name + "_" + cbuffer_name+".json";
 	Json::Value root_value;
 	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(file_name, root_value);
+	*/
+	//todo:暂时使用json目录，之后要删掉这个操作，根据cbuffer的格式来决定创建buffer的方式
+	std::string cbuffer_final_name = "json\\buffer\\" + cbuffer_effect_name + "_" + cbuffer_name + ".json";
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	check_error = GetCbufferDesc(file_name,root_value);
+	check_error = GetCbufferDesc(cbuffer_final_name,root_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, buffer_ID,true);
+	check_error = PancyBasicBufferControl::GetInstance()->LoadResource(cbuffer_final_name, buffer_ID,true);
 	if (!check_error.CheckIfSucceed()) 
 	{
 		return check_error;
@@ -537,8 +540,8 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 	Json::Value value_cbuffer_desc = root_value.get("CbufferDesc", Json::Value::null);
 	if (value_cbuffer_desc == Json::Value::null)
 	{
-		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value of variable value_cbuffer_desc");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create cbuffer :" + file_name + " error", error_mesage);
+		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value: CbufferDesc of variable: " + file_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyConstantBuffer::GetCbufferDesc", error_mesage);
 		return error_mesage;
 	}
 	//读取缓冲区大小
@@ -548,8 +551,8 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 	Json::Value value_cbuffer_member = value_cbuffer_desc.get("VariableMember", Json::Value::null);
 	if (value_cbuffer_member == Json::Value::null)
 	{
-		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value of variable value_cbuffer_member");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create cbuffer :" + file_name + " error", error_mesage);
+		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value: VariableMember of variable: " + file_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyConstantBuffer::GetCbufferDesc", error_mesage);
 		return error_mesage;
 	}
 	for (int32_t i = 0; i < value_cbuffer_member.size(); ++i) 

@@ -20,7 +20,6 @@ protected:
 	int32_t                               Scene_height;
 	bool                                  If_dsv_loaded;
 	std::vector<pancy_object_id>          Default_depthstencil_buffer;
-	std::vector<ResourceViewPointer>      Default_depthstencil_view;
 public:
 	SceneRoot();
 	PancystarEngine::EngineFailReason Create(int32_t width_in, int32_t height_in);
@@ -46,6 +45,7 @@ private:
 	virtual PancystarEngine::EngineFailReason Init() = 0;
 	virtual PancystarEngine::EngineFailReason ScreenChange() = 0;
 protected:
+	//todo：全局cbuffer不应该从PSO中获取，而应当从文件中获取
 	PancystarEngine::EngineFailReason GetGlobelCbuffer(
 		const pancy_object_id &PSO_id,
 		const std::string &cbuffer_name,

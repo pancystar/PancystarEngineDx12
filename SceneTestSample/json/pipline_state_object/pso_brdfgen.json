@@ -63,5 +63,8 @@
   "SampleDesc": {
     "Count": 1,
     "Quality": 0
-  }
+  },
+  "DescriptorType": [
+
+  ]
 }

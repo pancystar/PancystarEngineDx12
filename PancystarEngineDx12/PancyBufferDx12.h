@@ -119,7 +119,7 @@ namespace PancystarEngine
 	public:
 		PancyConstantBuffer(const std::string &cbuffer_name_in, const std::string &cbuffer_effect_name_in);
 		~PancyConstantBuffer();
-		PancystarEngine::EngineFailReason Create();
+		PancystarEngine::EngineFailReason Create(const Json::Value &root_value);
 		//PancystarEngine::EngineFailReason Create(const std::string &hash_name,const Json::Value &root_value);
 		PancystarEngine::EngineFailReason SetMatrix(const std::string &variable,const DirectX::XMFLOAT4X4 &mat_data,const pancy_resource_size &offset);
 		PancystarEngine::EngineFailReason SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data, const pancy_resource_size &offset);

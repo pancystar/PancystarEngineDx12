@@ -458,11 +458,10 @@ struct CommonDescriptorPointer
 	std::vector<pancy_object_id> descriptor_offset;
 	//描述符类型
 	D3D12_DESCRIPTOR_HEAP_TYPE descriptor_type;
-	CommonDescriptorPointer() 
+	CommonDescriptorPointer()
 	{
 		//初始化普通描述符指针
 		if_multi_buffer = false;
-		descriptor_offset.resize(2);
 		descriptor_type = D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	}
 };
@@ -520,6 +519,8 @@ public:
 	PancystarEngine::EngineFailReason RefreshBindlessShaderResourceViewPack();
 	//从描述符段里删除一组bindless描述符页并执行一次整理操作
 	PancystarEngine::EngineFailReason DeleteBindlessShaderResourceViewPackAndRefresh(const pancy_object_id &SRV_pack_id);
+	//获取一个描述符页的基础偏移
+	const BindlessResourceViewPointer GetDescriptorPageOffset(const pancy_object_id &descriptor_page_id);
 private:
 	//根据描述符页的指针信息，在描述符堆开辟描述符
 	PancystarEngine::EngineFailReason BuildShaderResourceView(const BindlessResourceViewPointer &resource_view_pointer);
@@ -535,10 +536,29 @@ struct BindlessDescriptorID
 	//重载小于运算符
 	bool operator<(const BindlessDescriptorID& other)  const;
 };
+//解绑定描述符段的id号
 struct BindlessResourceViewID
 {
 	pancy_object_id segmental_id;
 	pancy_object_id page_id;
+};
+enum PancyDescriptorType
+{
+	DescriptorTypeShaderResourceView = 0,
+	DescriptorTypeConstantBufferView,
+	DescriptorTypeUnorderedAccessView,
+	DescriptorTypeRenderTargetView,
+	DescriptorTypeDepthStencilView,
+};
+struct BasicDescriptorDesc
+{
+	//描述符的类型
+	PancyDescriptorType basic_descriptor_type;
+	//存储所有的描述符格式
+	D3D12_SHADER_RESOURCE_VIEW_DESC shader_resource_view_desc = {};
+	D3D12_UNORDERED_ACCESS_VIEW_DESC unordered_access_view_desc = {};
+	D3D12_RENDER_TARGET_VIEW_DESC render_target_view_desc = {};
+	D3D12_DEPTH_STENCIL_VIEW_DESC depth_stencil_view_desc = {};
 };
 //用于处理描述符堆
 class PancyDescriptorHeap
@@ -566,73 +586,45 @@ public:
 	PancystarEngine::EngineFailReason Create(
 		const D3D12_DESCRIPTOR_HEAP_DESC &descriptor_heap_desc,
 		const std::string &descriptor_heap_name_in,
-		const pancy_object_id &globel_descriptor_num_in,
 		const pancy_object_id &bind_descriptor_num_in,
 		const pancy_object_id &bindless_descriptor_num_in,
 		const pancy_object_id &per_segmental_size_in
 	);
+	inline PancystarEngine::EngineFailReason GetDescriptorHeapData(ID3D12DescriptorHeap **descriptor_heap_out)
+	{
+		*descriptor_heap_out = descriptor_heap_data.Get();
+		return PancystarEngine::succeed;
+	}
 	//创建全局描述符
-	PancystarEngine::EngineFailReason BuildGlobelShaderResourceView(
+	PancystarEngine::EngineFailReason BuildGlobelDescriptor(
 		const std::string &globel_name,
-		const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
-		const std::vector <SubMemoryPointer>& memory_data,
-		const bool if_build_multi_buffer
-	);
-	PancystarEngine::EngineFailReason BuildGlobelRenderTargetView(
-		const std::string &globel_name,
-		const std::vector<D3D12_RENDER_TARGET_VIEW_DESC> &RTV_desc,
-		const std::vector<SubMemoryPointer>& memory_data,
-		const bool if_build_multi_buffer
-	);
-	PancystarEngine::EngineFailReason BuildGlobelUnorderedAccessView(
-		const std::string &globel_name,
-		const std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> &UAV_desc,
-		const std::vector<SubMemoryPointer>& memory_data,
-		const bool if_build_multi_buffer
-	);
-	PancystarEngine::EngineFailReason BuildGlobelDepthStencilView(
-		const std::string &globel_name,
-		const std::vector < D3D12_DEPTH_STENCIL_VIEW_DESC> &DSV_desc,
-		const std::vector <SubMemoryPointer>& memory_data,
-		const bool if_build_multi_buffer
-	);
-	PancystarEngine::EngineFailReason BuildGlobelConstantBufferView(
-		const std::string &globel_name,
+		const std::vector<BasicDescriptorDesc> &SRV_desc,
 		const std::vector <SubMemoryPointer>& memory_data,
 		const bool if_build_multi_buffer
 	);
 	PancystarEngine::EngineFailReason DeleteGlobelDescriptor(const std::string &globel_name);
+	PancystarEngine::EngineFailReason GetGlobelDesciptorID(const std::string &globel_name, pancy_object_id &descriptor_id);
+	PancystarEngine::EngineFailReason BindGlobelDescriptor(
+		const std::string &globel_name,
+		const D3D12_COMMAND_LIST_TYPE &render_param_type,
+		PancyRenderCommandList *m_commandList,
+		const pancy_object_id &root_signature_offset
+	);
 	//创建私有的绑定描述符
-	PancystarEngine::EngineFailReason BuildBindShaderResourceView(
-		const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	PancystarEngine::EngineFailReason BuildBindDescriptor(
+		const std::vector<BasicDescriptorDesc> &descriptor_desc,
 		const std::vector<SubMemoryPointer>& memory_data,
 		const bool if_build_multi_buffer,
 		pancy_object_id &descriptor_id
 	);
-	PancystarEngine::EngineFailReason BuildBindRenderTargetView(
-		const std::vector<D3D12_RENDER_TARGET_VIEW_DESC> &RTV_desc,
-		const std::vector<SubMemoryPointer>& memory_data,
-		const bool if_build_multi_buffer,
-		pancy_object_id &descriptor_id
+	PancystarEngine::EngineFailReason DeleteBindDescriptor(const pancy_object_id &descriptor_id);
+	PancystarEngine::EngineFailReason BindCommonDescriptor(
+		const pancy_object_id &descriptor_id,
+		const D3D12_COMMAND_LIST_TYPE &render_param_type,
+		PancyRenderCommandList *m_commandList,
+		const pancy_object_id &root_signature_offset
 	);
-	PancystarEngine::EngineFailReason BuildBindUnorderedAccessView(
-		const std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> &UAV_desc,
-		const std::vector<SubMemoryPointer>& memory_data,
-		const bool if_build_multi_buffer,
-		pancy_object_id &descriptor_id
-	);
-	PancystarEngine::EngineFailReason BuildBindDepthStencilView(
-		const std::vector<D3D12_DEPTH_STENCIL_VIEW_DESC> &DSV_desc,
-		const std::vector<SubMemoryPointer>& memory_data,
-		const bool if_build_multi_buffer,
-		pancy_object_id &descriptor_id
-	);
-	PancystarEngine::EngineFailReason BuildBindConstantBufferView(
-		const std::vector<SubMemoryPointer>& memory_data,
-		const bool if_build_multi_buffer,
-		pancy_object_id &descriptor_id
-	);
-	PancystarEngine::EngineFailReason DeleteGlobelDescriptor(const pancy_object_id &descriptor_id);
+	PancystarEngine::EngineFailReason GetCommonDescriptorCpuOffset(const pancy_object_id &descriptor_id, CD3DX12_CPU_DESCRIPTOR_HANDLE &Cpu_Handle);
 	//创建私有的bindless描述符页
 	PancystarEngine::EngineFailReason BuildBindlessShaderResourceViewPage(
 		const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
@@ -647,6 +639,13 @@ public:
 	);
 	//整理所有的描述符段，消耗较大，在切换地图资源的时候配合不整理碎片的删除使用
 	PancystarEngine::EngineFailReason RefreshBindlessShaderResourceViewSegmental();
+	//将解绑定描述符绑定至rootsignature
+	PancystarEngine::EngineFailReason BindBindlessDescriptor(
+		const BindlessResourceViewID &descriptor_id,
+		const D3D12_COMMAND_LIST_TYPE &render_param_type,
+		PancyRenderCommandList *m_commandList,
+		const pancy_object_id &root_signature_offset
+	);
 private:
 	//重新刷新解绑定资源描述符段的大小，当描述符段增删查改的时候被调用
 	PancystarEngine::EngineFailReason RefreshBindlessResourcesegmentalSize(const pancy_object_id &resourc_id);
@@ -657,22 +656,44 @@ private:
 		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> &descriptor_cpu_handle,
 		CommonDescriptorPointer &new_descriptor_data
 	);
+	//创建描述符数据
+	PancystarEngine::EngineFailReason BuildDescriptorData(
+		const BasicDescriptorDesc &descriptor_data,
+		const SubMemoryPointer &submemory_data,
+		const CD3DX12_CPU_DESCRIPTOR_HANDLE &cpuHandle
+	);
+	//获取描述符堆格式
+	D3D12_DESCRIPTOR_HEAP_TYPE GetDescriptorHeapTypeOfDescriptor(const BasicDescriptorDesc &descriptor_desc);
 };
-struct BindDescriptor 
+
+//绑定描述符的虚拟指针
+struct BindDescriptorPointer
 {
 	//描述符堆ID
 	pancy_resource_id descriptor_heap_id;
 	//描述符ID
 	pancy_object_id descriptor_id;
 };
+//解绑定描述符的虚拟指针
+struct BindlessDescriptorPointer
+{
+	//描述符堆ID
+	pancy_resource_id descriptor_heap_id;
+	//描述符ID
+	BindlessResourceViewID descriptor_pack_id;
+};
+//用于管理所有的描述符堆
 class PancyDescriptorHeapControl
 {
+	pancy_resource_id descriptor_heap_id_self_add;
+	std::queue<pancy_resource_id> descriptor_heap_id_reuse;
 	pancy_resource_id common_descriptor_heap_shader_resource;
 	pancy_resource_id common_descriptor_heap_render_target;
 	pancy_resource_id common_descriptor_heap_depth_stencil;
 	std::unordered_map<pancy_resource_id, PancyDescriptorHeap*> descriptor_heap_map;
 	PancyDescriptorHeapControl();
 public:
+	~PancyDescriptorHeapControl();
 	static PancyDescriptorHeapControl* GetInstance()
 	{
 		static PancyDescriptorHeapControl* this_instance;
@@ -682,12 +703,78 @@ public:
 		}
 		return this_instance;
 	}
-	PancystarEngine::EngineFailReason BuildCommonShaderResourceView();
-	PancystarEngine::EngineFailReason BuildCommonUnorderedAccessView();
-	PancystarEngine::EngineFailReason BuildCommonConstantBufferView();
-	PancystarEngine::EngineFailReason BuildCommonRenderTargetView();
-	PancystarEngine::EngineFailReason BuildCommonDepthStencilView();
+	//获取基础的描述符堆
+	PancystarEngine::EngineFailReason GetBasicDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_TYPE &descriptor_desc, ID3D12DescriptorHeap **descriptor_heap_out);
+	//全局描述符
+	PancystarEngine::EngineFailReason BuildCommonGlobelDescriptor(
+		const std::string &globel_srv_name,
+		const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+		const std::vector<SubMemoryPointer>& memory_data,
+		const bool if_build_multi_buffer
+	);
+	PancystarEngine::EngineFailReason GetCommonGlobelDescriptorID(
+		PancyDescriptorType basic_descriptor_type,
+		const std::string &globel_srv_name,
+		BindDescriptorPointer &descriptor_id
+	);
+	PancystarEngine::EngineFailReason BindCommonGlobelDescriptor(
+		PancyDescriptorType basic_descriptor_type,
+		const std::string &globel_name,
+		const D3D12_COMMAND_LIST_TYPE &render_param_type,
+		PancyRenderCommandList *m_commandList,
+		const pancy_object_id &root_signature_offset
+	);
+	PancystarEngine::EngineFailReason BindCommonRenderTargetUncontiguous(
+		const std::vector<pancy_object_id> rendertarget_list,
+		const pancy_object_id depthstencil_descriptor,
+		PancyRenderCommandList *m_commandList,
+		const bool &if_have_rendertarget = true,
+		const bool &if_have_depthstencil = true
+	);
+	//todo:目前由于RTV在交换链中取出来无法管理，暂时给出取出depthstencil的方法用于测试，在资源管理器重做后要删除
+	PancystarEngine::EngineFailReason GetCommonDepthStencilBufferOffset(
+		const pancy_object_id depthstencil_descriptor,
+		CD3DX12_CPU_DESCRIPTOR_HANDLE &dsvHandle
+	);
+	//绑定描述符
+	PancystarEngine::EngineFailReason BuildCommonDescriptor(
+		const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+		const std::vector<SubMemoryPointer>& memory_data,
+		const bool if_build_multi_buffer,
+		BindDescriptorPointer &descriptor_id
+	);
+	PancystarEngine::EngineFailReason BindCommonDescriptor(
+		const BindDescriptorPointer &descriptor_id,
+		const D3D12_COMMAND_LIST_TYPE &render_param_type,
+		PancyRenderCommandList *m_commandList,
+		const pancy_object_id &root_signature_offset
+	);
+	//解绑定描述符
+	PancystarEngine::EngineFailReason BuildCommonBindlessShaderResourceView(
+		const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+		const std::vector<SubMemoryPointer> &describe_memory_data,
+		const pancy_object_id &SRV_pack_size,
+		BindlessDescriptorPointer &descriptor_id
+	);
+	PancystarEngine::EngineFailReason BindBindlessDescriptor(
+		const BindlessDescriptorPointer &descriptor_id,
+		const D3D12_COMMAND_LIST_TYPE &render_param_type,
+		PancyRenderCommandList *m_commandList,
+		const pancy_object_id &root_signature_offset
+	);
+	PancystarEngine::EngineFailReason ClearRenderTarget();
+	//添加与删除一个描述符堆
+	PancystarEngine::EngineFailReason BuildNewDescriptorHeapFromJson(const std::string &json_name, const Json::Value &root_value, pancy_resource_id &descriptor_heap_id);
+	PancystarEngine::EngineFailReason BuildNewDescriptorHeapFromJson(const std::string &json_file_name, pancy_resource_id &descriptor_heap_id);
+	PancystarEngine::EngineFailReason DeleteDescriptorHeap(const pancy_resource_id &descriptor_heap_id);
+private:
+	pancy_resource_id GetCommonDescriptorHeapID(const BasicDescriptorDesc &descriptor_desc);
+	pancy_resource_id GetCommonDescriptorHeapID(const PancyDescriptorType &descriptor_type);
 };
+
+
+
+
 /*
 //资源描述视图
 struct ResourceViewPack

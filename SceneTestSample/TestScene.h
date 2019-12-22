@@ -27,8 +27,12 @@ class scene_test_simple : public SceneRoot
 	PancyFenceIdGPU broken_fence_id;
 	//模型ID号
 	uint32_t model_common, model_skinmesh, model_pointmesh;
+	BindlessDescriptorPointer model_skinmesh_descriptor_id;
+	PancystarEngine::PancyRenderParamID render_param_id_skin_mesh_draw;
+	PancystarEngine::PancyRenderParamID render_param_id_skin_mesh_compute;
 	//pbr纹理
 	pancy_object_id tex_brdf_id;
+	BindDescriptorPointer brdf_rtv_id;
 	pancy_object_id tex_ibl_spec_id;
 	pancy_object_id tex_ibl_diffuse_id;
 	//空白纹理
@@ -54,6 +58,7 @@ public:
 	void DisplayEnvironment(DirectX::XMFLOAT4X4 view_matrix, DirectX::XMFLOAT4X4 proj_matrix);
 	void Update(float delta_time);
 private:
+	PancystarEngine::EngineFailReason BuildGlobelTextureSRV(const std::string &shader_resource,const pancy_object_id &tex_res_id);
 	PancystarEngine::EngineFailReason ShowFloor();
 	PancystarEngine::EngineFailReason ShowModel();
 	PancystarEngine::EngineFailReason ShowSkinModel();

@@ -62,5 +62,35 @@
   "SampleDesc": {
     "Count": 1,
     "Quality": 0
-  }
+  },
+  "DescriptorType": [
+    {
+      "name": "per_instance",
+      "type": "CbufferPrivate"
+    },
+    {
+      "name": "per_frame",
+      "type": "CbufferGlobel"
+    },
+    {
+      "name": "environment_IBL_spec",
+      "type": "SRVGlobel"
+    },
+    {
+      "name": "environment_IBL_diffuse",
+      "type": "SRVGlobel"
+    },
+    {
+      "name": "environment_brdf",
+      "type": "SRVGlobel"
+    },
+    {
+      "name": "input_point",
+      "type": "SRVGlobel"
+    },
+    {
+      "name": "texture_model",
+      "type": "SRVBindless"
+    }
+  ]
 }

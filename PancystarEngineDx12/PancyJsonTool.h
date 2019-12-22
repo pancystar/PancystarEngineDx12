@@ -19,6 +19,7 @@ enum Pancy_json_shader_type
 	json_shader_domin,
 	json_shader_compute
 };
+#define JSON_REFLECT_INIT_ENUM(enum_variable) PancyJsonTool::GetInstance()->SetGlobelVraiable(#enum_variable, static_cast<int32_t>(enum_variable), typeid(enum_variable).name());
 struct pancy_json_value
 {
 	pancy_json_data_type value_type;

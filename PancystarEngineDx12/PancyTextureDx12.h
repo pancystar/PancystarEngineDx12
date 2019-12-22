@@ -63,7 +63,7 @@ namespace PancystarEngine
 			const Json::Value &root_value
 		);
 		~PancyBasicTexture();
-		PancystarEngine::EngineFailReason GetResource(SubMemoryPointer &resource)
+		PancystarEngine::EngineFailReason GetResource(SubMemoryPointer &resource,const bool if_check_load = true)
 		{
 			auto resource_state = GetResourceState();
 			if (resource_state == ResourceStateType::resource_state_not_init)
@@ -72,7 +72,7 @@ namespace PancystarEngine
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture Resource", error_message);
 				return error_message;
 			}
-			else if (resource_state == ResourceStateType::resource_state_load_CPU_memory_finish)
+			else if (if_check_load && resource_state == ResourceStateType::resource_state_load_CPU_memory_finish)
 			{
 				PancystarEngine::EngineFailReason error_message(E_FAIL, "The Texture haven't been copy finished to GPU, call WaitThreadPool to wait until it finished copy");
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture Resource", error_message);
@@ -163,7 +163,7 @@ namespace PancystarEngine
 			}
 			return this_instance;
 		}
-		inline PancystarEngine::EngineFailReason GetTexResource(const pancy_object_id &tex_id, SubMemoryPointer &res_pointer)
+		inline PancystarEngine::EngineFailReason GetTexResource(const pancy_object_id &tex_id, SubMemoryPointer &res_pointer, const bool if_check_loaded = true)
 		{
 			PancyBasicTexture *tex_data = dynamic_cast<PancyBasicTexture*>(GetResource(tex_id));
 			if (tex_data == NULL) 
@@ -172,7 +172,7 @@ namespace PancystarEngine
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Texture Resource", error_message);
 				return error_message;
 			}
-			return tex_data->GetResource(res_pointer);
+			return tex_data->GetResource(res_pointer, if_check_loaded);
 		};
 		inline PancystarEngine::EngineFailReason GetTexDesc(const pancy_object_id &tex_id, D3D12_RESOURCE_DESC &res_desc)
 		{

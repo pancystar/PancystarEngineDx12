@@ -114,6 +114,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	}
 	//禁止alt+回车全屏
 	dxgi_factory->MakeWindowAssociation(hwnd_window, DXGI_MWA_NO_ALT_ENTER);
+	//检查支持的格式
+	D3D12_FEATURE_DATA_D3D12_OPTIONS formatInfo = { };
+	m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &formatInfo, sizeof(formatInfo));
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDx12DeviceBasic::ResetScreen(uint32_t window_width_in, uint32_t window_height_in)
