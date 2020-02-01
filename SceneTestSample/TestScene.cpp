@@ -168,7 +168,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 		return check_error;
 	}
 	
-	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\test_tree\\test_tree.json", model_pointmesh);
+	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\treetest\\tree.json", model_pointmesh);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;

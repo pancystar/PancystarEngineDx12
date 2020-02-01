@@ -22,7 +22,7 @@ cbuffer per_object : register(b0)
 	uint4 data_offset;//{骨骼数据的初始偏移,动画数据的初始偏移}
 	uint4 data_num;//{模型的顶点数量,模型的骨骼数量}
 }
-StructuredBuffer<VSInputBone> vertex_data				: register(t0);	//用于动画蒙皮的顶点数据
+StructuredBuffer<VSInputBone> vertex_data : register(t0);	//用于动画蒙皮的顶点数据
 StructuredBuffer<float4x4>    bone_matrix_buffer        : register(t1);	//CPU端更新的骨骼数据
 RWStructuredBuffer<mesh_anim> mesh_anim_data	        : register(u0);	//计算完毕的顶点动画数据
 

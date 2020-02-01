@@ -1,4 +1,8 @@
 #include"PancyJsonTool.h"
+CommonEnumValueParser::CommonEnumValueParser()
+{
+
+}
 PancyJsonTool::PancyJsonTool()
 {
 	builder["collectComments"] = false;
@@ -29,6 +33,7 @@ PancyJsonTool::PancyJsonTool()
 	{
 		name_shader_type[i] = name_shader_need[i];
 	}
+	InitBasicType();
 }
 PancystarEngine::EngineFailReason PancyJsonTool::LoadJsonFile(const std::string &file_name, Json::Value &root_value)
 {
@@ -37,7 +42,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::LoadJsonFile(const std::string 
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not open json file " + file_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Json File " + file_name, error_message);
-		return error_message;
+		return error_message; 
 	}
 	root_value.clear();
 	JSONCPP_STRING errs;
@@ -50,17 +55,33 @@ PancystarEngine::EngineFailReason PancyJsonTool::LoadJsonFile(const std::string 
 	FileOpen.close();
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(const std::string &variable_name, const int32_t &variable_value,std::string enum_type)
+PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(
+	const std::string &variable_name,
+	const int32_t &variable_value,
+	const std::string &enum_type,
+	const type_info &enmu_self_type,
+	const type_info &enmu_array_type,
+	const type_info &enmu_list_type
+)
 {
-	auto check_if_have = globel_variables.find(variable_name);
-	if (check_if_have != globel_variables.end())
+	//先检验是否存在对应类型的枚举
+	auto enum_variable_type = enum_variable_list.find(enum_type);
+	if (enum_variable_type == enum_variable_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(S_OK, "Add Json Variable " + variable_name + " repeated", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Globel Vraiable", error_message);
+		std::unordered_map<std::string,int32_t> new_map;
+		enum_variable_list.insert(std::pair<std::string, std::unordered_map<std::string,int32_t>>(enum_type, new_map));
+		enum_variable_type = enum_variable_list.find(enum_type);
+	}
+	//在对应类型的枚举中添加变量
+	auto check_if_have_enum_name = enum_variable_type->second.find(variable_name);
+	if (check_if_have_enum_name != enum_variable_type->second.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "Add Json Variable name " + variable_name + " repeated", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetGlobelVraiable", error_message);
 		return PancystarEngine::succeed;
 	}
-	globel_variables.insert(std::pair<std::string, int32_t>(variable_name, variable_value));
-	
+	enum_variable_type->second.insert(std::pair<std::string, int32_t>(variable_name, variable_value));
+	//添加对应类型的枚举名称
 	auto enum_list_type = enum_name_list.find(enum_type);
 	if (enum_list_type == enum_name_list.end())
 	{
@@ -68,7 +89,20 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(const std::st
 		enum_name_list.insert(std::pair<std::string, std::unordered_map<int32_t, std::string>>(enum_type, new_map));
 		enum_list_type = enum_name_list.find(enum_type);
 	}
+	auto check_if_have_enum_value = enum_list_type->second.find(variable_value);
+	if (check_if_have_enum_value != enum_list_type->second.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "Add Json Variable value " + check_if_have_enum_value->second + " repeated", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetGlobelVraiable", error_message);
+		return PancystarEngine::succeed;
+	}
 	enum_list_type->second.insert(std::pair<int32_t, std::string>(variable_value, variable_name));
+	//添加当前枚举变量的类型到类型表
+	json_type_map[enmu_self_type.hash_code()] = json_member_enum;
+	json_type_map[enmu_array_type.hash_code()] = json_member_enum_array;
+	json_type_map[enmu_list_type.hash_code()] = json_member_enum_list;
+	enum_pointer_value_map[enmu_array_type.name()] = enmu_self_type.name();
+	enum_pointer_value_map[enmu_list_type.name()] = enmu_self_type.name();
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyJsonTool::GetJsonData
@@ -104,6 +138,10 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 	pancy_json_value &variable_value
 )
 {
+	//todo:不能用::来设计json的enum格式，因为系统会使用::来代表命名空间，最终使用的时候需要改成-->
+	PancystarEngine::EngineFailReason error_message(0, "donot used,need update");
+	PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetJsonMemberData", error_message);
+	return error_message;
 	if (enum_type_value == Json::Value::null)
 	{
 		//未能获得json数据
@@ -111,6 +149,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 		return error_mesage;
 	}
+	/*
 	//枚举数据
 	else if (json_type == pancy_json_data_type::json_data_enum)
 	{
@@ -132,6 +171,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 			return error_mesage;
 		}
 	}
+	*/
 	//整数数据
 	else if (json_type == pancy_json_data_type::json_data_int)
 	{
@@ -222,18 +262,56 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonShader(
 	shader_func_name = new_value.string_value;
 	return PancystarEngine::succeed;
 }
-int32_t PancyJsonTool::GetGlobelVariable(const std::string &variable_name)
+void PancyJsonTool::SplitString(std::string str, const std::string &pattern, std::vector<std::string> &result)
 {
-	auto check_data = globel_variables.find(variable_name);
-	if (check_data != globel_variables.end())
-	{
-		return check_data->second;
+	string::size_type pos;
+	str += pattern;//扩展字符串以方便操作
+	int size = str.size();
+	for (int i = 0; i < size; i++) {
+		pos = str.find(pattern, i);
+		if (pos < size) {
+			std::string s = str.substr(i, pos - i);
+			result.push_back(s);
+			i = pos + pattern.size() - 1;
+		}
 	}
-	else
+}
+int32_t PancyJsonTool::GetEnumValue(const std::string &enum_type, const std::string &enum_name)
+{
+	//解决或运算
+	std::string now_string_deal = enum_name;
+	std::vector<std::string> all_string_list;
+	SplitString(now_string_deal,"|", all_string_list);
+	auto enum_type_valuepack = enum_variable_list.find(enum_type);
+	if (enum_type_valuepack == enum_variable_list.end())
 	{
 		return -1;
 	}
+	int32_t enum_final_value = -1;
+	for (int32_t now_sub_enum_str_index = 0; now_sub_enum_str_index < all_string_list.size(); ++now_sub_enum_str_index) 
+	{
+		auto enum_value = enum_type_valuepack->second.find(all_string_list[now_sub_enum_str_index]);
+		if (enum_value != enum_type_valuepack->second.end())
+		{
+			if(enum_final_value == -1)
+			{
+				enum_final_value = enum_value->second;
+			}
+			else 
+			{
+				enum_final_value |= enum_value->second;
+			}
+			
+		}
+		else
+		{
+			return -1;
+		}
+	}
+	return enum_final_value;
 }
+
+
 std::string PancyJsonTool::GetEnumName(const std::string &enum_type, int32_t enum_num)
 {
 	auto enum_type_namepack = enum_name_list.find(enum_type);
@@ -244,9 +322,48 @@ std::string PancyJsonTool::GetEnumName(const std::string &enum_type, int32_t enu
 	auto enum_value = enum_type_namepack->second.find(enum_num);
 	if (enum_value == enum_type_namepack->second.end()) 
 	{
-		return "";
+		//找不到对应的枚举类型，尝试拆解处理枚举或类型
+		return DevideEnumValue(enum_num, enum_type_namepack->second);
 	}
 	return enum_value->second;
+}
+std::string PancyJsonTool::DevideEnumValue(const int32_t &enum_number, const std::unordered_map<int32_t, std::string> all_enum_member)
+{
+	std::string real_name = "";
+	int check_if_or_same = 0;
+	for (auto check_member : all_enum_member) 
+	{
+		//检查每一个枚举变量是否是可拆分的
+		if (enum_number & check_member.first) 
+		{
+			check_if_or_same |= check_member.first;
+			if (real_name == "") 
+			{
+				real_name = check_member.second;
+			}
+			else 
+			{
+				real_name += "|" + check_member.second;
+			}
+		}
+	}
+	if (check_if_or_same != enum_number) 
+	{
+		return "";
+	}
+	return real_name;
+}
+PancystarEngine::EngineFailReason PancyJsonTool::GetEnumNameByPointerName(const std::string &enum_pointer_type, std::string &enum_type)
+{
+	auto enum_member_type_data = enum_pointer_value_map.find(enum_pointer_type);
+	if (enum_member_type_data == enum_pointer_value_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(0, "could not find enum type by pointer: " + enum_pointer_type);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumNameByPointerName", error_message);
+		return error_message;
+	}
+	enum_type = enum_member_type_data->second;
+	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyJsonTool::WriteValueToJson(
 	const Json::Value &insert_value,
@@ -272,4 +389,127 @@ PancystarEngine::EngineFailReason PancyJsonTool::WriteValueToJson(
 	writer->write(insert_value,&FileWrite);
 	FileWrite.close();
 	return PancystarEngine::succeed;
+}
+void PancyJsonTool::InitBasicType()
+{
+	//注册数组类型的数据
+	json_type_map[typeid(int64_t*).hash_code()] = json_member_int64_array;
+	json_type_map[typeid(uint64_t*).hash_code()] = json_member_uint64_array;
+	json_type_map[typeid(int32_t*).hash_code()] = json_member_int32_array;
+	json_type_map[typeid(uint32_t*).hash_code()] = json_member_uint32_array;
+	json_type_map[typeid(int16_t*).hash_code()] = json_member_int16_array;
+	json_type_map[typeid(uint16_t*).hash_code()] = json_member_uint16_array;
+	json_type_map[typeid(int8_t*).hash_code()] = json_member_int8_array;
+	json_type_map[typeid(uint8_t*).hash_code()] = json_member_uint8_array;
+	json_type_map[typeid(float*).hash_code()] = json_member_float_array;
+	json_type_map[typeid(double*).hash_code()] = json_member_double_array;
+	json_type_map[typeid(bool*).hash_code()] = json_member_bool_array;
+	json_type_map[typeid(std::string*).hash_code()] = json_member_string_array;
+	//注册普通类型的数据
+	json_type_map[typeid(int64_t).hash_code()] = json_member_int64;
+	json_type_map[typeid(uint64_t).hash_code()] = json_member_uint64;
+	json_type_map[typeid(int32_t).hash_code()] = json_member_int32;
+	json_type_map[typeid(uint32_t).hash_code()] = json_member_uint32;
+	json_type_map[typeid(int16_t).hash_code()] = json_member_int16;
+	json_type_map[typeid(uint16_t).hash_code()] = json_member_uint16;
+	json_type_map[typeid(int8_t).hash_code()] = json_member_int8;
+	json_type_map[typeid(uint8_t).hash_code()] = json_member_uint8;
+	json_type_map[typeid(float).hash_code()] = json_member_float;
+	json_type_map[typeid(double).hash_code()] = json_member_double;
+	json_type_map[typeid(bool).hash_code()] = json_member_bool;
+	json_type_map[typeid(std::string).hash_code()] = json_member_string;
+	//注册vector类型的数据
+	json_type_map[typeid(std::vector<int64_t>).hash_code()] = json_member_int64_list;
+	json_type_map[typeid(std::vector<uint64_t>).hash_code()] = json_member_uint64_list;
+	json_type_map[typeid(std::vector<int32_t>).hash_code()] = json_member_int32_list;
+	json_type_map[typeid(std::vector<uint32_t>).hash_code()] = json_member_uint32_list;
+	json_type_map[typeid(std::vector<int16_t>).hash_code()] = json_member_int16_list;
+	json_type_map[typeid(std::vector<uint16_t>).hash_code()] = json_member_uint16_list;
+	json_type_map[typeid(std::vector<int8_t>).hash_code()] = json_member_int8_list;
+	json_type_map[typeid(std::vector<uint8_t>).hash_code()] = json_member_uint8_list;
+	json_type_map[typeid(std::vector<float>).hash_code()] = json_member_float_list;
+	json_type_map[typeid(std::vector<double>).hash_code()] = json_member_double_list;
+	json_type_map[typeid(std::vector<bool>).hash_code()] = json_member_bool_list;
+	json_type_map[typeid(std::vector<std::string>).hash_code()] = json_member_string_list;
+}
+PancyJsonMemberType PancyJsonTool::GetVariableJsonType(const size_t &variable_type)
+{
+	auto check_variable_type = json_type_map.find(variable_type);
+	if (check_variable_type == json_type_map.end())
+	{
+		return PancyJsonMemberType::json_member_unknown;
+	}
+	return check_variable_type->second;
+}
+PancystarEngine::EngineFailReason PancyJsonTool::SetEnumMemberValue(const std::string &variable_type, void*value_pointer, const int32_t value_data)
+{
+	auto enum_parse_member = enum_parse_list.find(variable_type);
+	if (enum_parse_member == enum_parse_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetEnumMemberValue", error_message);
+		return error_message;
+	}
+	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->SetEnumValue(value_pointer, value_data);
+	return check_error;
+}
+PancystarEngine::EngineFailReason PancyJsonTool::SetEnumArrayValue(const std::string &variable_type, void*value_pointer, const int32_t &enum_offset, const int32_t &enum_data) 
+{
+	auto enum_parse_member = enum_parse_list.find(variable_type);
+	if (enum_parse_member == enum_parse_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetEnumArrayValue", error_message);
+		return error_message;
+	}
+	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->SetEnumArrayValue(value_pointer, enum_offset, enum_data);
+	return check_error;
+}
+PancystarEngine::EngineFailReason PancyJsonTool::SetEnumVectorValue(const std::string &variable_type, void*value_pointer, const int32_t enum_offsetdata, const int32_t value_data)
+{
+	auto enum_parse_member = enum_parse_list.find(variable_type);
+	if (enum_parse_member == enum_parse_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetEnumVectorValue", error_message);
+		return error_message;
+	}
+	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->SetEnumVectorValue(value_pointer, enum_offsetdata, value_data);
+	return check_error;
+}
+PancystarEngine::EngineFailReason PancyJsonTool::GetEnumMemberValue(const std::string &variable_type, void*value_pointer, int32_t &value_data)
+{
+	auto enum_parse_member = enum_parse_list.find(variable_type);
+	if (enum_parse_member == enum_parse_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumMemberValue", error_message);
+		return error_message;
+	}
+	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->GetEnumValue(value_pointer, value_data);
+	return check_error;
+}
+PancystarEngine::EngineFailReason PancyJsonTool::GetEnumArrayValue(const std::string &variable_type, void*value_pointer, const int32_t &enum_offsetdata, int32_t &enum_data_out) 
+{
+	auto enum_parse_member = enum_parse_list.find(variable_type);
+	if (enum_parse_member == enum_parse_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumMemberValue", error_message);
+		return error_message;
+	}
+	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->GetEnumArrayValue(value_pointer, enum_offsetdata, enum_data_out);
+	return check_error;
+}
+PancystarEngine::EngineFailReason PancyJsonTool::GetEnumVectorValue(const std::string &variable_type, void*value_pointer, const int32_t &enum_offsetdata, int32_t &enum_data_out) 
+{
+	auto enum_parse_member = enum_parse_list.find(variable_type);
+	if (enum_parse_member == enum_parse_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumMemberValue", error_message);
+		return error_message;
+	}
+	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->GetEnumVectorValue(value_pointer, enum_offsetdata, enum_data_out);
+	return check_error;
 }

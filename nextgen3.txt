@@ -17,6 +17,7 @@
 16，允许创建独占一块buffer的subbuffer，防止出现分开创建的subbuffer一个用于读一个用于写的情况
 16.solve：使用commit resource彻底放弃以往对于buffer数据的内存池管理，保留texture的内存堆，使用ring-buffer处理所有的动态资源。
 17，shadermodel6.0支持short类型(目前程序编译使用的是5.1)，将顶点动画的解压缩指针数据用short存储可以节省一半的存储空间
+17.1:unreal将normal，tangent以及uv压缩为8bit的数据大幅度减少了数据量，可以考虑借鉴
 18，引擎启动时先启动文件生成，将shader编译延迟到文件生成之后。
 19，测试在已经开辟完毕的descriptorheap上创建view的速度，如果足够快，则不再保留每个物体的描述符信息，只需要保留一些渲染层信息即可，每一帧单独生成渲染队列并清空
 19.solve：使用段页式管理以及全局描述符与局部描述符分割的方式解决了这个问题

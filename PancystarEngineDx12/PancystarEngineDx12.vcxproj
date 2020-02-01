@@ -161,6 +161,7 @@
     <ClInclude Include="PancyMemoryBasic.h" />
     <ClInclude Include="PancyModelBasic.h" />
     <ClInclude Include="PancyResourceBasic.h" />
+    <ClInclude Include="PancyResourceJsonReflect.h" />
     <ClInclude Include="PancySceneDesign.h" />
     <ClInclude Include="PancyShaderDx12.h" />
     <ClInclude Include="PancystarEngineBasicDx12.h" />
@@ -181,6 +182,7 @@
     <ClCompile Include="PancyMemoryBasic.cpp" />
     <ClCompile Include="PancyModelBasic.cpp" />
     <ClCompile Include="PancyResourceBasic.cpp" />
+    <ClCompile Include="PancyResourceJsonRelect.cpp" />
     <ClCompile Include="PancySceneDesign.cpp" />
     <ClCompile Include="PancyShaderDx12.cpp" />
     <ClCompile Include="PancystarEngineBasicDx12.cpp" />

@@ -141,7 +141,7 @@ namespace PancystarEngine
 		DirectX::XMFLOAT3 position;
 		DirectX::XMFLOAT3 normal;
 		DirectX::XMFLOAT3 tangent;
-		float delta_time;
+		//float delta_time;
 		mesh_animation_data()
 		{
 			position = DirectX::XMFLOAT3(0, 0, 0);

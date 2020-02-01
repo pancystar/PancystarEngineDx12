@@ -143,11 +143,11 @@ PancyBasicBuffer::~PancyBasicBuffer()
 //»º³åÇø¹ÜÀíÆ÷
 PancyBasicBufferControl::PancyBasicBufferControl(const std::string &resource_type_name_in) : PancyBasicResourceControl(resource_type_name_in)
 {
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_ShaderResource_static", static_cast<int32_t>(Buffer_ShaderResource_static), typeid(Buffer_ShaderResource_static).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_ShaderResource_dynamic", static_cast<int32_t>(Buffer_ShaderResource_dynamic), typeid(Buffer_ShaderResource_dynamic).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_Constant", static_cast<int32_t>(Buffer_Constant), typeid(Buffer_Constant).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_Vertex", static_cast<int32_t>(Buffer_Vertex), typeid(Buffer_Vertex).name());
-	PancyJsonTool::GetInstance()->SetGlobelVraiable("Buffer_Index", static_cast<int32_t>(Buffer_Index), typeid(Buffer_Index).name());
+	JSON_REFLECT_INIT_ENUM(Buffer_ShaderResource_static);
+	JSON_REFLECT_INIT_ENUM(Buffer_ShaderResource_dynamic);
+	JSON_REFLECT_INIT_ENUM(Buffer_Constant);
+	JSON_REFLECT_INIT_ENUM(Buffer_Vertex);
+	JSON_REFLECT_INIT_ENUM(Buffer_Index);
 }
 PancystarEngine::EngineFailReason PancyBasicBufferControl::BuildResource(
 	const Json::Value &root_value,

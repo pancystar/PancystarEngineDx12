@@ -9,6 +9,7 @@
 
 class scene_test_simple : public SceneRoot
 {
+	
 	bool if_have_previous_frame;
 	//¹ÜÏß×´Ì¬
 	ComPtr<ID3D12PipelineState> m_pipelineState;
@@ -46,10 +47,11 @@ class scene_test_simple : public SceneRoot
 public:
 	scene_test_simple()
 	{
+		using namespace PancystarEngine;
 		if_have_previous_frame = false;
 		renderlist_ID.clear();
-		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_MetallicRoughness", static_cast<int32_t>(PancystarEngine::PbrType_MetallicRoughness), typeid(PancystarEngine::PbrType_MetallicRoughness).name());
-		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_SpecularSmoothness", static_cast<int32_t>(PancystarEngine::PbrType_SpecularSmoothness), typeid(PancystarEngine::PbrType_SpecularSmoothness).name());
+		JSON_REFLECT_INIT_ENUM(PbrType_MetallicRoughness);
+		JSON_REFLECT_INIT_ENUM(PbrType_SpecularSmoothness);
 	}
 	~scene_test_simple();
 	

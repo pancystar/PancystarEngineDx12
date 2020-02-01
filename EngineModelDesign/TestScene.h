@@ -637,8 +637,8 @@ public:
 		if_show_normal = false;
 		if_show_normal_point = false;
 		now_show_part.push_back(0);
-		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_MetallicRoughness", static_cast<int32_t>(PbrType_MetallicRoughness), typeid(PbrType_MetallicRoughness).name());
-		PancyJsonTool::GetInstance()->SetGlobelVraiable("PbrType_SpecularSmoothness", static_cast<int32_t>(PbrType_SpecularSmoothness), typeid(PbrType_SpecularSmoothness).name());
+		JSON_REFLECT_INIT_ENUM(PbrType_MetallicRoughness);
+		JSON_REFLECT_INIT_ENUM(PbrType_SpecularSmoothness);
 	}
 	~scene_test_simple();
 	inline void PointWindow(int32_t x_pos, int32_t y_pos)
