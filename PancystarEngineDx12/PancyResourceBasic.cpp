@@ -1,15 +1,591 @@
 #include"PancyResourceBasic.h"
 using namespace PancystarEngine;
-//基础资源
-PancyBasicVirtualResource::PancyBasicVirtualResource(const std::string &resource_name_in, Json::Value root_value_in)
+//GPU可访问的资源块
+ResourceBlockGpu::ResourceBlockGpu(
+	const uint64_t &memory_size_in,
+	ComPtr<ID3D12Resource> resource_data_in,
+	const D3D12_HEAP_TYPE &resource_usage_in,
+	const D3D12_RESOURCE_STATES &resource_state
+)
 {
-	now_res_state = ResourceStateType::resource_state_not_init;
-	resource_name = resource_name_in;
-	root_value = root_value_in;
+	if_start_copying_gpu = false;
+	memory_size = memory_size_in;
+	resource_data = resource_data_in;
+	resource_usage = resource_usage_in;
+	now_res_load_state = RESOURCE_LOAD_FAILED;
+	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
+	{
+		CD3DX12_RANGE readRange(0, 0);
+		HRESULT hr = resource_data->Map(0, &readRange, reinterpret_cast<void**>(&map_pointer));
+		if (FAILED(hr))
+		{
+			PancystarEngine::EngineFailReason error_message(hr, "map dynamic buffer to cpu error");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::ResourceBlockGpu", error_message);
+		}
+		now_res_load_state = RESOURCE_LOAD_CPU_FINISH;
+	}
+	else
+	{
+		map_pointer = NULL;
+		now_res_load_state = RESOURCE_LOAD_GPU_FINISH;
+	}
+	now_subresource_state = resource_state;
+}
+PancyResourceLoadState ResourceBlockGpu::GetResourceLoadingState()
+{
+	if (if_start_copying_gpu && now_res_load_state == PancyResourceLoadState::RESOURCE_LOAD_GPU_LOADING)
+	{
+		bool if_GPU_finished = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->CheckGpuBrokenFence(wait_fence);
+		if (if_GPU_finished)
+		{
+			//资源加载完毕
+			now_res_load_state = PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH;
+			if_start_copying_gpu = false;
+		}
+	}
+	return now_res_load_state;
+}
+PancystarEngine::EngineFailReason ResourceBlockGpu::ResourceBarrier(
+	PancyRenderCommandList *commandlist,
+	ID3D12Resource *src_memory,
+	const D3D12_RESOURCE_STATES &last_state,
+	const D3D12_RESOURCE_STATES &now_state
+)
+{
+	if (now_subresource_state != last_state)
+	{
+		if (now_subresource_state == now_state)
+		{
+			return PancystarEngine::succeed;
+		}
+		else
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "resource state dismatch, could not change resource using state");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::ResourceBarrier", error_message);
+			return error_message;
+		}
+	}
+	commandlist->GetCommandList()->ResourceBarrier(
+		1,
+		&CD3DX12_RESOURCE_BARRIER::Transition(
+			src_memory,
+			last_state,
+			now_state
+		)
+	);
+	//修改资源的访问格式
+	now_subresource_state = now_state;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
+	PancyRenderCommandList *commandlist,
+	ResourceBlockGpu &dynamic_buffer,
+	const pancy_resource_size &src_offset,
+	const pancy_resource_size &dst_offset,
+	const pancy_resource_size &data_size
+)
+{
+	if (now_res_load_state == RESOURCE_LOAD_FAILED)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		return error_message;
+	}
+	if (dynamic_buffer.GetResourceLoadingState() != RESOURCE_LOAD_CPU_FINISH)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource haven't load to cpu, could not copy data to GPU");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		return error_message;
+	}
+	if (now_res_load_state != RESOURCE_LOAD_GPU_FINISH)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a GPU resource, could not copy data to GPU");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		return error_message;
+	}
+	auto src_size_check = src_offset + data_size;
+	auto dst_size_check = dst_offset + data_size;
+	if (src_size_check > dynamic_buffer.GetSize() || dst_size_check > memory_size)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource size overflow, could not copy resource from cpu to GPU");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		return error_message;
+	}
+	auto check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	commandlist->GetCommandList()->CopyBufferRegion(
+		resource_data.Get(),
+		dst_offset,
+		dynamic_buffer.GetResource(),
+		src_offset,
+		data_size);
+	check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	now_res_load_state = RESOURCE_LOAD_GPU_LOADING;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
+	PancyRenderCommandList *commandlist,
+	ResourceBlockGpu &dynamic_buffer,
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+	const pancy_object_id &Layout_num
+)
+{
+	if (now_res_load_state == RESOURCE_LOAD_FAILED)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		return error_message;
+	}
+	if (dynamic_buffer.GetResourceLoadingState() != RESOURCE_LOAD_CPU_FINISH)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource haven't laod to cpu, could not copy data to GPU");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		return error_message;
+	}
+	if (now_res_load_state != RESOURCE_LOAD_GPU_FINISH)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a GPU resource, could not copy data to GPU");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		return error_message;
+	}
+	auto check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	for (UINT i = 0; i < Layout_num; ++i)
+	{
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT real_layout;
+		real_layout.Footprint = pLayouts[i].Footprint;
+		real_layout.Offset = pLayouts[i].Offset;
+
+		CD3DX12_TEXTURE_COPY_LOCATION Dst(resource_data.Get(), i + 0);
+		CD3DX12_TEXTURE_COPY_LOCATION Src(dynamic_buffer.GetResource(), real_layout);
+		commandlist->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
+	}
+	check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	now_res_load_state = RESOURCE_LOAD_GPU_LOADING;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason ResourceBlockGpu::SetResourceCopyBrokenFence(const PancyFenceIdGPU &broken_fence_id)
+{
+	if (now_res_load_state != PancyResourceLoadState::RESOURCE_LOAD_GPU_LOADING)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "haven't copy any data to cpu, could not set broken fence");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::SetResourceCopyBrokenFence", error_message);
+		return error_message;
+	}
+	wait_fence = broken_fence_id;
+	if_start_copying_gpu = true;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason ResourceBlockGpu::WriteFromCpuToBuffer(
+	const pancy_resource_size &pointer_offset,
+	const void* copy_data,
+	const pancy_resource_size &data_size
+)
+{
+	if (now_res_load_state == RESOURCE_LOAD_FAILED)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		return error_message;
+	}
+	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		return error_message;
+	}
+	if (now_res_load_state != RESOURCE_LOAD_CPU_FINISH)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a CPU copy resource, could not copy data to CPU");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		return error_message;
+	}
+	memcpy(map_pointer + pointer_offset, copy_data, data_size);
+	now_res_load_state = RESOURCE_LOAD_CPU_FINISH;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason ResourceBlockGpu::WriteFromCpuToBuffer(
+	const pancy_resource_size &pointer_offset,
+	std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+	UINT64* pRowSizesInBytes,
+	UINT* pNumRows
+)
+{
+	if (now_res_load_state == RESOURCE_LOAD_FAILED)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		return error_message;
+	}
+	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		return error_message;
+	}
+	if (now_res_load_state != RESOURCE_LOAD_CPU_FINISH)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a CPU copy resource, could not copy data to CPU");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		return error_message;
+	}
+	//获取待拷贝指针
+	UINT8* pData = map_pointer + pointer_offset;
+	//获取subresource
+	D3D12_SUBRESOURCE_DATA *pSrcData = &subresources[0];
+	UINT subres_size = static_cast<UINT>(subresources.size());
+	for (UINT i = 0; i < subres_size; ++i)
+	{
+		D3D12_MEMCPY_DEST DestData = { pData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, pLayouts[i].Footprint.RowPitch * pNumRows[i] };
+		MemcpySubresource(&DestData, &pSrcData[i], (SIZE_T)pRowSizesInBytes[i], pNumRows[i], pLayouts[i].Footprint.Depth);
+	}
+	now_res_load_state = RESOURCE_LOAD_CPU_FINISH;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason ResourceBlockGpu::ReadFromBufferToCpu(
+	const pancy_resource_size &pointer_offset,
+	void* copy_data,
+	const pancy_resource_size data_size
+)
+{
+	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not readback, could not read data back");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::ReadFromBufferToCpu", error_message);
+		return error_message;
+	}
+	return PancystarEngine::succeed;
+	//todo: 回读GPU数据
+}
+ResourceBlockGpu::~ResourceBlockGpu()
+{
+	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
+	{
+		resource_data->Unmap(0, NULL);
+	}
+}
+//虚拟资源的智能指针
+VirtualResourcePointer::VirtualResourcePointer()
+{
+	//资源ID号
+	resource_id = 0;
+	if_NULL = true;
+}
+VirtualResourcePointer::VirtualResourcePointer(const pancy_object_id &resource_id_in)
+{
+	auto check_error = PancyGlobelResourceControl::GetInstance()->AddResurceReference(resource_id_in);
+	if (check_error.CheckIfSucceed())
+	{
+		check_error = PancyGlobelResourceControl::GetInstance()->GetResourceById(resource_id_in, &data_pointer);
+		if (check_error.CheckIfSucceed())
+		{
+			resource_id = resource_id_in;
+			if_NULL = false;
+		}
+	}
+}
+VirtualResourcePointer::VirtualResourcePointer(const VirtualResourcePointer & copy_data)
+{
+	auto check_error = PancyGlobelResourceControl::GetInstance()->AddResurceReference(copy_data.resource_id);
+	if (check_error.CheckIfSucceed())
+	{
+		check_error = PancyGlobelResourceControl::GetInstance()->GetResourceById(copy_data.resource_id, &data_pointer);
+		if (check_error.CheckIfSucceed())
+		{
+			resource_id = copy_data.resource_id;
+			if_NULL = false;
+		}
+	}
+}
+VirtualResourcePointer::~VirtualResourcePointer()
+{
+	PancyGlobelResourceControl::GetInstance()->DeleteResurceReference(resource_id);
+}
+VirtualResourcePointer& VirtualResourcePointer::operator=(const VirtualResourcePointer& b)
+{
+	MakeShared(b.resource_id);
+	return *this;
+}
+PancystarEngine::EngineFailReason VirtualResourcePointer::MakeShared(const pancy_object_id &resource_id_in)
+{
+	PancystarEngine::EngineFailReason check_error;
+	if (!if_NULL)
+	{
+		check_error = PancyGlobelResourceControl::GetInstance()->DeleteResurceReference(resource_id);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		resource_id = 0;
+	}
+	check_error = PancyGlobelResourceControl::GetInstance()->AddResurceReference(resource_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancyGlobelResourceControl::GetInstance()->GetResourceById(resource_id_in, &data_pointer);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	resource_id = resource_id_in;
+	return PancystarEngine::succeed;
+}
+//中间动态资源的分配池
+PancyDynamicRingBuffer::PancyDynamicRingBuffer()
+{
+	LoadInitData();
+}
+PancystarEngine::EngineFailReason PancyDynamicRingBuffer::LoadInitData()
+{
+	buffer_size = 256 * 1024 * 1024;
+	pointer_head_offset = 0;
+	pointer_tail_offset = 0;
+	CD3DX12_HEAP_DESC heapDesc(buffer_size, D3D12_HEAP_TYPE_UPLOAD, 0, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
+	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateHeap(&heapDesc, IID_PPV_ARGS(&ringbuffer_heap_data));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason check_error(hr, "Create DynamicRingBuffer Heap error");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDynamicRingBuffer::LoadInitData", check_error);
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancyDynamicRingBuffer::~PancyDynamicRingBuffer()
+{
+	while (!ResourceUploadingMap.empty())
+	{
+		auto top_data = ResourceUploadingMap.front();
+		delete top_data;
+		ResourceUploadingMap.pop();
+	}
+}
+PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
+	pancy_resource_size data_size,
+	ResourceBlockGpu &gpu_resource_pointer,
+	UploadResourceBlock **new_block
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	//如果ring-buffer中还存在待处理的信息，则运行一遍资源清理函数
+	if (!ResourceUploadingMap.empty())
+	{
+		RefreshOldDynamicData();
+	}
+	pancy_resource_size alloc_start_position;
+	//查看当前缓冲区是否有足够的空间
+	if (pointer_tail_offset > pointer_head_offset)
+	{
+		//头指针小于尾指针，此时的可用空间仅有头尾指针之间的空间
+		pancy_resource_size head_could_use_size = pointer_tail_offset - pointer_head_offset;
+		if (head_could_use_size < data_size)
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "dynamic ring-buffer is full, could not alloc new data");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDynamicRingBuffer::AllocNewDynamicData", error_message);
+			return error_message;
+		}
+		alloc_start_position = pointer_head_offset;
+	}
+	else
+	{
+		//头指针大于尾指针，此时的可用空间有两片，其一是头指针到buffer尾部的空间，其二是buffer头到尾指针的空间
+		pancy_resource_size head_could_use_size_1 = buffer_size - pointer_head_offset;
+		if (head_could_use_size_1 >= data_size)
+		{
+			alloc_start_position = pointer_head_offset;
+		}
+		else
+		{
+			pancy_resource_size head_could_use_size_2 = pointer_tail_offset;
+			if (head_could_use_size_2 >= data_size)
+			{
+				alloc_start_position = 0;
+			}
+			else
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "dynamic ring-buffer is full, could not alloc new data");
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDynamicRingBuffer::AllocNewDynamicData", error_message);
+				return error_message;
+			}
+		}
+	}
+	//根据新的头部指针信息，开辟buffer数据
+	ComPtr<ID3D12Resource> resource_data;
+	D3D12_RESOURCE_DESC resource_desc;
+	resource_desc.Alignment = 0;
+	resource_desc.DepthOrArraySize = 1;
+	resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resource_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	resource_desc.Format = DXGI_FORMAT_UNKNOWN;
+	resource_desc.Height = 1;
+	resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resource_desc.MipLevels = 1;
+	resource_desc.SampleDesc.Count = 1;
+	resource_desc.SampleDesc.Quality = 0;
+	resource_desc.Width = data_size;
+	D3D12_CLEAR_VALUE clearValue;
+	clearValue.Format = resource_desc.Format;
+	clearValue.Color[0] = 0.0f;
+	clearValue.Color[1] = 0.0f;
+	clearValue.Color[2] = 0.0f;
+	clearValue.Color[3] = 0.0f;
+	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreatePlacedResource(
+		ringbuffer_heap_data.Get(),
+		alloc_start_position,
+		&resource_desc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		&clearValue,
+		IID_PPV_ARGS(&resource_data)
+	);
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason check_error(hr, "Allocate Memory From Dynamic ring-buffer Heap error");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDynamicRingBuffer::AllocNewDynamicData", check_error);
+		return check_error;
+	}
+	//将创建成功的资源绑定到gpu资源
+	*new_block = new UploadResourceBlock(
+		pointer_head_offset,
+		alloc_start_position + data_size,
+		data_size,
+		resource_data,
+		D3D12_HEAP_TYPE_UPLOAD,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		&gpu_resource_pointer
+	);
+	pointer_head_offset = alloc_start_position + data_size;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
+	PancyRenderCommandList *commandlist,
+	void* data_pointer,
+	const pancy_resource_size &data_size,
+	ResourceBlockGpu &gpu_resource_pointer
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	UploadResourceBlock* new_dynamic_block;
+	check_error = AllocNewDynamicData(data_size, gpu_resource_pointer, &new_dynamic_block);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//将数据从CPU拷贝到dynamic-buffer
+	check_error = new_dynamic_block->dynamic_buffer_resource.WriteFromCpuToBuffer(0, data_pointer, data_size);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//将数据从dynamic-buffer拷贝到显存
+	check_error = new_dynamic_block->static_gpu_resource->CopyFromDynamicBufferToGpu(
+		commandlist,
+		new_dynamic_block->dynamic_buffer_resource,
+		0,
+		0,
+		data_size
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//添加资源记录到队列
+	ResourceUploadingMap.push(new_dynamic_block);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
+	PancyRenderCommandList *commandlist,
+	std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
+	UINT64* pRowSizesInBytes,
+	UINT* pNumRows,
+	const pancy_resource_size &data_size,
+	ResourceBlockGpu &gpu_resource_pointer
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	UploadResourceBlock* new_dynamic_block;
+	check_error = AllocNewDynamicData(data_size, gpu_resource_pointer, &new_dynamic_block);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//将数据从CPU拷贝到dynamic-buffer
+	check_error = new_dynamic_block->dynamic_buffer_resource.WriteFromCpuToBuffer(
+		0,
+		subresources,
+		pLayouts,
+		pRowSizesInBytes,
+		pNumRows
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//将数据从dynamic-buffer拷贝到显存
+	check_error = new_dynamic_block->static_gpu_resource->CopyFromDynamicBufferToGpu(
+		commandlist,
+		new_dynamic_block->dynamic_buffer_resource,
+		pLayouts,
+		subresources.size()
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//添加资源记录到队列
+	ResourceUploadingMap.push(new_dynamic_block);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDynamicRingBuffer::RefreshOldDynamicData()
+{
+	while (!ResourceUploadingMap.empty())
+	{
+		auto top_data = ResourceUploadingMap.front();
+		if (top_data->static_gpu_resource->GetResourceLoadingState() == PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH)
+		{
+			ResourceUploadingMap.pop();
+			//检测当前资源释放之前的指针是否与期待的一致
+			if (top_data->pointer_before_alloc != pointer_tail_offset)
+			{
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "dynamic buffer pointer dismatch");
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::RefreshOldDynamicData", error_message);
+				return error_message;
+			}
+			//释放完毕后修改尾指针
+			pointer_tail_offset = top_data->pointer_after_alloc;
+			delete top_data;
+		}
+		else
+		{
+			break;
+		}
+	}
+	return PancystarEngine::succeed;
+}
+//基础资源
+PancyBasicVirtualResource::PancyBasicVirtualResource(const bool &if_could_reload_in)
+{
+	if_could_reload = if_could_reload_in;
 	reference_count.store(0);
 }
 PancyBasicVirtualResource::~PancyBasicVirtualResource()
 {
+	delete resource_desc_value;
 }
 void PancyBasicVirtualResource::AddReference()
 {
@@ -26,63 +602,48 @@ void PancyBasicVirtualResource::DeleteReference()
 		reference_count.store(0);
 	}
 }
-PancystarEngine::EngineFailReason PancyBasicVirtualResource::CopyCpuResourceToGpu(
-	void* cpu_resource,
-	const pancy_resource_size &resource_size_in,
-	const pancy_resource_size &resource_offset_in
-)
+PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::string &resource_name_in)
 {
-	if (now_res_state == ResourceStateType::resource_state_not_init)
+	Json::Value jsonRoot;
+	auto check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_name_in, jsonRoot);
+	if (!check_error.CheckIfSucceed())
 	{
-		//GPU资源未加载获取加载失败，不允许拷贝。
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Resource Haven't load or load failed");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Resource" + resource_name + " From Cpu to Gpu", error_message);
-		return error_message;
+		return check_error;
 	}
-	else if (GetResourceState() != ResourceStateType::resource_state_load_GPU_memory_finish)
-	{
-		//GPU资源正在加载，不允许现在继续加载新资源
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Resource is being created now,could not write data");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Upload Buffer resource From Cpu To GPU", error_message);
-		return error_message;
-	}
-	else if (now_res_state == ResourceStateType::resource_state_load_GPU_memory_finish)
-	{
-		//GPU资源曾加载成功，将状态设置为CPU完成代表虚拟清空原先的数据
-		now_res_state = ResourceStateType::resource_state_load_CPU_memory_finish;
-	}
-	return UpdateResourceToGPU(now_res_state, cpu_resource, resource_size_in, resource_offset_in);
-}
-ResourceStateType PancyBasicVirtualResource::GetResourceState()
-{
-	CheckIfResourceLoadToGpu(now_res_state);
-	return now_res_state;
-}
-PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create()
-{
-	auto check_error = InitResource(root_value, resource_name, now_res_state);
+	check_error = Create(resource_name_in, jsonRoot);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	return PancystarEngine::succeed;
 }
-//空白的虚函数
-PancystarEngine::EngineFailReason PancyBasicVirtualResource::UpdateResourceToGPU(
-	ResourceStateType &now_res_state,
-	void* resource,
-	const pancy_resource_size &resource_size_in,
-	const pancy_resource_size &resource_offset_in
-)
+PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::string &resource_name_in, const Json::Value &root_value_in)
 {
+	BuildJsonReflect(&resource_desc_value);
+	if (resource_desc_value == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not parse json type: " + resource_name_in);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::Create", error_message);
+		return error_message;
+	}
+	auto check_error = resource_desc_value->LoadFromJsonMemory(resource_name_in, root_value_in);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = InitResource();
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
+
 //基础资源管理器
-PancyBasicResourceControl::PancyBasicResourceControl(const std::string &resource_type_name_in)
+PancyGlobelResourceControl::PancyGlobelResourceControl()
 {
-	resource_type_name = resource_type_name_in;
 }
-PancyBasicResourceControl::~PancyBasicResourceControl()
+PancyGlobelResourceControl::~PancyGlobelResourceControl()
 {
 	for (auto data_resource = basic_resource_array.begin(); data_resource != basic_resource_array.end(); ++data_resource)
 	{
@@ -92,96 +653,40 @@ PancyBasicResourceControl::~PancyBasicResourceControl()
 	resource_name_list.clear();
 	free_id_list.clear();
 }
-PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(
-	const std::string &name_resource_in,
-	const Json::Value &root_value,
-	pancy_object_id &id_need,
-	bool if_allow_repeat
+PancystarEngine::EngineFailReason PancyGlobelResourceControl::GetResourceById(
+	const pancy_object_id &resource_id,
+	PancyBasicVirtualResource **data_pointer
 )
-{
-	PancystarEngine::EngineFailReason check_error;
-	//资源加载判断重复
-	if (!if_allow_repeat)
-	{
-		auto check_data = resource_name_list.find(name_resource_in);
-		if (check_data != resource_name_list.end())
-		{
-			id_need = check_data->second;
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "repeat load resource : " + name_resource_in, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Resource", error_message);
-			AddResurceReference(id_need);
-			return error_message;
-		}
-	}
-	//创建一个新的资源
-	PancyBasicVirtualResource *new_data;
-	check_error = BuildResource(root_value, name_resource_in, &new_data);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = new_data->Create();
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	int id_now;
-	//判断是否有空闲的id编号
-	if (free_id_list.size() > 0)
-	{
-		id_now = *free_id_list.begin();
-		free_id_list.erase(id_now);
-	}
-	else
-	{
-		id_now = basic_resource_array.size();
-	}
-	if (!if_allow_repeat)
-	{
-		//添加名称-id表用于判重
-		resource_name_list.insert(std::pair<std::string, pancy_object_id>(name_resource_in, id_now));
-	}
-	//插入到资源列表
-	basic_resource_array.insert(std::pair<pancy_object_id, PancyBasicVirtualResource*>(id_now, new_data));
-	id_need = id_now;
-	AddResurceReference(id_need);
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyBasicResourceControl::LoadResource(const std::string &desc_file_in, pancy_object_id &id_need, bool if_allow_repeat)
-{
-	PancystarEngine::EngineFailReason check_error;
-	Json::Value root_value;
-	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(desc_file_in, root_value);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = LoadResource(desc_file_in, root_value, id_need, if_allow_repeat);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyBasicResourceControl::AddResurceReference(const pancy_object_id &resource_id)
 {
 	auto data_now = basic_resource_array.find(resource_id);
 	if (data_now == basic_resource_array.end())
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add resource reference in resource control " + resource_type_name, error_message);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyGlobelResourceControl::GetResourceById", error_message);
+		return error_message;
+	}
+	*data_pointer = data_now->second;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyGlobelResourceControl::AddResurceReference(const pancy_object_id &resource_id)
+{
+	auto data_now = basic_resource_array.find(resource_id);
+	if (data_now == basic_resource_array.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyGlobelResourceControl::AddResurceReference", error_message);
 		return error_message;
 	}
 	data_now->second->AddReference();
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyBasicResourceControl::DeleteResurceReference(const pancy_object_id &resource_id)
+PancystarEngine::EngineFailReason PancyGlobelResourceControl::DeleteResurceReference(const pancy_object_id &resource_id)
 {
 	auto data_now = basic_resource_array.find(resource_id);
 	if (data_now == basic_resource_array.end())
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete resource reference in resource control " + resource_type_name, error_message);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyGlobelResourceControl::DeleteResurceReference", error_message);
 		return error_message;
 	}
 	data_now->second->DeleteReference();
@@ -197,49 +702,4 @@ PancystarEngine::EngineFailReason PancyBasicResourceControl::DeleteResurceRefere
 		basic_resource_array.erase(data_now);
 	}
 	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyBasicResourceControl::CopyCpuResourceToGpu(
-	const pancy_object_id &resource_id,
-	void* cpu_resource,
-	const pancy_resource_size &resource_size,
-	const pancy_resource_size &resource_offset_in
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto data_now = basic_resource_array.find(resource_id);
-	if (data_now == basic_resource_array.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Copy Cpu Resource To Gpu in resource control " + resource_type_name, error_message);
-		return error_message;
-	}
-	check_error = data_now->second->CopyCpuResourceToGpu(cpu_resource, resource_size, resource_offset_in);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyBasicResourceControl::GetResourceState(const pancy_object_id &resource_id, ResourceStateType &resource_state)
-{
-	auto data_now = basic_resource_array.find(resource_id);
-	if (data_now == basic_resource_array.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Resource State in resource control " + resource_type_name, error_message);
-		return error_message;
-	}
-	resource_state = data_now->second->GetResourceState();
-	return PancystarEngine::succeed;
-}
-PancyBasicVirtualResource* PancyBasicResourceControl::GetResource(const pancy_object_id &resource_id)
-{
-	auto data_now = basic_resource_array.find(resource_id);
-	if (data_now == basic_resource_array.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get resource reference in resource control " + resource_type_name, error_message);
-		return NULL;
-	}
-	return data_now->second;
 }

@@ -41,6 +41,8 @@ public:
 	//将类成员数据添加到vector中
 	virtual PancystarEngine::EngineFailReason CopyVectorData(void *vector_pointer, const std::string &data_type_name, const pancy_resource_size &index, const pancy_resource_size &size) = 0;
 	//将指定指针的数据拷贝到类成员数据
+	virtual PancystarEngine::EngineFailReason ResetMemoryByMemberData(void *memory_pointer, const std::string &data_type_name, const pancy_resource_size &size) = 0;
+	//将指定数组的数据拷贝到类成员数据
 	virtual PancystarEngine::EngineFailReason ResetMemoryByArrayData(void *array_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) = 0;
 	//将指定vector的数据拷贝到类成员数据
 	virtual PancystarEngine::EngineFailReason ResetMemoryByVectorData(void *vector_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) = 0;
@@ -188,6 +190,7 @@ public:
 	PancystarEngine::EngineFailReason CopyMemberData(void * dst_pointer, const std::string &data_type_name, const pancy_resource_size & size) override;
 	PancystarEngine::EngineFailReason CopyVectorData(void *vector_pointer, const std::string &data_type_name, const pancy_resource_size &index, const pancy_resource_size &size) override;
 
+	PancystarEngine::EngineFailReason ResetMemoryByMemberData(void *array_pointer, const std::string &data_type_name, const pancy_resource_size &size) override;
 	PancystarEngine::EngineFailReason ResetMemoryByArrayData(void *array_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) override;
 	PancystarEngine::EngineFailReason ResetMemoryByVectorData(void *vector_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) override;
 };
@@ -240,6 +243,26 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Cop
 		return error_message;
 	}
 	pointer->push_back(reflect_data);
+	return PancystarEngine::succeed;
+}
+template<typename ReflectDataType>
+PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::ResetMemoryByMemberData(void *memory_pointer, const std::string &data_type_name, const pancy_resource_size &size)
+{
+	std::string check_data_type_name = typeid(ReflectDataType*).name();
+	if (check_data_type_name != data_type_name)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy memory for json reflect,type dismatch");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::ResetMemoryByArrayData", error_message);
+		return error_message;
+	}
+	if (size != sizeof(ReflectDataType))
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy memory for json reflect,size dismatch");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::ResetMemoryByArrayData", error_message);
+		return error_message;
+	}
+	ReflectDataType *real_data_pointer = reinterpret_cast<ReflectDataType*>(memory_pointer);
+	reflect_data = *real_data_pointer;
 	return PancystarEngine::succeed;
 }
 template<typename ReflectDataType>

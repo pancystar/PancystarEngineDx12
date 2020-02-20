@@ -1,4 +1,5 @@
 #include"PancyShaderDx12.h"
+using namespace PancystarEngine;
 //输入顶点格式
 InputLayoutDesc::InputLayoutDesc()
 {
@@ -601,6 +602,8 @@ PancyRootSignatureControl::~PancyRootSignatureControl()
 //pipline state object graph
 PancyPiplineStateObjectGraph::PancyPiplineStateObjectGraph(const std::string &pso_name_in)
 {
+	cbuffer_desc_parse = new CommonBufferJsonReflect();
+	cbuffer_desc_parse->Create();
 	pipline_type = PSO_TYPE_GRAPHIC;
 	pso_name = pso_name_in;
 }
@@ -626,7 +629,6 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetDescriptorDis
 	}
 	return PancystarEngine::succeed;
 }
-*/
 PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::CheckCbuffer(const std::string &cbuffer_name)
 {
 	auto cbuffer_data = Cbuffer_map.find(cbuffer_name);
@@ -638,6 +640,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::CheckCbuffer(con
 	}
 	return PancystarEngine::succeed;
 }
+
 PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetCbuffer(const std::string &cbuffer_name, const Json::Value *& CbufferData) 
 {
 	auto cbuffer_data = Cbuffer_map.find(cbuffer_name);
@@ -648,6 +651,46 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetCbuffer(const
 		return error_message;
 	}
 	CbufferData = &cbuffer_data->second;
+	return PancystarEngine::succeed;
+}
+*/
+PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferByName(
+	const std::string &cbuffer_name,
+	PancyConstantBuffer &cbuffer_data_out
+) 
+{
+	auto cbuffer_allocator = Cbuffer_map.find(cbuffer_name);
+	if (cbuffer_allocator == Cbuffer_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString());
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyPiplineStateObjectGraph::BuildCbufferByName", error_message);
+		return error_message;
+	}
+	auto check_error = cbuffer_allocator->second->BuildNewCbuffer(cbuffer_data_out);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::ReleaseCbufferByID(
+	const std::string &cbuffer_name,
+	const pancy_object_id &buffer_resource_id,
+	const pancy_object_id &buffer_offset_id
+)
+{
+	auto cbuffer_allocator = Cbuffer_map.find(cbuffer_name);
+	if (cbuffer_allocator == Cbuffer_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString());
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyPiplineStateObjectGraph::ReleaseCbufferByID", error_message);
+		return error_message;
+	}
+	auto check_error = cbuffer_allocator->second->ReleaseCbuffer(buffer_resource_id, buffer_offset_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
@@ -736,20 +779,65 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 					now_constant_buffer->GetDesc(&buffer_shader);
 					if (Cbuffer_map.find(buffer_shader.Name) == Cbuffer_map.end())
 					{
-						//准备创建一个新的常量缓冲区
-						Json::Value root_value;
-						//创建资源格式
-						std::string subresource_name;
-						check_error = PancystarEngine::PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(PancystarEngine::Buffer_Constant, buffer_shader.Size, subresource_name);
-						PancyJsonTool::GetInstance()->SetJsonValue(root_value, "BufferType", "Buffer_Constant");
-						PancyJsonTool::GetInstance()->SetJsonValue(root_value, "SubResourceFile", subresource_name);
+						//将cbuffer的大小进行256位对齐
+						pancy_resource_size alize_cbuffer_size = buffer_shader.Size;
+						pancy_resource_size alize_buffer_resource_size = 65536;
+						if (alize_cbuffer_size % 256 != 0)
+						{
+							alize_cbuffer_size = (1 + (alize_cbuffer_size / 256)) * 256;
+						}
+						//根据cbuffer的大小来决定开辟的buffer资源的大小
+						if (alize_cbuffer_size > 256 * 6) 
+						{
+							//大型Cbuffer(可能由instance数据),开辟256k的buffer作为承载buffer
+							alize_buffer_resource_size = 256 * 1024;
+						}
+						else 
+						{
+							//小型cbuffer，开辟64k的buffer作为承载buffer
+							alize_buffer_resource_size = 64 * 1024;
+						}
+						PancyCommonBufferDesc cbuffer_resource_desc;
+						cbuffer_resource_desc.buffer_type = Buffer_Constant;
+						cbuffer_resource_desc.heap_flag_in = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+						cbuffer_resource_desc.heap_type = D3D12_HEAP_TYPE_UPLOAD;
+						cbuffer_resource_desc.buffer_res_desc.Alignment = 0;
+						cbuffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
+						cbuffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+						cbuffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+						cbuffer_resource_desc.buffer_res_desc.Height = 1;
+						cbuffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+						cbuffer_resource_desc.buffer_res_desc.MipLevels = 1;
+						cbuffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
+						cbuffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
+						cbuffer_resource_desc.buffer_res_desc.Width = alize_buffer_resource_size;
+						//将cbuffer的存储buffer格式序列化为json内存
+						check_error = cbuffer_desc_parse->ResetMemoryByMemberData(&cbuffer_resource_desc,typeid(PancyCommonBufferDesc).name(),sizeof(cbuffer_resource_desc));
+						if (!check_error.CheckIfSucceed()) 
+						{
+							return check_error;
+						}
+						Json::Value new_cbuffer_resource_value;
+						check_error = cbuffer_desc_parse->SaveToJsonMemory(new_cbuffer_resource_value);
 						if (!check_error.CheckIfSucceed())
 						{
 							return check_error;
 						}
+						//todo：由pso管理cbuffer的创建和销毁
+						//准备创建一个新的常量缓冲区
+						Json::Value new_cbuffer_desc_value;
+						//创建资源格式
+						//std::string subresource_name;
+						//check_error = PancystarEngine::PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(PancystarEngine::Buffer_Constant, buffer_shader.Size, subresource_name);
+						PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "BufferType", "Buffer_Constant");
+						//PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "SubResourceFile", subresource_name);
+						//if (!check_error.CheckIfSucceed())
+						//{
+						//	return check_error;
+						//}
 						//填充常量缓冲区
 						Json::Value cbuffer_value;
-						PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_value, "BufferSize", buffer_shader.Size);
+						PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_value, "BufferSize", alize_cbuffer_size);
 						for (int i = 0; i < buffer_shader.Variables; ++i)
 						{
 							Json::Value cbuffer_variable_value;
@@ -761,9 +849,16 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 							PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "Name", shader_var_desc.Name);
 							PancyJsonTool::GetInstance()->AddJsonArrayValue(cbuffer_value, "VariableMember", cbuffer_variable_value);
 						}
-						PancyJsonTool::GetInstance()->SetJsonValue(root_value, "CbufferDesc", cbuffer_value);
+						PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "CbufferDesc", cbuffer_value);
 						//将当前cbuffer的格式保存在map中
-						Cbuffer_map.insert(std::pair<std::string, Json::Value>(buffer_shader.Name, root_value));
+						ConstantBufferAlloctor *new_cbuffer_alloctar = new ConstantBufferAlloctor(
+							alize_buffer_resource_size,
+							buffer_shader.Name,
+							pso_name.GetAsciiString(),
+							new_cbuffer_desc_value,
+							cbuffer_value
+						);
+						Cbuffer_map.insert(std::pair<std::string, ConstantBufferAlloctor*>(buffer_shader.Name, new_cbuffer_alloctar));
 					}
 				}
 				//填充shader信息
@@ -1381,6 +1476,15 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetInputDesc(Com
 	}
 	return PancystarEngine::succeed;
 }
+PancyPiplineStateObjectGraph::~PancyPiplineStateObjectGraph()
+{
+	delete cbuffer_desc_parse;
+	for (auto cbuffer_alloctor_value = Cbuffer_map.begin(); cbuffer_alloctor_value != Cbuffer_map.end(); ++cbuffer_alloctor_value) 
+	{
+		delete cbuffer_alloctor_value->second;
+	}
+	Cbuffer_map.clear();
+}
 //effect
 PancyEffectGraphic::PancyEffectGraphic()
 {
@@ -1723,6 +1827,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetPSO(const std::string &
 	PSO_id = PSO_array_find->second;
 	return PancystarEngine::succeed;
 }
+/*
 PancystarEngine::EngineFailReason PancyEffectGraphic::CheckCbuffer(const pancy_object_id &PSO_id, const std::string &name_in)
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1757,6 +1862,51 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetCbuffer(const pancy_obj
 	}
 	return PancystarEngine::succeed;
 }
+*/
+PancystarEngine::EngineFailReason PancyEffectGraphic::BuildCbufferByName(
+	const pancy_object_id &PSO_id,
+	const std::string &cbuffer_name,
+	PancyConstantBuffer &cbuffer_data_out
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto PSO_array_find = PSO_array.find(PSO_id);
+	if (PSO_array_find == PSO_array.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyEffectGraphic::BuildCbufferByName", error_message);
+		return error_message;
+	}
+	check_error = PSO_array_find->second->BuildCbufferByName(cbuffer_name, cbuffer_data_out);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyEffectGraphic::ReleaseCbufferByID(
+	const pancy_object_id &PSO_id,
+	const std::string &cbuffer_name,
+	const pancy_object_id &buffer_resource_id,
+	const pancy_object_id &buffer_offset_id
+) 
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto PSO_array_find = PSO_array.find(PSO_id);
+	if (PSO_array_find == PSO_array.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyEffectGraphic::BuildCbufferByName", error_message);
+		return error_message;
+	}
+	check_error = PSO_array_find->second->ReleaseCbufferByID(cbuffer_name, buffer_resource_id, buffer_offset_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+
 PancystarEngine::EngineFailReason PancyEffectGraphic::GetDescriptorDesc(
 	const pancy_object_id &PSO_id,
 	const PancyShaderDescriptorType &descriptor_type,
@@ -1781,4 +1931,252 @@ PancyEffectGraphic::~PancyEffectGraphic()
 		delete data->second;
 	}
 	PSO_array.clear();
+}
+
+
+ConstantBufferAlloctor::ConstantBufferAlloctor(
+	const pancy_resource_size &cbuffer_size_in,
+	const std::string &cbuffer_name_in,
+	const std::string &cbuffer_effect_name_in,
+	Json::Value &buffer_resource_desc_value_in,
+	Json::Value &cbuffer_desc_value_in
+)
+{
+	cbuffer_size = cbuffer_size_in;
+	cbuffer_name = cbuffer_name_in;
+	cbuffer_effect_name = cbuffer_effect_name_in;
+	buffer_resource_desc_value = buffer_resource_desc_value_in;
+	cbuffer_desc_value = cbuffer_desc_value_in;
+}
+PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyConstantBuffer &cbuffer_data)
+{
+	CbufferPackList *now_used_buffer_resource = NULL;
+	//先从现有的buffer中寻找有没有空闲的存储块
+	for (auto buffer_resource_data = all_cbuffer_list.begin(); buffer_resource_data != all_cbuffer_list.end(); ++buffer_resource_data)
+	{
+		if (buffer_resource_data->second->now_empty_offset.size() > 0)
+		{
+			now_used_buffer_resource = buffer_resource_data->second;
+			break;
+		}
+	}
+	//如果现有的buffer存储块都已经被使用了，则新开一个空的buffer
+	if (now_used_buffer_resource == NULL)
+	{
+		VirtualResourcePointer new_buffer_resource;
+		auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
+			cbuffer_effect_name + "::" + cbuffer_name,
+			buffer_resource_desc_value,
+			new_buffer_resource,
+			true
+			);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		now_used_buffer_resource = new CbufferPackList(new_buffer_resource, cbuffer_size);
+		all_cbuffer_list.insert(std::pair<pancy_object_id, CbufferPackList*>(new_buffer_resource.GetResourceId(), now_used_buffer_resource));
+	}
+	//从新的存储块的指定偏移点创建一个新的cbuffer
+	auto now_alloc_data = *now_used_buffer_resource->now_empty_offset.begin();
+	auto check_error = cbuffer_data.Create(
+		cbuffer_name,
+		cbuffer_effect_name,
+		now_used_buffer_resource->buffer_pointer.GetResourceId(),
+		now_alloc_data,
+		cbuffer_size,
+		cbuffer_desc_value
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//标记指定的存储块已经被使用
+	now_used_buffer_resource->now_empty_offset.erase(now_alloc_data);
+	now_used_buffer_resource->now_use_offset.insert(now_alloc_data);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason ConstantBufferAlloctor::ReleaseCbuffer(const pancy_object_id &buffer_resource_id, const pancy_object_id &buffer_offset_id)
+{
+	//先检查给定的资源是否是已经开辟的资源
+	auto buffer_resource_pointer = all_cbuffer_list.find(buffer_resource_id);
+	if (buffer_resource_pointer == all_cbuffer_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find buffer resource: " + std::to_string(buffer_resource_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ConstantBufferAlloctor::ReleaseCbuffer", error_message);
+		return error_message;
+	}
+	if (buffer_resource_pointer->second->now_use_offset.find(buffer_offset_id) == buffer_resource_pointer->second->now_use_offset.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find cbuffer offset: " + std::to_string(buffer_offset_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ConstantBufferAlloctor::ReleaseCbuffer", error_message);
+		return error_message;
+	}
+	//将资源的偏移量释放
+	buffer_resource_pointer->second->now_use_offset.erase(buffer_offset_id);
+	buffer_resource_pointer->second->now_empty_offset.insert(buffer_offset_id);
+	//如果释放完毕后资源没有任何引用则删除掉该资源
+	if (buffer_resource_pointer->second->now_use_offset.size() == 0)
+	{
+		delete buffer_resource_pointer->second;
+		all_cbuffer_list.erase(buffer_resource_pointer);
+	}
+	return PancystarEngine::succeed;
+}
+//常量缓冲区
+PancystarEngine::EngineFailReason PancyConstantBuffer::SetMatrix(const std::string &variable, const DirectX::XMFLOAT4X4 &mat_data, const pancy_resource_size &offset)
+{
+	auto start_pos = member_variable.find(variable);
+	if (start_pos == member_variable.end())
+	{
+		return ErrorVariableNotFind(variable);
+	}
+	//传入Cbuffer中的矩阵需要做转置操作
+	DirectX::XMFLOAT4X4 transpose_mat;
+	DirectX::XMStoreFloat4x4(&transpose_mat, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&mat_data)));
+	memcpy(map_pointer_out + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4X4), &transpose_mat, sizeof(transpose_mat));
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyConstantBuffer::SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data, const pancy_resource_size &offset)
+{
+	auto start_pos = member_variable.find(variable);
+	if (start_pos == member_variable.end())
+	{
+		return ErrorVariableNotFind(variable);
+	}
+	memcpy(map_pointer_out + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4), &vector_data, sizeof(vector_data));
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyConstantBuffer::SetUint4(const std::string &variable, const DirectX::XMUINT4 &vector_data, const pancy_resource_size &offset)
+{
+	auto start_pos = member_variable.find(variable);
+	if (start_pos == member_variable.end())
+	{
+		return ErrorVariableNotFind(variable);
+	}
+	memcpy(map_pointer_out + start_pos->second.start_offset + offset * sizeof(DirectX::XMUINT4), &vector_data, sizeof(vector_data));
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyConstantBuffer::SetStruct(const std::string &variable, const void* struct_data, const pancy_resource_size &data_size, const pancy_resource_size &offset)
+{
+	auto start_pos = member_variable.find(variable);
+	if (start_pos == member_variable.end())
+	{
+		return ErrorVariableNotFind(variable);
+	}
+	memcpy(map_pointer_out + start_pos->second.start_offset + offset * data_size, struct_data, data_size);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyConstantBuffer::ErrorVariableNotFind(const std::string &variable_name)
+{
+	PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find shader variable:" + variable_name + " in Cbuffer: " + cbuffer_name + " PSO:" + cbuffer_effect_name);
+	PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer Variable", error_message);
+	return error_message;
+}
+PancyConstantBuffer::PancyConstantBuffer()
+{
+}
+PancystarEngine::EngineFailReason PancyConstantBuffer::Create(
+	const std::string &cbuffer_name_in,
+	const std::string &cbuffer_effect_name_in,
+	const pancy_object_id &buffer_id_in,
+	const pancy_resource_size &buffer_offset_id_in,
+	const pancy_resource_size &cbuffer_size_in,
+	const Json::Value &root_value
+)
+{
+	//填充基本信息
+	cbuffer_name = cbuffer_name_in;
+	cbuffer_effect_name = cbuffer_effect_name_in;
+	buffer_id = buffer_id_in;
+	buffer_offset_id = buffer_offset_id_in;
+	PancyBasicBuffer *pointer = dynamic_cast<PancyBasicBuffer*>(buffer_ID.GetResourceData());
+	cbuffer_size = cbuffer_size_in;
+	map_pointer_out = pointer->GetBufferCPUPointer() + buffer_offset_id * cbuffer_size;
+	//从json文件中读取cbuffer的布局反射
+	PancystarEngine::EngineFailReason check_error;
+	std::string cbuffer_final_name = cbuffer_effect_name + "_" + cbuffer_name;
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = GetCbufferDesc(cbuffer_final_name, root_value);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	if_loaded = true;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std::string &file_name, const Json::Value &root_value)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_json_value now_value;
+	Json::Value value_cbuffer_desc = root_value.get("CbufferDesc", Json::Value::null);
+	if (value_cbuffer_desc == Json::Value::null)
+	{
+		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value: CbufferDesc of variable: " + file_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyConstantBuffer::GetCbufferDesc", error_mesage);
+		return error_mesage;
+	}
+	//读取缓冲区大小
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_desc, "BufferSize", pancy_json_data_type::json_data_int, now_value);
+	cbuffer_size = static_cast<pancy_resource_size>(now_value.int_value);
+	//读取常量缓冲区的所有变量
+	Json::Value value_cbuffer_member = value_cbuffer_desc.get("VariableMember", Json::Value::null);
+	if (value_cbuffer_member == Json::Value::null)
+	{
+		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value: VariableMember of variable: " + file_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyConstantBuffer::GetCbufferDesc", error_mesage);
+		return error_mesage;
+	}
+	for (int32_t i = 0; i < value_cbuffer_member.size(); ++i)
+	{
+		CbufferVariable new_variable_data;
+		std::string variable_name;
+		Json::Value value_cbuffer_variable;
+		value_cbuffer_variable = value_cbuffer_member.get(i, Json::nullValue);
+		//读取变量名称
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "Name", pancy_json_data_type::json_data_string, now_value);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		variable_name = now_value.string_value;
+		//读取变量大小
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "Size", pancy_json_data_type::json_data_int, now_value);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		new_variable_data.variable_size = now_value.int_value;
+		//读取变量偏移
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "StartOffset", pancy_json_data_type::json_data_int, now_value);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		new_variable_data.start_offset = now_value.int_value;
+		//记录当前的新变量
+		member_variable.insert(std::pair<std::string, CbufferVariable>(variable_name, new_variable_data));
+	}
+	return PancystarEngine::succeed;
+}
+PancyConstantBuffer::~PancyConstantBuffer()
+{
+	if (if_loaded)
+	{
+		pancy_object_id effect_pso_id;
+		auto check_error = PancyEffectGraphic::GetInstance()->GetPSO(cbuffer_effect_name, effect_pso_id);
+		if (!check_error.CheckIfSucceed()) 
+		{
+			return;
+		}
+		check_error = PancyEffectGraphic::GetInstance()->ReleaseCbufferByID(effect_pso_id, cbuffer_name, buffer_id, buffer_offset_id);
+		if (!check_error.CheckIfSucceed())
+		{
+			return;
+		}
+		member_variable.clear();
+	}
 }

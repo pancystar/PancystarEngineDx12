@@ -43,6 +43,55 @@ namespace PancystarEngine
 		_Out_ size_t& tdepth,
 		_Out_ size_t& skipMip,
 		std::vector<D3D12_SUBRESOURCE_DATA>& initData);
+	//纹理导入参数结构
+	enum PancyTextureType 
+	{
+		Texture_Static_Load = 0,
+		Texture_Render_Target
+	};
+	struct PancyCommonTextureDesc 
+	{
+		D3D12_HEAP_TYPE heap_type;
+		D3D12_HEAP_FLAGS heap_flag_in;
+		PancyTextureType texture_type;
+		D3D12_RESOURCE_DESC texture_res_desc = {};
+		std::string texture_data_file;
+	};
+	class CommonTextureJsonReflect :public PancyJsonReflectTemplate<PancyCommonTextureDesc>
+	{
+	public:
+		CommonTextureJsonReflect();
+	private:
+		PancystarEngine::EngineFailReason InitChildReflectClass() override;
+		void InitBasicVariable() override;
+	};
+	CommonTextureJsonReflect::CommonTextureJsonReflect()
+	{
+
+	}
+	PancystarEngine::EngineFailReason CommonTextureJsonReflect::InitChildReflectClass()
+	{
+	}
+	void CommonTextureJsonReflect::InitBasicVariable()
+	{
+		Init_Json_Data_Vatriable(reflect_data.heap_type);
+		Init_Json_Data_Vatriable(reflect_data.heap_flag_in);
+		Init_Json_Data_Vatriable(reflect_data.texture_type);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.Dimension);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.Alignment);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.Width);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.Height);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.DepthOrArraySize);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.MipLevels);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.Format);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.SampleDesc.Count);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.SampleDesc.Quality);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.Layout);
+		Init_Json_Data_Vatriable(reflect_data.texture_res_desc.Flags);
+		Init_Json_Data_Vatriable(reflect_data.texture_data_file);
+	}
+
+
 	class PancyBasicTexture : public PancystarEngine::PancyBasicVirtualResource
 	{
 		D3D12_RESOURCE_DESC              desc;//纹理格式数据
