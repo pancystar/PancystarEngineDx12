@@ -95,7 +95,7 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource()
 		//todo:从文件中读取buffer
 		//获取用于拷贝的commond list
 		PancyRenderCommandList *copy_render_list;
-		uint32_t copy_render_list_ID;
+		PancyThreadIdGPU copy_render_list_ID;
 		check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -131,6 +131,10 @@ bool PancyBasicBuffer::CheckIfResourceLoadFinish()
 }
 PancyBasicBuffer::~PancyBasicBuffer() 
 {
+	if (buffer_data != NULL) 
+	{
+		delete buffer_data;
+	}
 }
 
 //骨骼动画缓冲区
@@ -145,8 +149,6 @@ PancySkinAnimationBuffer::PancySkinAnimationBuffer(const pancy_resource_size &an
 }
 PancySkinAnimationBuffer::~PancySkinAnimationBuffer() 
 {
-	PancyBasicBufferControl::GetInstance()->DeleteResurceReference(buffer_ID_animation);
-	PancyBasicBufferControl::GetInstance()->DeleteResurceReference(buffer_ID_bone);
 }
 PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 {
@@ -155,37 +157,64 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 	Json::Value root_value;
 	std::string buffer_subresource_name;
 	//创建存储蒙皮结果的缓冲区资源(静态缓冲区)
-	check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(Buffer_UnorderedAccess_static, animation_buffer_size, buffer_subresource_name);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	PancyJsonTool::GetInstance()->SetJsonValue(root_value,"BufferType","Buffer_ShaderResource_static");
-	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "SubResourceFile", buffer_subresource_name);
-	check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, root_value, buffer_ID_animation, true);
+	PancyCommonBufferDesc animation_buffer_resource_desc;
+	animation_buffer_resource_desc.buffer_type = Buffer_UnorderedAccess_static;
+	animation_buffer_resource_desc.buffer_res_desc.Alignment = 0;
+	animation_buffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
+	animation_buffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	animation_buffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	animation_buffer_resource_desc.buffer_res_desc.Height = 1;
+	animation_buffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	animation_buffer_resource_desc.buffer_res_desc.MipLevels = 1;
+	animation_buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
+	animation_buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
+	animation_buffer_resource_desc.buffer_res_desc.Width = animation_buffer_size;
+	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
+		file_name,
+		&animation_buffer_resource_desc,
+		typeid(animation_buffer_resource_desc).name(),
+		sizeof(animation_buffer_resource_desc),
+		buffer_animation,
+		true
+		);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//加载存储骨骼矩阵的缓冲区资源(动态缓冲区)
 	file_name = "pancy_skin_bone_buffer";
-	check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(Buffer_ShaderResource_dynamic, bone_buffer_size, buffer_subresource_name);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "BufferType", "Buffer_ShaderResource_dynamic");
-	PancyJsonTool::GetInstance()->SetJsonValue(root_value, "SubResourceFile", buffer_subresource_name);
-	check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, root_value, buffer_ID_bone, true);
+	PancyCommonBufferDesc bone_buffer_resource_desc;
+	bone_buffer_resource_desc.buffer_type = Buffer_ShaderResource_dynamic;
+	bone_buffer_resource_desc.buffer_res_desc.Alignment = 0;
+	bone_buffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
+	bone_buffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bone_buffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	bone_buffer_resource_desc.buffer_res_desc.Height = 1;
+	bone_buffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	bone_buffer_resource_desc.buffer_res_desc.MipLevels = 1;
+	bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
+	bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
+	bone_buffer_resource_desc.buffer_res_desc.Width = bone_buffer_size;
+	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
+		file_name,
+		&animation_buffer_resource_desc,
+		typeid(animation_buffer_resource_desc).name(),
+		sizeof(animation_buffer_resource_desc),
+		buffer_bone,
+		true
+		);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//将存储骨骼矩阵的缓冲区在CPU端的指针进行保留
-	check_error = PancyBasicBufferControl::GetInstance()->GetBufferCPUPointer(buffer_ID_bone, &bone_data_pointer);
-	if (!check_error.CheckIfSucceed()) 
+	const PancyBasicBuffer *buffer_pointer = dynamic_cast<const PancyBasicBuffer*>(buffer_bone.GetResourceData());
+	bone_data_pointer = buffer_pointer->GetBufferCPUPointer();
+	if (bone_data_pointer == NULL)
 	{
-		return check_error;
+		PancystarEngine::EngineFailReason error_message(E_FAIL,"failed to get skinmesh bone buffer cpu pointer from resource");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancySkinAnimationBuffer::Create", error_message);
+		return error_message;
 	}
 	return PancystarEngine::succeed;
 }
@@ -246,27 +275,5 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildBoneBlock(
 	pancy_object_id now_ID = bone_block_map.size();
 	bone_block_map.insert(std::pair<pancy_object_id, SkinAnimationBlock>(now_ID, new_bone_block));
 	block_id = now_ID;
-	return PancystarEngine::succeed;
-}
-//获取矩阵存储缓冲区
-PancystarEngine::EngineFailReason PancySkinAnimationBuffer::GetBoneMatrixResource(SubMemoryPointer &resource_pointer) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	check_error = PancyBasicBufferControl::GetInstance()->GetBufferSubResource(buffer_ID_bone, resource_pointer);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-//获取蒙皮结果缓冲区
-PancystarEngine::EngineFailReason PancySkinAnimationBuffer::GetSkinVertexResource(SubMemoryPointer &resource_pointer) 
-{
-	PancystarEngine::EngineFailReason check_error;
-	check_error = PancyBasicBufferControl::GetInstance()->GetBufferSubResource(buffer_ID_animation, resource_pointer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
 	return PancystarEngine::succeed;
 }

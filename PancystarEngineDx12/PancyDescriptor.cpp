@@ -1,1515 +1,1279 @@
 #include"PancyDescriptor.h"
 using namespace PancystarEngine;
-PancySkinAnimationControl *PancySkinAnimationControl::this_instance = NULL;
-PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferMatrix(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMFLOAT4X4 &data_in,
-	const pancy_resource_size &offset
+
+//解绑定描述符段，用于描述符段里的所有描述符页的分配和管理
+BindlessResourceViewSegmental::BindlessResourceViewSegmental(
+	const pancy_object_id &max_descriptor_num_in,
+	const pancy_object_id &segmental_offset_position_in,
+	const pancy_object_id &per_descriptor_size_in,
+	const ComPtr<ID3D12DescriptorHeap> descriptor_heap_data_in
 )
 {
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer Matrix", error_message);
-		return error_message;
-	}
-	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
-	check_error = cbuffer_data->second[now_frame_id]->SetMatrix(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
+	max_descriptor_num = max_descriptor_num_in;
+	segmental_offset_position = segmental_offset_position_in;
+	now_descriptor_pack_id_self_add = 0;
+	now_pointer_offset = 0;
+	per_descriptor_size = per_descriptor_size_in;
+	descriptor_data.rehash(max_descriptor_num);
+	now_pointer_refresh = max_descriptor_num_in;
+	descriptor_heap_data = descriptor_heap_data_in.Get();
 }
-PancystarEngine::EngineFailReason BasicRenderParam::GetPsoData(ID3D12PipelineState  **pso_data)
+//根据描述符页的指针信息，在描述符堆开辟描述符
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildShaderResourceView(const BindlessResourceViewPointer &resource_view_pointer)
 {
-	if (PSO_pointer == NULL)
+	for (int i = 0; i < resource_view_pointer.resource_view_num; ++i)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Render Param Havn't Init Pipeline State Object Or Render Param Init Failed");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BasicRenderParam::GetPsoData", error_message);
-		return error_message;
-	}
-	*pso_data = PSO_pointer;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferFloat4(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMFLOAT4 &data_in,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer float4", error_message);
-		return error_message;
-	}
-	//写操作作用在隔一帧的缓冲区
-	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
-	check_error = cbuffer_data->second[now_frame_id]->SetFloat4(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferUint4(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMUINT4 &data_in,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer uint4", error_message);
-		return error_message;
-	}
-	//写操作作用在隔一帧的缓冲区
-	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
-	check_error = cbuffer_data->second[now_frame_id]->SetUint4(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferStructData(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const void* data_in,
-	const pancy_resource_size &data_size,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer struct", error_message);
-		return error_message;
-	}
-	//写操作作用在隔一帧的缓冲区
-	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
-	check_error = cbuffer_data->second[now_frame_id]->SetStruct(variable_name, data_in, data_size, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-bool BasicRenderParam::CheckIfInitFinished()
-{
-	if (if_render_param_inited)
-	{
-		return if_render_param_inited;
-	}
-	if (globel_cbuffer_num == globel_constant_buffer.size() &&
-		private_cbuffer_num == private_constant_buffer.size() &&
-		globel_shader_resource_num == globel_shader_resource.size() &&
-		bind_shader_resource_num == bind_shader_resource.size() &&
-		bindless_shader_resource_num == bindless_shader_resource.size())
-	{
-		if_render_param_inited == true;
-	}
-	return if_render_param_inited;
-}
-BasicRenderParam::BasicRenderParam(const std::string &render_param_name_in)
-{
-	render_param_name = render_param_name_in;
-}
-BasicRenderParam::~BasicRenderParam()
-{
-	//删除私有描述符
-	//删除cbuffer资源
-	for (auto release_data = per_object_cbuffer.begin(); release_data != per_object_cbuffer.end(); ++release_data)
-	{
-		for (int i = 0; i < release_data->second.size(); ++i)
+		//计算当前的描述符在整个描述符堆的偏移量(段首地址偏移+页首地址偏移+自偏移)
+		pancy_object_id resource_view_heap_offset = segmental_offset_position + resource_view_pointer.resource_view_offset + i;
+		//计算虚拟偏移量对应的真实地址偏移量
+		pancy_resource_size real_offset = static_cast<pancy_resource_size>(resource_view_heap_offset) * static_cast<pancy_resource_size>(per_descriptor_size);
+		//根据真实地址偏移量，创建SRV描述符
+		PancystarEngine::EngineFailReason check_error;
+		//创建描述符
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
+		cpuHandle.Offset(real_offset);
+		//检测资源格式
+		auto real_resource = resource_view_pointer.describe_memory_data[i].GetResourceData();
+		ResourceBlockGpu* now_gpu_resource = NULL;
+		if (real_resource->GetResourceTypeName() == typeid(PancyBasicBuffer).name()) 
 		{
-			delete release_data->second[i];
+			const PancyBasicBuffer *buffer_resource_data = dynamic_cast<const PancyBasicBuffer*>(real_resource);
+			now_gpu_resource = buffer_resource_data->GetGpuResourceData();
 		}
-		release_data->second.clear();
-	}
-	per_object_cbuffer.clear();
-}
-PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
-	const std::string &PSO_name,
-	const std::unordered_map<std::string, BindDescriptorPointer> &bind_shader_resource_in,
-	const std::unordered_map<std::string, BindlessDescriptorPointer> &bindless_shader_resource_in
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	pancy_object_id PSO_id_need;
-	//PSO数据
-	check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id_need);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = PancyEffectGraphic::GetInstance()->GetPSOResource(PSO_id_need, &PSO_pointer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//rootsignature数据
-	check_error = PancyEffectGraphic::GetInstance()->GetRootSignatureResource(PSO_id_need, &rootsignature);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//描述符堆数据
-	check_error = PancyDescriptorHeapControl::GetInstance()->GetBasicDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, &descriptor_heap_use);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//获取所有的全局绑定Cbuffer信息
-	const std::vector<PancyDescriptorPSODescription> *globel_cbuffer_desc;
-	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::CbufferGlobel, globel_cbuffer_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	for (int i = 0; i < globel_cbuffer_desc->size(); ++i)
-	{
-		BindDescriptorPointer now_cbuffer_descriptor;
-		const std::string &cbuffer_name = (*globel_cbuffer_desc)[i].descriptor_name;
-		const pancy_object_id &now_bind_id = (*globel_cbuffer_desc)[i].rootsignature_slot;
-		check_error = PancyDescriptorHeapControl::GetInstance()->GetCommonGlobelDescriptorID(PancyDescriptorType::DescriptorTypeConstantBufferView, cbuffer_name, now_cbuffer_descriptor);
+		else if(real_resource->GetResourceTypeName() == typeid(PancyBasicTexture).name())
+		{
+			const PancyBasicTexture *texture_resource_data = dynamic_cast<const PancyBasicTexture*>(real_resource);
+			now_gpu_resource = texture_resource_data->GetGpuResourceData();
+		}
+		else 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "The Resource is not a buffer/texture, could not build Descriptor for it");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindlessResourceViewSegmental::BuildShaderResourceView", error_message);
+			return error_message;
+		}
+		if (now_gpu_resource == NULL) 
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "The GPU data of Resource is empty, could not build Descriptor for it");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindlessResourceViewSegmental::BuildShaderResourceView", error_message);
+			return error_message;
+		}
+		BasicDescriptorDesc new_descriptor_desc;
+		new_descriptor_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
+		new_descriptor_desc.shader_resource_view_desc = resource_view_pointer.SRV_desc[i];
+		check_error = now_gpu_resource->BuildCommonDescriptorView(new_descriptor_desc, cpuHandle);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		globel_constant_buffer.insert(std::pair<std::string, BindDescriptorPointer>(cbuffer_name, now_cbuffer_descriptor));
-		//为全局常量缓冲区描述符记录其slot地址
-		globel_constant_buffer_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(cbuffer_name, now_bind_id));
 	}
-	//开始注册所有的私有常量缓冲区
-	const std::vector<PancyDescriptorPSODescription> *private_cbuffer_desc;
-	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::CbufferPrivate, private_cbuffer_desc);
+	return PancystarEngine::succeed;
+}
+//从描述符段里开辟一组bindless描述符页
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildBindlessShaderResourceViewPack(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	const std::vector<VirtualResourcePointer> &describe_memory_data,
+	const pancy_object_id &SRV_pack_size,
+	pancy_object_id &SRV_pack_id
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	//检查当前空闲的描述符数量是否足以开辟出当前请求的描述符页
+	pancy_object_id now_empty_descriptor = max_descriptor_num - now_pointer_offset;
+	if (now_empty_descriptor < SRV_pack_size)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Descriptor Segmental Is Not Enough to build a new descriptor pack");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Descriptor pack from Segmental", error_message);
+		return error_message;
+	}
+	//根据当前的描述符段的偏移情况，创建一个新的描述符组
+	BindlessResourceViewPointer new_resource_view_pack;
+	new_resource_view_pack.resource_view_num = SRV_pack_size;
+	new_resource_view_pack.resource_view_offset = now_pointer_offset;
+	for (auto SRV_desc_data = SRV_desc.begin(); SRV_desc_data != SRV_desc.end(); ++SRV_desc_data)
+	{
+		//复制所有的描述符格式
+		new_resource_view_pack.SRV_desc.push_back(*SRV_desc_data);
+	}
+	for (auto resource_data = describe_memory_data.begin(); resource_data != describe_memory_data.end(); ++resource_data)
+	{
+		//复制所有的资源二级地址
+		new_resource_view_pack.describe_memory_data.push_back(*resource_data);
+	}
+	//开始创建SRV
+	check_error = BuildShaderResourceView(new_resource_view_pack);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	for (int i = 0; i < private_cbuffer_desc->size(); ++i)
+	//根据新的描述符页所包含的描述符数量来偏移描述符段的指针
+	now_pointer_offset += SRV_pack_size;
+	//为新的描述符来生成一个新的ID
+	if (!now_descriptor_pack_id_reuse.empty())
 	{
-		const std::string &cbuffer_name = (*private_cbuffer_desc)[i].descriptor_name;
-		const pancy_object_id &now_bind_id = (*private_cbuffer_desc)[i].rootsignature_slot;
-		const Json::Value *cbuffer_desc_root;
-		//首先为所有的私有cbuffer开辟空间
-		std::vector<PancystarEngine::PancyConstantBuffer*> cbuffer_double_list;
-		for (int i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
-		{
-			std::string pso_divide_path;
-			std::string pso_divide_name;
-			std::string pso_divide_tail;
-			PancystarEngine::DivideFilePath(PSO_name, pso_divide_path, pso_divide_name, pso_divide_tail);
-			PancystarEngine::PancyConstantBuffer *new_cbuffer = new PancystarEngine::PancyConstantBuffer(cbuffer_name, pso_divide_name);
-			check_error = PancyEffectGraphic::GetInstance()->GetCbuffer(PSO_id_need, cbuffer_name, cbuffer_desc_root);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			check_error = new_cbuffer->Create(*cbuffer_desc_root);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			cbuffer_double_list.push_back(new_cbuffer);
-		}
-		per_object_cbuffer.insert(std::pair<std::string, std::vector<PancystarEngine::PancyConstantBuffer*>>(cbuffer_name, cbuffer_double_list));
-		//然后为私有的cbuffer创建描述符
-		std::vector<BasicDescriptorDesc> descriptor_desc_list;
-		std::vector<SubMemoryPointer> cbuffer_memory_data;
-		for (int i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
-		{
-			BasicDescriptorDesc cbuffer_desc;
-			cbuffer_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeConstantBufferView;
-			descriptor_desc_list.push_back(cbuffer_desc);
-			SubMemoryPointer cbuffer_submemory;
-			check_error = cbuffer_double_list[i]->GetBufferSubResource(cbuffer_submemory);
-			cbuffer_memory_data.push_back(cbuffer_submemory);
-		}
-		BindDescriptorPointer now_cbuffer_descriptor;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(descriptor_desc_list, cbuffer_memory_data, true, now_cbuffer_descriptor);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		private_constant_buffer.insert(std::pair<std::string, BindDescriptorPointer>(cbuffer_name, now_cbuffer_descriptor));
-		//为私有常量缓冲区描述符记录其slot地址
-		private_constant_buffer_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(cbuffer_name, now_bind_id));
-	}
-	//获取所有的全局绑定ShaderResource信息
-	const std::vector<PancyDescriptorPSODescription> *globel_shader_resource_desc;
-	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::SRVGlobel, globel_shader_resource_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	for (int i = 0; i < globel_shader_resource_desc->size(); ++i)
-	{
-		BindDescriptorPointer now_shader_resource_descriptor;
-		const std::string &shader_resource_name = (*globel_shader_resource_desc)[i].descriptor_name;
-		const pancy_object_id &now_shader_resource_bind_id = (*globel_shader_resource_desc)[i].rootsignature_slot;
-		check_error = PancyDescriptorHeapControl::GetInstance()->GetCommonGlobelDescriptorID(PancyDescriptorType::DescriptorTypeShaderResourceView, shader_resource_name, now_shader_resource_descriptor);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		globel_shader_resource.insert(std::pair<std::string, BindDescriptorPointer>(shader_resource_name, now_shader_resource_descriptor));
-		//为全局resource view描述符记录其slot地址
-		globel_shader_resource_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(shader_resource_name, now_shader_resource_bind_id));
-	}
-	//拷贝所有的绑定描述符
-	const std::vector<PancyDescriptorPSODescription> *bind_shader_resource_desc;
-	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::SRVPrivate, bind_shader_resource_desc);
-	for (int i = 0; i < bind_shader_resource_desc->size(); ++i)
-	{
-		const std::string &shader_resource_name = (*bind_shader_resource_desc)[i].descriptor_name;
-		const pancy_object_id &now_shader_resource_bind_id = (*bind_shader_resource_desc)[i].rootsignature_slot;
-		//在输入的描述符数据里查找当前slot所需要的描述符
-		auto check_if_have_resource = bind_shader_resource_in.find(shader_resource_name);
-		if (check_if_have_resource == bind_shader_resource_in.end())
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor slot: " + shader_resource_name + " in pso: " + PSO_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("build bind descriptor & slot", error_message);
-			return error_message;
-		}
-		bind_shader_resource.insert(std::pair<std::string, BindDescriptorPointer>(check_if_have_resource->first, check_if_have_resource->second));
-		//为私有绑定描述符记录其slot地址
-		bind_shader_resource_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(shader_resource_name, now_shader_resource_bind_id));
-	}
-	//拷贝所有的bindless描述符
-	const std::vector<PancyDescriptorPSODescription> *bindless_shader_resource_desc;
-	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::SRVBindless, bindless_shader_resource_desc);
-	for (int i = 0; i < bindless_shader_resource_desc->size(); ++i)
-	{
-		const std::string &shader_resource_name = (*bindless_shader_resource_desc)[i].descriptor_name;
-		const pancy_object_id &now_shader_resource_bind_id = (*bindless_shader_resource_desc)[i].rootsignature_slot;
-		//在输入的描述符数据里查找当前slot所需要的描述符
-		auto check_if_have_resource = bindless_shader_resource_in.find(shader_resource_name);
-		if (check_if_have_resource == bindless_shader_resource_in.end())
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor slot: " + shader_resource_name + " in pso: " + PSO_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("build bindless descriptor & slot", error_message);
-			return error_message;
-		}
-		bindless_shader_resource.insert(std::pair<std::string, BindlessDescriptorPointer>(check_if_have_resource->first, check_if_have_resource->second));
-		//为私有绑定描述符记录其slot地址
-		bindless_shader_resource_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(shader_resource_name, now_shader_resource_bind_id));
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason BasicRenderParam::AddToCommandList(PancyRenderCommandList *m_commandList, const D3D12_COMMAND_LIST_TYPE &render_param_type)
-{
-	PancystarEngine::EngineFailReason check_error;
-	//设置rootsignature
-	switch (render_param_type)
-	{
-	case D3D12_COMMAND_LIST_TYPE_DIRECT:
-		m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature);
-		break;
-	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-		m_commandList->GetCommandList()->SetComputeRootSignature(rootsignature);
-		break;
-	default:
-		PancystarEngine::EngineFailReason error_message(E_FAIL,"commond list type is not graph/compute, could not bind shader resource data");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BasicRenderParam::AddToCommandList", error_message);
-		return error_message;
-		break;
-	}
-	//设置描述符堆(SrvUavCbv)
-	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &descriptor_heap_use);
-	//绑定普通的描述符堆的数据(todo:先按照字符串进行绑定，之后再优化)
-	check_error = BindDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeConstantBufferView, globel_constant_buffer, globel_constant_buffer_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
-	{
-		return PancystarEngine::succeed;
-	}
-	check_error = BindDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeConstantBufferView, private_constant_buffer, private_constant_buffer_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
-	{
-		return PancystarEngine::succeed;
-	}
-	check_error = BindDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeShaderResourceView, globel_shader_resource, globel_shader_resource_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
-	{
-		return PancystarEngine::succeed;
-	}
-	check_error = BindDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeShaderResourceView, bind_shader_resource, bind_shader_resource_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
-	{
-		return PancystarEngine::succeed;
-	}
-	//绑定解绑顶的描述符堆的数据
-	check_error = BindBindlessDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeShaderResourceView, bindless_shader_resource, bindless_shader_resource_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
-	{
-		return PancystarEngine::succeed;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason BasicRenderParam::BindDescriptorToRootsignature(
-	const PancyDescriptorType &descriptor_type,
-	const std::unordered_map<std::string, BindDescriptorPointer> &descriptor_data,
-	const std::unordered_map<std::string, pancy_object_id> &root_signature_slot_data,
-	const D3D12_COMMAND_LIST_TYPE &render_param_type,
-	PancyRenderCommandList *m_commandList
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	if (descriptor_data.size() != root_signature_slot_data.size())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "descriptor resource number: " + std::to_string(descriptor_data.size()) + " dismatch descriptor slot number: " + std::to_string(root_signature_slot_data.size()) + " in pso: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("bind descriptor resource to slot", error_message);
-		return error_message;
-	}
-	for (auto now_descriptor_data : descriptor_data)
-	{
-		auto now_descriptor_slot = root_signature_slot_data.find(now_descriptor_data.first);
-		if (now_descriptor_slot == root_signature_slot_data.end())
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor resource slot: " + now_descriptor_data.first + " in pso: " + PSO_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("bind descriptor resource to slot", error_message);
-			return error_message;
-		}
-		check_error = PancyDescriptorHeapControl::GetInstance()->BindCommonDescriptor(now_descriptor_data.second, render_param_type, m_commandList, now_descriptor_slot->second);
-		if (!check_error.CheckIfSucceed())
-		{
-			return PancystarEngine::succeed;
-		}
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason BasicRenderParam::BindBindlessDescriptorToRootsignature(
-	const PancyDescriptorType &bind_descriptor_type,
-	const std::unordered_map<std::string, BindlessDescriptorPointer> &descriptor_data,
-	const std::unordered_map<std::string, pancy_object_id> &root_signature_slot_data,
-	const D3D12_COMMAND_LIST_TYPE &render_param_type,
-	PancyRenderCommandList *m_commandList
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	if (descriptor_data.size() != root_signature_slot_data.size())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "descriptor resource number: " + std::to_string(descriptor_data.size()) + " dismatch descriptor slot number: " + std::to_string(root_signature_slot_data.size()) + " in pso: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("bind descriptor resource to slot", error_message);
-		return error_message;
-	}
-	for (auto now_descriptor_data : descriptor_data)
-	{
-		auto now_descriptor_slot = root_signature_slot_data.find(now_descriptor_data.first);
-		if (now_descriptor_slot == root_signature_slot_data.end())
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor resource slot: " + now_descriptor_data.first + " in pso: " + PSO_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("bind descriptor resource to slot", error_message);
-			return error_message;
-		}
-		check_error = PancyDescriptorHeapControl::GetInstance()->BindBindlessDescriptor(now_descriptor_data.second, render_param_type, m_commandList, now_descriptor_slot->second);
-		if (!check_error.CheckIfSucceed())
-		{
-			return PancystarEngine::succeed;
-		}
-	}
-	return PancystarEngine::succeed;
-}
-RenderParamSystem::RenderParamSystem()
-{
-}
-RenderParamSystem::~RenderParamSystem()
-{
-	for (auto render_param_list = render_param_table.begin(); render_param_list != render_param_table.end(); ++render_param_list)
-	{
-		for (auto render_param_data = render_param_list->second.begin(); render_param_data != render_param_list->second.end(); ++render_param_data)
-		{
-			delete render_param_data->second;
-		}
-	}
-}
-PancystarEngine::EngineFailReason RenderParamSystem::GetCommonRenderParam(
-	const std::string &PSO_name,
-	const std::string &render_param_name,
-	const std::unordered_map<std::string, BindDescriptorPointer> &bind_shader_resource_in,
-	const std::unordered_map<std::string, BindlessDescriptorPointer> &bindless_shader_resource_in,
-	PancyRenderParamID &render_param_id
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	pancy_object_id PSO_id_need;
-	//PSO数据
-	check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id_need);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	if (render_param_id_self_add.find(PSO_id_need) == render_param_id_self_add.end())
-	{
-		//对应pso的渲染单元存储区尚未开辟，先为其开辟渲染单元存储区
-		render_param_id_self_add[PSO_id_need] = 0;
-		render_param_id_reuse_table.insert(std::pair<pancy_object_id, std::queue<pancy_object_id>>(PSO_id_need, std::queue<pancy_object_id>()));
-		render_param_table.insert(std::pair<pancy_object_id, std::unordered_map<pancy_object_id, BasicRenderParam*>>(PSO_id_need, std::unordered_map<pancy_object_id, BasicRenderParam*>()));
-		render_param_name_table.insert(std::pair<pancy_object_id, std::unordered_map<std::string, pancy_object_id>>(PSO_id_need, std::unordered_map<std::string, pancy_object_id>()));
-	}
-	render_param_id.PSO_id = PSO_id_need;
-	auto now_used_name_table = render_param_name_table.find(PSO_id_need);
-	auto now_used_render_param_table = render_param_table.find(PSO_id_need);
-	if (now_used_name_table->second.find(render_param_name) == now_used_name_table->second.end())
-	{
-		//未发现渲染单元的模板数据，新创建一个渲染单元
-		BasicRenderParam *new_render_param = new BasicRenderParam(render_param_name);
-		check_error = new_render_param->CommonCreate(PSO_name, bind_shader_resource_in, bindless_shader_resource_in);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		auto now_used_id_self_add = render_param_id_self_add.find(PSO_id_need);
-		auto now_used_id_reuse = render_param_id_reuse_table.find(PSO_id_need);
-		pancy_object_id new_id;
-		if (!now_used_id_reuse->second.empty())
-		{
-			new_id = now_used_id_reuse->second.front();
-			now_used_id_reuse->second.pop();
-		}
-		else
-		{
-			new_id = now_used_id_self_add->second;
-			now_used_id_self_add->second += 1;
-		}
-		now_used_name_table->second.insert(std::pair<std::string, pancy_object_id>(render_param_name, new_id));
-		now_used_render_param_table->second.insert(std::pair<pancy_object_id, BasicRenderParam*>(new_id, new_render_param));
-		render_param_id.render_param_id = new_id;
+		SRV_pack_id = now_descriptor_pack_id_reuse.front();
+		now_descriptor_pack_id_reuse.pop();
 	}
 	else
 	{
-		render_param_id.render_param_id = now_used_name_table->second[render_param_name];
+		SRV_pack_id = now_descriptor_pack_id_self_add;
+		now_descriptor_pack_id_self_add += 1;
 	}
+	//将新生成的数据添加到表单进行记录
+	descriptor_data.insert(std::pair<pancy_resource_id, BindlessResourceViewPointer>(SRV_pack_id, new_resource_view_pack));
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason RenderParamSystem::AddRenderParamToCommandList(
-	const PancyRenderParamID &renderparam_id,
-	PancyRenderCommandList *m_commandList,
-	const D3D12_COMMAND_LIST_TYPE &render_param_type
-)
+//从描述符段里删除一组bindless描述符页
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessShaderResourceViewPack(const pancy_object_id &SRV_pack_id)
 {
-	PancystarEngine::EngineFailReason check_error;
-	BasicRenderParam* data_pointer;
-	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
+	//找到当前描述符页的所在区域
+	auto descriptor_page = descriptor_data.find(SRV_pack_id);
+	if (descriptor_page == descriptor_data.end())
 	{
-		return check_error;
-	}
-	check_error = data_pointer->AddToCommandList(m_commandList, render_param_type);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason RenderParamSystem::GetPsoData(
-	const PancyRenderParamID &renderparam_id,
-	ID3D12PipelineState  **pso_data
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	BasicRenderParam* data_pointer;
-	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = data_pointer->GetPsoData(pso_data);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason RenderParamSystem::SetCbufferMatrix(
-	const PancyRenderParamID &renderparam_id,
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMFLOAT4X4 &data_in,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	BasicRenderParam* data_pointer;
-	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = data_pointer->SetCbufferMatrix(cbuffer_name, variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason RenderParamSystem::SetCbufferFloat4(
-	const PancyRenderParamID &renderparam_id,
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMFLOAT4 &data_in,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	BasicRenderParam* data_pointer;
-	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = data_pointer->SetCbufferFloat4(cbuffer_name, variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason RenderParamSystem::SetCbufferUint4(
-	const PancyRenderParamID &renderparam_id,
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMUINT4 &data_in,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	BasicRenderParam* data_pointer;
-	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = data_pointer->SetCbufferUint4(cbuffer_name, variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason RenderParamSystem::SetCbufferStructData(
-	const PancyRenderParamID &renderparam_id,
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const void* data_in,
-	const pancy_resource_size &data_size,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	BasicRenderParam* data_pointer;
-	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = data_pointer->SetCbufferStructData(cbuffer_name, variable_name, data_in, data_size, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason RenderParamSystem::GetResource(const PancyRenderParamID &renderparam_id, BasicRenderParam** data_pointer)
-{
-	PancystarEngine::EngineFailReason check_error;
-	*data_pointer = NULL;
-	auto render_param_list_now = render_param_table.find(renderparam_id.PSO_id);
-	if (render_param_list_now == render_param_table.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find PSO ID: " + std::to_string(renderparam_id.PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("RenderParamSystem::AddRenderParamToCommandList", error_message);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the descriptor page ID: " + std::to_string(SRV_pack_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete descriptor page from Segmental", error_message);
 		return error_message;
 	}
-	auto render_param_data = render_param_list_now->second.find(renderparam_id.render_param_id);
-	if (render_param_data == render_param_list_now->second.end())
+	if (descriptor_page->second.resource_view_offset < now_pointer_refresh)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find renderparam ID: " + std::to_string(renderparam_id.render_param_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("RenderParamSystem::AddRenderParamToCommandList", error_message);
-		return error_message;
+		//如果当前删除的描述符页处于描述符段的靠前位置，则标记下一次整理描述符碎片的时候从当前位置开始整理
+		now_pointer_refresh = descriptor_page->second.resource_view_offset;
 	}
-	*data_pointer = render_param_data->second;
+	//销毁当前描述符页
+	descriptor_data.erase(SRV_pack_id);
 	return PancystarEngine::succeed;
 }
-
-
-
-
-/*
-//描述符类
-DescriptorObject::DescriptorObject()
+//为描述符段执行一次碎片整理操作
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::RefreshBindlessShaderResourceViewPack()
 {
-	PSO_pointer = NULL;
-	rootsignature = NULL;
-	descriptor_heap_use = NULL;
+	PancystarEngine::EngineFailReason check_error;
+	if (now_pointer_refresh >= max_descriptor_num)
+	{
+		//在此之前描述符段没有经过任何删除操作，不需要进行碎片整理
+		return PancystarEngine::succeed;
+	}
+	now_pointer_offset = now_pointer_refresh;
+	//遍历描述符段内的所有描述符页进行描述符碎片的整理
+	for (auto descriptor_page_check = descriptor_data.begin(); descriptor_page_check != descriptor_data.end(); ++descriptor_page_check)
+	{
+		if (descriptor_page_check->second.resource_view_offset > now_pointer_refresh)
+		{
+			//如果该描述符页处于需要调整的位置则对这一页的所有描述符进行调整
+			descriptor_page_check->second.resource_view_offset = now_pointer_offset;
+			//生成新的SRV
+			check_error = BuildShaderResourceView(descriptor_page_check->second);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			//标记当前被占用的描述符位置
+			now_pointer_offset += descriptor_page_check->second.resource_view_num;
+			if (now_pointer_offset > max_descriptor_num)
+			{
+				//调整过程中出现调整后描述符数量反而高于调整前的异常情况
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor Segmental could not build desciptor more than : " + std::to_string(max_descriptor_num));
+				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh descriptor page from Segmental", error_message);
+				return error_message;
+			}
+		}
+	}
+	//还原刷新调整
+	now_pointer_refresh = max_descriptor_num;
+	return PancystarEngine::succeed;
 }
-DescriptorObject::~DescriptorObject()
+//为描述符段删除一组bindless描述符页，同时整理一次描述符碎片
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessShaderResourceViewPackAndRefresh(const pancy_object_id &SRV_pack_id)
 {
-	PancyDescriptorHeapControl::GetInstance()->FreeResourceView(descriptor_block_id);
-	for (auto release_data = per_object_cbuffer.begin(); release_data != per_object_cbuffer.end(); ++release_data)
+	auto check_error = DeleteBindlessShaderResourceViewPack(SRV_pack_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = RefreshBindlessShaderResourceViewPack();
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+const BindlessResourceViewPointer BindlessResourceViewSegmental::GetDescriptorPageOffset(const pancy_object_id &descriptor_page_id)
+{
+	auto check_descriptor_page = descriptor_data.find(descriptor_page_id);
+	if (check_descriptor_page == descriptor_data.end())
+	{
+		BindlessResourceViewPointer error_pointer;
+		error_pointer.resource_view_offset = 0;
+		error_pointer.resource_view_num = 0;
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the descriptor page ID: " + std::to_string(descriptor_page_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor page from Segmental", error_message);
+		return error_pointer;
+	}
+	return check_descriptor_page->second;
+}
+//用于描述符堆资源的容量排序
+bool BindlessDescriptorID::operator<(const BindlessDescriptorID& other)  const
+{
+	if (empty_resource_size != other.empty_resource_size)
+	{
+		return (empty_resource_size < other.empty_resource_size);
+	}
+	return (bindless_id < other.bindless_id);
+}
+//描述符堆，用于从描述符上分配描述符
+PancyDescriptorHeap::PancyDescriptorHeap()
+{
+
+
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::Create(
+	const D3D12_DESCRIPTOR_HEAP_DESC &descriptor_heap_desc,
+	const std::string &descriptor_heap_name_in,
+	const pancy_object_id &bind_descriptor_num_in,
+	const pancy_object_id &bindless_descriptor_num_in,
+	const pancy_object_id &per_segmental_size_in
+)
+{
+	descriptor_desc = descriptor_heap_desc;
+	descriptor_heap_name = descriptor_heap_name_in;
+	bind_descriptor_num = bind_descriptor_num_in;
+	bindless_descriptor_num = bindless_descriptor_num_in;
+	per_segmental_size = per_segmental_size_in;
+	//计算每一个描述符的大小
+	per_descriptor_size = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetDescriptorHandleIncrementSize(descriptor_desc.Type);
+	//根据描述符堆格式创建描述符堆
+	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateDescriptorHeap(&descriptor_heap_desc, IID_PPV_ARGS(&descriptor_heap_data));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "create descriptor heap error");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap", error_message);
+		return error_message;
+	}
+	//初始化所有的全局描述符ID
+	for (int i = 0; i < bind_descriptor_num; ++i)
+	{
+		bind_descriptor_offset_reuse.push(i);
+	}
+	//为bindless描述符区域初始化每个描述符段
+	pancy_object_id globel_offset = bind_descriptor_num;
+	pancy_object_id segmantal_id_self_add = 0;
+	for (int i = 0; i < bindless_descriptor_num; i += per_segmental_size)
+	{
+		BindlessResourceViewSegmental *new_segmental = new BindlessResourceViewSegmental(per_segmental_size, globel_offset + i, per_descriptor_size, descriptor_heap_data);
+		if (new_segmental == NULL)
+		{
+			//开辟描述符段失败
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "Build bindless texture segmental failed with NULL return");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bindless texture segmental", error_message);
+			return error_message;
+		}
+		if (new_segmental->GetEmptyDescriptorNum() != per_segmental_size)
+		{
+			//开辟描述符段得到的描述符数量不等于预期的描述符数量
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "Build bindless texture segmental failed with Wrong dscriptor num,ask: " + std::to_string(per_segmental_size) + " but find: " + std::to_string(new_segmental->GetEmptyDescriptorNum()));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bindless texture segmental", error_message);
+			return error_message;
+		}
+		//将新的描述符段保留到存储描述符段的表中
+		BindlessDescriptorID new_descriptor_segmental_id;
+		new_descriptor_segmental_id.bindless_id = segmantal_id_self_add;
+		new_descriptor_segmental_id.empty_resource_size = per_segmental_size;
+		bindless_descriptor_id_map.insert(std::pair<pancy_object_id, BindlessDescriptorID>(new_descriptor_segmental_id.bindless_id, new_descriptor_segmental_id));
+		descriptor_segmental_map.insert(std::pair<BindlessDescriptorID, BindlessResourceViewSegmental*>(new_descriptor_segmental_id, new_segmental));
+		segmantal_id_self_add += 1;
+	}
+	return PancystarEngine::succeed;
+}
+PancyDescriptorHeap::~PancyDescriptorHeap()
+{
+	for (auto release_data = descriptor_segmental_map.begin(); release_data != descriptor_segmental_map.end(); ++release_data)
 	{
 		delete release_data->second;
 	}
-	per_object_cbuffer.clear();
 }
-PancystarEngine::EngineFailReason DescriptorObject::Create(
-	const std::string &PSO_name,
-	const std::string &descriptor_name,
-	const std::vector<std::string> &cbuffer_name_per_object,
-	const std::vector<PancystarEngine::PancyConstantBuffer *> &cbuffer_per_frame,
-	const std::vector<SubMemoryPointer> &resource_data_per_frame,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_in,
-	const std::vector<SubMemoryPointer> &output_data_per_frame,
-	const std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> &output_desc_per_frame_in,
-	const std::vector<SubMemoryPointer> &resource_data_per_object,
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_object_in
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindlessShaderResourceViewPage(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	const std::vector<VirtualResourcePointer> &describe_memory_data,
+	const pancy_object_id &SRV_pack_size,
+	BindlessResourceViewID &descriptor_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	PSO_name_descriptor = PSO_name;
-	//创建一个对应类型的描述符块
-	__int64 t1, t2;
-	double dt;
-	t1 = GlobelTimeCount::GetInstance()->GetSystemTime();
-	ResourceViewPointer new_point;
-	pancy_object_id globel_offset = 0;
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_name, descriptor_block_id, resource_view_num);
-	if (!check_error.CheckIfSucceed())
+	if (SRV_pack_size <= 0)
 	{
-		return check_error;
-	}
-	
-	
-	//将渲染需要的绑定资源指针一次性全部获取并保存
-	pancy_object_id PSO_id_need;
-	//PSO数据
-	check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id_need);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = PancyEffectGraphic::GetInstance()->GetPSOResource(PSO_id_need, &PSO_pointer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//rootsignature数据
-	check_error = PancyEffectGraphic::GetInstance()->GetRootSignatureResource(PSO_id_need, &rootsignature);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//绑定的描述符堆数据
-	check_error = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(descriptor_block_id, &descriptor_heap_use);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//绑定的描述符堆的偏移
-	std::vector<pancy_object_id> descriptor_distribute;
-	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDistribute(PSO_id_need, descriptor_distribute);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	pancy_object_id now_start_offset = 0;
-	for (int i = 0; i < descriptor_distribute.size(); ++i)
-	{
-		ResourceViewPointer distribute_point;
-		distribute_point.resource_view_pack_id = descriptor_block_id;
-		CD3DX12_GPU_DESCRIPTOR_HANDLE now_gpu_handle;
-		distribute_point.resource_view_offset_id = now_start_offset;
-		check_error = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(distribute_point, now_gpu_handle);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		descriptor_offset.push_back(now_gpu_handle);
-		now_start_offset += descriptor_distribute[i];
-	}
-	t2 = GlobelTimeCount::GetInstance()->GetSystemTime();
-	dt = (t2 - t1) * (double)GlobelTimeCount::GetInstance()->GetSystemFreq();
-	//MessageBox(0, std::to_wstring(dt * 1000).c_str(), L"check", MB_OK);
-	//填充描述符的信息
-	new_point.resource_view_pack_id = descriptor_block_id;
-	//检验传入的资源数量和描述符的数量是否匹配(如果有bindless texture则要求资源数量小于等于数组上限)
-	pancy_object_id check_descriptor_size = cbuffer_name_per_object.size() + cbuffer_per_frame.size() + resource_data_per_frame.size()+ output_data_per_frame.size() + resource_data_per_object.size();
-	if (resource_data_per_object.size() == 0 && check_descriptor_size != resource_view_num)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource num: " +
-			std::to_string(check_descriptor_size) +
-			" dismatch resource view num: " +
-			std::to_string(resource_view_num) +
-			" in PSO: " + PSO_name
-		);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor object", error_message);
+		//需要创建的SRV数量小于等于0
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture with size:" + SRV_pack_size);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV for bindless texture", error_message);
 		return error_message;
 	}
-	else if (resource_view_num < check_descriptor_size)
+	//先挑选一个合适的bindless描述符段(要求剩余描述符足够，且尽量在其他描述符中的空余值最小)
+	BindlessResourceViewSegmental* RSV_segmental = NULL;
+	BindlessDescriptorID check_min_size_id;
+	check_min_size_id.bindless_id = 0;
+	check_min_size_id.empty_resource_size = SRV_pack_size;
+	auto min_resource_data = descriptor_segmental_map.lower_bound(check_min_size_id);
+	if (min_resource_data != descriptor_segmental_map.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource num: " +
-			std::to_string(check_descriptor_size) +
-			" bigger than resource view num: " +
-			std::to_string(resource_view_num) +
-			" in PSO: " + PSO_name
-		);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor object", error_message);
+		//描述符堆中存在符合要求的描述符段，直接在该描述符段上开辟描述符页
+		descriptor_id.segmental_id = min_resource_data->first.bindless_id;
+		RSV_segmental = min_resource_data->second;
+	}
+	else
+	{
+		//描述符堆已满
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture,the heap is full，ask number: " + std::to_string(SRV_pack_size));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV for bindless texture", error_message);
 		return error_message;
 	}
-	//先根据常量缓冲区的名称，绑定object独有的常量缓冲区。
-	for (int i = 0; i < cbuffer_name_per_object.size(); ++i)
+	//在描述符段上开辟一个描述符页
+	check_error = RSV_segmental->BuildBindlessShaderResourceViewPack(SRV_desc, describe_memory_data, SRV_pack_size, descriptor_id.page_id);
+	if (!check_error.CheckIfSucceed())
 	{
-		auto cbuffer_check = per_object_cbuffer.find(cbuffer_name_per_object[i]);
-		if (cbuffer_check == per_object_cbuffer.end())
-		{
-			std::string pso_divide_path;
-			std::string pso_divide_name;
-			std::string pso_divide_tail;
-			PancystarEngine::DivideFilePath(PSO_name, pso_divide_path, pso_divide_name, pso_divide_tail);
-			PancystarEngine::PancyConstantBuffer *new_cbuffer = new PancystarEngine::PancyConstantBuffer(cbuffer_name_per_object[i], pso_divide_name);
-			check_error = new_cbuffer->Create();
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			SubMemoryPointer submemory;
-			check_error = new_cbuffer->GetBufferSubResource(submemory);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			new_point.resource_view_offset_id = globel_offset + i;
-			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_point, submemory);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			per_object_cbuffer.insert(std::pair<std::string, PancystarEngine::PancyConstantBuffer*>(cbuffer_name_per_object[i], new_cbuffer));
-		}
+		return check_error;
+	}
+	//修改描述符页的大小(先从map中删除老的描述符页，再将新的描述符页插入到map中,实现通过Map维护描述符页大小的功能)
+	check_error = RefreshBindlessResourcesegmentalSize(min_resource_data->first.bindless_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessResourcesegmentalSize(const pancy_object_id &resourc_id)
+{
 
-	}
-	globel_offset += cbuffer_name_per_object.size();
-	//绑定每帧独有的常量缓冲区
-	for (int i = 0; i < cbuffer_per_frame.size(); ++i)
+	auto now_resource_data = bindless_descriptor_id_map.find(resourc_id);
+	if (now_resource_data == bindless_descriptor_id_map.end())
 	{
-		SubMemoryPointer submemory;
-		check_error = cbuffer_per_frame[i]->GetBufferSubResource(submemory);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		new_point.resource_view_offset_id = globel_offset + i;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_point, submemory);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	globel_offset += cbuffer_per_frame.size();
-	//绑定每帧独有的shader资源
-	for (int i = 0; i < resource_data_per_frame.size(); ++i)
-	{
-		new_point.resource_view_offset_id = globel_offset + i;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_point, resource_data_per_frame[i], resource_desc_per_frame_in[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	globel_offset += resource_data_per_frame.size();
-	//绑定用于shader输出的UAV资源
-	for (int i = 0; i < output_data_per_frame.size(); ++i)
-	{
-		new_point.resource_view_offset_id = globel_offset + i;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildUAV(new_point,output_data_per_frame[i], output_desc_per_frame_in[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	globel_offset += output_data_per_frame.size();
-	//绑定每个object独有的shader资源
-	for (int i = 0; i < resource_data_per_object.size(); ++i)
-	{
-		new_point.resource_view_offset_id = globel_offset + i;
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_point, resource_data_per_object[i], resource_desc_per_object_in[i]);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorObject::SetCbufferMatrix(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMFLOAT4X4 &data_in,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name_descriptor);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer Matrix", error_message);
+		//需要刷新的资源id不存在
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless resource segmental id" + std::to_string(resourc_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV size", error_message);
 		return error_message;
 	}
-	check_error = cbuffer_data->second->SetMatrix(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
+	auto RSV_segmental = descriptor_segmental_map.find(now_resource_data->second);
+	if (RSV_segmental == descriptor_segmental_map.end())
 	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorObject::SetCbufferFloat4(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMFLOAT4 &data_in,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name_descriptor);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer float4", error_message);
+		//需要刷新的资源不存在
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless resource segmental resource" + std::to_string(resourc_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV size", error_message);
 		return error_message;
 	}
-	check_error = cbuffer_data->second->SetFloat4(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
+	//记录当前需要更替的资源的新地址与旧地址
+	BindlessDescriptorID old_size_id;
+	BindlessDescriptorID new_size_id;
+	BindlessResourceViewSegmental *segmental_resource;
+	new_size_id.bindless_id = resourc_id;
+	new_size_id.empty_resource_size = RSV_segmental->second->GetEmptyDescriptorNum();
+	old_size_id = now_resource_data->second;
+	segmental_resource = RSV_segmental->second;
+	//刷新ID
+	bindless_descriptor_id_map.erase(old_size_id.bindless_id);
+	bindless_descriptor_id_map.insert(std::pair<pancy_object_id, BindlessDescriptorID>(new_size_id.bindless_id, new_size_id));
+	//刷新内容
+	descriptor_segmental_map.erase(old_size_id);
+	descriptor_segmental_map.insert(std::pair<BindlessDescriptorID, BindlessResourceViewSegmental*>(new_size_id, segmental_resource));
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason DescriptorObject::SetCbufferUint4(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const DirectX::XMUINT4 &data_in,
-	const pancy_resource_size &offset
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindlessShaderResourceViewPage(
+	const BindlessResourceViewID &descriptor_id,
+	bool is_refresh_segmental
 )
 {
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
+	auto resource_id = bindless_descriptor_id_map.find(descriptor_id.segmental_id);
+	if (resource_id == bindless_descriptor_id_map.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name_descriptor);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer uint4", error_message);
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bindless SRV from segmental", error_message);
 		return error_message;
 	}
-	check_error = cbuffer_data->second->SetUint4(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
+	auto descriptor_resource = descriptor_segmental_map.find(resource_id->second);
+	if (descriptor_resource == descriptor_segmental_map.end())
 	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorObject::SetCbufferStructData(
-	const std::string &cbuffer_name,
-	const std::string &variable_name,
-	const void* data_in,
-	const pancy_resource_size &data_size,
-	const pancy_resource_size &offset
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
-	if (cbuffer_data == per_object_cbuffer.end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name_descriptor);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer struct", error_message);
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bindless SRV from segmental", error_message);
 		return error_message;
 	}
-	check_error = cbuffer_data->second->SetStruct(variable_name, data_in, data_size, offset);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	return PancystarEngine::succeed;
-}
-DescriptorControl::DescriptorControl()
-{
-	now_object_id_top = 0;
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	descriptor_data_map.resize(Frame_num);
-}
-PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorCompute(
-	const pancy_object_id &PSO_id,
-	const std::vector<std::string> &cbuffer_name_per_object_in,
-	const std::vector<std::vector<PancystarEngine::PancyConstantBuffer *>> &cbuffer_per_frame_in,
-	const std::vector<std::vector<SubMemoryPointer>> &SRV_per_frame_in,
-	const std::vector<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>> &SRV_desc_per_frame_in,
-	const std::vector<std::vector<SubMemoryPointer>> &UAV_per_frame_in,
-	const std::vector<std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC>> &UAV_desc_per_frame_in,
-	pancy_object_id &descriptor_ID
-)
-{
 	PancystarEngine::EngineFailReason check_error;
-	//根据PSO的ID号获取PSO的名称和描述符的格式名称
-	std::string PSO_name;
-	std::string descriptor_name;
-	check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, PSO_name);
-	if (!check_error.CheckIfSucceed())
+	if (is_refresh_segmental)
 	{
-		return check_error;
-	}
-	check_error = PancyEffectGraphic::GetInstance()->GetPSODescriptorName(PSO_id, descriptor_name);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//分配一个ID号
-	pancy_object_id now_id_use;
-	if (!empty_object_id.empty())
-	{
-		now_id_use = empty_object_id.front();
+		//要求删除页信息后立即刷新段信息
+		check_error = descriptor_resource->second->DeleteBindlessShaderResourceViewPackAndRefresh(descriptor_id.page_id);
 	}
 	else
 	{
-		now_id_use = now_object_id_top;
+		//删除页信息后不立即刷新段信息
+		check_error = descriptor_resource->second->DeleteBindlessShaderResourceViewPack(descriptor_id.page_id);
 	}
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	for (int i = 0; i < Frame_num; ++i)
+	if (!check_error.CheckIfSucceed())
 	{
-		//创建一个描述符表
-		DescriptorObject *new_descriptor_obj;
-		new_descriptor_obj = new DescriptorObject();
-		//计算着色器的bindeless texture赋空值
-		std::vector<SubMemoryPointer> resource_data_per_object;
-		std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> resource_desc_per_per_object;
-		check_error = new_descriptor_obj->Create(
-			PSO_name,
-			descriptor_name,
-			cbuffer_name_per_object_in,
-			cbuffer_per_frame_in[i],
-			SRV_per_frame_in[i],
-			SRV_desc_per_frame_in[i],
-			UAV_per_frame_in[i],
-			UAV_desc_per_frame_in[i],
-			resource_data_per_object,
-			resource_desc_per_per_object
-		);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		descriptor_data_map[i].insert(std::pair<pancy_object_id, DescriptorObject *>(now_id_use, new_descriptor_obj));
+		return check_error;
 	}
-	descriptor_ID = now_id_use;
-	if (!empty_object_id.empty())
+	//重新计算页的大小并刷新页表
+	check_error = RefreshBindlessResourcesegmentalSize(descriptor_id.segmental_id);
+	if (!check_error.CheckIfSucceed())
 	{
-		empty_object_id.pop();
-	}
-	else
-	{
-		now_object_id_top += 1;
+		return check_error;
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason DescriptorControl::BuildDescriptorGraph(
-	const pancy_object_id &model_id,
-	const pancy_object_id &PSO_id,
-	const std::vector<std::string> &cbuffer_name_per_object_in,
-	const std::vector<std::vector<PancystarEngine::PancyConstantBuffer *>> &cbuffer_per_frame_in,
-	const std::vector<std::vector<SubMemoryPointer>> &resource_data_per_frame_in,
-	const std::vector<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>> &resource_desc_per_frame_in,
-	pancy_object_id &descriptor_ID
-)
+PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessShaderResourceViewSegmental()
 {
 	PancystarEngine::EngineFailReason check_error;
-	//根据PSO的ID号获取PSO的名称和描述符的格式名称
-	std::string PSO_name;
-	std::string descriptor_name;
-	check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, PSO_name);
-	if (!check_error.CheckIfSucceed())
+	int size = bindless_descriptor_id_map.size();
+	for (int i = 0; i < size; ++i)
 	{
-		return check_error;
-	}
-	check_error = PancyEffectGraphic::GetInstance()->GetPSODescriptorName(PSO_id, descriptor_name);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//分配一个ID号
-	pancy_object_id now_id_use;
-	if (!empty_object_id.empty())
-	{
-		now_id_use = empty_object_id.front();
-	}
-	else
-	{
-		now_id_use = now_object_id_top;
-	}
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	const std::vector<std::vector<SubMemoryPointer>> resource_data_per_frame;
-	const std::vector<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>> resource_desc_per_frame;
-	for (int i = 0; i < Frame_num; ++i)
-	{
-		//创建一个描述符表
-		DescriptorObject *new_descriptor_obj;
-		new_descriptor_obj = new DescriptorObject();
-		//计算着色器的bindeless texture赋空值
-		std::vector<SubMemoryPointer> UAV_per_frame_in;
-		std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC> UAV_desc_per_frame_in;
-		std::vector<SubMemoryPointer> resource_data_per_object;
-		std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> resource_desc_per_object;
-		check_error = PancystarEngine::PancyModelControl::GetInstance()->GetShaderResourcePerObject(
-			model_id,
-			resource_data_per_object,
-			resource_desc_per_object
-		);
-		if (!check_error.CheckIfSucceed())
+		BindlessDescriptorID new_id = bindless_descriptor_id_map[i];
+		auto bindlessresource = descriptor_segmental_map.find(new_id);
+		if (bindlessresource == descriptor_segmental_map.end())
 		{
-			return check_error;
-		}
-		
-		for (int k= 0; k <100; ++k) 
-		{
-			check_error = new_descriptor_obj->Create(
-				PSO_name,
-				descriptor_name,
-				cbuffer_name_per_object_in,
-				cbuffer_per_frame_in[i],
-				resource_data_per_frame_in[i],
-				resource_desc_per_frame_in[i],
-				UAV_per_frame_in,
-				UAV_desc_per_frame_in,
-				resource_data_per_object,
-				resource_desc_per_object
-			);
-		}
-		
-		
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		descriptor_data_map[i].insert(std::pair<pancy_object_id, DescriptorObject *>(now_id_use, new_descriptor_obj));
-	}
-	if (!empty_object_id.empty())
-	{
-		empty_object_id.pop();
-	}
-	else
-	{
-		now_object_id_top += 1;
-	}
-	descriptor_ID = now_id_use;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorControl::GetDescriptor(const pancy_object_id &descriptor_id, DescriptorObject **descriptor_data)
-{
-	pancy_object_id now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	auto now_descriptor_data = descriptor_data_map[now_frame].find(descriptor_id);
-	if (now_descriptor_data == descriptor_data_map[now_frame].end())
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor ID: " + std::to_string(descriptor_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Descriptor data", error_message);
-		return error_message;
-	}
-	*descriptor_data = now_descriptor_data->second;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason DescriptorControl::DeleteDescriptor(const pancy_object_id &descriptor_id)
-{
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	for (int i = 0; i < Frame_num; ++i)
-	{
-		auto now_descriptor_data = descriptor_data_map[i].find(descriptor_id);
-		if (now_descriptor_data == descriptor_data_map[i].end())
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor ID: " + std::to_string(descriptor_id));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Descriptor data", error_message);
+			//未找到请求的资源
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(i));
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV segmental", error_message);
 			return error_message;
 		}
-		delete now_descriptor_data->second;
-		descriptor_data_map[i].erase(now_descriptor_data);
-	}
-	return PancystarEngine::succeed;
-}
-DescriptorControl::~DescriptorControl()
-{
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	for (int i = 0; i < Frame_num; ++i)
-	{
-		for (auto now_data = descriptor_data_map[i].begin(); now_data != descriptor_data_map[i].end(); ++now_data)
-		{
-			delete now_data->second;
-		}
-		descriptor_data_map[i].clear();
-	}
-}
-*/
-PancySkinAnimationControl::PancySkinAnimationControl(
-	const pancy_resource_size &animation_buffer_size_in,
-	const pancy_resource_size &bone_buffer_size_in
-)
-{
-	animation_buffer_size = animation_buffer_size_in;
-	bone_buffer_size = bone_buffer_size_in;
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	skin_naimation_buffer.resize(Frame_num);
-}
-PancySkinAnimationControl::~PancySkinAnimationControl()
-{
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	for (int i = 0; i < Frame_num; ++i)
-	{
-		delete skin_naimation_buffer[i];
-	}
-	skin_naimation_buffer.clear();
-}
-PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
-{
-	PancystarEngine::EngineFailReason check_error;
-	//加载PSO
-	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_skinmesh.json", PSO_skinmesh);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//创建骨骼动画缓冲区
-	std::vector<SubMemoryPointer> skin_animation_buffer_data;
-	std::vector<SubMemoryPointer> bone_buffer_data;
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	for (int i = 0; i < Frame_num; ++i)
-	{
-		skin_naimation_buffer[i] = new PancySkinAnimationBuffer(animation_buffer_size, bone_buffer_size);
-		check_error = skin_naimation_buffer[i]->Create();
+		check_error = bindlessresource->second->RefreshBindlessShaderResourceViewPack();
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		SubMemoryPointer skin_vertex_resource;
-		SubMemoryPointer bone_matrix_resource;
-		skin_naimation_buffer[i]->GetSkinVertexResource(skin_vertex_resource);
-		skin_naimation_buffer[i]->GetBoneMatrixResource(bone_matrix_resource);
-		skin_animation_buffer_data.push_back(skin_vertex_resource);
-		bone_buffer_data.push_back(bone_matrix_resource);
+		check_error = RefreshBindlessResourcesegmentalSize(i);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 	}
-	//创建骨骼动画缓冲区的描述符
-	std::vector<BasicDescriptorDesc> skin_animation_descriptor_desc;
-	BasicDescriptorDesc skin_animation_SRV_desc;
-	skin_animation_SRV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
-	pancy_object_id number_vertex_num = animation_buffer_size / sizeof(PancystarEngine::mesh_animation_data);
-	skin_animation_SRV_desc.shader_resource_view_desc = {};
-	skin_animation_SRV_desc.shader_resource_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	skin_animation_SRV_desc.shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
-	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.StructureByteStride = sizeof(PancystarEngine::mesh_animation_data);
-	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.NumElements = number_vertex_num;
-	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.FirstElement = 0;
-	for (int i = 0; i < Frame_num; ++i)
-	{
-		skin_animation_descriptor_desc.push_back(skin_animation_SRV_desc);
-	}
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor("input_point", skin_animation_descriptor_desc, skin_animation_buffer_data, true);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//创建骨骼动画缓冲区的uav
-	skin_animation_descriptor_desc.clear();
-	BasicDescriptorDesc skin_animation_UAV_desc;
-	skin_animation_UAV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeUnorderedAccessView;
-	skin_animation_UAV_desc.unordered_access_view_desc = {};
-	skin_animation_UAV_desc.unordered_access_view_desc.ViewDimension = D3D12_UAV_DIMENSION::D3D12_UAV_DIMENSION_BUFFER;
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.StructureByteStride = sizeof(mesh_animation_data);
-	pancy_resource_size vertex_num = animation_buffer_size / sizeof(mesh_animation_data);
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.NumElements = vertex_num;
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.FirstElement = 0;
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.CounterOffsetInBytes = 0;
-	for (int i = 0; i < Frame_num; ++i)
-	{
-		skin_animation_descriptor_desc.push_back(skin_animation_UAV_desc);
-	}
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor("mesh_anim_data", skin_animation_descriptor_desc, skin_animation_buffer_data, true);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//创建骨骼矩阵缓冲区SRV
-	skin_animation_descriptor_desc.clear();
-	BasicDescriptorDesc skin_bone_srv_desc;
-	skin_bone_srv_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
-	skin_bone_srv_desc.shader_resource_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	skin_bone_srv_desc.shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
-	skin_bone_srv_desc.shader_resource_view_desc.Buffer.StructureByteStride = sizeof(DirectX::XMFLOAT4X4);
-	pancy_resource_size matrix_num = bone_buffer_size / sizeof(DirectX::XMFLOAT4X4);
-	skin_bone_srv_desc.shader_resource_view_desc.Buffer.NumElements = matrix_num;
-	skin_bone_srv_desc.shader_resource_view_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-	skin_bone_srv_desc.shader_resource_view_desc.Buffer.FirstElement = 0;
-	for (int i = 0; i < Frame_num; ++i)
-	{
-		skin_animation_descriptor_desc.push_back(skin_bone_srv_desc);
-	}
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor("bone_matrix_buffer", skin_animation_descriptor_desc, bone_buffer_data, true);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-
 	return PancystarEngine::succeed;
 }
-/*
-PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildDescriptor(
-	const pancy_object_id &mesh_buffer,
-	const UINT &vertex_num,
-	const UINT &per_vertex_size,
+//创建全局描述符
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelDescriptor(
+	const std::string &globel_name,
+	const std::vector<BasicDescriptorDesc> &SRV_desc,
+	const std::vector <VirtualResourcePointer>& memory_data,
+	const bool if_build_multi_buffer
+)
+{
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了同名的全局描述符
+	if (check_if_has_data != descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel descriptor: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//创建一个普通的绑定描述符
+	pancy_object_id bind_resource_id;
+	PancystarEngine::EngineFailReason check_error;
+	check_error = BuildBindDescriptor(SRV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//将绑定描述符与全局变量进行绑定
+	descriptor_globel_map[globel_name] = bind_resource_id;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteGlobelDescriptor(const std::string &globel_name)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了全局描述符
+	if (check_if_has_data == descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find globel descriptor: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//先删除描述符资源
+	check_error = DeleteBindDescriptor(check_if_has_data->second);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//再删除描述符资源的命名关联
+	descriptor_globel_map.erase(globel_name);
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::GetGlobelDesciptorID(const std::string &globel_name, pancy_object_id &descriptor_id)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto check_if_has_data = descriptor_globel_map.find(globel_name);
+	//先检查是否已经创建了全局描述符
+	if (check_if_has_data == descriptor_globel_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find globel descriptor: " + globel_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get globel descriptor from heap", error_message);
+		return error_message;
+	}
+	descriptor_id = check_if_has_data->second;
+	return PancystarEngine::succeed;
+}
+
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindDescriptor(
+	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+	const std::vector<VirtualResourcePointer>& memory_data,
+	const bool if_build_multi_buffer,
 	pancy_object_id &descriptor_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//根据缓冲区的ID号获取其对应的显存资源
-	SubMemoryPointer now_buffer_data;
-	check_error = PancystarEngine::PancyBasicBufferControl::GetInstance()->GetBufferSubResource(mesh_buffer, now_buffer_data);
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
+	CommonDescriptorPointer new_descriptor_data;
+	//检测当前的描述符堆格式是否与期望的描述符一致
+	D3D12_DESCRIPTOR_HEAP_TYPE now_descriptor_heap = GetDescriptorHeapTypeOfDescriptor(now_descriptor_desc_in[0]);
+	if (descriptor_desc.Type != now_descriptor_heap)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap type is not same as heap, could not build bind descriptor: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
+		return error_message;
+	}
+	//预处理描述符在描述符堆中的位置
+	check_error = PreBuildBindDescriptor(
+		now_descriptor_heap,
+		if_build_multi_buffer,
+		cpuHandle,
+		new_descriptor_data
+	);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//为输入缓冲区创建描述符
-	std::vector<std::string> Cbuffer_name_per_object;
-	Cbuffer_name_per_object.push_back("per_object");
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	std::vector<std::vector<PancystarEngine::PancyConstantBuffer *>> Cbuffer_per_frame;
-	Cbuffer_per_frame.resize(Frame_num);
-	//全局的缓冲区/纹理输入
-	std::vector<std::vector<SubMemoryPointer>> SRV_per_frame;
-	std::vector<std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>> SRV_desc_per_frame;
-	SRV_per_frame.resize(Frame_num);
-	SRV_desc_per_frame.resize(Frame_num);
-	//全局输出缓冲区/纹理(UAV)
-	std::vector<std::vector<SubMemoryPointer>> UAV_per_frame;
-	std::vector<std::vector<D3D12_UNORDERED_ACCESS_VIEW_DESC>> UAV_desc_per_frame;
-	UAV_per_frame.resize(Frame_num);
-	UAV_desc_per_frame.resize(Frame_num);
-	for (int i = 0; i < Frame_num; ++i)
+	if (cpuHandle.size() != memory_data.size())
 	{
-		//当前的输入模型顶点信息
-		D3D12_SHADER_RESOURCE_VIEW_DESC  now_buffer_desc = {};
-		now_buffer_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		now_buffer_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
-		now_buffer_desc.Buffer.StructureByteStride = per_vertex_size;
-		now_buffer_desc.Buffer.NumElements = vertex_num;
-		now_buffer_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-		now_buffer_desc.Buffer.FirstElement = 0;
-
-		SRV_per_frame[i].push_back(now_buffer_data);
-		SRV_desc_per_frame[i].push_back(now_buffer_desc);
-		//骨骼矩阵缓冲区
-		SubMemoryPointer bone_matrix_buffer_res;
-		D3D12_SHADER_RESOURCE_VIEW_DESC  bone_matrix_buffer_desc = {};
-		skin_naimation_buffer[i]->GetBoneMatrixResource(bone_matrix_buffer_res);
-		SRV_per_frame[i].push_back(bone_matrix_buffer_res);
-
-		bone_matrix_buffer_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		bone_matrix_buffer_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
-		bone_matrix_buffer_desc.Buffer.StructureByteStride = sizeof(DirectX::XMFLOAT4X4);
-		pancy_resource_size matrix_num = bone_buffer_size / sizeof(DirectX::XMFLOAT4X4);
-		bone_matrix_buffer_desc.Buffer.NumElements = matrix_num;
-		bone_matrix_buffer_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-		bone_matrix_buffer_desc.Buffer.FirstElement = 0;
-
-		SRV_desc_per_frame[i].push_back(bone_matrix_buffer_desc);
-		//蒙皮结果缓冲区
-		SubMemoryPointer skin_vertex_buffer_res;
-		skin_naimation_buffer[i]->GetSkinVertexResource(skin_vertex_buffer_res);
-		UAV_per_frame[i].push_back(skin_vertex_buffer_res);
-		D3D12_UNORDERED_ACCESS_VIEW_DESC skin_vertex_buffer_desc = {};
-		skin_vertex_buffer_desc.ViewDimension = D3D12_UAV_DIMENSION::D3D12_UAV_DIMENSION_BUFFER;
-		skin_vertex_buffer_desc.Buffer.StructureByteStride = sizeof(mesh_animation_data);
-		pancy_resource_size vertex_num = animation_buffer_size / sizeof(mesh_animation_data);
-		skin_vertex_buffer_desc.Buffer.NumElements = vertex_num;
-		skin_vertex_buffer_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-		skin_vertex_buffer_desc.Buffer.FirstElement = 0;
-		skin_vertex_buffer_desc.Buffer.CounterOffsetInBytes = 0;
-		UAV_desc_per_frame[i].push_back(skin_vertex_buffer_desc);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "descriptor_number: " + std::to_string(cpuHandle.size()) + "do not match resource number: " + std::to_string(memory_data.size()) + " checking if need to build multi buffer");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BuildBindDescriptor", error_message);
+		return error_message;
 	}
-	check_error = PancystarEngine::DescriptorControl::GetInstance()->BuildDescriptorCompute(
-		PSO_skinmesh,
-		Cbuffer_name_per_object,
-		Cbuffer_per_frame,
-		SRV_per_frame,
-		SRV_desc_per_frame,
-		UAV_per_frame,
-		UAV_desc_per_frame,
-		descriptor_id
-	); 
-	if (!check_error.CheckIfSucceed())
+	//创建描述符
+	for (int i = 0; i < memory_data.size(); ++i)
 	{
-		return check_error;
+		//存储资源数据，并根据资源数据创建描述符
+		new_descriptor_data.resource_data.push_back(memory_data[i]);
+		auto real_resource = memory_data[i].GetResourceData();
+		ResourceBlockGpu* now_gpu_resource = NULL;
+		if (real_resource->GetResourceTypeName() == typeid(PancyBasicBuffer).name())
+		{
+			const PancyBasicBuffer *buffer_resource_data = dynamic_cast<const PancyBasicBuffer*>(real_resource);
+			now_gpu_resource = buffer_resource_data->GetGpuResourceData();
+		}
+		else if (real_resource->GetResourceTypeName() == typeid(PancyBasicTexture).name())
+		{
+			const PancyBasicTexture *texture_resource_data = dynamic_cast<const PancyBasicTexture*>(real_resource);
+			now_gpu_resource = texture_resource_data->GetGpuResourceData();
+		}
+		else
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "The Resource is not a buffer/texture, could not build Descriptor for it");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindlessResourceViewSegmental::BuildShaderResourceView", error_message);
+			return error_message;
+		}
+		if (now_gpu_resource == NULL)
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "The GPU data of Resource is empty, could not build Descriptor for it");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindlessResourceViewSegmental::BuildShaderResourceView", error_message);
+			return error_message;
+		}
+		check_error = now_gpu_resource->BuildCommonDescriptorView(now_descriptor_desc_in[i], cpuHandle[i]);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	//将新创建的描述符加入到map中
+	descriptor_id = new_descriptor_data.descriptor_offset[0];
+	descriptor_bind_map[descriptor_id] = new_descriptor_data;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::PreBuildBindDescriptor(
+	const D3D12_DESCRIPTOR_HEAP_TYPE &descriptor_type,
+	const bool if_build_multi_buffer,
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> &descriptor_cpu_handle,
+	CommonDescriptorPointer &new_descriptor_data
+)
+{
+	pancy_object_id multibuffer_num = static_cast<pancy_object_id>(PancyDx12DeviceBasic::GetInstance()->GetFrameNum());
+	PancystarEngine::EngineFailReason check_error;
+	//检测是否还有空余的描述符位置
+	if (bind_descriptor_offset_reuse.size() == 0 || (if_build_multi_buffer && bind_descriptor_offset_reuse.size() < multibuffer_num))
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap is full, could not build new bind descriptor: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
+		return error_message;
+	}
+	//检测需要创建的描述符数量(允许创建多个缓冲区则置1，否则根据当前程序渲染帧的数量创建多组资源)
+	pancy_object_id build_descriptor_num = 1;
+	if (if_build_multi_buffer)
+	{
+		build_descriptor_num = multibuffer_num;
+		new_descriptor_data.if_multi_buffer = true;
+	}
+	//根据需要创建的描述符的数量来计算每个描述符在描述符堆内的真正偏移量
+	descriptor_cpu_handle.clear();
+	for (int i = 0; i < build_descriptor_num; ++i)
+	{
+		new_descriptor_data.descriptor_offset.push_back(bind_descriptor_offset_reuse.front());
+		new_descriptor_data.descriptor_type = descriptor_type;
+		//计算描述符真正的位置
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
+		pancy_resource_size real_descriptor_offset = static_cast<pancy_resource_size>(bind_descriptor_offset_reuse.front()) * static_cast<pancy_resource_size>(per_descriptor_size);
+		cpuHandle.Offset(real_descriptor_offset);
+		descriptor_cpu_handle.push_back(cpuHandle);
+		//删除当前可用的一个ID号
+		bind_descriptor_offset_reuse.pop();
 	}
 	return PancystarEngine::succeed;
 }
-
-PancystarEngine::EngineFailReason PancySkinAnimationControl::GetSkinAnimationBuffer(std::vector<SubMemoryPointer> &skin_animation_data, pancy_resource_size &animation_buffer_size_in)
+D3D12_DESCRIPTOR_HEAP_TYPE PancyDescriptorHeap::GetDescriptorHeapTypeOfDescriptor(const BasicDescriptorDesc &descriptor_desc)
 {
-	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	for (int i = 0; i < Frame_num; ++i) 
+	switch (descriptor_desc.basic_descriptor_type)
 	{
-		SubMemoryPointer now_resource;
-		skin_naimation_buffer[i]->GetSkinVertexResource(now_resource);
-		skin_animation_data.push_back(now_resource);
+	case PancyDescriptorType::DescriptorTypeShaderResourceView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		break;
+	case PancyDescriptorType::DescriptorTypeUnorderedAccessView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		break;
+	case PancyDescriptorType::DescriptorTypeConstantBufferView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		break;
+	case PancyDescriptorType::DescriptorTypeRenderTargetView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		break;
+	case PancyDescriptorType::DescriptorTypeDepthStencilView:
+		return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		break;
+	default:
+		break;
 	}
-	animation_buffer_size_in = animation_buffer_size;
+	return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindDescriptor(const pancy_object_id &descriptor_id)
+{
+	auto check_if_has_data = descriptor_bind_map.find(descriptor_id);
+	//先检查待删除的描述符是否存在
+	if (check_if_has_data == descriptor_bind_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find bind descriptor: " + std::to_string(descriptor_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bind descriptor from heap", error_message);
+		return error_message;
+	}
+	//删除当前的描述符数据
+	descriptor_bind_map.erase(descriptor_id);
+	//将删除完毕的描述符ID还给描述符ID池再利用
+	bind_descriptor_offset_reuse.push(descriptor_id);
 	return PancystarEngine::succeed;
 }
-*/
-void PancySkinAnimationControl::ClearUsedBuffer()
-{
-	pancy_object_id now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	skin_naimation_buffer[now_frame_use]->ClearUsedBuffer();
-}
-PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildAnimationBlock(
-	const pancy_resource_size &vertex_num,
-	pancy_object_id &block_id,
-	SkinAnimationBlock &new_animation_block
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BindGlobelDescriptor(
+	const std::string &globel_name,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	pancy_object_id now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	check_error = skin_naimation_buffer[now_frame_use]->BuildAnimationBlock(vertex_num, block_id, new_animation_block);
+	//先获取描述符堆的CPU指针
+	pancy_object_id bind_id_descriptor;
+	check_error = GetGlobelDesciptorID(globel_name, bind_id_descriptor);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//获取全局描述符的偏移量
+	check_error = BindCommonDescriptor(bind_id_descriptor, render_param_type, m_commandList, root_signature_offset);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildBoneBlock(
-	const pancy_resource_size &matrix_num,
-	const DirectX::XMFLOAT4X4 *matrix_data,
-	pancy_object_id &block_id,
-	SkinAnimationBlock &new_bone_block
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BindCommonDescriptor(
+	const pancy_object_id &descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	//检测输入的ID号是否合法
+	if (descriptor_id >= bind_descriptor_num)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor id: " + std::to_string(descriptor_id) + " is bigger than the max id of descriptor heap: " + std::to_string(bind_descriptor_num));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindCommonDescriptor", error_message);
+		return error_message;
+	}
+	//先获取描述符堆的CPU指针
+	CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(descriptor_heap_data->GetGPUDescriptorHandleForHeapStart());
+	//获取全局描述符的信息
+	auto resource_id = descriptor_bind_map.find(descriptor_id);
+	if (resource_id == descriptor_bind_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bind descriptor :" + std::to_string(descriptor_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BindCommonDescriptor", error_message);
+		return error_message;
+	}
+	//根据描述符是否是交换帧类型来决定是否切帧（即老版本的rename操作）
+	pancy_object_id real_offset_descriptor;
+	if (resource_id->second.if_multi_buffer)
+	{
+		pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+		real_offset_descriptor = resource_id->second.descriptor_offset[now_frame_id];
+	}
+	else
+	{
+		real_offset_descriptor = resource_id->second.descriptor_offset[0];
+	}
+	//获取全局描述符的偏移量
+	pancy_object_id id_offset = real_offset_descriptor * per_descriptor_size;
+	srvHandle.Offset(id_offset);
+	//开始绑定描述符与commandlist
+	switch (render_param_type)
+	{
+	case D3D12_COMMAND_LIST_TYPE_DIRECT:
+		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(root_signature_offset, srvHandle);
+		break;
+	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+		m_commandList->GetCommandList()->SetComputeRootDescriptorTable(root_signature_offset, srvHandle);
+		break;
+	default:
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could only bind descriptor to graph/cpmpute commondlist:" + std::to_string(descriptor_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BindCommonDescriptor", error_message);
+		return error_message;
+		break;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::GetCommonDescriptorCpuOffset(const pancy_object_id &descriptor_id, CD3DX12_CPU_DESCRIPTOR_HANDLE &Cpu_Handle)
+{
+	//检测输入的ID号是否合法
+	if (descriptor_id >= bind_descriptor_num)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor id: " + std::to_string(descriptor_id) + " is bigger than the max id of descriptor heap: " + std::to_string(bind_descriptor_num));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindCommonDescriptor", error_message);
+		return error_message;
+	}
+	//先获取描述符堆的CPU指针
+	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
+	//获取全局描述符的信息
+	auto resource_id = descriptor_bind_map.find(descriptor_id);
+	if (resource_id == descriptor_bind_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bind descriptor :" + std::to_string(descriptor_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Bind bind descriptor from segmental", error_message);
+		return error_message;
+	}
+	//根据描述符是否是交换帧类型来决定是否切帧（即老版本的rename操作）
+	pancy_object_id real_offset_descriptor;
+	if (resource_id->second.if_multi_buffer)
+	{
+		pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
+		real_offset_descriptor = resource_id->second.descriptor_offset[now_frame_id];
+	}
+	else
+	{
+		real_offset_descriptor = resource_id->second.descriptor_offset[0];
+	}
+	//获取全局描述符的偏移量
+	pancy_object_id id_offset = real_offset_descriptor * per_descriptor_size;
+	srvHandle.Offset(id_offset);
+	Cpu_Handle = srvHandle;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BindBindlessDescriptor(
+	const BindlessResourceViewID &descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	pancy_object_id now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	check_error = skin_naimation_buffer[now_frame_use]->BuildBoneBlock(matrix_num, matrix_data, block_id, new_bone_block);
+	//先获取描述符堆的CPU指针
+	if (descriptor_id.segmental_id >= bindless_descriptor_num)
+	{
+		//请求的描述符段位置超过了段地址的最大值
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the bindless descriptor segmental id: " + std::to_string(descriptor_id.segmental_id) + " is bigger than the max bindless segmental id of descriptor heap: " + std::to_string(bindless_descriptor_num));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindBindlessDescriptor", error_message);
+		return error_message;
+	}
+	else if (descriptor_id.page_id > per_segmental_size)
+	{
+		//请求的描述符页位置超过了每段地址的最大容量
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the bindless descriptor page id: " + std::to_string(descriptor_id.page_id) + " is bigger than the max bindless per_segmental_size id of descriptor heap: " + std::to_string(per_segmental_size));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindBindlessDescriptor", error_message);
+		return error_message;
+	}
+	pancy_object_id bind_id_descriptor;
+	//查找当前描述符页对应的数据
+	auto resource_id = bindless_descriptor_id_map.find(descriptor_id.segmental_id);
+	if (resource_id == bindless_descriptor_id_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Bind bindless SRV from segmental", error_message);
+		return error_message;
+	}
+	auto descriptor_resource = descriptor_segmental_map.find(resource_id->second);
+	if (descriptor_resource == descriptor_segmental_map.end())
+	{
+		//未找到请求的资源
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Bind bindless SRV from segmental", error_message);
+		return error_message;
+	}
+	//获取描述符页的真实偏移
+	const BindlessResourceViewPointer &descriptor_page_real_pos = descriptor_resource->second->GetDescriptorPageOffset(descriptor_id.page_id);
+	//计算解绑顶描述符的起始位置在描述符堆中的偏移（初始偏移+所有段间的偏移+段内偏移）
+	bind_id_descriptor = bind_descriptor_num + descriptor_id.segmental_id * per_segmental_size + descriptor_page_real_pos.resource_view_offset;
+	//先获取描述符堆的CPU指针
+	CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(descriptor_heap_data->GetGPUDescriptorHandleForHeapStart());
+	//获取全局描述符的偏移量
+	pancy_object_id id_offset = bind_id_descriptor * per_descriptor_size;
+	srvHandle.Offset(id_offset);
+	//开始绑定描述符与commandlist
+	switch (render_param_type)
+	{
+	case D3D12_COMMAND_LIST_TYPE_DIRECT:
+		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(root_signature_offset, srvHandle);
+		break;
+	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+		m_commandList->GetCommandList()->SetComputeRootDescriptorTable(root_signature_offset, srvHandle);
+		break;
+	default:
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could only bind descriptor to graph/cpmpute commondlist");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BindBindlessDescriptor", error_message);
+		return error_message;
+		break;
+	}
+	return PancystarEngine::succeed;
+}
+//描述符堆管理器
+PancyDescriptorHeapControl::PancyDescriptorHeapControl()
+{
+	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES);
+	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	//创建三个基础的描述符堆
+	PancystarEngine::EngineFailReason check_error;
+	check_error = BuildNewDescriptorHeapFromJson("EngineResource\\BasicDescriptorHeap\\DesciptorHeapShaderResource.json", common_descriptor_heap_shader_resource);
+	if (!check_error.CheckIfSucceed())
+	{
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init Descriptor Heap Controler", check_error);
+	}
+	check_error = BuildNewDescriptorHeapFromJson("EngineResource\\BasicDescriptorHeap\\DesciptorHeapRenderTarget.json", common_descriptor_heap_render_target);
+	if (!check_error.CheckIfSucceed())
+	{
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init Descriptor Heap Controler", check_error);
+	}
+	check_error = BuildNewDescriptorHeapFromJson("EngineResource\\BasicDescriptorHeap\\DesciptorHeapDepthStencil.json", common_descriptor_heap_depth_stencil);
+	if (!check_error.CheckIfSucceed())
+	{
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init Descriptor Heap Controler", check_error);
+	}
+}
+PancyDescriptorHeapControl::~PancyDescriptorHeapControl()
+{
+	for (auto release_heap = descriptor_heap_map.begin(); release_heap != descriptor_heap_map.end(); ++release_heap)
+	{
+		delete release_heap->second;
+	}
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptorHeapFromJson(const std::string &json_name, const Json::Value &root_value, pancy_resource_id &descriptor_heap_id)
+{
+	PancystarEngine::EngineFailReason check_error;
+	PancyDescriptorHeap *descriptor_SRV = new PancyDescriptorHeap();
+	D3D12_DESCRIPTOR_HEAP_DESC descriptor_heap_desc;
+	pancy_json_value value_root;
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "Flags", pancy_json_data_type::json_data_enum, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.Flags = static_cast<D3D12_DESCRIPTOR_HEAP_FLAGS>(value_root.int_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "NodeMask", pancy_json_data_type::json_data_int, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.NodeMask = value_root.int_value;
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "Type", pancy_json_data_type::json_data_enum, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	descriptor_heap_desc.Type = static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(value_root.int_value);
+	pancy_object_id bind_descriptor_num;
+	pancy_object_id bindless_descriptor_num;
+	pancy_object_id per_segmental_size;
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "BindDescriptorNum", pancy_json_data_type::json_data_int, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	bind_descriptor_num = static_cast<pancy_object_id>(value_root.int_value);
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "BindlessDescriptorNum", pancy_json_data_type::json_data_int, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	bindless_descriptor_num = static_cast<pancy_object_id>(value_root.int_value);
+
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "PerSegmentalSize", pancy_json_data_type::json_data_int, value_root);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	per_segmental_size = static_cast<pancy_object_id>(value_root.int_value);
+	descriptor_heap_desc.NumDescriptors = bind_descriptor_num + bindless_descriptor_num;
+	check_error = descriptor_SRV->Create(descriptor_heap_desc, json_name, bind_descriptor_num, bindless_descriptor_num, per_segmental_size);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	if (!descriptor_heap_id_reuse.empty())
+	{
+		descriptor_heap_id = descriptor_heap_id_reuse.front();
+		descriptor_heap_id_reuse.pop();
+	}
+	else
+	{
+		descriptor_heap_id = descriptor_heap_id_self_add;
+		descriptor_heap_id_self_add += 1;
+	}
+	descriptor_heap_map[descriptor_heap_id] = descriptor_SRV;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptorHeapFromJson(const std::string &json_file_name, pancy_resource_id &descriptor_heap_id)
+{
+	PancystarEngine::EngineFailReason check_error;
+	Json::Value root_value;
+	check_error = PancyJsonTool::GetInstance()->LoadJsonFile(json_file_name, root_value);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = BuildNewDescriptorHeapFromJson(json_file_name, root_value, descriptor_heap_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	return PancystarEngine::succeed;
 }
-//填充渲染commandlist
-PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
-	const pancy_object_id &mesh_buffer,
-	const pancy_object_id &vertex_num,
-	const PancyRenderParamID &render_param_id,
-	const pancy_resource_size &matrix_num,
-	const DirectX::XMFLOAT4X4 *matrix_data,
-	SkinAnimationBlock &animation_block_pos,
-	PancyRenderCommandList *m_commandList_skin
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::DeleteDescriptorHeap(const pancy_resource_id &descriptor_heap_id)
+{
+	auto descriptor_data = descriptor_heap_map.find(descriptor_heap_id);
+	if (descriptor_data == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find descriptor heap: " + std::to_string(descriptor_heap_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete descriptor heap from heap", error_message);
+		return error_message;
+	}
+	//删除描述符堆资源，并将ID号还给描述符堆管理器
+	delete descriptor_heap_map[descriptor_heap_id];
+	descriptor_heap_map.erase(descriptor_heap_id);
+	descriptor_heap_id_reuse.push(descriptor_heap_id);
+	return PancystarEngine::succeed;
+}
+pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const BasicDescriptorDesc &descriptor_desc)
+{
+	return GetCommonDescriptorHeapID(descriptor_desc.basic_descriptor_type);
+}
+pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const PancyDescriptorType &descriptor_type)
+{
+	switch (descriptor_type)
+	{
+	case PancyDescriptorType::DescriptorTypeShaderResourceView:
+		return common_descriptor_heap_shader_resource;
+		break;
+	case PancyDescriptorType::DescriptorTypeUnorderedAccessView:
+		return common_descriptor_heap_shader_resource;
+		break;
+	case PancyDescriptorType::DescriptorTypeConstantBufferView:
+		return common_descriptor_heap_shader_resource;
+		break;
+	case PancyDescriptorType::DescriptorTypeRenderTargetView:
+		return common_descriptor_heap_render_target;
+		break;
+	case PancyDescriptorType::DescriptorTypeDepthStencilView:
+		return common_descriptor_heap_depth_stencil;
+		break;
+	default:
+		break;
+	}
+	return common_descriptor_heap_shader_resource;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonDescriptor(
+	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+	const std::vector<VirtualResourcePointer>& memory_data,
+	const bool if_build_multi_buffer,
+	BindDescriptorPointer &descriptor_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	pancy_object_id bone_block_ID;
-	pancy_object_id skin_animation_block_ID;
-	PancystarEngine::SkinAnimationBlock bone_block_pos;
-	//根据渲染模型的顶点数据请求一块动画存储显存
-	check_error = BuildAnimationBlock(vertex_num, skin_animation_block_ID, animation_block_pos);
+	pancy_object_id now_used_descriptor_heap = GetCommonDescriptorHeapID(now_descriptor_desc_in[0]);
+	auto common_descriptor_heap = descriptor_heap_map.find(now_used_descriptor_heap);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	descriptor_id.descriptor_heap_id = now_used_descriptor_heap;
+	check_error = common_descriptor_heap->second->BuildBindDescriptor(now_descriptor_desc_in, memory_data, if_build_multi_buffer, descriptor_id.descriptor_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//根据渲染模型的骨骼数据请求一块骨骼矩阵显存
-	check_error = BuildBoneBlock(matrix_num, matrix_data, bone_block_ID, bone_block_pos);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//获取渲染描述符
-	check_error = PancystarEngine::RenderParamSystem::GetInstance()->AddRenderParamToCommandList(render_param_id, m_commandList_skin, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE);
-	if (!check_error.CheckIfSucceed()) 
-	{
-		return check_error;
-	}
-	//填充常量缓冲区
-	DirectX::XMUINT4 data_offset;
-	DirectX::XMUINT4 data_num;
-	data_offset.x = bone_block_pos.start_pos;
-	data_offset.y = animation_block_pos.start_pos;
-	data_num.x = vertex_num;
-	data_num.y = matrix_num;
-	check_error = PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id,"per_object", "data_offset", data_offset, 0);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id,"per_object", "data_num", data_num, 0);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	/*
-	auto check = data_descriptor_skinmesh->GetRootSignature();
-	m_commandList_skin->GetCommandList()->SetComputeRootSignature(check);
-	ID3D12DescriptorHeap *descriptor_heap_id = data_descriptor_skinmesh->GetDescriptoHeap();
-	m_commandList_skin->GetCommandList()->SetDescriptorHeaps(1, &descriptor_heap_id);
-	std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> descriptor_offset = data_descriptor_skinmesh->GetDescriptorOffset();
-	for (int i = 0; i < descriptor_offset.size(); ++i)
-	{
-		m_commandList_skin->GetCommandList()->SetComputeRootDescriptorTable(i, descriptor_offset[i]);
-	}
-	*/
-	//修改当前资源的使用格式
-	SubMemoryPointer now_vertex_buffer;
-	check_error = PancystarEngine::PancyBasicBufferControl::GetInstance()->GetBufferSubResource(mesh_buffer, now_vertex_buffer);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = SubresourceControl::GetInstance()->ResourceBarrier(m_commandList_skin, now_vertex_buffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	pancy_object_id now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	SubMemoryPointer bone_matrix_resource;
-	SubMemoryPointer skin_vertex_resource;
-	skin_naimation_buffer[now_frame]->GetBoneMatrixResource(bone_matrix_resource);
-	skin_naimation_buffer[now_frame]->GetSkinVertexResource(skin_vertex_resource);
-	check_error = SubresourceControl::GetInstance()->ResourceBarrier(m_commandList_skin, skin_vertex_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//提交计算命令
-	pancy_object_id thread_group_size;
-	thread_group_size = vertex_num / threadBlockSize;
-	if (vertex_num % threadBlockSize != 0)
-	{
-		thread_group_size += 1;
-	}
-	m_commandList_skin->GetCommandList()->Dispatch(thread_group_size, 1, 1);
-	//还原资源状态
-	check_error = SubresourceControl::GetInstance()->ResourceBarrier(m_commandList_skin, now_vertex_buffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = SubresourceControl::GetInstance()->ResourceBarrier(m_commandList_skin, skin_vertex_resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	m_commandList_skin->UnlockPrepare();
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonBindlessShaderResourceView(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
+	const std::vector<VirtualResourcePointer> &describe_memory_data,
+	const pancy_object_id &SRV_pack_size,
+	BindlessDescriptorPointer &descriptor_id
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto common_srv_heap = descriptor_heap_map.find(common_descriptor_heap_shader_resource);
+	if (common_srv_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic SRV descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV descriptor heap from heap", error_message);
+		return error_message;
+	}
+	descriptor_id.descriptor_heap_id = common_descriptor_heap_shader_resource;
+	check_error = common_srv_heap->second->BuildBindlessShaderResourceViewPage(SRV_desc, describe_memory_data, SRV_pack_size, descriptor_id.descriptor_pack_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonGlobelDescriptor(
+	const std::string &globel_srv_name,
+	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+	const std::vector<VirtualResourcePointer>& memory_data,
+	const bool if_build_multi_buffer
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id now_used_descriptor_heap = GetCommonDescriptorHeapID(now_descriptor_desc_in[0]);
+	auto common_descriptor_heap = descriptor_heap_map.find(now_used_descriptor_heap);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->BuildGlobelDescriptor(globel_srv_name, now_descriptor_desc_in, memory_data, if_build_multi_buffer);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetCommonGlobelDescriptorID(
+	PancyDescriptorType basic_descriptor_type,
+	const std::string &globel_srv_name,
+	BindDescriptorPointer &descriptor_id
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id now_used_descriptor_heap = GetCommonDescriptorHeapID(basic_descriptor_type);
+	auto common_descriptor_heap = descriptor_heap_map.find(now_used_descriptor_heap);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	descriptor_id.descriptor_heap_id = now_used_descriptor_heap;
+	check_error = common_descriptor_heap->second->GetGlobelDesciptorID(globel_srv_name, descriptor_id.descriptor_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetBasicDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_TYPE &descriptor_heap_type, ID3D12DescriptorHeap **descriptor_heap_out)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id common_descriptor_heap_id = 999999999;
+	switch (descriptor_heap_type)
+	{
+	case D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
+		common_descriptor_heap_id = common_descriptor_heap_shader_resource;
+		break;
+	case D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_RTV:
+		common_descriptor_heap_id = common_descriptor_heap_render_target;
+		break;
+	case D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+		common_descriptor_heap_id = common_descriptor_heap_depth_stencil;
+		break;
+	default:
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not get common descriptor heap,type not defined");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Common Descriptor Heap", error_message);
+		return error_message;
+		break;
+	}
+	auto common_descriptor_heap = descriptor_heap_map.find(common_descriptor_heap_id);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Common Descriptor Heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->GetDescriptorHeapData(descriptor_heap_out);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonGlobelDescriptor(
+	PancyDescriptorType basic_descriptor_type,
+	const std::string &globel_name,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id now_used_descriptor_heap = GetCommonDescriptorHeapID(basic_descriptor_type);
+	auto common_descriptor_heap = descriptor_heap_map.find(now_used_descriptor_heap);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->BindGlobelDescriptor(globel_name, render_param_type, m_commandList, root_signature_offset);
+	if (check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonDescriptor(
+	const BindDescriptorPointer &descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto common_descriptor_heap = descriptor_heap_map.find(descriptor_id.descriptor_heap_id);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find descriptor heap ID: " + std::to_string(descriptor_id.descriptor_heap_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->BindCommonDescriptor(descriptor_id.descriptor_id, render_param_type, m_commandList, root_signature_offset);
+	if (check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindBindlessDescriptor(
+	const BindlessDescriptorPointer &descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE &render_param_type,
+	PancyRenderCommandList *m_commandList,
+	const pancy_object_id &root_signature_offset
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto common_descriptor_heap = descriptor_heap_map.find(descriptor_id.descriptor_heap_id);
+	if (common_descriptor_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "could not find descriptor heap ID: " + std::to_string(descriptor_id.descriptor_heap_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap from heap", error_message);
+		return error_message;
+	}
+	check_error = common_descriptor_heap->second->BindBindlessDescriptor(descriptor_id.descriptor_pack_id, render_param_type, m_commandList, root_signature_offset);
+	if (check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonRenderTargetUncontiguous(
+	const std::vector<pancy_object_id> rendertarget_list,
+	const pancy_object_id depthstencil_descriptor,
+	PancyRenderCommandList *m_commandList,
+	const bool &if_have_rendertarget,
+	const bool &if_have_depthstencil
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id rtv_number = 0;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE *rtvHandle;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	auto render_target_heap = descriptor_heap_map.find(common_descriptor_heap_render_target);
+	auto depth_stencil_heap = descriptor_heap_map.find(common_descriptor_heap_depth_stencil);
+	if (render_target_heap == descriptor_heap_map.end() || depth_stencil_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "haven't init common descriptor heap");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeapControl::BindCommonRenderTargetUncontiguous", error_message);
+		return error_message;
+	}
+	//获取所有渲染目标的偏移量
+	if (!if_have_rendertarget)
+	{
+		rtvHandle = NULL;
+	}
+	else
+	{
+		rtvHandle = new CD3DX12_CPU_DESCRIPTOR_HANDLE[rendertarget_list.size()];
+		for (int i = 0; i < rendertarget_list.size(); ++i)
+		{
+			check_error = render_target_heap->second->GetCommonDescriptorCpuOffset(rendertarget_list[i], rtvHandle[i]);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+		}
+		rtv_number = rendertarget_list.size();
+	}
+	//获取深度缓冲区偏移量
+	if (!if_have_depthstencil)
+	{
+		m_commandList->GetCommandList()->OMSetRenderTargets(rtv_number, rtvHandle, FALSE, NULL);
+	}
+	else
+	{
+		check_error = depth_stencil_heap->second->GetCommonDescriptorCpuOffset(depthstencil_descriptor, dsvHandle);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		m_commandList->GetCommandList()->OMSetRenderTargets(rtv_number, rtvHandle, FALSE, &dsvHandle);
+	}
+	delete[] rtvHandle;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetCommonDepthStencilBufferOffset(
+	const pancy_object_id depthstencil_descriptor,
+	CD3DX12_CPU_DESCRIPTOR_HANDLE &dsvHandle
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	auto depth_stencil_heap = descriptor_heap_map.find(common_descriptor_heap_depth_stencil);
+	if (depth_stencil_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "haven't init common descriptor heap");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeapControl::BindCommonRenderTargetUncontiguous", error_message);
+		return error_message;
+	}
+	check_error = depth_stencil_heap->second->GetCommonDescriptorCpuOffset(depthstencil_descriptor, dsvHandle);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+

@@ -1,284 +1,5 @@
 #include"PancyResourceBasic.h"
 using namespace PancystarEngine;
-//GPU可访问的资源块
-ResourceBlockGpu::ResourceBlockGpu(
-	const uint64_t &memory_size_in,
-	ComPtr<ID3D12Resource> resource_data_in,
-	const D3D12_HEAP_TYPE &resource_usage_in,
-	const D3D12_RESOURCE_STATES &resource_state
-)
-{
-	if_start_copying_gpu = false;
-	memory_size = memory_size_in;
-	resource_data = resource_data_in;
-	resource_usage = resource_usage_in;
-	now_res_load_state = RESOURCE_LOAD_FAILED;
-	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
-	{
-		CD3DX12_RANGE readRange(0, 0);
-		HRESULT hr = resource_data->Map(0, &readRange, reinterpret_cast<void**>(&map_pointer));
-		if (FAILED(hr))
-		{
-			PancystarEngine::EngineFailReason error_message(hr, "map dynamic buffer to cpu error");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::ResourceBlockGpu", error_message);
-		}
-		now_res_load_state = RESOURCE_LOAD_CPU_FINISH;
-	}
-	else
-	{
-		map_pointer = NULL;
-		now_res_load_state = RESOURCE_LOAD_GPU_FINISH;
-	}
-	now_subresource_state = resource_state;
-}
-PancyResourceLoadState ResourceBlockGpu::GetResourceLoadingState()
-{
-	if (if_start_copying_gpu && now_res_load_state == PancyResourceLoadState::RESOURCE_LOAD_GPU_LOADING)
-	{
-		bool if_GPU_finished = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->CheckGpuBrokenFence(wait_fence);
-		if (if_GPU_finished)
-		{
-			//资源加载完毕
-			now_res_load_state = PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH;
-			if_start_copying_gpu = false;
-		}
-	}
-	return now_res_load_state;
-}
-PancystarEngine::EngineFailReason ResourceBlockGpu::ResourceBarrier(
-	PancyRenderCommandList *commandlist,
-	ID3D12Resource *src_memory,
-	const D3D12_RESOURCE_STATES &last_state,
-	const D3D12_RESOURCE_STATES &now_state
-)
-{
-	if (now_subresource_state != last_state)
-	{
-		if (now_subresource_state == now_state)
-		{
-			return PancystarEngine::succeed;
-		}
-		else
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "resource state dismatch, could not change resource using state");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::ResourceBarrier", error_message);
-			return error_message;
-		}
-	}
-	commandlist->GetCommandList()->ResourceBarrier(
-		1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			src_memory,
-			last_state,
-			now_state
-		)
-	);
-	//修改资源的访问格式
-	now_subresource_state = now_state;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
-	PancyRenderCommandList *commandlist,
-	ResourceBlockGpu &dynamic_buffer,
-	const pancy_resource_size &src_offset,
-	const pancy_resource_size &dst_offset,
-	const pancy_resource_size &data_size
-)
-{
-	if (now_res_load_state == RESOURCE_LOAD_FAILED)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
-		return error_message;
-	}
-	if (dynamic_buffer.GetResourceLoadingState() != RESOURCE_LOAD_CPU_FINISH)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource haven't load to cpu, could not copy data to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
-		return error_message;
-	}
-	if (now_res_load_state != RESOURCE_LOAD_GPU_FINISH)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a GPU resource, could not copy data to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
-		return error_message;
-	}
-	auto src_size_check = src_offset + data_size;
-	auto dst_size_check = dst_offset + data_size;
-	if (src_size_check > dynamic_buffer.GetSize() || dst_size_check > memory_size)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource size overflow, could not copy resource from cpu to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
-		return error_message;
-	}
-	auto check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	commandlist->GetCommandList()->CopyBufferRegion(
-		resource_data.Get(),
-		dst_offset,
-		dynamic_buffer.GetResource(),
-		src_offset,
-		data_size);
-	check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	now_res_load_state = RESOURCE_LOAD_GPU_LOADING;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
-	PancyRenderCommandList *commandlist,
-	ResourceBlockGpu &dynamic_buffer,
-	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
-	const pancy_object_id &Layout_num
-)
-{
-	if (now_res_load_state == RESOURCE_LOAD_FAILED)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
-		return error_message;
-	}
-	if (dynamic_buffer.GetResourceLoadingState() != RESOURCE_LOAD_CPU_FINISH)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource haven't laod to cpu, could not copy data to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
-		return error_message;
-	}
-	if (now_res_load_state != RESOURCE_LOAD_GPU_FINISH)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a GPU resource, could not copy data to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
-		return error_message;
-	}
-	auto check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	for (UINT i = 0; i < Layout_num; ++i)
-	{
-		D3D12_PLACED_SUBRESOURCE_FOOTPRINT real_layout;
-		real_layout.Footprint = pLayouts[i].Footprint;
-		real_layout.Offset = pLayouts[i].Offset;
-
-		CD3DX12_TEXTURE_COPY_LOCATION Dst(resource_data.Get(), i + 0);
-		CD3DX12_TEXTURE_COPY_LOCATION Src(dynamic_buffer.GetResource(), real_layout);
-		commandlist->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
-	}
-	check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	now_res_load_state = RESOURCE_LOAD_GPU_LOADING;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason ResourceBlockGpu::SetResourceCopyBrokenFence(const PancyFenceIdGPU &broken_fence_id)
-{
-	if (now_res_load_state != PancyResourceLoadState::RESOURCE_LOAD_GPU_LOADING)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "haven't copy any data to cpu, could not set broken fence");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::SetResourceCopyBrokenFence", error_message);
-		return error_message;
-	}
-	wait_fence = broken_fence_id;
-	if_start_copying_gpu = true;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason ResourceBlockGpu::WriteFromCpuToBuffer(
-	const pancy_resource_size &pointer_offset,
-	const void* copy_data,
-	const pancy_resource_size &data_size
-)
-{
-	if (now_res_load_state == RESOURCE_LOAD_FAILED)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
-		return error_message;
-	}
-	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
-		return error_message;
-	}
-	if (now_res_load_state != RESOURCE_LOAD_CPU_FINISH)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a CPU copy resource, could not copy data to CPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
-		return error_message;
-	}
-	memcpy(map_pointer + pointer_offset, copy_data, data_size);
-	now_res_load_state = RESOURCE_LOAD_CPU_FINISH;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason ResourceBlockGpu::WriteFromCpuToBuffer(
-	const pancy_resource_size &pointer_offset,
-	std::vector<D3D12_SUBRESOURCE_DATA> &subresources,
-	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts,
-	UINT64* pRowSizesInBytes,
-	UINT* pNumRows
-)
-{
-	if (now_res_load_state == RESOURCE_LOAD_FAILED)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
-		return error_message;
-	}
-	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
-		return error_message;
-	}
-	if (now_res_load_state != RESOURCE_LOAD_CPU_FINISH)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a CPU copy resource, could not copy data to CPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
-		return error_message;
-	}
-	//获取待拷贝指针
-	UINT8* pData = map_pointer + pointer_offset;
-	//获取subresource
-	D3D12_SUBRESOURCE_DATA *pSrcData = &subresources[0];
-	UINT subres_size = static_cast<UINT>(subresources.size());
-	for (UINT i = 0; i < subres_size; ++i)
-	{
-		D3D12_MEMCPY_DEST DestData = { pData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, pLayouts[i].Footprint.RowPitch * pNumRows[i] };
-		MemcpySubresource(&DestData, &pSrcData[i], (SIZE_T)pRowSizesInBytes[i], pNumRows[i], pLayouts[i].Footprint.Depth);
-	}
-	now_res_load_state = RESOURCE_LOAD_CPU_FINISH;
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason ResourceBlockGpu::ReadFromBufferToCpu(
-	const pancy_resource_size &pointer_offset,
-	void* copy_data,
-	const pancy_resource_size data_size
-)
-{
-	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not readback, could not read data back");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::ReadFromBufferToCpu", error_message);
-		return error_message;
-	}
-	return PancystarEngine::succeed;
-	//todo: 回读GPU数据
-}
-ResourceBlockGpu::~ResourceBlockGpu()
-{
-	if (resource_usage == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
-	{
-		resource_data->Unmap(0, NULL);
-	}
-}
 //虚拟资源的智能指针
 VirtualResourcePointer::VirtualResourcePointer()
 {
@@ -604,21 +325,34 @@ void PancyBasicVirtualResource::DeleteReference()
 }
 PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::string &resource_name_in)
 {
-	Json::Value jsonRoot;
-	auto check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_name_in, jsonRoot);
-	if (!check_error.CheckIfSucceed())
+	//根据文件类型决定以何种方式加载资源
+	if (resource_name_in.find(".json") == resource_name_in.size()-5)
 	{
-		return check_error;
+		Json::Value jsonRoot;
+		auto check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_name_in, jsonRoot);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		check_error = Create(resource_name_in, jsonRoot);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 	}
-	check_error = Create(resource_name_in, jsonRoot);
-	if (!check_error.CheckIfSucceed())
+	else 
 	{
-		return check_error;
+		auto check_error = LoadResourceDirect(resource_name_in);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
 	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::string &resource_name_in, const Json::Value &root_value_in)
 {
+	resource_type_name = typeid(*this).name();
 	BuildJsonReflect(&resource_desc_value);
 	if (resource_desc_value == NULL)
 	{
@@ -638,7 +372,35 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 	}
 	return PancystarEngine::succeed;
 }
-
+PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::string &resource_name_in, void *resource_data,const std::string &resource_type,const pancy_resource_size &resource_size)
+{
+	resource_type_name = typeid(*this).name();
+	BuildJsonReflect(&resource_desc_value);
+	if (resource_desc_value == NULL)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not parse json type: " + resource_name_in);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::Create", error_message);
+		return error_message;
+	}
+	auto check_error = resource_desc_value->ResetMemoryByMemberData(resource_data, resource_type, resource_size);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = InitResource();
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyBasicVirtualResource::LoadResourceDirect(const std::string &file_name)
+{
+	//默认情况下，不处理任何非json文件的加载
+	PancystarEngine::EngineFailReason error_message(E_FAIL,"could not parse file: " + file_name);
+	PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::LoadResourceDirect", error_message);
+	return error_message;
+}
 //基础资源管理器
 PancyGlobelResourceControl::PancyGlobelResourceControl()
 {
@@ -666,6 +428,39 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::GetResourceById(
 		return error_message;
 	}
 	*data_pointer = data_now->second;
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyGlobelResourceControl::AddResourceToControl(
+	const std::string &name_resource_in,
+	PancyBasicVirtualResource *new_data,
+	VirtualResourcePointer &res_pointer,
+	const bool &if_allow_repeat
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	int id_now;
+	//判断是否有空闲的id编号
+	if (free_id_list.size() > 0)
+	{
+		id_now = *free_id_list.begin();
+		free_id_list.erase(id_now);
+	}
+	else
+	{
+		id_now = basic_resource_array.size();
+	}
+	if (!if_allow_repeat)
+	{
+		//添加名称-id表用于判重
+		resource_name_list.insert(std::pair<std::string, pancy_object_id>(name_resource_in, id_now));
+	}
+	//插入到资源列表
+	basic_resource_array.insert(std::pair<pancy_object_id, PancyBasicVirtualResource*>(id_now, new_data));
+	check_error = res_pointer.MakeShared(id_now);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyGlobelResourceControl::AddResurceReference(const pancy_object_id &resource_id)

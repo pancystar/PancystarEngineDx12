@@ -602,8 +602,6 @@ PancyRootSignatureControl::~PancyRootSignatureControl()
 //pipline state object graph
 PancyPiplineStateObjectGraph::PancyPiplineStateObjectGraph(const std::string &pso_name_in)
 {
-	cbuffer_desc_parse = new CommonBufferJsonReflect();
-	cbuffer_desc_parse->Create();
 	pipline_type = PSO_TYPE_GRAPHIC;
 	pso_name = pso_name_in;
 }
@@ -693,6 +691,128 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::ReleaseCbufferBy
 	}
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferByShaderReflect(ComPtr<ID3D12ShaderReflection> &now_shader_reflect)
+{
+	PancystarEngine::EngineFailReason check_error;
+	D3D12_SHADER_DESC shader_desc;
+	now_shader_reflect->GetDesc(&shader_desc);
+	for (UINT j = 0; j < shader_desc.ConstantBuffers; ++j)
+	{
+		auto now_constant_buffer = now_shader_reflect->GetConstantBufferByIndex(j);
+		D3D12_SHADER_BUFFER_DESC buffer_shader;
+		now_constant_buffer->GetDesc(&buffer_shader);
+		if (Cbuffer_map.find(buffer_shader.Name) == Cbuffer_map.end())
+		{
+			//将cbuffer的大小进行256位对齐
+			pancy_resource_size alize_cbuffer_size = buffer_shader.Size;
+			pancy_resource_size alize_buffer_resource_size = 65536;
+			if (alize_cbuffer_size % 256 != 0)
+			{
+				alize_cbuffer_size = (1 + (alize_cbuffer_size / 256)) * 256;
+			}
+			//根据cbuffer的大小来决定开辟的buffer资源的大小
+			if (alize_cbuffer_size > 256 * 6)
+			{
+				//大型Cbuffer(可能由instance数据),开辟256k的buffer作为承载buffer
+				alize_buffer_resource_size = 256 * 1024;
+			}
+			else
+			{
+				//小型cbuffer，开辟64k的buffer作为承载buffer
+				alize_buffer_resource_size = 64 * 1024;
+			}
+			PancyCommonBufferDesc cbuffer_resource_desc;
+			cbuffer_resource_desc.buffer_type = Buffer_Constant;
+			cbuffer_resource_desc.buffer_res_desc.Alignment = 0;
+			cbuffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
+			cbuffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+			cbuffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+			cbuffer_resource_desc.buffer_res_desc.Height = 1;
+			cbuffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+			cbuffer_resource_desc.buffer_res_desc.MipLevels = 1;
+			cbuffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
+			cbuffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
+			cbuffer_resource_desc.buffer_res_desc.Width = alize_buffer_resource_size;
+			//准备创建一个新的常量缓冲区
+			Json::Value new_cbuffer_desc_value;
+			//创建资源格式
+			PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "BufferType", "Buffer_Constant");
+			//填充常量缓冲区
+			Json::Value cbuffer_value;
+			PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_value, "BufferSize", alize_cbuffer_size);
+			for (int i = 0; i < buffer_shader.Variables; ++i)
+			{
+				Json::Value cbuffer_variable_value;
+				auto shader_variable = now_constant_buffer->GetVariableByIndex(i);
+				D3D12_SHADER_VARIABLE_DESC shader_var_desc;
+				shader_variable->GetDesc(&shader_var_desc);
+				PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "StartOffset", shader_var_desc.StartOffset);
+				PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "Size", shader_var_desc.Size);
+				PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "Name", shader_var_desc.Name);
+				PancyJsonTool::GetInstance()->AddJsonArrayValue(cbuffer_value, "VariableMember", cbuffer_variable_value);
+			}
+			PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "CbufferDesc", cbuffer_value);
+			//将当前cbuffer的格式保存在map中
+			ConstantBufferAlloctor *new_cbuffer_alloctar = new ConstantBufferAlloctor(
+				alize_buffer_resource_size,
+				buffer_shader.Name,
+				pso_name.GetAsciiString(),
+				cbuffer_resource_desc,
+				new_cbuffer_desc_value
+			);
+			Cbuffer_map.insert(std::pair<std::string, ConstantBufferAlloctor*>(buffer_shader.Name, new_cbuffer_alloctar));
+		}
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::ParseDiscriptorDistribution(std::string &file_name, const Json::Value &jsonRoot)
+{
+	pancy_json_value now_value;
+	PancystarEngine::EngineFailReason check_error;
+	Json::Value list_descriptor_desc = jsonRoot.get("DescriptorType", Json::Value::null);
+	for (int i = 0; i < list_descriptor_desc.size(); ++i)
+	{
+		std::string descriptor_name;
+		PancyShaderDescriptorType descriptor_type;
+		Json::Value data_descriptor_desc = list_descriptor_desc.get(i, Json::Value::null);
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, data_descriptor_desc, "name", pancy_json_data_type::json_data_string, now_value);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		descriptor_name = now_value.string_value;
+		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, data_descriptor_desc, "type", pancy_json_data_type::json_data_enum, now_value);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		descriptor_type = static_cast<PancyShaderDescriptorType>(now_value.int_value);
+		PancyDescriptorPSODescription new_descriptor_root_signature_bind;
+		new_descriptor_root_signature_bind.descriptor_name = descriptor_name;
+		new_descriptor_root_signature_bind.rootsignature_slot = i;
+		switch (descriptor_type)
+		{
+		case CbufferPrivate:
+			private_cbuffer.push_back(new_descriptor_root_signature_bind);
+			break;
+		case CbufferGlobel:
+			globel_cbuffer.push_back(new_descriptor_root_signature_bind);
+			break;
+		case SRVGlobel:
+			globel_shader_res.push_back(new_descriptor_root_signature_bind);
+			break;
+		case SRVPrivate:
+			private_shader_res.push_back(new_descriptor_root_signature_bind);
+			break;
+		case SRVBindless:
+			bindless_shader_res.push_back(new_descriptor_root_signature_bind);
+			break;
+		default:
+			break;
+		}
+	}
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 {
 	//D3D12_GRAPHICS_PIPELINE_STATE_DESC desc_out = {};
@@ -770,96 +890,10 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 				{
 					return check_error;
 				}
-				D3D12_SHADER_DESC shader_desc;
-				now_shader_reflect->GetDesc(&shader_desc);
-				for (UINT j = 0; j < shader_desc.ConstantBuffers; ++j)
+				check_error = BuildCbufferByShaderReflect(now_shader_reflect);
+				if (!check_error.CheckIfSucceed())
 				{
-					auto now_constant_buffer = now_shader_reflect->GetConstantBufferByIndex(j);
-					D3D12_SHADER_BUFFER_DESC buffer_shader;
-					now_constant_buffer->GetDesc(&buffer_shader);
-					if (Cbuffer_map.find(buffer_shader.Name) == Cbuffer_map.end())
-					{
-						//将cbuffer的大小进行256位对齐
-						pancy_resource_size alize_cbuffer_size = buffer_shader.Size;
-						pancy_resource_size alize_buffer_resource_size = 65536;
-						if (alize_cbuffer_size % 256 != 0)
-						{
-							alize_cbuffer_size = (1 + (alize_cbuffer_size / 256)) * 256;
-						}
-						//根据cbuffer的大小来决定开辟的buffer资源的大小
-						if (alize_cbuffer_size > 256 * 6) 
-						{
-							//大型Cbuffer(可能由instance数据),开辟256k的buffer作为承载buffer
-							alize_buffer_resource_size = 256 * 1024;
-						}
-						else 
-						{
-							//小型cbuffer，开辟64k的buffer作为承载buffer
-							alize_buffer_resource_size = 64 * 1024;
-						}
-						PancyCommonBufferDesc cbuffer_resource_desc;
-						cbuffer_resource_desc.buffer_type = Buffer_Constant;
-						cbuffer_resource_desc.heap_flag_in = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
-						cbuffer_resource_desc.heap_type = D3D12_HEAP_TYPE_UPLOAD;
-						cbuffer_resource_desc.buffer_res_desc.Alignment = 0;
-						cbuffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
-						cbuffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-						cbuffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-						cbuffer_resource_desc.buffer_res_desc.Height = 1;
-						cbuffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-						cbuffer_resource_desc.buffer_res_desc.MipLevels = 1;
-						cbuffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
-						cbuffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
-						cbuffer_resource_desc.buffer_res_desc.Width = alize_buffer_resource_size;
-						//将cbuffer的存储buffer格式序列化为json内存
-						check_error = cbuffer_desc_parse->ResetMemoryByMemberData(&cbuffer_resource_desc,typeid(PancyCommonBufferDesc).name(),sizeof(cbuffer_resource_desc));
-						if (!check_error.CheckIfSucceed()) 
-						{
-							return check_error;
-						}
-						Json::Value new_cbuffer_resource_value;
-						check_error = cbuffer_desc_parse->SaveToJsonMemory(new_cbuffer_resource_value);
-						if (!check_error.CheckIfSucceed())
-						{
-							return check_error;
-						}
-						//todo：由pso管理cbuffer的创建和销毁
-						//准备创建一个新的常量缓冲区
-						Json::Value new_cbuffer_desc_value;
-						//创建资源格式
-						//std::string subresource_name;
-						//check_error = PancystarEngine::PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(PancystarEngine::Buffer_Constant, buffer_shader.Size, subresource_name);
-						PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "BufferType", "Buffer_Constant");
-						//PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "SubResourceFile", subresource_name);
-						//if (!check_error.CheckIfSucceed())
-						//{
-						//	return check_error;
-						//}
-						//填充常量缓冲区
-						Json::Value cbuffer_value;
-						PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_value, "BufferSize", alize_cbuffer_size);
-						for (int i = 0; i < buffer_shader.Variables; ++i)
-						{
-							Json::Value cbuffer_variable_value;
-							auto shader_variable = now_constant_buffer->GetVariableByIndex(i);
-							D3D12_SHADER_VARIABLE_DESC shader_var_desc;
-							shader_variable->GetDesc(&shader_var_desc);
-							PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "StartOffset", shader_var_desc.StartOffset);
-							PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "Size", shader_var_desc.Size);
-							PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "Name", shader_var_desc.Name);
-							PancyJsonTool::GetInstance()->AddJsonArrayValue(cbuffer_value, "VariableMember", cbuffer_variable_value);
-						}
-						PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "CbufferDesc", cbuffer_value);
-						//将当前cbuffer的格式保存在map中
-						ConstantBufferAlloctor *new_cbuffer_alloctar = new ConstantBufferAlloctor(
-							alize_buffer_resource_size,
-							buffer_shader.Name,
-							pso_name.GetAsciiString(),
-							new_cbuffer_desc_value,
-							cbuffer_value
-						);
-						Cbuffer_map.insert(std::pair<std::string, ConstantBufferAlloctor*>(buffer_shader.Name, new_cbuffer_alloctar));
-					}
+					return check_error;
 				}
 				//填充shader信息
 				switch (now_shader_read)
@@ -1179,47 +1213,10 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		}
 		desc_out.SampleDesc.Quality = now_value.int_value;
 		//读取当前pipeline的资源绑定格式
-		Json::Value list_descriptor_desc = jsonRoot.get("DescriptorType", Json::Value::null);
-		for (int i = 0; i < list_descriptor_desc.size(); ++i)
+		check_error = ParseDiscriptorDistribution(file_name,jsonRoot);
+		if (!check_error.CheckIfSucceed())
 		{
-			std::string descriptor_name;
-			PancyShaderDescriptorType descriptor_type;
-			Json::Value data_descriptor_desc = list_descriptor_desc.get(i, Json::Value::null);
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, data_descriptor_desc,"name", pancy_json_data_type::json_data_string, now_value);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			descriptor_name = now_value.string_value;
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, data_descriptor_desc, "type", pancy_json_data_type::json_data_enum, now_value);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			descriptor_type = static_cast<PancyShaderDescriptorType>(now_value.int_value);
-			PancyDescriptorPSODescription new_descriptor_root_signature_bind;
-			new_descriptor_root_signature_bind.descriptor_name = descriptor_name;
-			new_descriptor_root_signature_bind.rootsignature_slot = i;
-			switch (descriptor_type)
-			{
-			case CbufferPrivate:
-				private_cbuffer.push_back(new_descriptor_root_signature_bind);
-				break;
-			case CbufferGlobel:
-				globel_cbuffer.push_back(new_descriptor_root_signature_bind);
-				break;
-			case SRVGlobel:
-				globel_shader_res.push_back(new_descriptor_root_signature_bind);
-				break;
-			case SRVPrivate:
-				private_shader_res.push_back(new_descriptor_root_signature_bind);
-				break;
-			case SRVBindless:
-				bindless_shader_res.push_back(new_descriptor_root_signature_bind);
-				break;
-			default:
-				break;
-			}
+			return check_error;
 		}
 		//创建资源
 		HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateGraphicsPipelineState(&desc_out, IID_PPV_ARGS(&pso_data));
@@ -1257,90 +1254,18 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			{
 				return check_error;
 			}
-			D3D12_SHADER_DESC shader_desc;
-			now_shader_reflect->GetDesc(&shader_desc);
-			for (UINT j = 0; j < shader_desc.ConstantBuffers; ++j)
+			check_error = BuildCbufferByShaderReflect(now_shader_reflect);
+			if (!check_error.CheckIfSucceed())
 			{
-				auto now_constant_buffer = now_shader_reflect->GetConstantBufferByIndex(j);
-				D3D12_SHADER_BUFFER_DESC buffer_shader;
-				now_constant_buffer->GetDesc(&buffer_shader);
-				if (Cbuffer_map.find(buffer_shader.Name) == Cbuffer_map.end())
-				{
-					//准备创建一个新的常量缓冲区
-					Json::Value root_value;
-					//创建资源格式
-					std::string subresource_name;
-					check_error = PancystarEngine::PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(PancystarEngine::Buffer_Constant, buffer_shader.Size, subresource_name);
-					PancyJsonTool::GetInstance()->SetJsonValue(root_value, "BufferType", "Buffer_Constant");
-					PancyJsonTool::GetInstance()->SetJsonValue(root_value, "SubResourceFile", subresource_name);
-					if (!check_error.CheckIfSucceed())
-					{
-						return check_error;
-					}
-					//填充常量缓冲区
-					Json::Value cbuffer_value;
-					PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_value, "BufferSize", buffer_shader.Size);
-					for (int i = 0; i < buffer_shader.Variables; ++i)
-					{
-						Json::Value cbuffer_variable_value;
-						auto shader_variable = now_constant_buffer->GetVariableByIndex(i);
-						D3D12_SHADER_VARIABLE_DESC shader_var_desc;
-						shader_variable->GetDesc(&shader_var_desc);
-						PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "StartOffset", shader_var_desc.StartOffset);
-						PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "Size", shader_var_desc.Size);
-						PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_variable_value, "Name", shader_var_desc.Name);
-						PancyJsonTool::GetInstance()->AddJsonArrayValue(cbuffer_value, "VariableMember", cbuffer_variable_value);
-					}
-					PancyJsonTool::GetInstance()->SetJsonValue(root_value, "CbufferDesc", cbuffer_value);
-					//这里不再将cbuffer信息存储到文件中，改为直接保存再内存中
-					Cbuffer_map.insert(std::pair<std::string, Json::Value>(buffer_shader.Name, root_value));
-
-				}
+				return check_error;
 			}
 			//填充shader信息
 			desc_out.CS = CD3DX12_SHADER_BYTECODE(shader_data.Get());
 			//读取当前pipeline的资源绑定格式
-			Json::Value list_descriptor_desc = jsonRoot.get("DescriptorType", Json::Value::null);
-			for (int i = 0; i < list_descriptor_desc.size(); ++i)
+			check_error = ParseDiscriptorDistribution(file_name, jsonRoot);
+			if (!check_error.CheckIfSucceed())
 			{
-				std::string descriptor_name;
-				PancyShaderDescriptorType descriptor_type;
-				Json::Value data_descriptor_desc = list_descriptor_desc.get(i, Json::Value::null);
-				check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, data_descriptor_desc, "name", pancy_json_data_type::json_data_string, now_value);
-				if (!check_error.CheckIfSucceed())
-				{
-					return check_error;
-				}
-				descriptor_name = now_value.string_value;
-				check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, data_descriptor_desc, "type", pancy_json_data_type::json_data_enum, now_value);
-				if (!check_error.CheckIfSucceed())
-				{
-					return check_error;
-				}
-				descriptor_type = static_cast<PancyShaderDescriptorType>(now_value.int_value);
-				PancyDescriptorPSODescription new_descriptor_root_signature_bind;
-				new_descriptor_root_signature_bind.descriptor_name = descriptor_name;
-				new_descriptor_root_signature_bind.rootsignature_slot = i;
-				switch (descriptor_type)
-				{
-				case CbufferPrivate:
-					private_cbuffer.push_back(new_descriptor_root_signature_bind);
-					break;
-				case CbufferGlobel:
-					globel_cbuffer.push_back(new_descriptor_root_signature_bind);
-					break;
-				case SRVGlobel:
-					globel_shader_res.push_back(new_descriptor_root_signature_bind);
-					break;
-				case SRVPrivate:
-					private_shader_res.push_back(new_descriptor_root_signature_bind);
-					break;
-				case SRVBindless:
-					bindless_shader_res.push_back(new_descriptor_root_signature_bind);
-					break;
-				default:
-					break;
-				}
+				return check_error;
 			}
 			//创建资源
 			HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateComputePipelineState(&desc_out, IID_PPV_ARGS(&pso_data));
@@ -1478,7 +1403,6 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetInputDesc(Com
 }
 PancyPiplineStateObjectGraph::~PancyPiplineStateObjectGraph()
 {
-	delete cbuffer_desc_parse;
 	for (auto cbuffer_alloctor_value = Cbuffer_map.begin(); cbuffer_alloctor_value != Cbuffer_map.end(); ++cbuffer_alloctor_value) 
 	{
 		delete cbuffer_alloctor_value->second;
@@ -1938,7 +1862,7 @@ ConstantBufferAlloctor::ConstantBufferAlloctor(
 	const pancy_resource_size &cbuffer_size_in,
 	const std::string &cbuffer_name_in,
 	const std::string &cbuffer_effect_name_in,
-	Json::Value &buffer_resource_desc_value_in,
+	const PancystarEngine::PancyCommonBufferDesc &buffer_resource_desc_value_in,
 	Json::Value &cbuffer_desc_value_in
 )
 {
@@ -1966,7 +1890,9 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyC
 		VirtualResourcePointer new_buffer_resource;
 		auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
 			cbuffer_effect_name + "::" + cbuffer_name,
-			buffer_resource_desc_value,
+			&buffer_resource_desc_value,
+			typeid(buffer_resource_desc_value).name(),
+			sizeof(buffer_resource_desc_value),
 			new_buffer_resource,
 			true
 			);
@@ -1982,7 +1908,7 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyC
 	auto check_error = cbuffer_data.Create(
 		cbuffer_name,
 		cbuffer_effect_name,
-		now_used_buffer_resource->buffer_pointer.GetResourceId(),
+		now_used_buffer_resource->buffer_pointer,
 		now_alloc_data,
 		cbuffer_size,
 		cbuffer_desc_value
@@ -2079,7 +2005,7 @@ PancyConstantBuffer::PancyConstantBuffer()
 PancystarEngine::EngineFailReason PancyConstantBuffer::Create(
 	const std::string &cbuffer_name_in,
 	const std::string &cbuffer_effect_name_in,
-	const pancy_object_id &buffer_id_in,
+	const VirtualResourcePointer &buffer_id_in,
 	const pancy_resource_size &buffer_offset_id_in,
 	const pancy_resource_size &cbuffer_size_in,
 	const Json::Value &root_value
@@ -2088,9 +2014,9 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::Create(
 	//填充基本信息
 	cbuffer_name = cbuffer_name_in;
 	cbuffer_effect_name = cbuffer_effect_name_in;
-	buffer_id = buffer_id_in;
+	buffer_ID = buffer_id_in;
 	buffer_offset_id = buffer_offset_id_in;
-	PancyBasicBuffer *pointer = dynamic_cast<PancyBasicBuffer*>(buffer_ID.GetResourceData());
+	const PancyBasicBuffer *pointer = dynamic_cast<const PancyBasicBuffer*>(buffer_ID.GetResourceData());
 	cbuffer_size = cbuffer_size_in;
 	map_pointer_out = pointer->GetBufferCPUPointer() + buffer_offset_id * cbuffer_size;
 	//从json文件中读取cbuffer的布局反射
@@ -2172,7 +2098,7 @@ PancyConstantBuffer::~PancyConstantBuffer()
 		{
 			return;
 		}
-		check_error = PancyEffectGraphic::GetInstance()->ReleaseCbufferByID(effect_pso_id, cbuffer_name, buffer_id, buffer_offset_id);
+		check_error = PancyEffectGraphic::GetInstance()->ReleaseCbufferByID(effect_pso_id, cbuffer_name, buffer_ID.GetResourceId(), buffer_offset_id);
 		if (!check_error.CheckIfSucceed())
 		{
 			return;

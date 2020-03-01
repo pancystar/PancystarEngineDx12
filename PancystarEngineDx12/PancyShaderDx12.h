@@ -24,7 +24,7 @@ class PancyConstantBuffer
 	std::string cbuffer_name;       //常量缓冲区的名称
 	std::string cbuffer_effect_name; //创建常量缓冲区的渲染管线名称
 	//常量缓冲区的数据
-	pancy_object_id buffer_id;
+	VirtualResourcePointer buffer_ID;
 	pancy_object_id buffer_offset_id;
 	pancy_resource_size cbuffer_size;
 	//所有成员变量的起始位置
@@ -36,11 +36,15 @@ public:
 	PancystarEngine::EngineFailReason Create(
 		const std::string &cbuffer_name_in,
 		const std::string &cbuffer_effect_name_in,
-		const pancy_object_id &buffer_id_in,
+		const VirtualResourcePointer &buffer_id_in,
 		const pancy_resource_size &buffer_offset_id_in,
 		const pancy_resource_size &cbuffer_size,
 		const Json::Value &root_value
 	);
+	inline VirtualResourcePointer &GetBufferResource() 
+	{
+		return buffer_ID;
+	}
 	~PancyConstantBuffer();
 	PancystarEngine::EngineFailReason SetMatrix(const std::string &variable, const DirectX::XMFLOAT4X4 &mat_data, const pancy_resource_size &offset);
 	PancystarEngine::EngineFailReason SetFloat4(const std::string &variable, const DirectX::XMFLOAT4 &vector_data, const pancy_resource_size &offset);
@@ -67,7 +71,7 @@ struct CbufferPackList
 		{
 			per_cbuffer_size = per_cbuffer_size_in;
 		}
-		PancyBasicBuffer *pointer = dynamic_cast<PancyBasicBuffer*>(buffer_pointer.GetResourceData());
+		const PancyBasicBuffer *pointer = dynamic_cast<const PancyBasicBuffer*>(buffer_pointer.GetResourceData());
 		pancy_object_id all_member_cbuffer_num = pointer->GetBufferSize() / per_cbuffer_size;
 		for (int index_offset = 0; index_offset < all_member_cbuffer_num; ++index_offset)
 		{
@@ -80,7 +84,8 @@ class ConstantBufferAlloctor
 	pancy_resource_size cbuffer_size;       //每个常量缓冲区的大小
 	std::string cbuffer_name;               //常量缓冲区的名称
 	std::string cbuffer_effect_name;        //创建常量缓冲区的渲染管线名称
-	Json::Value buffer_resource_desc_value; //buffer资源格式
+	PancystarEngine::PancyCommonBufferDesc buffer_resource_desc_value;
+	//Json::Value buffer_resource_desc_value; //buffer资源格式
 	Json::Value cbuffer_desc_value;         //cbuffer格式
 	std::unordered_map<pancy_object_id, CbufferPackList*> all_cbuffer_list;
 public:
@@ -88,7 +93,7 @@ public:
 		const pancy_resource_size &cbuffer_size_in,
 		const std::string &cbuffer_name_in,
 		const std::string &cbuffer_effect_name_in,
-		Json::Value &buffer_resource_desc_value_in,
+		const PancystarEngine::PancyCommonBufferDesc &buffer_resource_desc_value_in,
 		Json::Value &cbuffer_desc_value_in
 	);
 	PancystarEngine::EngineFailReason BuildNewCbuffer(PancyConstantBuffer &cbuffer_data);
@@ -235,7 +240,6 @@ struct PancyDescriptorPSODescription
 //PSO object
 class PancyPiplineStateObjectGraph
 {
-	PancyJsonReflect *cbuffer_desc_parse;
 	PSOType pipline_type;
 	//std::unordered_map<std::string,Json::Value> Cbuffer_map;
 	std::unordered_map<std::string, ConstantBufferAlloctor*> Cbuffer_map;
@@ -274,6 +278,8 @@ public:
 	const std::vector<PancyDescriptorPSODescription> &GetDescriptor(const PancyShaderDescriptorType &descriptor_type);
 private:
 	PancystarEngine::EngineFailReason GetInputDesc(ComPtr<ID3D12ShaderReflection> t_ShaderReflection, std::vector<D3D12_INPUT_ELEMENT_DESC> &t_InputElementDescVec);
+	PancystarEngine::EngineFailReason BuildCbufferByShaderReflect(ComPtr<ID3D12ShaderReflection> &now_shader_reflect);
+	PancystarEngine::EngineFailReason ParseDiscriptorDistribution(std::string &file_name,const Json::Value &jsonRoot);
 };
 
 
@@ -326,8 +332,3 @@ private:
 	PancystarEngine::EngineFailReason BuildPso(const std::string &pso_config_file);
 	void AddPSOGlobelVariable();
 };
-
-
-
-
-

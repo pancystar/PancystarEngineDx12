@@ -14,8 +14,6 @@ namespace PancystarEngine
 	};
 	struct PancyCommonBufferDesc 
 	{
-		D3D12_HEAP_TYPE heap_type;
-		D3D12_HEAP_FLAGS heap_flag_in;
 		PancyBufferType buffer_type;
 		D3D12_RESOURCE_DESC buffer_res_desc = {};
 		std::string buffer_data_file;
@@ -37,8 +35,6 @@ namespace PancystarEngine
 	}
 	void CommonBufferJsonReflect::InitBasicVariable() 
 	{
-		Init_Json_Data_Vatriable(reflect_data.heap_type);
-		Init_Json_Data_Vatriable(reflect_data.heap_flag_in);
 		Init_Json_Data_Vatriable(reflect_data.buffer_type);
 		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Dimension);
 		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Alignment);
@@ -62,19 +58,23 @@ namespace PancystarEngine
 	public:
 		PancyBasicBuffer(const bool &if_could_reload);
 		~PancyBasicBuffer();
-		inline pancy_resource_size GetBufferSize()
+		inline const pancy_resource_size GetBufferSize() const
 		{
 			return subresources_size;
 		}
-		inline UINT8* GetBufferCPUPointer()
+		inline UINT8* GetBufferCPUPointer() const
 		{
 			return map_pointer;
 		}
+		inline ResourceBlockGpu *GetGpuResourceData() const
+		{
+			return buffer_data;
+		}
+		//检测当前的资源是否已经被载入GPU
+		bool CheckIfResourceLoadFinish() override;
 	private:
 		void BuildJsonReflect(PancyJsonReflect **pointer_data) override;
 		PancystarEngine::EngineFailReason InitResource() override;
-		//检测当前的资源是否已经被载入GPU
-		bool CheckIfResourceLoadFinish() override;
 	};
 
 	struct SkinAnimationBlock 
@@ -112,8 +112,8 @@ namespace PancystarEngine
 		//存储每一个骨骼矩阵区域的起始位置
 		std::unordered_map<pancy_object_id, SkinAnimationBlock> bone_block_map;
 		//骨骼动画缓冲区的数据
-		pancy_object_id buffer_ID_animation;//动画结果缓冲区
-		pancy_object_id buffer_ID_bone;     //骨骼矩阵缓冲区
+		VirtualResourcePointer buffer_animation;//动画结果缓冲区
+		VirtualResourcePointer buffer_bone;     //骨骼矩阵缓冲区
 
 		//骨骼数据的CPU指针
 		UINT8* bone_data_pointer;
@@ -137,9 +137,15 @@ namespace PancystarEngine
 			SkinAnimationBlock &new_bone_block
 		);
 		//获取矩阵存储缓冲区
-		PancystarEngine::EngineFailReason GetBoneMatrixResource(SubMemoryPointer &resource_pointer);
+		inline VirtualResourcePointer& GetBoneMatrixResource() 
+		{
+			return buffer_bone;
+		}
 		//获取蒙皮结果缓冲区
-		PancystarEngine::EngineFailReason GetSkinVertexResource(SubMemoryPointer &resource_pointer);
+		inline VirtualResourcePointer& GetSkinVertexResource()
+		{
+			return buffer_animation;
+		}
 	};
 	
 }
