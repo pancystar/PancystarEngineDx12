@@ -151,6 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="PancyAnimationBasic.h" />
     <ClInclude Include="PancyBufferDx12.h" />
     <ClInclude Include="PancyCamera.h" />
     <ClInclude Include="PancyDescriptor.h" />
@@ -173,6 +174,7 @@
     <ClInclude Include="PancyTimeBasic.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="PancyAnimatonBasic.cpp" />
     <ClCompile Include="PancyBufferDx12.cpp" />
     <ClCompile Include="PancyCamera.cpp" />
     <ClCompile Include="PancyDescriptor.cpp" />

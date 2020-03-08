@@ -30,7 +30,8 @@ PancystarEngine::EngineFailReason GeometryBasic::Create()
 		geometry_index_buffer,
 		geometry_adjindex_buffer,
 		geometry_vertex_buffer_view,
-		geometry_index_buffer_view
+		geometry_index_buffer_view,
+		geometry_adj_index_buffer_view
 	);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -39,41 +40,22 @@ PancystarEngine::EngineFailReason GeometryBasic::Create()
 	if_buffer_created = true;
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason GeometryBasic::CheckGeometryState(ResourceStateType &now_state)
+bool GeometryBasic::CheckIfCreateSucceed()
 {
 	PancystarEngine::EngineFailReason check_error;
-	ResourceStateType state_Vbuffer;
-	ResourceStateType state_Ibuffer;
-	check_error = PancyBasicBufferControl::GetInstance()->GetResourceState(geometry_vertex_buffer, state_Vbuffer);
-	if (!check_error.CheckIfSucceed())
+	bool if_vbuffer_load_succeed = geometry_vertex_buffer.GetResourceData()->CheckIfResourceLoadFinish();
+	bool if_ibuffer_load_succeed = geometry_index_buffer.GetResourceData()->CheckIfResourceLoadFinish();
+	bool if_iadjbuffer_load_succeed = true;
+	if (if_create_adj) 
 	{
-		return check_error;
+		if_iadjbuffer_load_succeed = geometry_adjindex_buffer.GetResourceData()->CheckIfResourceLoadFinish();
 	}
-	check_error = PancyBasicBufferControl::GetInstance()->GetResourceState(geometry_index_buffer, state_Ibuffer);
-	if (!check_error.CheckIfSucceed())
+	if (if_vbuffer_load_succeed && if_ibuffer_load_succeed && if_iadjbuffer_load_succeed) 
 	{
-		return check_error;
+		return true;
 	}
-	if (state_Vbuffer == ResourceStateType::resource_state_not_init || state_Ibuffer == ResourceStateType::resource_state_not_init)
-	{
-		now_state = ResourceStateType::resource_state_not_init;
-	}
-	else if (state_Vbuffer == ResourceStateType::resource_state_load_GPU_memory_finish && state_Ibuffer == ResourceStateType::resource_state_load_GPU_memory_finish)
-	{
-		now_state = ResourceStateType::resource_state_load_GPU_memory_finish;
-	}
-	else 
-	{
-		now_state = ResourceStateType::resource_state_load_CPU_memory_finish;
-	}
-	return PancystarEngine::succeed;
+	return false;
 }
 GeometryBasic::~GeometryBasic()
 {
-	PancystarEngine::PancyBasicBufferControl::GetInstance()->DeleteResurceReference(geometry_vertex_buffer);
-	PancystarEngine::PancyBasicBufferControl::GetInstance()->DeleteResurceReference(geometry_index_buffer);
-	if (if_create_adj) 
-	{
-		PancystarEngine::PancyBasicBufferControl::GetInstance()->DeleteResurceReference(geometry_adjindex_buffer);
-	}
 }

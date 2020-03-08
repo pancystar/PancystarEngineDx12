@@ -46,7 +46,6 @@ PancyResourceLoadState ResourceBlockGpu::GetResourceLoadingState()
 }
 PancystarEngine::EngineFailReason ResourceBlockGpu::ResourceBarrier(
 	PancyRenderCommandList *commandlist,
-	ID3D12Resource *src_memory,
 	const D3D12_RESOURCE_STATES &last_state,
 	const D3D12_RESOURCE_STATES &now_state
 )
@@ -67,7 +66,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::ResourceBarrier(
 	commandlist->GetCommandList()->ResourceBarrier(
 		1,
 		&CD3DX12_RESOURCE_BARRIER::Transition(
-			src_memory,
+			resource_data.Get(),
 			last_state,
 			now_state
 		)
@@ -110,7 +109,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
 		return error_message;
 	}
-	auto check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+	auto check_error = ResourceBarrier(commandlist, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -121,7 +120,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
 		dynamic_buffer.GetResource(),
 		src_offset,
 		data_size);
-	check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+	check_error = ResourceBarrier(commandlist, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -154,7 +153,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
 		return error_message;
 	}
-	auto check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+	auto check_error = ResourceBarrier(commandlist, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -169,7 +168,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
 		CD3DX12_TEXTURE_COPY_LOCATION Src(dynamic_buffer.GetResource(), real_layout);
 		commandlist->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
 	}
-	check_error = ResourceBarrier(commandlist, resource_data.Get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+	check_error = ResourceBarrier(commandlist, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -325,7 +324,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildCommonDescriptorView(
 }
 PancystarEngine::EngineFailReason ResourceBlockGpu::BuildVertexBufferView(
 	const pancy_resource_size &offset,
-	const pancy_resource_size &block_size,
+	const pancy_resource_size &buffer_size,
 	UINT StrideInBytes,
 	D3D12_VERTEX_BUFFER_VIEW &VBV_out
 )
@@ -336,7 +335,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildVertexBufferView(
 		//创建描述符
 		VBV_out.BufferLocation = resource_data->GetGPUVirtualAddress() + offset;
 		VBV_out.StrideInBytes = StrideInBytes;
-		VBV_out.SizeInBytes = block_size;
+		VBV_out.SizeInBytes = buffer_size;
 	}
 	else
 	{
@@ -348,7 +347,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildVertexBufferView(
 }
 PancystarEngine::EngineFailReason ResourceBlockGpu::BuildIndexBufferView(
 	const pancy_resource_size &offset,
-	const pancy_resource_size &block_size,
+	const pancy_resource_size &buffer_size,
 	DXGI_FORMAT StrideInBytes,
 	D3D12_INDEX_BUFFER_VIEW &IBV_out
 )
@@ -359,7 +358,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildIndexBufferView(
 		//创建描述符
 		IBV_out.BufferLocation = resource_data->GetGPUVirtualAddress() + offset;
 		IBV_out.Format = StrideInBytes;
-		IBV_out.SizeInBytes = block_size;
+		IBV_out.SizeInBytes = buffer_size;
 	}
 	else
 	{

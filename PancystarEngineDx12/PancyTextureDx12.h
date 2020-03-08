@@ -90,9 +90,14 @@ namespace PancystarEngine
 			return texture_data;
 		}
 		~PancyBasicTexture();
+		inline D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc()
+		{
+			return tex_srv_desc;
+		}
 	private:
 		void BuildJsonReflect(PancyJsonReflect **pointer_data) override;
 		PancystarEngine::EngineFailReason InitResource() override;
+		PancystarEngine::EngineFailReason LoadResourceDirect(const std::string &file_name) override;
 	private:
 		PancystarEngine::EngineFailReason LoadPictureFromFile(const PancyCommonTextureDesc &texture_desc);
 		PancystarEngine::EngineFailReason BuildEmptyPicture(const PancyCommonTextureDesc &texture_desc);
@@ -116,5 +121,15 @@ namespace PancystarEngine
 		void RebuildTextureDataPath(const std::string &json_file_name, std::string &tex_data_file_name);
 		void GetJsonFilePath(const std::string &json_file_name, std::string &file_path_out);
 	};
-	
+	static ResourceBlockGpu* GetTextureResourceData(VirtualResourcePointer &virtual_pointer, PancystarEngine::EngineFailReason &check_error);
+	static PancystarEngine::EngineFailReason LoadDDSTextureResource(
+		const std::string &name_resource_in,
+		VirtualResourcePointer &id_need
+	);
+	static PancystarEngine::EngineFailReason BuildTextureResource(
+		const std::string &name_resource_in,
+		PancyCommonTextureDesc &resource_data,
+		VirtualResourcePointer &id_need,
+		bool if_allow_repeat
+	);
 }

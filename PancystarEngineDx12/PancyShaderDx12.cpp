@@ -1888,11 +1888,9 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyC
 	if (now_used_buffer_resource == NULL)
 	{
 		VirtualResourcePointer new_buffer_resource;
-		auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
+		auto check_error = BuildBufferResource(
 			cbuffer_effect_name + "::" + cbuffer_name,
-			&buffer_resource_desc_value,
-			typeid(buffer_resource_desc_value).name(),
-			sizeof(buffer_resource_desc_value),
+			buffer_resource_desc_value,
 			new_buffer_resource,
 			true
 			);

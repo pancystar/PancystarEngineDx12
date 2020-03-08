@@ -72,6 +72,9 @@
     <ClInclude Include="PancyRenderParam.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="PancyAnimationBasic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PancyDx12Basic.cpp">
@@ -126,6 +129,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="PancyRenderParam.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PancyAnimatonBasic.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

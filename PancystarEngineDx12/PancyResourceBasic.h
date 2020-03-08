@@ -137,7 +137,7 @@ namespace PancystarEngine
 		{
 			return resource_id;
 		}
-		inline const PancyBasicVirtualResource *GetResourceData() const
+		inline PancyBasicVirtualResource *GetResourceData()
 		{
 			if (if_NULL)
 			{
@@ -270,13 +270,13 @@ namespace PancystarEngine
 		return PancystarEngine::succeed;
 	}
 	template<class ResourceType>
-	PancystarEngine::EngineFailReason LoadResource(
+	PancystarEngine::EngineFailReason PancyGlobelResourceControl::LoadResource(
 		const std::string &name_resource_in,
 		void *resource_data,
 		const std::string &resource_type,
 		const pancy_resource_size &resource_size,
 		VirtualResourcePointer &id_need,
-		bool if_allow_repeat = false
+		bool if_allow_repeat
 	) 
 	{
 		PancystarEngine::EngineFailReason check_error;

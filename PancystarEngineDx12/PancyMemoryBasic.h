@@ -68,13 +68,13 @@ public:
 	);
 	PancystarEngine::EngineFailReason BuildVertexBufferView(
 		const pancy_resource_size &offset,
-		const pancy_resource_size &block_size,
+		const pancy_resource_size &buffer_size,
 		UINT StrideInBytes,
 		D3D12_VERTEX_BUFFER_VIEW &VBV_out
 	);
 	PancystarEngine::EngineFailReason BuildIndexBufferView(
 		const pancy_resource_size &offset,
-		const pancy_resource_size &block_size,
+		const pancy_resource_size &buffer_size,
 		DXGI_FORMAT StrideInBytes,
 		D3D12_INDEX_BUFFER_VIEW &IBV_out
 	);
@@ -134,6 +134,11 @@ public:
 		void* copy_data,
 		const pancy_resource_size data_size
 	);
+	PancystarEngine::EngineFailReason ResourceBarrier(
+		PancyRenderCommandList *commandlist,
+		const D3D12_RESOURCE_STATES &last_state,
+		const D3D12_RESOURCE_STATES &now_state
+	);
 private:
 	void BuildConstantBufferView(
 		const pancy_resource_size &offset,
@@ -155,12 +160,6 @@ private:
 	void BuildDepthStencilView(
 		const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
 		const D3D12_DEPTH_STENCIL_VIEW_DESC  &DSV_desc
-	);
-	PancystarEngine::EngineFailReason ResourceBarrier(
-		PancyRenderCommandList *commandlist,
-		ID3D12Resource *src_submemory,
-		const D3D12_RESOURCE_STATES &last_state,
-		const D3D12_RESOURCE_STATES &now_state
 	);
 };
 

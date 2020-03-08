@@ -282,6 +282,18 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource()
 		}
 	}
 }
+PancystarEngine::EngineFailReason PancyBasicTexture::LoadResourceDirect(const std::string &file_name)
+{
+	PancyCommonTextureDesc texture_desc;
+	texture_desc.texture_type = PancyTextureType::Texture_Static_Load;
+	texture_desc.texture_data_file = file_name;
+	auto check_error = LoadPictureFromFile(texture_desc);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
 bool PancyBasicTexture::CheckIfResourceLoadFinish()
 {
 	PancyResourceLoadState now_load_state = texture_data->GetResourceLoadingState();
@@ -977,6 +989,61 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 	if (if_compress_gen)
 	{
 		delete compress_image;
+	}
+	return PancystarEngine::succeed;
+}
+ResourceBlockGpu* PancystarEngine::GetTextureResourceData(VirtualResourcePointer & virtual_pointer, PancystarEngine::EngineFailReason & check_error)
+{
+	check_error = PancystarEngine::succeed;
+	auto now_texture_resource_value = virtual_pointer.GetResourceData();
+	if (now_texture_resource_value->GetResourceTypeName != typeid(PancyBasicTexture).name())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the vertex resource is not a texture");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("GetTextureResourceData", error_message);
+		check_error = error_message;
+	}
+	const PancyBasicTexture* texture_real_pointer = dynamic_cast<const PancyBasicTexture*>(now_texture_resource_value);
+	auto gpu_texture_data = texture_real_pointer->GetGpuResourceData();
+	if (gpu_texture_data != NULL)
+	{
+		return gpu_texture_data;
+	}
+	return NULL;
+}
+PancystarEngine::EngineFailReason PancystarEngine::LoadDDSTextureResource(
+	const std::string &name_resource_in,
+	VirtualResourcePointer &id_need
+) 
+{
+	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicTexture>(
+		name_resource_in,
+		id_need,
+		false
+		);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancystarEngine::BuildTextureResource(
+	const std::string &name_resource_in,
+	PancyCommonTextureDesc &resource_data,
+	VirtualResourcePointer &id_need,
+	bool if_allow_repeat
+)
+{
+	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicTexture>(
+		name_resource_in,
+		&resource_data,
+		typeid(PancyCommonTextureDesc).name(),
+		sizeof(PancyCommonTextureDesc),
+		id_need,
+		if_allow_repeat
+		);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
 	}
 	return PancystarEngine::succeed;
 }

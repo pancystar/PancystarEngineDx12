@@ -72,42 +72,25 @@ namespace PancystarEngine
 	{
 	protected:
 		//几何体的渲染buffer
-		//SubMemoryPointer geometry_vertex_buffer;
-		//SubMemoryPointer geometry_index_buffer;
-		//SubMemoryPointer geometry_adjindex_buffer;
-		pancy_object_id geometry_vertex_buffer;
-		pancy_object_id geometry_index_buffer;
-		pancy_object_id geometry_adjindex_buffer;
+		VirtualResourcePointer geometry_vertex_buffer;
+		VirtualResourcePointer geometry_index_buffer;
+		VirtualResourcePointer geometry_adjindex_buffer;
 		D3D12_VERTEX_BUFFER_VIEW geometry_vertex_buffer_view;
 		D3D12_INDEX_BUFFER_VIEW geometry_index_buffer_view;
+		D3D12_INDEX_BUFFER_VIEW geometry_adj_index_buffer_view;
 		uint32_t all_vertex;
 		uint32_t all_index;
 		uint32_t all_index_adj;
 		//几何体的创建信息
 		bool if_create_adj;
 		bool if_buffer_created;
-		
 	public:
 		GeometryBasic();
 		PancystarEngine::EngineFailReason Create();
 		virtual ~GeometryBasic();
-		/*
-		inline ComPtr<ID3D12Resource> GetVertexBuffer() 
-		{
-			int64_t res_size;
-			return SubresourceControl::GetInstance()->GetResourceData(geometry_vertex_buffer, res_size)->GetResource();
-		};
-		inline ComPtr<ID3D12Resource> GetIndexBuffer()
-		{
-			int64_t res_size;
-			return SubresourceControl::GetInstance()->GetResourceData(geometry_index_buffer, res_size)->GetResource();
-		};
-		inline ComPtr<ID3D12Resource> GetIndexAdjBuffer()
-		{
-			int64_t res_size;
-			return SubresourceControl::GetInstance()->GetResourceData(geometry_adjindex_buffer, res_size)->GetResource();
-		};
-		*/
+		//检测数据是否正确创建
+		bool CheckIfCreateSucceed();
+		//获取缓冲区数据的大小
 		inline uint32_t GetVetexNum()
 		{
 			return all_vertex;
@@ -116,6 +99,11 @@ namespace PancystarEngine
 		{
 			return all_index;
 		}
+		inline uint32_t GetIndexAdjNum()
+		{
+			return all_index_adj;
+		}
+		//获取缓冲区数据的渲染指针(描述符)
 		inline D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()
 		{
 			return geometry_vertex_buffer_view;
@@ -124,11 +112,23 @@ namespace PancystarEngine
 		{
 			return geometry_index_buffer_view;
 		};
-		inline pancy_object_id GetVertexBufferID() 
+		inline D3D12_INDEX_BUFFER_VIEW GetIndexAdjBufferView()
+		{
+			return geometry_adj_index_buffer_view;
+		};
+		//获取缓冲区数据的虚拟指针
+		inline VirtualResourcePointer& GetVertexBufferResource()
 		{
 			return geometry_vertex_buffer;
 		};
-		PancystarEngine::EngineFailReason CheckGeometryState(ResourceStateType &now_state);
+		inline VirtualResourcePointer& GetIndexBufferResource()
+		{
+			return geometry_index_buffer;
+		};
+		inline VirtualResourcePointer& GetAdjIndexBufferResource()
+		{
+			return geometry_adjindex_buffer;
+		};
 	protected:
 		virtual PancystarEngine::EngineFailReason InitGeometryDesc(
 			bool &if_create_adj
@@ -137,11 +137,12 @@ namespace PancystarEngine
 			uint32_t &all_vertex_need, 
 			uint32_t &all_index_need, 
 			uint32_t &all_index_adj_need,
-			pancy_object_id &geometry_vertex_buffer,
-			pancy_object_id &geometry_index_buffer,
-			pancy_object_id &geometry_adjindex_buffer,
+			VirtualResourcePointer &geometry_vertex_buffer,
+			VirtualResourcePointer &geometry_index_buffer,
+			VirtualResourcePointer &geometry_adjindex_buffer,
 			D3D12_VERTEX_BUFFER_VIEW &geometry_vertex_buffer_view_in,
-			D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in
+			D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in,
+			D3D12_INDEX_BUFFER_VIEW &geometry_index_adj_buffer_view_in
 		) = 0;
 	};
 	
@@ -180,11 +181,12 @@ namespace PancystarEngine
 			uint32_t &all_vertex_need,
 			uint32_t &all_index_need,
 			uint32_t &all_index_adj_need,
-			pancy_object_id &geometry_vertex_buffer,
-			pancy_object_id &geometry_index_buffer,
-			pancy_object_id &geometry_adjindex_buffer,
+			VirtualResourcePointer &geometry_vertex_buffer,
+			VirtualResourcePointer &geometry_index_buffer,
+			VirtualResourcePointer &geometry_adjindex_buffer,
 			D3D12_VERTEX_BUFFER_VIEW &geometry_vertex_buffer_view_in,
-			D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in
+			D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in,
+			D3D12_INDEX_BUFFER_VIEW &geometry_index_adj_buffer_view_in
 		);
 	};
 	template<typename T>
@@ -243,11 +245,12 @@ namespace PancystarEngine
 		uint32_t &all_vertex_need,
 		uint32_t &all_index_need,
 		uint32_t &all_index_adj_need,
-		pancy_object_id &geometry_vertex_buffer_in,
-		pancy_object_id &geometry_index_buffer_in,
-		pancy_object_id &geometry_adjindex_buffer_in,
+		VirtualResourcePointer &geometry_vertex_buffer_in,
+		VirtualResourcePointer &geometry_index_buffer_in,
+		VirtualResourcePointer &geometry_adjindex_buffer_in,
 		D3D12_VERTEX_BUFFER_VIEW &geometry_vertex_buffer_view_in,
-		D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in
+		D3D12_INDEX_BUFFER_VIEW &geometry_index_buffer_view_in,
+		D3D12_INDEX_BUFFER_VIEW &geometry_index_adj_buffer_view_in
 	) 
 	{
 		PancystarEngine::EngineFailReason check_error;
@@ -271,41 +274,82 @@ namespace PancystarEngine
 			return check_error;
 		}
 		//创建顶点缓冲区
-		std::string vertex_subresource_name;
-		std::string index_subresource_name;
-		check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(PancystarEngine::Buffer_Vertex, VertexBufferSize, vertex_subresource_name);
-		if (!check_error.CheckIfSucceed()) 
-		{
-			return check_error;
-		}
-		Json::Value json_vertex;
-		PancyJsonTool::GetInstance()->SetJsonValue(json_vertex, "BufferType", "Buffer_Vertex");
-		PancyJsonTool::GetInstance()->SetJsonValue(json_vertex, "SubResourceFile", vertex_subresource_name);
-		check_error = PancyBasicBufferControl::GetInstance()->LoadResource("VertexBuffer", json_vertex, geometry_vertex_buffer_in,true);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		check_error = PancyBasicBufferControl::GetInstance()->CopyCpuResourceToGpu(geometry_vertex_buffer_in, vertex_data, VertexBufferSize,0);
+		PancyCommonBufferDesc buffer_resource_desc;
+		buffer_resource_desc.buffer_type = Buffer_Vertex;
+		buffer_resource_desc.buffer_res_desc.Alignment = 0;
+		buffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
+		buffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		buffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+		buffer_resource_desc.buffer_res_desc.Height = 1;
+		buffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		buffer_resource_desc.buffer_res_desc.MipLevels = 1;
+		buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
+		buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
+		buffer_resource_desc.buffer_res_desc.Width = VertexBufferSize;
+		auto check_error = BuildBufferResource(
+			"vertex_buffer",
+			buffer_resource_desc,
+			geometry_vertex_buffer_in,
+			true
+		);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		//创建索引缓冲区
-		check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(PancystarEngine::Buffer_Index, IndexBufferSize, index_subresource_name);
+		buffer_resource_desc.buffer_type = Buffer_Index;
+		buffer_resource_desc.buffer_res_desc.Width = IndexBufferSize;
+		auto check_error = BuildBufferResource(
+			"index_buffer",
+			buffer_resource_desc,
+			geometry_index_buffer_in,
+			true
+		);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		Json::Value json_index;
-		PancyJsonTool::GetInstance()->SetJsonValue(json_index, "BufferType", "Buffer_Index");
-		PancyJsonTool::GetInstance()->SetJsonValue(json_index, "SubResourceFile", index_subresource_name);
-		check_error = PancyBasicBufferControl::GetInstance()->LoadResource("IndexBuffer", json_index, geometry_index_buffer_in, true);
+		//todo 邻接三角面计算
+		if (if_model_adj)
+		{
+		}
+		//获取用于拷贝的commond list
+		PancyRenderCommandList *copy_render_list;
+		PancyThreadIdGPU copy_render_list_ID;
+		check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		check_error = PancyBasicBufferControl::GetInstance()->CopyCpuResourceToGpu(geometry_index_buffer_in, index_data, IndexBufferSize, 0);
+		//拷贝资源数据(顶点缓冲区)
+		ResourceBlockGpu* vertex_buffer_gpu_resource = GetBufferResourceData(geometry_vertex_buffer_in, check_error);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, vertex_data, VertexBufferSize, *vertex_buffer_gpu_resource);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//拷贝资源数据(索引缓冲区)
+		ResourceBlockGpu* index_buffer_gpu_resource = GetBufferResourceData(geometry_index_buffer_in, check_error);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, index_data, IndexBufferSize, *index_buffer_gpu_resource);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		copy_render_list->UnlockPrepare();
+		//提交渲染命令
+		ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
+		//分配等待眼位
+		PancyFenceIdGPU WaitFence;
+		ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
+		check_error = vertex_buffer_gpu_resource->SetResourceCopyBrokenFence(WaitFence);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -324,30 +368,14 @@ namespace PancystarEngine
 				index_data = NULL;
 			}
 		}
-		//todo 邻接三角面计算
-		if (if_model_adj) 
-		{
-		}
 		//创建顶点缓存视图
-		SubMemoryPointer vertex_buffer_res;
-		check_error = PancyBasicBufferControl::GetInstance()->GetBufferSubResource(geometry_vertex_buffer_in, vertex_buffer_res);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		check_error = SubresourceControl::GetInstance()->BuildVertexBufferView(vertex_buffer_res, sizeof(T), geometry_vertex_buffer_view_in);
+		check_error = vertex_buffer_gpu_resource->BuildVertexBufferView(0, VertexBufferSize,sizeof(T), geometry_vertex_buffer_view_in);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		//创建索引缓存视图
-		SubMemoryPointer index_buffer_res;
 		DXGI_FORMAT index_format;
-		check_error = PancyBasicBufferControl::GetInstance()->GetBufferSubResource(geometry_index_buffer_in, index_buffer_res);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
 		if (sizeof(IndexType) == sizeof(UINT))
 		{
 			index_format = DXGI_FORMAT_R32_UINT;
@@ -356,7 +384,7 @@ namespace PancystarEngine
 		{
 			index_format = DXGI_FORMAT_R16_UINT;
 		}
-		check_error = SubresourceControl::GetInstance()->BuildIndexBufferView(index_buffer_res, index_format, geometry_index_buffer_view_in);
+		check_error = index_buffer_gpu_resource->BuildIndexBufferView(0, IndexBufferSize, index_format, geometry_vertex_buffer_view_in);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -374,7 +402,7 @@ namespace PancystarEngine
 		if (!if_save_CPU_data) 
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL,"the model doesn't save the data to cpu");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get model point data", error_message);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("GeometryCommonModel<T>::GetModelData", error_message);
 			return error_message;
 		}
 		for (int i = 0; i < all_vertex; ++i)

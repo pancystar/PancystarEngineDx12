@@ -136,144 +136,44 @@ PancyBasicBuffer::~PancyBasicBuffer()
 		delete buffer_data;
 	}
 }
-
-//骨骼动画缓冲区
-PancySkinAnimationBuffer::PancySkinAnimationBuffer(const pancy_resource_size &animation_buffer_size_in, const pancy_resource_size &bone_buffer_size_in)
+ResourceBlockGpu * PancystarEngine::GetBufferResourceData(VirtualResourcePointer & virtual_pointer, PancystarEngine::EngineFailReason & check_error)
 {
-	//获取动画结果缓冲区以及骨骼矩阵缓冲区的大小，清零当前指针的位置
-	now_used_position_animation = 0;
-	animation_buffer_size = animation_buffer_size_in;
-	now_used_position_bone = 0;
-	bone_buffer_size = bone_buffer_size_in;
-	bone_data_pointer = NULL;
-}
-PancySkinAnimationBuffer::~PancySkinAnimationBuffer() 
-{
-}
-PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
-{
-	PancystarEngine::EngineFailReason check_error;
-	std::string file_name = "pancy_skin_mesh_buffer";
-	Json::Value root_value;
-	std::string buffer_subresource_name;
-	//创建存储蒙皮结果的缓冲区资源(静态缓冲区)
-	PancyCommonBufferDesc animation_buffer_resource_desc;
-	animation_buffer_resource_desc.buffer_type = Buffer_UnorderedAccess_static;
-	animation_buffer_resource_desc.buffer_res_desc.Alignment = 0;
-	animation_buffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
-	animation_buffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	animation_buffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	animation_buffer_resource_desc.buffer_res_desc.Height = 1;
-	animation_buffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	animation_buffer_resource_desc.buffer_res_desc.MipLevels = 1;
-	animation_buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
-	animation_buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
-	animation_buffer_resource_desc.buffer_res_desc.Width = animation_buffer_size;
-	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
-		file_name,
-		&animation_buffer_resource_desc,
-		typeid(animation_buffer_resource_desc).name(),
-		sizeof(animation_buffer_resource_desc),
-		buffer_animation,
-		true
-		);
-	if (!check_error.CheckIfSucceed())
+	check_error = PancystarEngine::succeed;
+	auto now_buffer_resource_value = virtual_pointer.GetResourceData();
+	if (now_buffer_resource_value->GetResourceTypeName != typeid(PancyBasicBuffer).name())
 	{
-		return check_error;
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "the vertex resource is not a buffer");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("GetBufferResourceData", error_message);
+		check_error = error_message;
 	}
-	//加载存储骨骼矩阵的缓冲区资源(动态缓冲区)
-	file_name = "pancy_skin_bone_buffer";
-	PancyCommonBufferDesc bone_buffer_resource_desc;
-	bone_buffer_resource_desc.buffer_type = Buffer_ShaderResource_dynamic;
-	bone_buffer_resource_desc.buffer_res_desc.Alignment = 0;
-	bone_buffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
-	bone_buffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	bone_buffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	bone_buffer_resource_desc.buffer_res_desc.Height = 1;
-	bone_buffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	bone_buffer_resource_desc.buffer_res_desc.MipLevels = 1;
-	bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
-	bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
-	bone_buffer_resource_desc.buffer_res_desc.Width = bone_buffer_size;
-	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
-		file_name,
-		&animation_buffer_resource_desc,
-		typeid(animation_buffer_resource_desc).name(),
-		sizeof(animation_buffer_resource_desc),
-		buffer_bone,
-		true
-		);
-	if (!check_error.CheckIfSucceed())
+	const PancyBasicBuffer* buffer_real_pointer = dynamic_cast<const PancyBasicBuffer*>(now_buffer_resource_value);
+	auto gpu_buffer_data = buffer_real_pointer->GetGpuResourceData();
+	if (gpu_buffer_data != NULL)
 	{
-		return check_error;
+		return gpu_buffer_data;
 	}
-	//将存储骨骼矩阵的缓冲区在CPU端的指针进行保留
-	const PancyBasicBuffer *buffer_pointer = dynamic_cast<const PancyBasicBuffer*>(buffer_bone.GetResourceData());
-	bone_data_pointer = buffer_pointer->GetBufferCPUPointer();
-	if (bone_data_pointer == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL,"failed to get skinmesh bone buffer cpu pointer from resource");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancySkinAnimationBuffer::Create", error_message);
-		return error_message;
-	}
-	return PancystarEngine::succeed;
+	return NULL;
 }
-void PancySkinAnimationBuffer::ClearUsedBuffer()
-{
-	now_used_position_animation = 0;
-	animation_block_map.clear();
-	now_used_position_bone = 0;
-	bone_block_map.clear();
-}
-//从当前缓冲区中请求一块骨骼动画数据
-PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildAnimationBlock(
-	const pancy_resource_size &vertex_num, 
-	pancy_object_id &block_id,
-	SkinAnimationBlock &new_animation_block)
-{
-	pancy_resource_size now_ask_size = vertex_num * sizeof(mesh_animation_data);
-	new_animation_block.start_pos = now_used_position_animation;
-	new_animation_block.block_size = now_ask_size;
-	//判断当前的动画缓冲区是否能够开出请求的顶点存储块
-	if ((now_used_position_animation + now_ask_size) >= animation_buffer_size)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The skin mesh animation buffer is full");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Animation Block", error_message);
-		return error_message;
-	}
-	//更新当前的缓冲区指针位置
-	now_used_position_animation = now_used_position_animation + now_ask_size;
-	//将内存块导入到map中
-	pancy_object_id now_ID = animation_block_map.size();
-	animation_block_map.insert(std::pair<pancy_object_id, SkinAnimationBlock>(now_ID, new_animation_block));
-	block_id = now_ID;
-	return PancystarEngine::succeed;
-}
-//从当前骨骼矩阵缓冲区中请求一块数据区
-PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildBoneBlock(
-	const pancy_resource_size &matrix_num, 
-	const DirectX::XMFLOAT4X4 *matrix_data,
-	pancy_object_id &block_id,
-	SkinAnimationBlock &new_bone_block
+PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResource(
+	const std::string &name_resource_in,
+	PancyCommonBufferDesc &resource_data,
+	VirtualResourcePointer &id_need,
+	bool if_allow_repeat
 )
 {
-	pancy_resource_size now_ask_size = matrix_num * sizeof(DirectX::XMFLOAT4X4);
-	new_bone_block.start_pos = now_used_position_bone;
-	new_bone_block.block_size = now_ask_size;
-	//判断当前的动画缓冲区是否能够开出请求的顶点存储块
-	if ((now_used_position_bone + now_ask_size) >= bone_buffer_size)
+	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
+		name_resource_in,
+		&resource_data,
+		typeid(PancyCommonBufferDesc).name(),
+		sizeof(PancyCommonBufferDesc),
+		id_need,
+		if_allow_repeat
+		);
+	if (!check_error.CheckIfSucceed())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Bone Matrix buffer is full");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Bone Matrix Block", error_message);
-		return error_message;
+		return check_error;
 	}
-	//将数据拷贝到当前的缓冲区位置
-	memcpy(bone_data_pointer + (new_bone_block.start_pos / sizeof(UINT8)), matrix_data, new_bone_block.block_size);
-	//更新当前的缓冲区指针位置
-	now_used_position_bone = now_used_position_bone + now_ask_size;
-	//将内存块导入到map中
-	pancy_object_id now_ID = bone_block_map.size();
-	bone_block_map.insert(std::pair<pancy_object_id, SkinAnimationBlock>(now_ID, new_bone_block));
-	block_id = now_ID;
 	return PancystarEngine::succeed;
 }
+
+

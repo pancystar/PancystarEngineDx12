@@ -8,10 +8,13 @@
 #include"PancyThreadBasic.h"
 #include"PancyInput.h"
 #include"PancyCamera.h"
+#include"PancyRenderParam.h"
+#include"PancyAnimationBasic.h"
+#include"PancyDescriptor.h"
 class SceneRoot
 {
 private:
-	std::vector<std::unordered_map<pancy_object_id, std::unordered_map<std::string, PancystarEngine::PancyConstantBuffer *>>> frame_constant_buffer;
+	std::vector<std::unordered_map<pancy_object_id, std::unordered_map<std::string, PancyConstantBuffer *>>> frame_constant_buffer;
 protected:
 	int32_t                               back_buffer_num;
 	DirectX::XMFLOAT3                     scene_center_pos;//³¡¾°ÖÐÐÄ
@@ -20,6 +23,11 @@ protected:
 	int32_t                               Scene_height;
 	bool                                  If_dsv_loaded;
 	std::vector<pancy_object_id>          Default_depthstencil_buffer;
+
+	PancystarEngine::PancyCommonTextureDesc default_tex_desc_RGB;
+	PancystarEngine::PancyCommonTextureDesc default_tex_desc_SRGB;
+	PancystarEngine::PancyCommonTextureDesc default_tex_desc_float;
+	PancystarEngine::PancyCommonTextureDesc default_tex_desc_depthstencil;
 public:
 	SceneRoot();
 	PancystarEngine::EngineFailReason Create(int32_t width_in, int32_t height_in);
@@ -49,12 +57,12 @@ protected:
 	PancystarEngine::EngineFailReason GetGlobelCbuffer(
 		const pancy_object_id &PSO_id,
 		const std::string &cbuffer_name,
-		PancystarEngine::PancyConstantBuffer ** cbuffer_data
+		PancyConstantBuffer ** cbuffer_data
 	);
 	PancystarEngine::EngineFailReason GetGlobelCbuffer(
 		const pancy_object_id &PSO_id, 
 		const std::string &cbuffer_name, 
-		std::vector<PancystarEngine::PancyConstantBuffer*> &cbuffer_data
+		std::vector<PancyConstantBuffer*> &cbuffer_data
 	);
 };
 
