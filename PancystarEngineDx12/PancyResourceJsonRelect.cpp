@@ -13,6 +13,10 @@ const std::string PancyJsonReflect::GetParentName(const std::string &name_in)
 	}
 	return name_in.substr(0, max_value);
 }
+PancystarEngine::EngineFailReason PancyJsonReflect::InitChildReflectClass() 
+{
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason PancyJsonReflect::AddChildStruct(PancyJsonReflect*data_pointer, const std::string &name, const pancy_resource_size &data_size)
 {
 	child_node_list[name] = data_pointer;
@@ -161,7 +165,7 @@ void PancyJsonReflect::BuildChildValueMap()
 }
 PancystarEngine::EngineFailReason PancyJsonReflect::TranslateStringToEnum(const std::string &basic_string, std::string &enum_type, std::string &enum_value_string, int32_t &enum_value_data)
 {
-	auto divide_part = basic_string.find("::");
+	auto divide_part = basic_string.find("@-->");
 	if (divide_part < 0)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not translate enum variable: " + basic_string);
@@ -169,7 +173,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::TranslateStringToEnum(const 
 		return error_message;
 	}
 	enum_type = basic_string.substr(0, divide_part);
-	enum_value_string = basic_string.substr(divide_part + 2);
+	enum_value_string = basic_string.substr(divide_part + 4);
 	enum_value_data = PancyJsonTool::GetInstance()->GetEnumValue(enum_type, enum_value_string);
 	if (enum_value_data == -1)
 	{
@@ -297,19 +301,20 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetStringValue(JsonReflectDa
 		//枚举变量字符串
 		std::string value_enum_type;
 		std::string value_enum_value_name;
+		//检测枚举变量是否填写正确
+		if (string_value.find(reflect_data.data_type_name) < 0)
+		{
+			//枚举类型不匹配
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "enum member : " + reflect_data.data_name + " write wrong, need type: " + reflect_data.data_type_name);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetStringValue", error_message);
+			return error_message;
+		}
+		//根据枚举变量的类型，将枚举变量赋值
 		int32_t enum_value;
 		check_error = TranslateStringToEnum(string_value, value_enum_type, value_enum_value_name, enum_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
-		}
-		//根据枚举变量的类型，将枚举变量赋值
-		if (value_enum_type != reflect_data.data_type_name)
-		{
-			//枚举类型不匹配
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "enum member: " + reflect_data.data_name + " :type dismatch: " + value_enum_type + " Dismatch： " + reflect_data.data_type_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetStringValue", error_message);
-			return error_message;
 		}
 		auto check_error = PancyJsonTool::GetInstance()->SetEnumMemberValue(value_enum_type, reflect_data.data_pointer, enum_value);
 		if (!check_error.CheckIfSucceed())
@@ -878,7 +883,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveSingleValueMemberToJson(
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SaveSingleValueMemberToJson", error_message);
 			return error_message;
 		}
-		enum_name_final = reflect_data.data_type_name + "::" + enum_name_final;
+		enum_name_final = reflect_data.data_type_name + "@-->" + enum_name_final;
 		PancyJsonTool::GetInstance()->SetJsonValue(root_value, TranslateFullNameToRealName(reflect_data.data_name), enum_name_final);
 		break;
 	}
@@ -915,7 +920,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveArrayEnumMemberToJson(co
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SaveArrayEnumMemberToJson", error_message);
 			return error_message;
 		}
-		enum_name_final = member_enum_type_name + "::" + enum_name_final;
+		enum_name_final = member_enum_type_name + "@-->" + enum_name_final;
 		PancyJsonTool::GetInstance()->AddJsonArrayValue(root_value, TranslateFullNameToRealName(reflect_data.data_name), enum_name_final);
 	}
 	return PancystarEngine::succeed;
@@ -944,7 +949,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveVectorEnumMemberToJson(c
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SaveVectorEnumMemberToJson", error_message);
 			return error_message;
 		}
-		enum_name_final = member_enum_type_name + "::" + enum_name_final;
+		enum_name_final = member_enum_type_name + "@-->" + enum_name_final;
 		PancyJsonTool::GetInstance()->AddJsonArrayValue(root_value, TranslateFullNameToRealName(reflect_data.data_name), enum_name_final);
 	}
 	return PancystarEngine::succeed;

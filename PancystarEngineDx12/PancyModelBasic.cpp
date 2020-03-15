@@ -14,8 +14,23 @@ PancySubModel::~PancySubModel()
 	}
 }
 //模型类
-PancyBasicModel::PancyBasicModel(const std::string &resource_name, const Json::Value &root_value)
+PancyBasicModel::PancyBasicModel()
 {
+}
+PancystarEngine::EngineFailReason PancyBasicModel::Create(const std::string &resource_name)
+{
+	Json::Value root_value;
+	auto check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_name, root_value);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	check_error = InitResource(root_value, resource_name);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
 }
 PancyBasicModel::~PancyBasicModel()
 {
@@ -37,7 +52,6 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &fi
 		return error_message;
 	}
 	//读取偏移矩阵
-	int bone_num_need;
 	instream.read(reinterpret_cast<char*>(&bone_num), sizeof(bone_num));
 	instream.read(reinterpret_cast<char*>(offset_matrix_array), bone_num * sizeof(DirectX::XMFLOAT4X4));
 	//先读取第一个入栈符
@@ -484,7 +498,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 	}
 	//读取模型的材质数据
 	Json::Value material_value = root_value.get("material", Json::Value::null);
-	for (int i = 0; i < material_value.size(); ++i)
+	for (auto i = 0; i < material_value.size(); ++i)
 	{
 		std::unordered_map<TexType, pancy_object_id> now_material_need;
 		std::vector<pancy_object_id> now_material_id_need;
@@ -566,7 +580,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		}
 		//读取动画信息
 		Json::Value skin_animation_value = root_value.get("SkinAnimation", Json::Value::null);
-		for (int i = 0; i < skin_animation_value.size(); ++i)
+		for (auto i = 0; i < skin_animation_value.size(); ++i)
 		{
 			animation_set new_animation;
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, skin_animation_value, i, pancy_json_data_type::json_data_string, rec_value);
@@ -710,7 +724,6 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 }
 bool PancyBasicModel::CheckIfLoadSucceed()
 {
-	bool if_texture_succeed_load;
 	//检测所有的纹理资源是否已经加载完毕
 	for (int i = 0; i < texture_list.size(); ++i)
 	{
@@ -724,7 +737,7 @@ bool PancyBasicModel::CheckIfLoadSucceed()
 	for (int i = 0; i < model_resource_list.size(); ++i)
 	{
 		bool if_mesh_succeed_load = model_resource_list[i]->CheckIfLoadSucceed();
-		if (!if_texture_succeed_load)
+		if (!if_mesh_succeed_load)
 		{
 			return false;
 		}

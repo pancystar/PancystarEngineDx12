@@ -65,6 +65,7 @@ PancystarEngine::EngineFailReason VirtualResourcePointer::MakeShared(const pancy
 		return check_error;
 	}
 	resource_id = resource_id_in;
+	if_NULL = false;
 	return PancystarEngine::succeed;
 }
 //中间动态资源的分配池

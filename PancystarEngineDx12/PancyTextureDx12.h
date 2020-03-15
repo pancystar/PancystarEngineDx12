@@ -65,7 +65,6 @@ namespace PancystarEngine
 	public:
 		CommonTextureJsonReflect();
 	private:
-		PancystarEngine::EngineFailReason InitChildReflectClass() override;
 		void InitBasicVariable() override;
 	};
 	//ÎÆÀí×ÊÔ´
@@ -121,12 +120,12 @@ namespace PancystarEngine
 		void RebuildTextureDataPath(const std::string &json_file_name, std::string &tex_data_file_name);
 		void GetJsonFilePath(const std::string &json_file_name, std::string &file_path_out);
 	};
-	static ResourceBlockGpu* GetTextureResourceData(VirtualResourcePointer &virtual_pointer, PancystarEngine::EngineFailReason &check_error);
-	static PancystarEngine::EngineFailReason LoadDDSTextureResource(
+	ResourceBlockGpu* GetTextureResourceData(VirtualResourcePointer &virtual_pointer, PancystarEngine::EngineFailReason &check_error);
+	PancystarEngine::EngineFailReason LoadDDSTextureResource(
 		const std::string &name_resource_in,
 		VirtualResourcePointer &id_need
 	);
-	static PancystarEngine::EngineFailReason BuildTextureResource(
+	PancystarEngine::EngineFailReason BuildTextureResource(
 		const std::string &name_resource_in,
 		PancyCommonTextureDesc &resource_data,
 		VirtualResourcePointer &id_need,

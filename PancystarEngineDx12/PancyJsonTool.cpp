@@ -139,9 +139,11 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 )
 {
 	//todo:不能用::来设计json的enum格式，因为系统会使用::来代表命名空间，最终使用的时候需要改成-->
+	/*
 	PancystarEngine::EngineFailReason error_message(0, "donot used,need update");
 	PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetJsonMemberData", error_message);
 	return error_message;
+	*/
 	if (enum_type_value == Json::Value::null)
 	{
 		//未能获得json数据
@@ -230,6 +232,13 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 			return error_mesage;
 		}
 		variable_value.bool_value = enum_type_value.asBool();
+	}
+	else 
+	{
+		//未能获得json数据
+		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not parse value of variable " + member_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
+		return error_mesage;
 	}
 	return PancystarEngine::succeed;
 }

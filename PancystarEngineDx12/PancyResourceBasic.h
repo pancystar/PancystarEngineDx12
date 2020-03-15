@@ -247,10 +247,10 @@ namespace PancystarEngine
 		//资源加载判断重复
 		if (!if_allow_repeat)
 		{
-			auto check_data = resource_name_list.find(name_resource_in);
+			auto check_data = resource_name_list.find(desc_file_in);
 			if (check_data != resource_name_list.end())
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "repeat load resource : " + name_resource_in, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
+				PancystarEngine::EngineFailReason error_message(E_FAIL, "repeat load resource : " + desc_file_in, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Resource", error_message);
 				return error_message;
 			}
@@ -262,7 +262,7 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
-		check_error = AddResourceToControl(name_resource_in, new_data, res_pointer, if_allow_repeat);
+		check_error = AddResourceToControl(desc_file_in, new_data, res_pointer, if_allow_repeat);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -293,12 +293,12 @@ namespace PancystarEngine
 		}
 		//创建一个新的资源
 		PancyBasicVirtualResource *new_data = new ResourceType(if_allow_repeat);
-		check_error = new_data->Create(desc_file_in, resource_data, resource_type, resource_size);
+		check_error = new_data->Create(name_resource_in, resource_data, resource_type, resource_size);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		check_error = AddResourceToControl(name_resource_in, new_data, res_pointer, if_allow_repeat);
+		check_error = AddResourceToControl(name_resource_in, new_data, id_need, if_allow_repeat);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;

@@ -286,7 +286,7 @@ namespace PancystarEngine
 		buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
 		buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
 		buffer_resource_desc.buffer_res_desc.Width = VertexBufferSize;
-		auto check_error = BuildBufferResource(
+		check_error = BuildBufferResource(
 			"vertex_buffer",
 			buffer_resource_desc,
 			geometry_vertex_buffer_in,
@@ -299,7 +299,7 @@ namespace PancystarEngine
 		//创建索引缓冲区
 		buffer_resource_desc.buffer_type = Buffer_Index;
 		buffer_resource_desc.buffer_res_desc.Width = IndexBufferSize;
-		auto check_error = BuildBufferResource(
+		check_error = BuildBufferResource(
 			"index_buffer",
 			buffer_resource_desc,
 			geometry_index_buffer_in,
@@ -384,7 +384,7 @@ namespace PancystarEngine
 		{
 			index_format = DXGI_FORMAT_R16_UINT;
 		}
-		check_error = index_buffer_gpu_resource->BuildIndexBufferView(0, IndexBufferSize, index_format, geometry_vertex_buffer_view_in);
+		check_error = index_buffer_gpu_resource->BuildIndexBufferView(0, IndexBufferSize, index_format, geometry_index_buffer_view_in);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;

@@ -19,7 +19,7 @@ BindlessResourceViewSegmental::BindlessResourceViewSegmental(
 	descriptor_heap_data = descriptor_heap_data_in.Get();
 }
 //根据描述符页的指针信息，在描述符堆开辟描述符
-PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildShaderResourceView(const BindlessResourceViewPointer &resource_view_pointer)
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildShaderResourceView(BindlessResourceViewPointer &resource_view_pointer)
 {
 	for (int i = 0; i < resource_view_pointer.resource_view_num; ++i)
 	{
@@ -448,7 +448,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessShaderReso
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelDescriptor(
 	const std::string &globel_name,
 	const std::vector<BasicDescriptorDesc> &SRV_desc,
-	const std::vector <VirtualResourcePointer>& memory_data,
+	std::vector <VirtualResourcePointer>& memory_data,
 	const bool if_build_multi_buffer
 )
 {
@@ -510,7 +510,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::GetGlobelDesciptorID(cons
 
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindDescriptor(
 	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
-	const std::vector<VirtualResourcePointer>& memory_data,
+	std::vector<VirtualResourcePointer>& memory_data,
 	const bool if_build_multi_buffer,
 	pancy_object_id &descriptor_id
 )
@@ -1007,7 +1007,7 @@ pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const Pa
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonDescriptor(
 	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
-	const std::vector<VirtualResourcePointer>& memory_data,
+	std::vector<VirtualResourcePointer>& memory_data,
 	const bool if_build_multi_buffer,
 	BindDescriptorPointer &descriptor_id
 )
@@ -1055,7 +1055,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonBindles
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonGlobelDescriptor(
 	const std::string &globel_srv_name,
 	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
-	const std::vector<VirtualResourcePointer>& memory_data,
+	std::vector<VirtualResourcePointer>& memory_data,
 	const bool if_build_multi_buffer
 )
 {

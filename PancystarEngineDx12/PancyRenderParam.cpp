@@ -119,7 +119,7 @@ bool BasicRenderParam::CheckIfInitFinished()
 		bind_shader_resource_num == bind_shader_resource.size() &&
 		bindless_shader_resource_num == bindless_shader_resource.size())
 	{
-		if_render_param_inited == true;
+		if_render_param_inited = true;
 	}
 	return if_render_param_inited;
 }
@@ -204,10 +204,9 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 	{
 		const std::string &cbuffer_name = (*private_cbuffer_desc)[i].descriptor_name;
 		const pancy_object_id &now_bind_id = (*private_cbuffer_desc)[i].rootsignature_slot;
-		const Json::Value *cbuffer_desc_root;
 		//首先为所有的私有cbuffer开辟空间
 		std::vector<PancyConstantBuffer*> cbuffer_double_list;
-		for (int i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
+		for (UINT i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
 		{
 			std::string pso_divide_path;
 			std::string pso_divide_name;
@@ -225,7 +224,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 		//然后为私有的cbuffer创建描述符
 		std::vector<BasicDescriptorDesc> descriptor_desc_list;
 		std::vector<VirtualResourcePointer> cbuffer_memory_data;
-		for (int i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
+		for (UINT i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
 		{
 			BasicDescriptorDesc cbuffer_desc;
 			cbuffer_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeConstantBufferView;

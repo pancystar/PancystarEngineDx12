@@ -101,7 +101,7 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	}
 	//获取资源堆的偏移大小
 	auto rtv_offset = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	//在资源堆上创建RTV 
+	//在资源堆上创建RTV
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
 	for (UINT n = 0; n < FrameCount; n++)
 	{

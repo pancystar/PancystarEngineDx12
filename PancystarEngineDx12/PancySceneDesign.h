@@ -11,6 +11,7 @@
 #include"PancyRenderParam.h"
 #include"PancyAnimationBasic.h"
 #include"PancyDescriptor.h"
+#include"PancyDescriptor.h"
 class SceneRoot
 {
 private:
@@ -22,8 +23,9 @@ protected:
 	int32_t                               Scene_width;
 	int32_t                               Scene_height;
 	bool                                  If_dsv_loaded;
-	std::vector<pancy_object_id>          Default_depthstencil_buffer;
+	std::vector<PancystarEngine::VirtualResourcePointer>   Default_depthstencil_buffer;
 
+	//与屏幕大小一致的几种纹理格式(普通RGB，SRGB，浮点纹理，标准D24S8深度缓冲区)
 	PancystarEngine::PancyCommonTextureDesc default_tex_desc_RGB;
 	PancystarEngine::PancyCommonTextureDesc default_tex_desc_SRGB;
 	PancystarEngine::PancyCommonTextureDesc default_tex_desc_float;
@@ -63,6 +65,13 @@ protected:
 		const pancy_object_id &PSO_id, 
 		const std::string &cbuffer_name, 
 		std::vector<PancyConstantBuffer*> &cbuffer_data
+	);
+private:
+	PancystarEngine::EngineFailReason GetGlobelCbufferByFrame(
+		const pancy_object_id &frame_id,
+		const pancy_object_id &PSO_id,
+		const std::string &cbuffer_name,
+		PancyConstantBuffer ** cbuffer_data
 	);
 };
 

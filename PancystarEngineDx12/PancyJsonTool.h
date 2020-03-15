@@ -191,7 +191,7 @@ class PancyJsonTool
 	std::unordered_map<std::string, std::unordered_map<int32_t, std::string>> enum_name_list;
 	//通过枚举名设置枚举变量
 	std::unordered_map<std::string, CommonEnumValueParser*> enum_parse_list;
-	//
+	//todo:删掉关于shader的特殊反射
 	std::string name_value_type[7];
 	std::string name_shader_type[6];
 

@@ -1,5 +1,25 @@
 #include"PancyBufferDx12.h"
 using namespace PancystarEngine;
+CommonBufferJsonReflect::CommonBufferJsonReflect()
+{
+
+}
+void CommonBufferJsonReflect::InitBasicVariable()
+{
+	Init_Json_Data_Vatriable(reflect_data.buffer_type);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Dimension);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Alignment);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Width);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Height);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.DepthOrArraySize);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.MipLevels);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Format);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.SampleDesc.Count);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.SampleDesc.Quality);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Layout);
+	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Flags);
+	Init_Json_Data_Vatriable(reflect_data.buffer_data_file);
+}
 //基础缓冲区
 PancyBasicBuffer::PancyBasicBuffer(const bool &if_could_reload) :PancyBasicVirtualResource(if_could_reload)
 {
@@ -14,13 +34,14 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource()
 	ComPtr<ID3D12Resource> resource_data;
 	PancyCommonBufferDesc resource_desc;
 	//将资源的格式信息从反射类内拷贝出来
-	check_error = resource_desc_value->CopyMemberData(&resource_desc, typeid(resource_desc).name(), sizeof(resource_desc));
+	check_error = resource_desc_value->CopyMemberData(&resource_desc, typeid(&resource_desc).name(), sizeof(resource_desc));
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//在d3d层级上创建一个单独堆的buffer资源
 	D3D12_HEAP_TYPE heap_type = D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
+	D3D12_RESOURCE_STATES resource_build_state = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON;
 	switch (resource_desc.buffer_type)
 	{
 	case Buffer_ShaderResource_static:
@@ -31,11 +52,13 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource()
 	case Buffer_ShaderResource_dynamic:
 	{
 		heap_type = D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD;
+		resource_build_state = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ;
 		break;
 	}
 	case Buffer_Constant:
 	{
 		heap_type = D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD;
+		resource_build_state = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ;
 		break;
 	}
 	case Buffer_Vertex:
@@ -58,9 +81,9 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource()
 	}
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(heap_type),
-		D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+		D3D12_HEAP_FLAG_NONE,
 		&resource_desc.buffer_res_desc,
-		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON,
+		resource_build_state,
 		nullptr,
 		IID_PPV_ARGS(&resource_data)
 	);
@@ -78,7 +101,7 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource()
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicBuffer::InitResource", error_message);
 		return error_message;
 	}
-	buffer_data = new ResourceBlockGpu(subresources_size, resource_data, heap_type, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+	buffer_data = new ResourceBlockGpu(subresources_size, resource_data, heap_type, resource_build_state);
 	if (heap_type == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 	{
 		check_error = buffer_data->GetCpuMapPointer(&map_pointer);
@@ -119,6 +142,7 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource()
 			return check_error;
 		}
 	}
+	return PancystarEngine::succeed;
 }
 bool PancyBasicBuffer::CheckIfResourceLoadFinish()
 {
@@ -140,7 +164,7 @@ ResourceBlockGpu * PancystarEngine::GetBufferResourceData(VirtualResourcePointer
 {
 	check_error = PancystarEngine::succeed;
 	auto now_buffer_resource_value = virtual_pointer.GetResourceData();
-	if (now_buffer_resource_value->GetResourceTypeName != typeid(PancyBasicBuffer).name())
+	if (now_buffer_resource_value->GetResourceTypeName() != typeid(PancyBasicBuffer).name())
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the vertex resource is not a buffer");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("GetBufferResourceData", error_message);
@@ -164,7 +188,7 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResource(
 	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
 		name_resource_in,
 		&resource_data,
-		typeid(PancyCommonBufferDesc).name(),
+		typeid(PancyCommonBufferDesc*).name(),
 		sizeof(PancyCommonBufferDesc),
 		id_need,
 		if_allow_repeat

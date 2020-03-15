@@ -142,7 +142,7 @@ namespace PancystarEngine
 		{
 			return model_mesh->CheckIfCreateSucceed();
 		}
-		inline VirtualResourcePointer GetVertexBuffer()
+		inline VirtualResourcePointer& GetVertexBuffer()
 		{
 			return model_mesh->GetVertexBufferResource();
 		};
@@ -181,11 +181,12 @@ namespace PancystarEngine
 		//文件读取器
 		ifstream instream;
 	public:
-		PancyBasicModel(const std::string &resource_name,const Json::Value &root_value);
+		PancyBasicModel();
+		PancystarEngine::EngineFailReason Create(const std::string &resource_name);
 		//获取渲染网格
 		inline pancy_object_id GetSubModelNum()
 		{
-			return model_resource_list.size();
+			return static_cast<pancy_object_id>(model_resource_list.size());
 		};
 		inline PancystarEngine::EngineFailReason GetRenderMesh(const pancy_object_id &submesh_id, PancySubModel **render_mesh)
 		{
@@ -253,9 +254,9 @@ namespace PancystarEngine
 			std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_out
 		);
 		virtual ~PancyBasicModel();
+		bool CheckIfLoadSucceed();
 	private:
 		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name);
-		bool CheckIfLoadSucceed();
 		//读取骨骼树
 		PancystarEngine::EngineFailReason LoadSkinTree(const string &filename);
 		PancystarEngine::EngineFailReason ReadBoneTree(int32_t &now_build_id);

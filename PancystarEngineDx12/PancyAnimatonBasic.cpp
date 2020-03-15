@@ -33,7 +33,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 	animation_buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
 	animation_buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
 	animation_buffer_resource_desc.buffer_res_desc.Width = animation_buffer_size;
-	auto check_error = BuildBufferResource(
+	check_error = BuildBufferResource(
 		file_name,
 		animation_buffer_resource_desc,
 		buffer_animation,
@@ -57,9 +57,9 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 	bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
 	bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
 	bone_buffer_resource_desc.buffer_res_desc.Width = bone_buffer_size;
-	auto check_error = BuildBufferResource(
+	check_error = BuildBufferResource(
 		file_name,
-		animation_buffer_resource_desc,
+		bone_buffer_resource_desc,
 		buffer_bone,
 		true
 	);
@@ -286,7 +286,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildBoneBlock(
 }
 //ÃÓ≥‰‰÷»æcommandlist
 PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
-	const VirtualResourcePointer &mesh_buffer,
+	VirtualResourcePointer &mesh_buffer,
 	const pancy_object_id &vertex_num,
 	const PancyRenderParamID &render_param_id,
 	const pancy_resource_size &matrix_num,

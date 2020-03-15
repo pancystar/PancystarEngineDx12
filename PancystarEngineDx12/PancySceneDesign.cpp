@@ -1,6 +1,7 @@
 #include"PancySceneDesign.h"
 #define MEMORY_64MB 67108876
 #define MEMORY_128MB 134217728
+using namespace PancystarEngine;
 SceneRoot::SceneRoot()
 {
 	If_dsv_loaded = false;
@@ -33,8 +34,6 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	std::vector<D3D12_HEAP_FLAGS> heap_flags;
 	//创建新的屏幕空间纹理格式
 	D3D12_RESOURCE_DESC default_tex_RGB_dxdesc;
-	D3D12_RESOURCE_DESC default_tex_float_desc;
-	D3D12_RESOURCE_DESC depth_stencil_desc;
 	default_tex_RGB_dxdesc.Alignment = 0;
 	default_tex_RGB_dxdesc.DepthOrArraySize = 1;
 	default_tex_RGB_dxdesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -66,56 +65,41 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	default_tex_desc_depthstencil.texture_res_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	default_tex_desc_depthstencil.texture_res_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	default_tex_desc_depthstencil.heap_flag_in = D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
-	//删除旧的深度模板缓冲区
-	/*
+	
 	if (If_dsv_loaded)
 	{
+		//todo:删除旧的深度模板缓冲区
+		/*
 		for (int i = 0; i < back_buffer_num; ++i)
 		{
 			PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(Default_depthstencil_buffer[i]);
 		}
+		*/
 	}
-	*/
-	//todo:由纹理直接创建描述符
-	std::vector<SubMemoryPointer> back_buffer_data;
+	
 	std::vector<BasicDescriptorDesc> back_buffer_desc;
-
 	for (int i = 0; i < back_buffer_num; ++i)
 	{
 		//加载深度模板缓冲区
-		std::string depth_stencil_use = "screentarget\\screen_" + std::to_string(width_in) + "_" + std::to_string(height_in) + "_DSV.json";
-		pancy_object_id default_dsv_resource;
-		auto check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(depth_stencil_use, default_dsv_resource);
+		VirtualResourcePointer default_dsv_resource;
+		auto check_error = BuildTextureResource("ScreenSpaceDepthstencil", default_tex_desc_depthstencil, default_dsv_resource,false);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		Default_depthstencil_buffer.push_back(default_dsv_resource);
 		//创建深度模板缓冲区描述符
-		SubMemoryPointer tex_resource_data;
 		D3D12_DEPTH_STENCIL_VIEW_DESC DSV_desc;
-		D3D12_RESOURCE_DESC res_desc = {};
-		check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(default_dsv_resource, tex_resource_data);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexDesc(default_dsv_resource, res_desc);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
 		DSV_desc.Flags = D3D12_DSV_FLAG_NONE;
-		DSV_desc.Format = res_desc.Format;
+		DSV_desc.Format = default_tex_desc_depthstencil.texture_res_desc.Format;
 		DSV_desc.Texture2D.MipSlice = 0;
 		DSV_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		back_buffer_data.push_back(tex_resource_data);
 		BasicDescriptorDesc new_descriptor_desc;
 		new_descriptor_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeDepthStencilView;
 		new_descriptor_desc.depth_stencil_view_desc = DSV_desc;
 		back_buffer_desc.push_back(new_descriptor_desc);
 	}
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor("DefaultDepthBufferSRV", back_buffer_desc, back_buffer_data,true);
+	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor("DefaultDepthBufferSRV", back_buffer_desc, Default_depthstencil_buffer,true);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -126,52 +110,41 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	{
 		return check_error;
 	}
+	If_dsv_loaded = true;
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
-	const pancy_object_id &PSO_id, 
-	const std::string &cbuffer_name, 
+PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbufferByFrame(
+	const pancy_object_id &frame_id,
+	const pancy_object_id &PSO_id,
+	const std::string &cbuffer_name,
 	PancyConstantBuffer ** cbuffer_data
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	pancy_object_id now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	//根据pso的id号查找对应的Cbuffer链表
-	auto PSO_cbuffer_list = frame_constant_buffer[now_frame].find(PSO_id);
-	if (PSO_cbuffer_list == frame_constant_buffer[now_frame].end()) 
+	auto PSO_cbuffer_list = frame_constant_buffer[frame_id].find(PSO_id);
+	if (PSO_cbuffer_list == frame_constant_buffer[frame_id].end())
 	{
 		//指定的pso尚未创建cbuffer
 		std::string pso_name_pre;
 		//先检查pso是否存在
 		check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name_pre);
-		if (!check_error.CheckIfSucceed()) 
+		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		//添加一个PSO的cbuffer表
 		std::unordered_map<std::string, PancyConstantBuffer *> new_pso_cbuffer_list;
-		frame_constant_buffer[now_frame].insert(std::pair<pancy_object_id, std::unordered_map<std::string, PancyConstantBuffer *>>(PSO_id, new_pso_cbuffer_list));
-		PSO_cbuffer_list = frame_constant_buffer[now_frame].find(PSO_id);
+		frame_constant_buffer[frame_id].insert(std::pair<pancy_object_id, std::unordered_map<std::string, PancyConstantBuffer *>>(PSO_id, new_pso_cbuffer_list));
+		PSO_cbuffer_list = frame_constant_buffer[frame_id].find(PSO_id);
 	}
 	//根据cbuffer的名称寻找常量缓冲区
 	auto cbuffer_out = PSO_cbuffer_list->second.find(cbuffer_name);
 	if (cbuffer_out == PSO_cbuffer_list->second.end())
 	{
 		//cbuffer未创建，加载一个常量缓冲区
-		std::string pso_name;
-		check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		std::string pso_divide_path;
-		std::string pso_divide_name;
-		std::string pso_divide_tail;
-		PancystarEngine::DivideFilePath(pso_name, pso_divide_path, pso_divide_name, pso_divide_tail);
-		PancyConstantBuffer *new_cbuffer = new PancyConstantBuffer(cbuffer_name, pso_divide_name);
-		const Json::Value *cbuffer_desc_root;
-		PancyEffectGraphic::GetInstance()->GetCbuffer(PSO_id, cbuffer_name, cbuffer_desc_root);
-		check_error = new_cbuffer->Create(*cbuffer_desc_root);
+		PancyConstantBuffer *new_cbuffer = new PancyConstantBuffer();
+		check_error = PancyEffectGraphic::GetInstance()->BuildCbufferByName(PSO_id, cbuffer_name, *new_cbuffer);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -183,6 +156,21 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
+	const pancy_object_id &PSO_id, 
+	const std::string &cbuffer_name, 
+	PancyConstantBuffer ** cbuffer_data
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	pancy_object_id now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+	check_error = GetGlobelCbufferByFrame(now_frame, PSO_id, cbuffer_name, cbuffer_data);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	const pancy_object_id &PSO_id,
 	const std::string &cbuffer_name,
 	std::vector<PancyConstantBuffer*> &cbuffer_data
@@ -191,67 +179,35 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	PancystarEngine::EngineFailReason check_error;
 	pancy_object_id frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
 	//todo：目前先在加载的时候顺便完成全局cbuffer的处理，以后全局cbuffer需要提前创建
-	std::vector<SubMemoryPointer> back_buffer_data;
+	std::vector<VirtualResourcePointer> back_buffer_data;
 	std::vector<BasicDescriptorDesc> back_buffer_desc;
 	bool if_create = false;
-	for (int i = 0; i < frame_num; ++i) 
+	for (pancy_object_id i = 0; i < frame_num; ++i)
 	{
-		//根据pso的id号查找对应的Cbuffer链表
-		auto PSO_cbuffer_list = frame_constant_buffer[i].find(PSO_id);
-		if (PSO_cbuffer_list == frame_constant_buffer[i].end())
+		PancyConstantBuffer *cbuffer_data;
+		check_error = GetGlobelCbufferByFrame(frame_num, PSO_id, cbuffer_name, &cbuffer_data);
+		if (!check_error.CheckIfSucceed())
 		{
-			if_create = true;
-			//指定的pso尚未创建cbuffer
-			std::string pso_name_pre;
-			//先检查pso是否存在
-			check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name_pre);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			//添加一个PSO的cbuffer表
-			std::unordered_map<std::string, PancyConstantBuffer *> new_pso_cbuffer_list;
-			frame_constant_buffer[i].insert(std::pair<pancy_object_id, std::unordered_map<std::string, PancyConstantBuffer *>>(PSO_id, new_pso_cbuffer_list));
-			PSO_cbuffer_list = frame_constant_buffer[i].find(PSO_id);
+			return check_error;
 		}
-		//根据cbuffer的名称寻找常量缓冲区
-		auto cbuffer_out = PSO_cbuffer_list->second.find(cbuffer_name);
-		if (cbuffer_out == PSO_cbuffer_list->second.end())
-		{
-			//cbuffer未创建，加载一个常量缓冲区
-			std::string pso_name;
-			check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			std::string pso_divide_path;
-			std::string pso_divide_name;
-			std::string pso_divide_tail;
-			PancystarEngine::DivideFilePath(pso_name, pso_divide_path, pso_divide_name, pso_divide_tail);
-			PancyConstantBuffer *new_cbuffer = new PancyConstantBuffer(cbuffer_name, pso_divide_name);
-			const Json::Value *cbuffer_desc_root;
-			PancyEffectGraphic::GetInstance()->GetCbuffer(PSO_id, cbuffer_name, cbuffer_desc_root);
-			check_error = new_cbuffer->Create(*cbuffer_desc_root);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			PSO_cbuffer_list->second.insert(std::pair<std::string, PancyConstantBuffer *>(cbuffer_name, new_cbuffer));
-			cbuffer_out = PSO_cbuffer_list->second.find(cbuffer_name);
-		}
-		cbuffer_data.push_back(cbuffer_out->second);
-		SubMemoryPointer check_pointer;
-		cbuffer_out->second->GetBufferSubResource(check_pointer);
-		back_buffer_data.push_back(check_pointer);
+		cbuffer_data->GetBufferResource();
+		back_buffer_data.push_back(cbuffer_data->GetBufferResource());
 		BasicDescriptorDesc new_desc;
 		new_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeConstantBufferView;
+		new_desc.offset = cbuffer_data->GetCbufferOffsetFromBufferHead();
+		new_desc.block_size = cbuffer_data->GetCbufferSize();
 		back_buffer_desc.push_back(new_desc);
+	}
+	std::string pso_name;
+	check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
 	}
 	//创建描述符
 	if (if_create) 
 	{
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(cbuffer_name, back_buffer_desc, back_buffer_data, true);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(pso_name + "::" + cbuffer_name, back_buffer_desc, back_buffer_data, true);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;

@@ -6,9 +6,6 @@ CommonTextureJsonReflect::CommonTextureJsonReflect()
 {
 
 }
-PancystarEngine::EngineFailReason CommonTextureJsonReflect::InitChildReflectClass()
-{
-}
 void CommonTextureJsonReflect::InitBasicVariable()
 {
 	Init_Json_Data_Vatriable(reflect_data.heap_type);
@@ -281,6 +278,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource()
 			return check_error;
 		}
 	}
+	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::LoadResourceDirect(const std::string &file_name)
 {
@@ -662,7 +660,6 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 	//先对待拷贝的资源进行组织
 	D3D12_SUBRESOURCE_DATA *subres = &subresources[0];
 	UINT subres_size = static_cast<UINT>(subresources.size());
-	int64_t res_size;
 	//获取用于拷贝的commond list
 	PancyRenderCommandList *copy_render_list;
 	PancyThreadIdGPU copy_render_list_ID;
@@ -996,7 +993,7 @@ ResourceBlockGpu* PancystarEngine::GetTextureResourceData(VirtualResourcePointer
 {
 	check_error = PancystarEngine::succeed;
 	auto now_texture_resource_value = virtual_pointer.GetResourceData();
-	if (now_texture_resource_value->GetResourceTypeName != typeid(PancyBasicTexture).name())
+	if (now_texture_resource_value->GetResourceTypeName() != typeid(PancyBasicTexture).name())
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the vertex resource is not a texture");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("GetTextureResourceData", error_message);

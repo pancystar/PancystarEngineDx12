@@ -115,7 +115,7 @@ namespace PancystarEngine
 		void ClearUsedBuffer();
 		//ÃÓ≥‰‰÷»æcommandlist
 		PancystarEngine::EngineFailReason BuildCommandList(
-			const VirtualResourcePointer &mesh_buffer,
+			VirtualResourcePointer &mesh_buffer,
 			const pancy_object_id &vertex_num,
 			const PancyRenderParamID &render_param_id,
 			const pancy_resource_size &matrix_num,

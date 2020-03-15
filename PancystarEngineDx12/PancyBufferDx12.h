@@ -23,32 +23,9 @@ namespace PancystarEngine
 	public:
 		CommonBufferJsonReflect();
 	private:
-		PancystarEngine::EngineFailReason InitChildReflectClass() override;
 		void InitBasicVariable() override;
 	};
-	CommonBufferJsonReflect::CommonBufferJsonReflect() 
-	{
-		
-	}
-	PancystarEngine::EngineFailReason CommonBufferJsonReflect::InitChildReflectClass()
-	{
-	}
-	void CommonBufferJsonReflect::InitBasicVariable() 
-	{
-		Init_Json_Data_Vatriable(reflect_data.buffer_type);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Dimension);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Alignment);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Width);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Height);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.DepthOrArraySize);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.MipLevels);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Format);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.SampleDesc.Count);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.SampleDesc.Quality);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Layout);
-		Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Flags);
-		Init_Json_Data_Vatriable(reflect_data.buffer_data_file);
-	}
+	
 	//»º³åÇø×ÊÔ´
 	class PancyBasicBuffer : public PancyBasicVirtualResource
 	{
@@ -76,8 +53,8 @@ namespace PancystarEngine
 		void BuildJsonReflect(PancyJsonReflect **pointer_data) override;
 		PancystarEngine::EngineFailReason InitResource() override;
 	};
-	static ResourceBlockGpu* GetBufferResourceData(VirtualResourcePointer &virtual_pointer, PancystarEngine::EngineFailReason &check_error);
-	static PancystarEngine::EngineFailReason BuildBufferResource(
+	ResourceBlockGpu* GetBufferResourceData(VirtualResourcePointer &virtual_pointer, PancystarEngine::EngineFailReason &check_error);
+	PancystarEngine::EngineFailReason BuildBufferResource(
 		const std::string &name_resource_in,
 		PancyCommonBufferDesc &resource_data,
 		VirtualResourcePointer &id_need,

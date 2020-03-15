@@ -81,7 +81,7 @@ namespace PancystarEngine
 		const BindlessResourceViewPointer GetDescriptorPageOffset(const pancy_object_id &descriptor_page_id);
 	private:
 		//根据描述符页的指针信息，在描述符堆开辟描述符
-		PancystarEngine::EngineFailReason BuildShaderResourceView(const BindlessResourceViewPointer &resource_view_pointer);
+		PancystarEngine::EngineFailReason BuildShaderResourceView(BindlessResourceViewPointer &resource_view_pointer);
 	};
 
 	//解绑定描述符页的id号
@@ -140,7 +140,7 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason BuildGlobelDescriptor(
 			const std::string &globel_name,
 			const std::vector<BasicDescriptorDesc> &SRV_desc,
-			const std::vector <VirtualResourcePointer>& memory_data,
+			std::vector <VirtualResourcePointer>& memory_data,
 			const bool if_build_multi_buffer
 		);
 		PancystarEngine::EngineFailReason DeleteGlobelDescriptor(const std::string &globel_name);
@@ -154,7 +154,7 @@ namespace PancystarEngine
 		//创建私有的绑定描述符
 		PancystarEngine::EngineFailReason BuildBindDescriptor(
 			const std::vector<BasicDescriptorDesc> &descriptor_desc,
-			const std::vector<VirtualResourcePointer>& memory_data,
+			std::vector<VirtualResourcePointer>& memory_data,
 			const bool if_build_multi_buffer,
 			pancy_object_id &descriptor_id
 		);
@@ -244,7 +244,7 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason BuildCommonGlobelDescriptor(
 			const std::string &globel_srv_name,
 			const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
-			const std::vector<VirtualResourcePointer>& memory_data,
+			std::vector<VirtualResourcePointer>& memory_data,
 			const bool if_build_multi_buffer
 		);
 		PancystarEngine::EngineFailReason GetCommonGlobelDescriptorID(
@@ -274,7 +274,7 @@ namespace PancystarEngine
 		//绑定描述符
 		PancystarEngine::EngineFailReason BuildCommonDescriptor(
 			const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
-			const std::vector<VirtualResourcePointer>& memory_data,
+			std::vector<VirtualResourcePointer>& memory_data,
 			const bool if_build_multi_buffer,
 			BindDescriptorPointer &descriptor_id
 		);

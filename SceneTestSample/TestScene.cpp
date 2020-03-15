@@ -1,4 +1,5 @@
 #include"TestScene.h"
+using namespace PancystarEngine;
 struct instance_value
 {
 	DirectX::XMFLOAT4X4 world_mat;
@@ -66,26 +67,27 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 {
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason scene_test_simple::BuildGlobelTextureSRV(const std::string &shader_resource, const pancy_object_id &tex_res_id)
+PancystarEngine::EngineFailReason scene_test_simple::BuildGlobelTextureSRV(const std::string &shader_resource, VirtualResourcePointer &tex_res_id)
 {
 	PancystarEngine::EngineFailReason check_error;
 	std::vector<BasicDescriptorDesc> globel_descriptor_desc_in;
-	std::vector<SubMemoryPointer> globelmemory_data;
-	SubMemoryPointer tex_bind_submemory;
+	std::vector<VirtualResourcePointer> globelmemory_data;
 	BasicDescriptorDesc tex_bind_SRV_desc;
 	tex_bind_SRV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_res_id, tex_bind_submemory,false);
+	
+	check_error = LoadDDSTextureResource(shader_resource, tex_res_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_res_id, tex_bind_SRV_desc.shader_resource_view_desc);
+	auto texture_gpu_resource = dynamic_cast<PancyBasicTexture*>(tex_res_id.GetResourceData());
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	tex_bind_SRV_desc.shader_resource_view_desc = texture_gpu_resource->GetSRVDesc();
 	globel_descriptor_desc_in.push_back(tex_bind_SRV_desc);
-	globelmemory_data.push_back(tex_bind_submemory);
+	globelmemory_data.push_back(tex_res_id);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(shader_resource, globel_descriptor_desc_in, globelmemory_data, false);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -115,7 +117,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\IrradianceMap.json", tex_ibl_diffuse_id);
+	check_error = LoadDDSTextureResource("data\\IrradianceMap.dds", tex_ibl_diffuse_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -126,19 +128,18 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 		return check_error;
 	}
 	//读取空白纹理
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\white.json", tex_empty_id);
+	check_error = LoadDDSTextureResource("data\\white.dds", tex_empty_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	
 	//读取pbr纹理
-	//加载需要的pbr纹理
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Cubemap.json", tex_ibl_spec_id);
+	check_error = LoadDDSTextureResource("data\\Cubemap.json", tex_ibl_spec_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
+	//加载需要的pbr纹理
 	check_error = BuildGlobelTextureSRV("environment_IBL_spec", tex_ibl_spec_id);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -154,8 +155,18 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	//创测试模型
-
+	//todo:临时使用的模型测试代码
+	check_error = model_common.Create("model\\export\\multiball\\multiball.json");
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = model_skinmesh.Create("model\\export\\lion\\lion.json");
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	/*
 	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\multiball\\multiball.json", model_common);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -180,7 +191,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-
+	*/
 
 	
 	//加载一个pso
@@ -196,14 +207,14 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 		return check_error;
 	}
 
-	
+	/*
 	//模型加载测试
 	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log.json");
 
 	PancystarEngine::ResourceStateType now_id_state;
 	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_skinmesh, now_id_state);
 	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log4.json");
-
+	*/
 	//调用一次骨骼动画单例，完成全局缓冲区的注册
 	PancystarEngine::PancySkinAnimationControl::GetInstance();
 
@@ -225,13 +236,12 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 {
 	PancystarEngine::EngineFailReason check_error;
 	//加载骨骼动画的描述符信息
-	std::vector<PancystarEngine::PancyConstantBuffer *> now_used_cbuffer;
+	std::vector<PancyConstantBuffer *> now_used_cbuffer;
 	check_error = GetGlobelCbuffer(PSO_test, "per_frame", now_used_cbuffer);
 	//获取模型的描述符数据(todo:后面要改成模型材质分离的格式)
-	std::vector<SubMemoryPointer> resource_data_per_frame;
+	std::vector<VirtualResourcePointer> resource_data_per_frame;
 	std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> resource_desc_per_data;
-	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetShaderResourcePerObject(
-		model_skinmesh,
+	check_error = model_skinmesh.GetShaderResourcePerObject(
 		resource_data_per_frame,
 		resource_desc_per_data
 	);
@@ -278,7 +288,7 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshComputeDescrip
 	PancystarEngine::EngineFailReason check_error;
 	//获取作为输入的顶点缓冲区
 	PancystarEngine::PancySubModel* model_resource_render;
-	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetRenderMesh(model_skinmesh, 0, &model_resource_render);
+	check_error = model_skinmesh.GetRenderMesh(0, &model_resource_render);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -292,15 +302,9 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshComputeDescrip
 	now_buffer_desc.shader_resource_view_desc.Buffer.StructureByteStride = sizeof(PancystarEngine::PointSkinCommon8);
 	now_buffer_desc.shader_resource_view_desc.Buffer.NumElements = model_resource_render->GetVertexNum();
 	now_buffer_desc.shader_resource_view_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-	now_buffer_desc.shader_resource_view_desc.Buffer.FirstElement = 0;
-	SubMemoryPointer now_buffer_data;
-	check_error = PancystarEngine::PancyBasicBufferControl::GetInstance()->GetBufferSubResource(model_resource_render->GetVertexBuffer(), now_buffer_data);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
+	VirtualResourcePointer now_buffer_data = model_resource_render->GetVertexBuffer();
 	std::vector<BasicDescriptorDesc> now_descriptor_desc_in;
-	std::vector<SubMemoryPointer> memory_data;
+	std::vector<VirtualResourcePointer> memory_data;
 	now_descriptor_desc_in.push_back(now_buffer_desc);
 	memory_data.push_back(now_buffer_data);
 	BindDescriptorPointer mesh_vertex_data_srv;
@@ -359,10 +363,6 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 		return check_error;
 	}
 	//加载brdf预处理纹理
-	//todo:commandalloctor间隔帧需要两个线程池
-	//todo：依靠resourcedesc来计算heap及分块的大小
-	//done:2019.2.1
-	//创建新的屏幕空间纹理格式
 	D3D12_RESOURCE_DESC default_tex_RGB_desc;
 	default_tex_RGB_desc.Alignment = 0;
 	default_tex_RGB_desc.DepthOrArraySize = 1;
@@ -375,78 +375,38 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	default_tex_RGB_desc.MipLevels = 1;
 	default_tex_RGB_desc.SampleDesc.Count = 1;
 	default_tex_RGB_desc.SampleDesc.Quality = 0;
-	std::vector<D3D12_HEAP_FLAGS> heap_flags;
-	heap_flags.clear();
-	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_BUFFERS);
-	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES);
-	std::string subres_name;
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(default_tex_RGB_desc, 1, D3D12_HEAP_TYPE_DEFAULT, heap_flags, D3D12_RESOURCE_STATE_COMMON, subres_name);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	std::string RGB8_file_data = "json\\texture\\1024_1024_R16B16G16A16FLOAT.json";
-	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(RGB8_file_data))
-	{
-		Json::Value json_data_out;
-		//填充资源格式
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 1);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 1);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 0);
-		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
-		//写入文件并标记为已创建
-		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, RGB8_file_data);
-		//将文件标记为已经创建
-		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(RGB8_file_data);
-	}
-
-
-
-	SubMemoryPointer texture_brdf_need;
-	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("json\\texture\\1024_1024_R16B16G16A16FLOAT.json", tex_brdf_id);
+	PancyCommonTextureDesc new_texture_desc;
+	new_texture_desc.heap_flag_in = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
+	new_texture_desc.heap_type = D3D12_HEAP_TYPE_DEFAULT;
+	new_texture_desc.if_force_srgb = false;
+	new_texture_desc.if_gen_mipmap = false;
+	new_texture_desc.max_size = 0;
+	new_texture_desc.texture_data_file = "";
+	new_texture_desc.texture_res_desc = default_tex_RGB_desc;
+	new_texture_desc.texture_type = PancyTextureType::Texture_Render_Target;
+	check_error = BuildTextureResource("globel_brdf_texture", new_texture_desc, tex_brdf_id, false);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//创建渲染目标
-	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_brdf_id, texture_brdf_need);
-	D3D12_RESOURCE_DESC res_desc;
-	PancystarEngine::PancyTextureControl::GetInstance()->GetTexDesc(tex_brdf_id, res_desc);
 	std::vector<BasicDescriptorDesc> now_descriptor_desc_in;
-	std::vector<SubMemoryPointer> memory_data;
+	std::vector<VirtualResourcePointer> memory_data;
 	BasicDescriptorDesc rtv_brdf;
 	rtv_brdf.basic_descriptor_type = PancyDescriptorType::DescriptorTypeRenderTargetView;
 	rtv_brdf.render_target_view_desc = {};
 	rtv_brdf.render_target_view_desc.Texture2D.MipSlice = 0;
-	rtv_brdf.render_target_view_desc.Format = res_desc.Format;
+	rtv_brdf.render_target_view_desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	rtv_brdf.render_target_view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 	rtv_brdf.render_target_view_desc.Texture2D.MipSlice = 0;
 	rtv_brdf.render_target_view_desc.Texture2D.PlaneSlice = 0;
 	now_descriptor_desc_in.push_back(rtv_brdf);
-	memory_data.push_back(texture_brdf_need);
+	memory_data.push_back(tex_brdf_id);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(now_descriptor_desc_in, memory_data,false, brdf_rtv_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	/*
-	std::string dsv_descriptor_name = "json\\descriptor_heap\\RTV_1_descriptor_heap.json";
-	ResourceViewPointer RTV_pointer;
-	pancy_object_id rsv_pack_size;
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, RTV_pointer.resource_view_pack_id, rsv_pack_size);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	RTV_pointer.resource_view_offset_id = 0;
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildRTV(RTV_pointer, texture_brdf_need, RTV_desc);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	*/
 	//设置预渲染参数
 	PancyRenderCommandList *m_commandList;
 	ID3D12PipelineState *PSO_res_brdfgen;
@@ -458,18 +418,19 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 
 	ID3D12RootSignature *rootsignature_data;
 	check_error = PancyEffectGraphic::GetInstance()->GetRootSignatureResource(PSO_brdfgen, &rootsignature_data);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data);
 
-	SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, texture_brdf_need, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	//设置渲染目标
-	/*
-	BindDescriptorPointer dsv_descriptor_id;
-	check_error = PancyDescriptorHeapControl::GetInstance()->GetCommonGlobelDescriptorID(PancyDescriptorType::DescriptorTypeDepthStencilView, "DefaultDepthBufferSRV", dsv_descriptor_id);
+	auto brde_tex_res = GetTextureResourceData(tex_brdf_id,check_error);
+	check_error = brde_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	*/
+	//设置渲染目标
 	std::vector<pancy_object_id> render_target_list;
 	render_target_list.push_back(brdf_rtv_id.descriptor_id);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BindCommonRenderTargetUncontiguous(render_target_list, 0, m_commandList,true,false);
@@ -477,13 +438,6 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	{
 		return check_error;
 	}
-	/*
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-	SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, texture_brdf_need, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(RTV_pointer, rtvHandle);
-
-	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, NULL);
-	*/
 	//todo：rendertarget的清空工作
 	//const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	//m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
@@ -493,7 +447,11 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	m_commandList->GetCommandList()->IASetIndexBuffer(&test_model->GetIndexBufferView());
 	m_commandList->GetCommandList()->DrawIndexedInstanced(test_model->GetIndexNum(), 1, 0, 0, 0);
 
-	SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, texture_brdf_need, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	check_error = brde_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	m_commandList->UnlockPrepare();
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_use);
 	if (!check_error.CheckIfSucceed())
@@ -515,13 +473,13 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	PancystarEngine::SkinAnimationBlock animation_block_pos;
 	PancystarEngine::PancySkinAnimationControl::GetInstance()->ClearUsedBuffer();
 	std::vector<DirectX::XMFLOAT4X4> matrix_out_bone;
-	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetModelBoneMatrix(model_skinmesh, 4, time, matrix_out_bone);
+	check_error = model_skinmesh.GetBoneByAnimation(4, time, matrix_out_bone);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	PancystarEngine::PancySubModel* model_resource_render;
-	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetRenderMesh(model_skinmesh, 0, &model_resource_render);
+	check_error = model_skinmesh.GetRenderMesh(0, &model_resource_render);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -621,13 +579,12 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	//修改资源格式为dsv
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	SubMemoryPointer sub_res_dsv;
-	int64_t per_memory_size;
-	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
-	SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, sub_res_dsv, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-
-	//绑定渲染目标
-	//PancyDescriptorHeapControl::GetInstance()->BindCommonRenderTargetUncontiguous(,);
+	auto default_depth_tex_res = GetTextureResourceData(Default_depthstencil_buffer[now_render_num], check_error);
+	check_error = default_depth_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	//获取深度缓冲区
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	BindDescriptorPointer dsv_descriptor_id;
@@ -645,7 +602,7 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	m_commandList->GetCommandList()->DrawIndexedInstanced(model_resource_render->GetIndexNum(), 1, 0, 0, 0);
 
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-	SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, sub_res_dsv, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PRESENT);
+	default_depth_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COMMON);
 	m_commandList->UnlockPrepare();
 	//提交渲染命令
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_use);
@@ -654,19 +611,15 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 PancystarEngine::EngineFailReason ShowModel();
 void scene_test_simple::Display()
 {
-	PancystarEngine::ResourceStateType now_id_state;
-	auto check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_skinmesh, now_id_state);
-	if (check_error.CheckIfSucceed() && now_id_state == PancystarEngine::ResourceStateType::resource_state_load_GPU_memory_finish)
+	if (model_skinmesh.CheckIfLoadSucceed())
 	{
-
-		HRESULT hr;
 		renderlist_ID.clear();
 		if (if_have_previous_frame)
 		{
 			auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->FreeAlloctor();
 		}
 		ClearScreen();
-		check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(renderlist_ID.size(), &renderlist_ID[0]);
+		auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(renderlist_ID.size(), &renderlist_ID[0]);
 		last_broken_fence_id = broken_fence_id;
 
 		//ShowFloor();
@@ -697,9 +650,8 @@ void scene_test_simple::ClearScreen()
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	//修改资源格式为dsv
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	SubMemoryPointer sub_res_dsv;
-	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
-	SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, sub_res_dsv, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	auto default_depth_tex_res = GetTextureResourceData(Default_depthstencil_buffer[now_render_num], check_error);
+	check_error = default_depth_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	//获取深度缓冲区
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	BindDescriptorPointer dsv_descriptor_id;
@@ -712,7 +664,7 @@ void scene_test_simple::ClearScreen()
 	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_commandList->GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-	SubresourceControl::GetInstance()->ResourceBarrier(m_commandList, sub_res_dsv, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PRESENT);
+	check_error = default_depth_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COMMON);
 	m_commandList->UnlockPrepare();
 	renderlist_ID.push_back(commdlist_id_use);
 }
@@ -724,7 +676,7 @@ void scene_test_simple::Update(float delta_time)
 {
 	updateinput(delta_time);
 	PancystarEngine::EngineFailReason check_error;
-	PancystarEngine::PancyConstantBuffer *PSO_test_cbuffer, *PSO_pbr_cbuffer;
+	PancyConstantBuffer *PSO_test_cbuffer, *PSO_pbr_cbuffer;
 	check_error = GetGlobelCbuffer(PSO_test, "per_frame", &PSO_test_cbuffer);
 	check_error = GetGlobelCbuffer(PSO_pbr, "per_frame", &PSO_pbr_cbuffer);
 	if (check_error.CheckIfSucceed())

@@ -3,6 +3,133 @@
 #include"PancyJsonTool.h"
 #include"PancyMemoryBasic.h"
 #include"PancyBufferDx12.h"
+#include"PancyDescriptor.h"
+enum PSOType
+{
+	PSO_TYPE_GRAPHIC = 0,
+	PSO_TYPE_COMPUTE
+};
+enum PancyShaderDescriptorType
+{
+	CbufferPrivate = 0,
+	CbufferGlobel,
+	SRVGlobel,
+	SRVPrivate,
+	SRVBindless
+};
+struct PancyDescriptorPSODescription
+{
+	std::string descriptor_name;
+	pancy_object_id rootsignature_slot;
+};
+
+struct RootSignatureParameterDesc
+{
+	D3D12_DESCRIPTOR_RANGE_TYPE range_type = D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	pancy_object_id num_descriptors;
+	pancy_object_id base_shader_register;
+	pancy_object_id register_space;
+	D3D12_DESCRIPTOR_RANGE_FLAGS flags = D3D12_DESCRIPTOR_RANGE_FLAGS::D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
+	pancy_object_id num_descriptor_ranges;
+	D3D12_SHADER_VISIBILITY shader_visibility = D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL;
+};
+class RootSignatureParameterDescJsonReflect :public PancyJsonReflectTemplate<RootSignatureParameterDesc>
+{
+public:
+	RootSignatureParameterDescJsonReflect();
+private:
+	void InitBasicVariable() override;
+};
+class RootSignatureStaticSamplerJsonReflect :public PancyJsonReflectTemplate<D3D12_STATIC_SAMPLER_DESC>
+{
+public:
+	RootSignatureStaticSamplerJsonReflect();
+private:
+	void InitBasicVariable() override;
+};
+struct RootSignatureDesc
+{
+	std::vector<RootSignatureParameterDesc> root_parameter_data;
+	std::vector<D3D12_STATIC_SAMPLER_DESC> static_sampler_data;
+	D3D12_ROOT_SIGNATURE_FLAGS root_signature_flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_NONE;
+};
+class RootSignatureDescJsonReflect :public PancyJsonReflectTemplate<RootSignatureDesc>
+{
+public:
+	RootSignatureDescJsonReflect();
+private:
+	PancystarEngine::EngineFailReason InitChildReflectClass() override;
+	void InitBasicVariable() override;
+};
+
+struct DescriptorTypeDesc
+{
+	std::string name;
+	PancyShaderDescriptorType type;
+};
+class DescriptorTypeDescJsonReflect :public PancyJsonReflectTemplate<DescriptorTypeDesc>
+{
+public:
+	DescriptorTypeDescJsonReflect();
+private:
+	void InitBasicVariable() override;
+};
+
+
+struct PipelineStateDescCompute 
+{
+	PSOType pipeline_state_type;
+	std::string root_signature_file;
+	std::string compute_shader_file;
+	std::string compute_shader_func;
+	std::vector<DescriptorTypeDesc> descriptor_type;
+};
+class PipelineStateDescComputeJsonReflect :public PancyJsonReflectTemplate<PipelineStateDescCompute>
+{
+public:
+	PipelineStateDescComputeJsonReflect();
+private:
+	PancystarEngine::EngineFailReason InitChildReflectClass() override;
+	void InitBasicVariable() override;
+};
+
+
+
+class RenderTargetBlendDescJsonReflect :public PancyJsonReflectTemplate<D3D12_RENDER_TARGET_BLEND_DESC>
+{
+public:
+	RenderTargetBlendDescJsonReflect();
+private:
+	void InitBasicVariable() override;
+};
+
+
+struct PipelineStateDescGraphic
+{
+	PSOType pipeline_state_type;
+	std::string root_signature_file;
+	std::string vertex_shader_file;
+	std::string vertex_shader_func;
+	std::string pixel_shader_file;
+	std::string pixel_shader_func;
+	std::string geometry_shader_file;
+	std::string geometry_shader_func;
+	std::string hull_shader_file;
+	std::string hull_shader_func;
+	std::string domin_shader_file;
+	std::string domin_shader_func;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc;
+	std::vector<DescriptorTypeDesc> descriptor_type;
+};
+class PipelineStateDescGraphicJsonReflect :public PancyJsonReflectTemplate<PipelineStateDescGraphic>
+{
+public:
+	PipelineStateDescGraphicJsonReflect();
+private:
+	PancystarEngine::EngineFailReason InitChildReflectClass() override;
+	void InitBasicVariable() override;
+};
+
 //几何体的格式对接类型
 struct PancyVertexBufferDesc
 {
@@ -24,7 +151,7 @@ class PancyConstantBuffer
 	std::string cbuffer_name;       //常量缓冲区的名称
 	std::string cbuffer_effect_name; //创建常量缓冲区的渲染管线名称
 	//常量缓冲区的数据
-	VirtualResourcePointer buffer_ID;
+	PancystarEngine::VirtualResourcePointer buffer_ID;
 	pancy_object_id buffer_offset_id;
 	pancy_resource_size cbuffer_size;
 	//所有成员变量的起始位置
@@ -36,14 +163,22 @@ public:
 	PancystarEngine::EngineFailReason Create(
 		const std::string &cbuffer_name_in,
 		const std::string &cbuffer_effect_name_in,
-		const VirtualResourcePointer &buffer_id_in,
+		const PancystarEngine::VirtualResourcePointer &buffer_id_in,
 		const pancy_resource_size &buffer_offset_id_in,
 		const pancy_resource_size &cbuffer_size,
 		const Json::Value &root_value
 	);
-	inline VirtualResourcePointer &GetBufferResource() 
+	inline PancystarEngine::VirtualResourcePointer &GetBufferResource()
 	{
 		return buffer_ID;
+	}
+	inline pancy_resource_size GetCbufferOffsetFromBufferHead() 
+	{
+		return static_cast<pancy_resource_size>(buffer_offset_id) * cbuffer_size;
+	}
+	inline pancy_resource_size GetCbufferSize()
+	{
+		return cbuffer_size;
 	}
 	~PancyConstantBuffer();
 	PancystarEngine::EngineFailReason SetMatrix(const std::string &variable, const DirectX::XMFLOAT4X4 &mat_data, const pancy_resource_size &offset);
@@ -56,11 +191,11 @@ private:
 };
 struct CbufferPackList
 {
-	VirtualResourcePointer buffer_pointer;
+	PancystarEngine::VirtualResourcePointer buffer_pointer;
 	pancy_resource_size per_cbuffer_size;
 	std::unordered_set<pancy_object_id> now_use_offset;
 	std::unordered_set<pancy_object_id> now_empty_offset;
-	CbufferPackList(VirtualResourcePointer &buffer_data, const pancy_resource_size &per_cbuffer_size_in)
+	CbufferPackList(PancystarEngine::VirtualResourcePointer &buffer_data, const pancy_resource_size &per_cbuffer_size_in)
 	{
 		buffer_pointer = buffer_data;
 		if (per_cbuffer_size_in % 256 != 0)
@@ -71,9 +206,9 @@ struct CbufferPackList
 		{
 			per_cbuffer_size = per_cbuffer_size_in;
 		}
-		const PancyBasicBuffer *pointer = dynamic_cast<const PancyBasicBuffer*>(buffer_pointer.GetResourceData());
-		pancy_object_id all_member_cbuffer_num = pointer->GetBufferSize() / per_cbuffer_size;
-		for (int index_offset = 0; index_offset < all_member_cbuffer_num; ++index_offset)
+		const PancystarEngine::PancyBasicBuffer *pointer = dynamic_cast<const PancystarEngine::PancyBasicBuffer*>(buffer_pointer.GetResourceData());
+		pancy_object_id all_member_cbuffer_num = static_cast<pancy_object_id>(pointer->GetBufferSize() / per_cbuffer_size);
+		for (pancy_object_id index_offset = 0; index_offset < all_member_cbuffer_num; ++index_offset)
 		{
 			now_empty_offset.insert(index_offset);
 		}
@@ -175,6 +310,7 @@ public:
 //RootSignature
 class PancyRootSignature
 {
+	RootSignatureDescJsonReflect root_signature_desc_reflect;
 	std::string descriptor_heap_name;
 	PancystarEngine::PancyString root_signature_name;
 	ComPtr<ID3D12RootSignature> root_signature_data;
@@ -219,24 +355,7 @@ private:
 	PancystarEngine::EngineFailReason BuildRootSignature(const std::string &rootsig_config_file);
 	void AddRootSignatureGlobelVariable();
 };
-enum PSOType 
-{
-	PSO_TYPE_GRAPHIC = 0,
-	PSO_TYPE_COMPUTE
-};
-enum PancyShaderDescriptorType
-{
-	CbufferPrivate = 0,
-	CbufferGlobel,
-	SRVGlobel,
-	SRVPrivate,
-	SRVBindless
-};
-struct PancyDescriptorPSODescription 
-{
-	std::string descriptor_name;
-	pancy_object_id rootsignature_slot;
-};
+
 //PSO object
 class PancyPiplineStateObjectGraph
 {
@@ -253,6 +372,9 @@ class PancyPiplineStateObjectGraph
 	pancy_object_id root_signature_ID;
 	PancystarEngine::PancyString pso_name;
 	ComPtr<ID3D12PipelineState> pso_data;
+	//反射读取
+	PipelineStateDescGraphicJsonReflect grapthic_reflect;
+	PipelineStateDescComputeJsonReflect compute_reflect;
 public:
 	PancyPiplineStateObjectGraph(const std::string &pso_name_in);
 	~PancyPiplineStateObjectGraph();
@@ -279,7 +401,7 @@ public:
 private:
 	PancystarEngine::EngineFailReason GetInputDesc(ComPtr<ID3D12ShaderReflection> t_ShaderReflection, std::vector<D3D12_INPUT_ELEMENT_DESC> &t_InputElementDescVec);
 	PancystarEngine::EngineFailReason BuildCbufferByShaderReflect(ComPtr<ID3D12ShaderReflection> &now_shader_reflect);
-	PancystarEngine::EngineFailReason ParseDiscriptorDistribution(std::string &file_name,const Json::Value &jsonRoot);
+	PancystarEngine::EngineFailReason ParseDiscriptorDistribution(const std::vector<DescriptorTypeDesc> &descriptor_desc_in);
 };
 
 

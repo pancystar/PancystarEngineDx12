@@ -1,24 +1,24 @@
 {
-  "PSOType": "PSO_TYPE_COMPUTE",
-  "RootSignature": "json\\root_signature\\skinmesh_root_signature.json",
-  "ComputeShader": "shader\\skinmesh.hlsl",
-  "ComputeShaderFunc": "CSMain",
-  "DescriptorType": [
+  "pipeline_state_type": "enum PSOType@-->PSO_TYPE_COMPUTE",
+  "root_signature_file": "json\\root_signature\\skinmesh_root_signature.json",
+  "compute_shader_file": "shader\\skinmesh.hlsl",
+  "compute_shader_func": "CSMain",
+  "descriptor_type": [
     {
       "name": "per_object",
-      "type": "CbufferPrivate"
+      "type": "enum PancyShaderDescriptorType@-->CbufferPrivate"
     },
     {
       "name": "vertex_data",
-      "type": "SRVPrivate"
+      "type": "enum PancyShaderDescriptorType@-->SRVPrivate"
     },
     {
       "name": "bone_matrix_buffer",
-      "type": "SRVGlobel"
+      "type": "enum PancyShaderDescriptorType@-->SRVGlobel"
     },
     {
       "name": "mesh_anim_data",
-      "type": "SRVGlobel"
+      "type": "enum PancyShaderDescriptorType@-->SRVGlobel"
     }
   ]
 }

@@ -15,6 +15,7 @@ struct JsonReflectData
 	pancy_object_id real_used_size = 1; //标识数据的真实使用大小(仅数组与vector)
 	void* data_pointer = NULL;             //数据的内容
 };
+#define MaxVectorSize 999999999
 //基本反射类
 class PancyJsonReflect
 {
@@ -56,7 +57,7 @@ private:
 	//将数据写入到json节点
 	PancystarEngine::EngineFailReason SaveToJsonNode(const std::string &parent_name, Json::Value &root_value);
 	//根据结构体反射为子类开辟反射信息
-	virtual PancystarEngine::EngineFailReason InitChildReflectClass() = 0;
+	virtual PancystarEngine::EngineFailReason InitChildReflectClass();
 	//注册所有的反射变量
 	virtual void InitBasicVariable() = 0;
 	//获取节点的父节点名称
@@ -100,7 +101,7 @@ protected:
 	);
 	PancystarEngine::EngineFailReason AddVariable(const std::string &name, void*variable_data, const size_t &variable_type, const std::string &variable_type_name);
 	PancystarEngine::EngineFailReason AddArray(const std::string &name, void*variable_data, const size_t &variable_type, const std::string &variable_type_name, const pancy_object_id &array_size);
-	PancystarEngine::EngineFailReason AddReflectData(const PancyJsonMemberType &type_data, const std::string &name, const std::string &variable_type_name, void*variable_data, const pancy_object_id &array_size = 1);
+	PancystarEngine::EngineFailReason AddReflectData(const PancyJsonMemberType &type_data, const std::string &name, const std::string &variable_type_name, void*variable_data, const pancy_object_id &array_size = MaxVectorSize);
 	PancystarEngine::EngineFailReason AddChildStruct(PancyJsonReflect*data_pointer, const std::string &name, const pancy_resource_size &data_size);
 	template<typename DataClassDesc, typename ReflectClassDesc>
 	void AddChildReflectClass();
