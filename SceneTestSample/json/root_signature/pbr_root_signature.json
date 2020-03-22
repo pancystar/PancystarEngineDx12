@@ -73,7 +73,7 @@
       "MipLODBias": 0.0,
       "MaxAnisotropy": 8,
       "ComparisonFunc": "enum D3D12_COMPARISON_FUNC@-->D3D12_COMPARISON_FUNC_NEVER",
-      "BorderColor": "enum D3D12_STATIC_BORDER_COLOR@-->DD3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK",
+      "BorderColor": "enum D3D12_STATIC_BORDER_COLOR@-->D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK",
       "MinLOD": 0.0,
       "MaxLOD": 3.402823466e+38,
       "ShaderRegister": 0,

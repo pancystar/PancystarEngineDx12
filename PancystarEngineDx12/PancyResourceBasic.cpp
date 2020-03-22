@@ -54,12 +54,12 @@ PancystarEngine::EngineFailReason VirtualResourcePointer::MakeShared(const pancy
 		}
 		resource_id = 0;
 	}
-	check_error = PancyGlobelResourceControl::GetInstance()->AddResurceReference(resource_id);
+	check_error = PancyGlobelResourceControl::GetInstance()->GetResourceById(resource_id_in, &data_pointer);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	check_error = PancyGlobelResourceControl::GetInstance()->GetResourceById(resource_id_in, &data_pointer);
+	check_error = PancyGlobelResourceControl::GetInstance()->AddResurceReference(resource_id_in);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -160,18 +160,12 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
 	resource_desc.SampleDesc.Count = 1;
 	resource_desc.SampleDesc.Quality = 0;
 	resource_desc.Width = data_size;
-	D3D12_CLEAR_VALUE clearValue;
-	clearValue.Format = resource_desc.Format;
-	clearValue.Color[0] = 0.0f;
-	clearValue.Color[1] = 0.0f;
-	clearValue.Color[2] = 0.0f;
-	clearValue.Color[3] = 0.0f;
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreatePlacedResource(
 		ringbuffer_heap_data.Get(),
 		alloc_start_position,
 		&resource_desc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
-		&clearValue,
+		NULL,
 		IID_PPV_ARGS(&resource_data)
 	);
 	if (FAILED(hr))
@@ -196,19 +190,20 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
 PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 	PancyRenderCommandList *commandlist,
 	void* data_pointer,
-	const pancy_resource_size &data_size,
+	const pancy_resource_size &data_size_in,
 	ResourceBlockGpu &gpu_resource_pointer
 )
 {
 	PancystarEngine::EngineFailReason check_error;
 	UploadResourceBlock* new_dynamic_block;
+	pancy_resource_size data_size = PancystarEngine::SizeAligned(data_size_in,65536);
 	check_error = AllocNewDynamicData(data_size, gpu_resource_pointer, &new_dynamic_block);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//将数据从CPU拷贝到dynamic-buffer
-	check_error = new_dynamic_block->dynamic_buffer_resource.WriteFromCpuToBuffer(0, data_pointer, data_size);
+	check_error = new_dynamic_block->dynamic_buffer_resource.WriteFromCpuToBuffer(0, data_pointer, data_size_in);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -241,7 +236,8 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 {
 	PancystarEngine::EngineFailReason check_error;
 	UploadResourceBlock* new_dynamic_block;
-	check_error = AllocNewDynamicData(data_size, gpu_resource_pointer, &new_dynamic_block);
+	pancy_resource_size size_alied = PancystarEngine::SizeAligned(data_size,65536);
+	check_error = AllocNewDynamicData(size_alied, gpu_resource_pointer, &new_dynamic_block);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -267,6 +263,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 	);
 	if (!check_error.CheckIfSucceed())
 	{
+
 		return check_error;
 	}
 	//添加资源记录到队列
@@ -343,6 +340,14 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 	}
 	else 
 	{
+		resource_type_name = typeid(*this).name();
+		BuildJsonReflect(&resource_desc_value);
+		if (resource_desc_value == NULL)
+		{
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not parse json type: " + resource_name_in);
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::Create", error_message);
+			return error_message;
+		}
 		auto check_error = LoadResourceDirect(resource_name_in);
 		if (!check_error.CheckIfSucceed())
 		{

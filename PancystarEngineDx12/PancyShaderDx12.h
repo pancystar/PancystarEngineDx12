@@ -118,7 +118,7 @@ struct PipelineStateDescGraphic
 	std::string hull_shader_func;
 	std::string domin_shader_file;
 	std::string domin_shader_func;
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
 	std::vector<DescriptorTypeDesc> descriptor_type;
 };
 class PipelineStateDescGraphicJsonReflect :public PancyJsonReflectTemplate<PipelineStateDescGraphic>

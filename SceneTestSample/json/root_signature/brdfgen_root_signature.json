@@ -1,10 +1,7 @@
 {
-  "D3D12_ROOT_PARAMETER": [
+  "root_parameter_data": [
   ],
-  "NumStaticSamplers": 0,
-  "D3D12_STATIC_SAMPLER_DESC": [
+  "static_sampler_data": [
   ],
-  "RootSignatureFlags": [
-    "D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT"
-  ]
+  "root_signature_flags": "enum D3D12_ROOT_SIGNATURE_FLAGS@-->D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT"
 }

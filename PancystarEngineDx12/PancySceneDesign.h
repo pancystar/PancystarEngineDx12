@@ -71,7 +71,8 @@ private:
 		const pancy_object_id &frame_id,
 		const pancy_object_id &PSO_id,
 		const std::string &cbuffer_name,
-		PancyConstantBuffer ** cbuffer_data
+		PancyConstantBuffer ** cbuffer_data,
+		bool &if_create
 	);
 };
 

@@ -255,7 +255,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource()
 
 	PancyCommonTextureDesc resource_desc;
 	//将资源的格式信息从反射类内拷贝出来
-	check_error = resource_desc_value->CopyMemberData(&resource_desc, typeid(resource_desc).name(), sizeof(resource_desc));
+	check_error = resource_desc_value->CopyMemberData(&resource_desc, typeid(&resource_desc).name(), sizeof(resource_desc));
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -285,6 +285,8 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadResourceDirect(const st
 	PancyCommonTextureDesc texture_desc;
 	texture_desc.texture_type = PancyTextureType::Texture_Static_Load;
 	texture_desc.texture_data_file = file_name;
+	texture_desc.if_force_srgb = false;
+	texture_desc.if_gen_mipmap = false;
 	auto check_error = LoadPictureFromFile(texture_desc);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -311,9 +313,9 @@ PancyBasicTexture::~PancyBasicTexture()
 PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const PancyCommonTextureDesc &texture_desc)
 {
 	PancystarEngine::EngineFailReason check_error;
-	std::string picture_path_file;
+	std::string picture_path_file = texture_desc.texture_data_file;
 	//根据路径格式决定是否修改为绝对路径
-	RebuildTextureDataPath(texture_desc.texture_data_file, picture_path_file);
+	//RebuildTextureDataPath(texture_desc.texture_data_file, picture_path_file);
 
 	PancystarEngine::PancyString file_name = picture_path_file;
 	std::string file_type = GetFileTile(picture_path_file);
@@ -633,7 +635,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const P
 				return check_error;
 			}
 			//由于是从文件中读取到的格式数据，这里需要重置反射格式数据
-			check_error = resource_desc_value->ResetMemoryByMemberData(&new_texture_desc,typeid(new_texture_desc).name(),sizeof(new_texture_desc));
+			check_error = resource_desc_value->ResetMemoryByMemberData(&new_texture_desc,typeid(&new_texture_desc).name(),sizeof(new_texture_desc));
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -689,7 +691,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 	UINT* pNumRows = reinterpret_cast<UINT*>(pRowSizesInBytes + subres_size);
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&texture_desc.texture_res_desc, 0, subres_size, 0, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
 	//拷贝资源数据
-	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, subresources, pLayouts, pRowSizesInBytes, pNumRows, subres_size,*texture_data);
+	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, subresources, pLayouts, pRowSizesInBytes, pNumRows, RequiredSize,*texture_data);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -723,7 +725,6 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 )
 {
 	ComPtr<ID3D12Resource> resource_data;
-	D3D12_RESOURCE_DESC desc_texture;
 	PancystarEngine::EngineFailReason check_error;
 	if (loadFlags & DirectX::DDS_LOADER_FORCE_SRGB)
 	{
@@ -739,11 +740,11 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	new_texture_desc.texture_res_desc.SampleDesc.Quality = 0;
 	new_texture_desc.texture_res_desc.Dimension = resDim;
 	new_texture_desc.heap_type = D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
-	new_texture_desc.heap_flag_in = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES;
+	new_texture_desc.heap_flag_in = D3D12_HEAP_FLAG_NONE;
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(new_texture_desc.heap_type),
 		new_texture_desc.heap_flag_in,
-		&desc_texture,
+		&new_texture_desc.texture_res_desc,
 		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON,
 		nullptr,
 		IID_PPV_ARGS(&resource_data)
@@ -759,7 +760,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	texture_data = new ResourceBlockGpu(subresources_size, resource_data, new_texture_desc.heap_type, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
 	//确定加载纹理的SRV格式
 	tex_srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	tex_srv_desc.Format = desc_texture.Format;
+	tex_srv_desc.Format = new_texture_desc.texture_res_desc.Format;
 	if (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE1D)
 	{
 		tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
@@ -779,7 +780,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	{
 		tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
 	}
-	tex_srv_desc.Texture2D.MipLevels = desc_texture.MipLevels;
+	tex_srv_desc.Texture2D.MipLevels = new_texture_desc.texture_res_desc.MipLevels;
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const PancyCommonTextureDesc &texture_desc)
@@ -1033,7 +1034,7 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildTextureResource(
 	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicTexture>(
 		name_resource_in,
 		&resource_data,
-		typeid(PancyCommonTextureDesc).name(),
+		typeid(PancyCommonTextureDesc*).name(),
 		sizeof(PancyCommonTextureDesc),
 		id_need,
 		if_allow_repeat

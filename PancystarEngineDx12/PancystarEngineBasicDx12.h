@@ -193,6 +193,7 @@ namespace PancystarEngine
 		}
 	};
 	void DivideFilePath(const std::string &full_file_name_in,std::string &file_path_out,std::string &file_name_out, std::string &file_tail_out);
+	pancy_resource_size SizeAligned(const pancy_resource_size &size_in, const pancy_resource_size &size_aligned_in);
 	static EngineFailReason succeed;
 }
 

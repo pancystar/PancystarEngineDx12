@@ -46,7 +46,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	default_tex_RGB_dxdesc.SampleDesc.Count = 1;
 	default_tex_RGB_dxdesc.SampleDesc.Quality = 0;
 	//创建rgb8类型的窗口大小纹理格式
-	default_tex_desc_RGB.heap_flag_in = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
+	default_tex_desc_RGB.heap_flag_in = D3D12_HEAP_FLAG_NONE;
 	default_tex_desc_RGB.heap_type = D3D12_HEAP_TYPE_DEFAULT;
 	default_tex_desc_RGB.if_force_srgb = false;
 	default_tex_desc_RGB.if_gen_mipmap = false;
@@ -64,7 +64,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	default_tex_desc_depthstencil = default_tex_desc_RGB;
 	default_tex_desc_depthstencil.texture_res_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	default_tex_desc_depthstencil.texture_res_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	default_tex_desc_depthstencil.heap_flag_in = D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
+	default_tex_desc_depthstencil.heap_flag_in = D3D12_HEAP_FLAG_NONE;
 	
 	if (If_dsv_loaded)
 	{
@@ -82,7 +82,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	{
 		//加载深度模板缓冲区
 		VirtualResourcePointer default_dsv_resource;
-		auto check_error = BuildTextureResource("ScreenSpaceDepthstencil", default_tex_desc_depthstencil, default_dsv_resource,false);
+		auto check_error = BuildTextureResource("ScreenSpaceDepthstencil", default_tex_desc_depthstencil, default_dsv_resource,true);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -117,7 +117,8 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbufferByFrame(
 	const pancy_object_id &frame_id,
 	const pancy_object_id &PSO_id,
 	const std::string &cbuffer_name,
-	PancyConstantBuffer ** cbuffer_data
+	PancyConstantBuffer ** cbuffer_data,
+	bool &if_create
 )
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -125,6 +126,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbufferByFrame(
 	auto PSO_cbuffer_list = frame_constant_buffer[frame_id].find(PSO_id);
 	if (PSO_cbuffer_list == frame_constant_buffer[frame_id].end())
 	{
+		if_create = true;
 		//指定的pso尚未创建cbuffer
 		std::string pso_name_pre;
 		//先检查pso是否存在
@@ -162,8 +164,9 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 )
 {
 	PancystarEngine::EngineFailReason check_error;
+	bool if_create = false;
 	pancy_object_id now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	check_error = GetGlobelCbufferByFrame(now_frame, PSO_id, cbuffer_name, cbuffer_data);
+	check_error = GetGlobelCbufferByFrame(now_frame, PSO_id, cbuffer_name, cbuffer_data, if_create);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -185,7 +188,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	for (pancy_object_id i = 0; i < frame_num; ++i)
 	{
 		PancyConstantBuffer *cbuffer_data;
-		check_error = GetGlobelCbufferByFrame(frame_num, PSO_id, cbuffer_name, &cbuffer_data);
+		check_error = GetGlobelCbufferByFrame(i, PSO_id, cbuffer_name, &cbuffer_data, if_create);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -207,7 +210,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	//创建描述符
 	if (if_create) 
 	{
-		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(pso_name + "::" + cbuffer_name, back_buffer_desc, back_buffer_data, true);
+		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(cbuffer_name, back_buffer_desc, back_buffer_data, true);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;

@@ -44,6 +44,23 @@ PancyResourceLoadState ResourceBlockGpu::GetResourceLoadingState()
 	}
 	return now_res_load_state;
 }
+PancystarEngine::EngineFailReason ResourceBlockGpu::WaitForResourceLoading()
+{
+	//先检查资源是否正在往GPU中拷贝
+	if (if_start_copying_gpu && now_res_load_state == PancyResourceLoadState::RESOURCE_LOAD_GPU_LOADING)
+	{
+		//等待资源拷贝结束
+		auto check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->WaitGpuBrokenFence(wait_fence);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//修改资源状态
+		now_res_load_state = PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH;
+		if_start_copying_gpu = false;
+	}
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason ResourceBlockGpu::ResourceBarrier(
 	PancyRenderCommandList *commandlist,
 	const D3D12_RESOURCE_STATES &last_state,
@@ -272,9 +289,18 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::ReadFromBufferToCpu(
 }
 PancystarEngine::EngineFailReason ResourceBlockGpu::BuildCommonDescriptorView(
 	const BasicDescriptorDesc &descriptor_desc,
-	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor
+	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+	bool if_wait_for_gpu
 )
 {
+	if (if_wait_for_gpu)
+	{
+		auto check_error = WaitForResourceLoading();
+		if (!check_error.CheckIfSucceed()) 
+		{
+			return check_error;
+		}
+	}
 	PancyResourceLoadState now_load_state = GetResourceLoadingState();
 	if (now_load_state == PancyResourceLoadState::RESOURCE_LOAD_CPU_FINISH || now_load_state == PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH)
 	{
@@ -316,7 +342,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildCommonDescriptorView(
 	}
 	else
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a build finished,could not build descriptor view");
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not build finished,could not build descriptor view");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::BuildCommonDescriptorView", error_message);
 		return error_message;
 	}
@@ -326,9 +352,18 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildVertexBufferView(
 	const pancy_resource_size &offset,
 	const pancy_resource_size &buffer_size,
 	UINT StrideInBytes,
-	D3D12_VERTEX_BUFFER_VIEW &VBV_out
+	D3D12_VERTEX_BUFFER_VIEW &VBV_out,
+	bool if_wait_for_gpu
 )
 {
+	if (if_wait_for_gpu)
+	{
+		auto check_error = WaitForResourceLoading();
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
 	PancyResourceLoadState now_load_state = GetResourceLoadingState();
 	if (now_load_state == PancyResourceLoadState::RESOURCE_LOAD_CPU_FINISH || now_load_state == PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH)
 	{
@@ -349,9 +384,18 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildIndexBufferView(
 	const pancy_resource_size &offset,
 	const pancy_resource_size &buffer_size,
 	DXGI_FORMAT StrideInBytes,
-	D3D12_INDEX_BUFFER_VIEW &IBV_out
+	D3D12_INDEX_BUFFER_VIEW &IBV_out,
+	bool if_wait_for_gpu
 )
 {
+	if (if_wait_for_gpu)
+	{
+		auto check_error = WaitForResourceLoading();
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
 	PancyResourceLoadState now_load_state = GetResourceLoadingState();
 	if (now_load_state == PancyResourceLoadState::RESOURCE_LOAD_CPU_FINISH || now_load_state == PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH)
 	{

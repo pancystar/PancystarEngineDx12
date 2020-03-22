@@ -256,23 +256,21 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason check_error;
 		all_vertex_need = all_model_vertex;
 		all_index_need = all_model_index;
-		const UINT VertexBufferSize = all_vertex_need * sizeof(T);
-		UINT IndexBufferSize;
-		if (sizeof(IndexType) == sizeof(UINT)) 
+		pancy_resource_size vbuffer_realszie = static_cast<pancy_resource_size>(all_vertex_need) * sizeof(T);
+		pancy_resource_size ibuffer_real_size = 0;
+		if (sizeof(IndexType) == sizeof(UINT) || sizeof(IndexType) == sizeof(uint16_t))
 		{
-			IndexBufferSize = all_index_need * sizeof(UINT);
-		}
-		else if (sizeof(IndexType) == sizeof(uint16_t))
-		{
-			IndexBufferSize = all_index_need * sizeof(uint16_t);
+			ibuffer_real_size = static_cast<pancy_resource_size>(all_index_need) * sizeof(IndexType);
 		}
 		else 
 		{
-			IndexBufferSize = 0;
+			ibuffer_real_size = 0;
 			PancystarEngine::EngineFailReason check_error(E_FAIL,"unsurpported index buffer type: "+std::to_string(sizeof(IndexType)));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build geometry data ", check_error);
 			return check_error;
 		}
+		auto VertexBufferSize = PancystarEngine::SizeAligned(vbuffer_realszie,65536);
+		auto IndexBufferSize = PancystarEngine::SizeAligned(ibuffer_real_size, 65536);
 		//创建顶点缓冲区
 		PancyCommonBufferDesc buffer_resource_desc;
 		buffer_resource_desc.buffer_type = Buffer_Vertex;
@@ -309,10 +307,12 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
+
 		//todo 邻接三角面计算
 		if (if_model_adj)
 		{
 		}
+		//todo:修改成使用resource拷贝的格式
 		//获取用于拷贝的commond list
 		PancyRenderCommandList *copy_render_list;
 		PancyThreadIdGPU copy_render_list_ID;
@@ -327,7 +327,7 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
-		check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, vertex_data, VertexBufferSize, *vertex_buffer_gpu_resource);
+		check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, vertex_data, vbuffer_realszie, *vertex_buffer_gpu_resource);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -338,7 +338,7 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
-		check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, index_data, IndexBufferSize, *index_buffer_gpu_resource);
+		check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, index_data, ibuffer_real_size, *index_buffer_gpu_resource);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -350,6 +350,11 @@ namespace PancystarEngine
 		PancyFenceIdGPU WaitFence;
 		ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
 		check_error = vertex_buffer_gpu_resource->SetResourceCopyBrokenFence(WaitFence);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		check_error = index_buffer_gpu_resource->SetResourceCopyBrokenFence(WaitFence);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -369,7 +374,7 @@ namespace PancystarEngine
 			}
 		}
 		//创建顶点缓存视图
-		check_error = vertex_buffer_gpu_resource->BuildVertexBufferView(0, VertexBufferSize,sizeof(T), geometry_vertex_buffer_view_in);
+		check_error = vertex_buffer_gpu_resource->BuildVertexBufferView(0, vbuffer_realszie,sizeof(T), geometry_vertex_buffer_view_in);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -384,7 +389,7 @@ namespace PancystarEngine
 		{
 			index_format = DXGI_FORMAT_R16_UINT;
 		}
-		check_error = index_buffer_gpu_resource->BuildIndexBufferView(0, IndexBufferSize, index_format, geometry_index_buffer_view_in);
+		check_error = index_buffer_gpu_resource->BuildIndexBufferView(0, ibuffer_real_size, index_format, geometry_index_buffer_view_in);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;

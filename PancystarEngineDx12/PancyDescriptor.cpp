@@ -845,6 +845,19 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BindBindlessDescriptor(
 	}
 	return PancystarEngine::succeed;
 }
+//描述符堆反射
+CommonDescriptorHeapJsonReflect::CommonDescriptorHeapJsonReflect()
+{
+}
+void CommonDescriptorHeapJsonReflect::InitBasicVariable()
+{
+	Init_Json_Data_Vatriable(reflect_data.directx_descriptor.Flags);
+	Init_Json_Data_Vatriable(reflect_data.directx_descriptor.NodeMask);
+	Init_Json_Data_Vatriable(reflect_data.bind_descriptor_num);
+	Init_Json_Data_Vatriable(reflect_data.bindless_descriptor_num);
+	Init_Json_Data_Vatriable(reflect_data.per_segmental_num);
+	Init_Json_Data_Vatriable(reflect_data.directx_descriptor.Type);
+}
 //描述符堆管理器
 PancyDescriptorHeapControl::PancyDescriptorHeapControl()
 {
@@ -855,6 +868,7 @@ PancyDescriptorHeapControl::PancyDescriptorHeapControl()
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	descriptor_heap_desc_reflect.Create();
 	//创建三个基础的描述符堆
 	PancystarEngine::EngineFailReason check_error;
 	check_error = BuildNewDescriptorHeapFromJson("EngineResource\\BasicDescriptorHeap\\DesciptorHeapShaderResource.json", common_descriptor_heap_shader_resource);
@@ -883,52 +897,22 @@ PancyDescriptorHeapControl::~PancyDescriptorHeapControl()
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptorHeapFromJson(const std::string &json_name, const Json::Value &root_value, pancy_resource_id &descriptor_heap_id)
 {
 	PancystarEngine::EngineFailReason check_error;
+	//将格式数据从json中反射出来
+	check_error = descriptor_heap_desc_reflect.LoadFromJsonMemory(json_name,root_value);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	PancyDescriptorHeapDesc now_descriptor_heap_desc;
+	check_error = descriptor_heap_desc_reflect.CopyMemberData(&now_descriptor_heap_desc,typeid(&now_descriptor_heap_desc).name(),sizeof(now_descriptor_heap_desc));
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	now_descriptor_heap_desc.directx_descriptor.NumDescriptors = now_descriptor_heap_desc.bind_descriptor_num + now_descriptor_heap_desc.bindless_descriptor_num;
+	//创建描述符堆
 	PancyDescriptorHeap *descriptor_SRV = new PancyDescriptorHeap();
-	D3D12_DESCRIPTOR_HEAP_DESC descriptor_heap_desc;
-	pancy_json_value value_root;
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "Flags", pancy_json_data_type::json_data_enum, value_root);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	descriptor_heap_desc.Flags = static_cast<D3D12_DESCRIPTOR_HEAP_FLAGS>(value_root.int_value);
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "NodeMask", pancy_json_data_type::json_data_int, value_root);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	descriptor_heap_desc.NodeMask = value_root.int_value;
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "Type", pancy_json_data_type::json_data_enum, value_root);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	descriptor_heap_desc.Type = static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(value_root.int_value);
-	pancy_object_id bind_descriptor_num;
-	pancy_object_id bindless_descriptor_num;
-	pancy_object_id per_segmental_size;
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "BindDescriptorNum", pancy_json_data_type::json_data_int, value_root);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	bind_descriptor_num = static_cast<pancy_object_id>(value_root.int_value);
-
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "BindlessDescriptorNum", pancy_json_data_type::json_data_int, value_root);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	bindless_descriptor_num = static_cast<pancy_object_id>(value_root.int_value);
-
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(json_name, root_value, "PerSegmentalSize", pancy_json_data_type::json_data_int, value_root);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	per_segmental_size = static_cast<pancy_object_id>(value_root.int_value);
-	descriptor_heap_desc.NumDescriptors = bind_descriptor_num + bindless_descriptor_num;
-	check_error = descriptor_SRV->Create(descriptor_heap_desc, json_name, bind_descriptor_num, bindless_descriptor_num, per_segmental_size);
+	check_error = descriptor_SRV->Create(now_descriptor_heap_desc.directx_descriptor, json_name, now_descriptor_heap_desc.bind_descriptor_num, now_descriptor_heap_desc.bindless_descriptor_num, now_descriptor_heap_desc.per_segmental_num);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;

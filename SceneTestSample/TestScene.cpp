@@ -74,12 +74,6 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildGlobelTextureSRV(const
 	std::vector<VirtualResourcePointer> globelmemory_data;
 	BasicDescriptorDesc tex_bind_SRV_desc;
 	tex_bind_SRV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
-	
-	check_error = LoadDDSTextureResource(shader_resource, tex_res_id);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
 	auto texture_gpu_resource = dynamic_cast<PancyBasicTexture*>(tex_res_id.GetResourceData());
 	if (!check_error.CheckIfSucceed())
 	{
@@ -134,7 +128,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 		return check_error;
 	}
 	//读取pbr纹理
-	check_error = LoadDDSTextureResource("data\\Cubemap.json", tex_ibl_spec_id);
+	check_error = LoadDDSTextureResource("data\\Cubemap.dds", tex_ibl_spec_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -195,12 +189,14 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 
 	
 	//加载一个pso
+	/*
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json", PSO_test);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	
+	*/
+	//加载一个pso
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr.json", PSO_pbr);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -217,7 +213,12 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	*/
 	//调用一次骨骼动画单例，完成全局缓冲区的注册
 	PancystarEngine::PancySkinAnimationControl::GetInstance();
-
+	std::vector<PancyConstantBuffer *> now_used_cbuffer;
+	check_error = GetGlobelCbuffer(PSO_pbr, "per_frame", now_used_cbuffer);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	check_error = BuildSkinmeshComputeDescriptor();
 	if (!check_error.CheckIfSucceed())
 	{
@@ -236,8 +237,8 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 {
 	PancystarEngine::EngineFailReason check_error;
 	//加载骨骼动画的描述符信息
-	std::vector<PancyConstantBuffer *> now_used_cbuffer;
-	check_error = GetGlobelCbuffer(PSO_test, "per_frame", now_used_cbuffer);
+	//std::vector<PancyConstantBuffer *> now_used_cbuffer;
+	//check_error = GetGlobelCbuffer(PSO_test, "per_frame", now_used_cbuffer);
 	//获取模型的描述符数据(todo:后面要改成模型材质分离的格式)
 	std::vector<VirtualResourcePointer> resource_data_per_frame;
 	std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> resource_desc_per_data;
@@ -376,7 +377,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	default_tex_RGB_desc.SampleDesc.Count = 1;
 	default_tex_RGB_desc.SampleDesc.Quality = 0;
 	PancyCommonTextureDesc new_texture_desc;
-	new_texture_desc.heap_flag_in = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
+	new_texture_desc.heap_flag_in = D3D12_HEAP_FLAG_NONE;
 	new_texture_desc.heap_type = D3D12_HEAP_TYPE_DEFAULT;
 	new_texture_desc.if_force_srgb = false;
 	new_texture_desc.if_gen_mipmap = false;
@@ -677,7 +678,7 @@ void scene_test_simple::Update(float delta_time)
 	updateinput(delta_time);
 	PancystarEngine::EngineFailReason check_error;
 	PancyConstantBuffer *PSO_test_cbuffer, *PSO_pbr_cbuffer;
-	check_error = GetGlobelCbuffer(PSO_test, "per_frame", &PSO_test_cbuffer);
+	//check_error = GetGlobelCbuffer(PSO_test, "per_frame", &PSO_test_cbuffer);
 	check_error = GetGlobelCbuffer(PSO_pbr, "per_frame", &PSO_pbr_cbuffer);
 	if (check_error.CheckIfSucceed())
 	{
@@ -690,12 +691,13 @@ void scene_test_simple::Update(float delta_time)
 		PancyCamera::GetInstance()->CountInvviewMatrix(&invview_matrix);
 		PancyCamera::GetInstance()->GetViewPosition(&view_pos);
 		DirectX::XMStoreFloat4x4(&view_proj_matrix, DirectX::XMLoadFloat4x4(&view_matrix)*proj_mat);
+		/*
 		PSO_test_cbuffer->SetMatrix("view_matrix", view_matrix, 0);
 		PSO_test_cbuffer->SetMatrix("projectmatrix", proj_matrix, 0);
 		PSO_test_cbuffer->SetMatrix("view_projectmatrix", view_proj_matrix, 0);
 		PSO_test_cbuffer->SetMatrix("invview_matrix", invview_matrix, 0);
 		PSO_test_cbuffer->SetFloat4("view_position", view_pos, 0);
-
+		*/
 		PSO_pbr_cbuffer->SetMatrix("view_matrix", view_matrix, 0);
 		PSO_pbr_cbuffer->SetMatrix("projectmatrix", proj_matrix, 0);
 		PSO_pbr_cbuffer->SetMatrix("view_projectmatrix", view_proj_matrix, 0);

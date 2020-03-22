@@ -64,22 +64,27 @@ public:
 	//创建资源访问格式
 	PancystarEngine::EngineFailReason BuildCommonDescriptorView(
 		const BasicDescriptorDesc &descriptor_desc,
-		const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor
+		const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
+		bool if_wait_for_gpu = true
 	);
 	PancystarEngine::EngineFailReason BuildVertexBufferView(
 		const pancy_resource_size &offset,
 		const pancy_resource_size &buffer_size,
 		UINT StrideInBytes,
-		D3D12_VERTEX_BUFFER_VIEW &VBV_out
+		D3D12_VERTEX_BUFFER_VIEW &VBV_out,
+		bool if_wait_for_gpu = true
 	);
 	PancystarEngine::EngineFailReason BuildIndexBufferView(
 		const pancy_resource_size &offset,
 		const pancy_resource_size &buffer_size,
 		DXGI_FORMAT StrideInBytes,
-		D3D12_INDEX_BUFFER_VIEW &IBV_out
+		D3D12_INDEX_BUFFER_VIEW &IBV_out,
+		bool if_wait_for_gpu = true
 	);
 	//查看当前资源的加载状态
 	PancyResourceLoadState GetResourceLoadingState();
+	//等待GPU加载资源结束
+	PancystarEngine::EngineFailReason WaitForResourceLoading();
 	//查看当前资源的使用格式
 	D3D12_RESOURCE_STATES GetResourceState()
 	{

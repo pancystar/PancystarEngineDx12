@@ -217,9 +217,25 @@ namespace PancystarEngine
 		//描述符ID
 		BindlessResourceViewID descriptor_pack_id;
 	};
+	//描述符的json反射
+	struct PancyDescriptorHeapDesc 
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC directx_descriptor;
+		pancy_object_id bind_descriptor_num;
+		pancy_object_id bindless_descriptor_num;
+		pancy_object_id per_segmental_num;
+	};
+	class CommonDescriptorHeapJsonReflect :public PancyJsonReflectTemplate<PancyDescriptorHeapDesc>
+	{ 
+	public:
+		CommonDescriptorHeapJsonReflect();
+	private:
+		void InitBasicVariable() override;
+	};
 	//用于管理所有的描述符堆
 	class PancyDescriptorHeapControl
 	{
+		CommonDescriptorHeapJsonReflect descriptor_heap_desc_reflect;
 		pancy_resource_id descriptor_heap_id_self_add;
 		std::queue<pancy_resource_id> descriptor_heap_id_reuse;
 		pancy_resource_id common_descriptor_heap_shader_resource;
@@ -229,6 +245,7 @@ namespace PancystarEngine
 		PancyDescriptorHeapControl();
 	public:
 		~PancyDescriptorHeapControl();
+
 		static PancyDescriptorHeapControl* GetInstance()
 		{
 			static PancyDescriptorHeapControl* this_instance;

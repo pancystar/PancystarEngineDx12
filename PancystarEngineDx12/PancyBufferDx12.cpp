@@ -28,6 +28,57 @@ void PancyBasicBuffer::BuildJsonReflect(PancyJsonReflect **pointer_data)
 {
 	*pointer_data = new CommonBufferJsonReflect();
 }
+PancystarEngine::EngineFailReason PancyBasicBuffer::WriteDataToBuffer(void* cpu_data_pointer, const pancy_resource_size &data_size)
+{
+	//将资源的格式信息从反射类内拷贝出来
+	PancyCommonBufferDesc resource_desc;
+	auto check_error = resource_desc_value->CopyMemberData(&resource_desc, typeid(&resource_desc).name(), sizeof(resource_desc));
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = CopyCpuDataToBufferGpu(cpu_data_pointer, data_size);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyBasicBuffer::CopyCpuDataToBufferGpu(void* cpu_data_pointer, const pancy_resource_size &data_size)
+{
+	if (data_size > subresources_size) 
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy data to GPU, size too large than buffer");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicBuffer::CopyCpuDataToBufferGpu", error_message);
+		return error_message;
+	}
+	//获取用于拷贝的commond list
+	PancyRenderCommandList *copy_render_list;
+	PancyThreadIdGPU copy_render_list_ID;
+	auto check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//拷贝资源数据
+	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, cpu_data_pointer, data_size, *buffer_data);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	copy_render_list->UnlockPrepare();
+	//提交渲染命令
+	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
+	//分配等待眼位
+	PancyFenceIdGPU WaitFence;
+	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
+	check_error = buffer_data->SetResourceCopyBrokenFence(WaitFence);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource()
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -116,31 +167,17 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::InitResource()
 	{
 		char* buffer_memory = NULL;
 		//todo:从文件中读取buffer
-		//获取用于拷贝的commond list
-		PancyRenderCommandList *copy_render_list;
-		PancyThreadIdGPU copy_render_list_ID;
-		check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
-		if (!check_error.CheckIfSucceed())
+		if (resource_desc.buffer_data_file != "")
 		{
-			return check_error;
+			/*
+			check_error = CopyCpuDataToBufferGpu(cpu_data_pointer, data_size);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			*/
 		}
-		//拷贝资源数据
-		check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, buffer_memory, subresources_size, *buffer_data);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		copy_render_list->UnlockPrepare();
-		//提交渲染命令
-		ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
-		//分配等待眼位
-		PancyFenceIdGPU WaitFence;
-		ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
-		check_error = buffer_data->SetResourceCopyBrokenFence(WaitFence);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
+
 	}
 	return PancystarEngine::succeed;
 }
@@ -153,9 +190,9 @@ bool PancyBasicBuffer::CheckIfResourceLoadFinish()
 	}
 	return false;
 }
-PancyBasicBuffer::~PancyBasicBuffer() 
+PancyBasicBuffer::~PancyBasicBuffer()
 {
-	if (buffer_data != NULL) 
+	if (buffer_data != NULL)
 	{
 		delete buffer_data;
 	}

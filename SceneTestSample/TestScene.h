@@ -39,7 +39,7 @@ class scene_test_simple : public SceneRoot
 	//¿Õ°×ÎÆÀí
 	PancystarEngine::VirtualResourcePointer tex_empty_id;
 	//psoID
-	pancy_object_id PSO_test;
+	//pancy_object_id PSO_test;
 	pancy_object_id PSO_pbr;
 	//¹Ç÷À¶¯»­ÃèÊö·û
 	pancy_object_id skinmesh_descriptor;

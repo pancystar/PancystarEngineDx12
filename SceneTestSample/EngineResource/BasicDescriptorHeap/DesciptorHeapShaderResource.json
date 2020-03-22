@@ -1,8 +1,10 @@
 {
-  "Flags": "D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE",
-  "NodeMask": 0,
-  "BindDescriptorNum": 65536,
-  "BindlessDescriptorNum": 844800,
-  "PerSegmentalSize": 256,
-  "Type": "D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV"
+  "directx_descriptor": {
+    "Flags": "enum D3D12_DESCRIPTOR_HEAP_FLAGS@-->D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE",
+    "NodeMask": 0,
+    "Type": "enum D3D12_DESCRIPTOR_HEAP_TYPE@-->D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV"
+  },
+  "bind_descriptor_num": 65536,
+  "bindless_descriptor_num": 844800,
+  "per_segmental_num": 256
 }

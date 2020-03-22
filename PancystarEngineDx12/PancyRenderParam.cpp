@@ -228,6 +228,8 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 		{
 			BasicDescriptorDesc cbuffer_desc;
 			cbuffer_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeConstantBufferView;
+			cbuffer_desc.block_size = cbuffer_double_list[i]->GetCbufferSize();
+			cbuffer_desc.offset = cbuffer_double_list[i]->GetCbufferOffsetFromBufferHead();
 			descriptor_desc_list.push_back(cbuffer_desc);
 			VirtualResourcePointer cbuffer_submemory;
 			cbuffer_submemory = cbuffer_double_list[i]->GetBufferResource();

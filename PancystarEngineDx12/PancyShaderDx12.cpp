@@ -781,7 +781,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferBySh
 			PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "CbufferDesc", cbuffer_value);
 			//将当前cbuffer的格式保存在map中
 			ConstantBufferAlloctor *new_cbuffer_alloctar = new ConstantBufferAlloctor(
-				alize_buffer_resource_size,
+				alize_cbuffer_size,
 				buffer_shader.Name,
 				pso_name.GetAsciiString(),
 				cbuffer_resource_desc,

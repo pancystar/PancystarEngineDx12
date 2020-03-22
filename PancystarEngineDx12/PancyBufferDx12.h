@@ -49,9 +49,12 @@ namespace PancystarEngine
 		}
 		//检测当前的资源是否已经被载入GPU
 		bool CheckIfResourceLoadFinish() override;
+		//将cpu数据拷贝到buffer中
+		PancystarEngine::EngineFailReason WriteDataToBuffer(void* cpu_data_pointer,const pancy_resource_size &data_size);
 	private:
 		void BuildJsonReflect(PancyJsonReflect **pointer_data) override;
 		PancystarEngine::EngineFailReason InitResource() override;
+		PancystarEngine::EngineFailReason CopyCpuDataToBufferGpu(void* cpu_data_pointer, const pancy_resource_size &data_size);
 	};
 	ResourceBlockGpu* GetBufferResourceData(VirtualResourcePointer &virtual_pointer, PancystarEngine::EngineFailReason &check_error);
 	PancystarEngine::EngineFailReason BuildBufferResource(

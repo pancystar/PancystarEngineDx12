@@ -54,7 +54,7 @@ namespace PancystarEngine
 		PancystarEngine::EngineFailReason CopyDataToGpu(
 			PancyRenderCommandList *commandlist,
 			void* data_pointer,
-			const pancy_resource_size &data_size,
+			const pancy_resource_size &data_size_in,
 			ResourceBlockGpu &gpu_resource_pointer
 		);
 		PancystarEngine::EngineFailReason CopyDataToGpu(

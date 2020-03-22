@@ -1,8 +1,10 @@
 {
-  "Flags": "D3D12_DESCRIPTOR_HEAP_FLAG_NONE",
-  "NodeMask": 0,
-  "BindDescriptorNum": 65536,
-  "BindlessDescriptorNum": 0,
-  "PerSegmentalSize": 0,
-  "Type": "D3D12_DESCRIPTOR_HEAP_TYPE_RTV"
+  "directx_descriptor": {
+    "Flags": "enum D3D12_DESCRIPTOR_HEAP_FLAGS@-->D3D12_DESCRIPTOR_HEAP_FLAG_NONE",
+    "NodeMask": 0,
+    "Type": "enum D3D12_DESCRIPTOR_HEAP_TYPE@-->D3D12_DESCRIPTOR_HEAP_TYPE_RTV"
+  },
+  "bind_descriptor_num": 65536,
+  "bindless_descriptor_num": 0,
+  "per_segmental_num": 0
 }

@@ -433,12 +433,13 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 	}
 	if_pointmesh = rec_value.bool_value;
 	//模型的pbr类型
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "PbrType", pancy_json_data_type::json_data_enum, rec_value);
+	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "PbrType", pancy_json_data_type::json_data_string, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	model_pbr_type = static_cast<PbrMaterialType>(rec_value.int_value);
+	auto enum_num_value = PancyJsonTool::GetInstance()->GetEnumValue("enum PancystarEngine::PbrMaterialType", rec_value.string_value);
+	model_pbr_type = static_cast<PbrMaterialType>(enum_num_value);
 	//读取模型的网格数据
 	int32_t model_part_num;
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "model_num", pancy_json_data_type::json_data_int, rec_value);

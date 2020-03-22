@@ -168,5 +168,15 @@ void PancystarEngine::DivideFilePath(const std::string &full_file_name_in, std::
 	//获取文件的路径名
 	file_path_out = file_root_name.substr(0, st_pos);
 }
+pancy_resource_size PancystarEngine::SizeAligned(const pancy_resource_size &size_in, const pancy_resource_size &size_aligned_in)
+{
+	pancy_resource_size out_size = size_in;
+	if (size_in % size_aligned_in != 0) 
+	{
+		auto size_scal = size_in / size_aligned_in;
+		out_size = (size_scal + 1) * size_aligned_in;
+	}
+	return out_size;
+}
 //文件加载判重
 static FileBuildRepeatCheck* this_instance = NULL;

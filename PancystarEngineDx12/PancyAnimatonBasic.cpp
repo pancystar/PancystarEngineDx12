@@ -26,7 +26,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 	animation_buffer_resource_desc.buffer_res_desc.Alignment = 0;
 	animation_buffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
 	animation_buffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	animation_buffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	animation_buffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 	animation_buffer_resource_desc.buffer_res_desc.Height = 1;
 	animation_buffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	animation_buffer_resource_desc.buffer_res_desc.MipLevels = 1;
