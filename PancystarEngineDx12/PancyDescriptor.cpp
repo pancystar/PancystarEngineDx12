@@ -765,7 +765,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::GetCommonDescriptorCpuOff
 	pancy_object_id real_offset_descriptor;
 	if (resource_id->second.if_multi_buffer)
 	{
-		pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
+		pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 		real_offset_descriptor = resource_id->second.descriptor_offset[now_frame_id];
 	}
 	else

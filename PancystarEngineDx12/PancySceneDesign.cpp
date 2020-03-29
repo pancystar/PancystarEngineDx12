@@ -65,7 +65,6 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	default_tex_desc_depthstencil.texture_res_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	default_tex_desc_depthstencil.texture_res_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	default_tex_desc_depthstencil.heap_flag_in = D3D12_HEAP_FLAG_NONE;
-	
 	if (If_dsv_loaded)
 	{
 		//todo:删除旧的深度模板缓冲区
@@ -224,7 +223,7 @@ LRESULT CALLBACK engine_windows_main::WndProc(HWND hwnd, UINT message, WPARAM wP
 	{
 	case WM_KEYDOWN:                // 键盘按下消息
 		if (wParam == VK_ESCAPE)    // ESC键
-			DestroyWindow(hwnd);    // 销毁窗口, 并发送一条WM_DESTROY消息
+			PostQuitMessage(0);
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
@@ -357,19 +356,23 @@ WPARAM engine_windows_main::game_end()
 	delete new_scene;
 	delete PancystarEngine::PancySkinAnimationControl::GetInstance();
 	delete PancystarEngine::RenderParamSystem::GetInstance();
-	//delete PancystarEngine::DescriptorControl::GetInstance();
-	delete PancyDx12DeviceBasic::GetInstance();
-	PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
-	delete PancystarEngine::EngineFailLog::GetInstance();
 	delete ThreadPoolGPUControl::GetInstance();
 	delete PancyShaderControl::GetInstance();
 	delete PancyRootSignatureControl::GetInstance();
 	delete PancyEffectGraphic::GetInstance();
-	delete PancyJsonTool::GetInstance();
-	delete PancystarEngine::PancyDescriptorHeapControl::GetInstance();
 	delete PancystarEngine::FileBuildRepeatCheck::GetInstance();
 	delete PancyInput::GetInstance();
 	delete PancyCamera::GetInstance();
-	
+	//销毁用于动态上传本地资源的ring-buffer堆
+	delete PancyDynamicRingBuffer::GetInstance();
+	//销毁dx设备与基础库
+	delete PancyDx12DeviceBasic::GetInstance();
+	PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
+	delete PancystarEngine::EngineFailLog::GetInstance();
+	//销毁json反射工具类
+	delete PancyJsonTool::GetInstance();
+	//todo::这里释放描述符与资源堆的时候需要检查是否已经是空的了，可以用于检查资源的泄露情况
+	delete PancystarEngine::PancyDescriptorHeapControl::GetInstance();
+	delete PancystarEngine::PancyGlobelResourceControl::GetInstance();
 	return msg.wParam;
 }

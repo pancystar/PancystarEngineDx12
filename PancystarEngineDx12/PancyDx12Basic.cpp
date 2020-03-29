@@ -81,6 +81,29 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		return error_message;
 	}
 	command_queue_direct->SetName(PancystarEngine::PancyString("Compute queue").GetUnicodeString().c_str());
+	//创建用于最终销毁队列时，检查queue状态的fence
+	//创建用于接收gpu同步信息的fence
+	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&queue_fence_direct));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create Fence Error When init D3D basic");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDx12DeviceBasic::Init", error_message);
+		return error_message;
+	}
+	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&queue_fence_compute));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create Fence Error When init D3D basic");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDx12DeviceBasic::Init", error_message);
+		return error_message;
+	}
+	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&queue_fence_copy));
+	if (FAILED(hr))
+	{
+		PancystarEngine::EngineFailReason error_message(hr, "Create Fence Error When init D3D basic");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDx12DeviceBasic::Init", error_message);
+		return error_message;
+	}
 	//创建屏幕
 	check_error = ResetScreen(width, height);
 	if (!check_error.CheckIfSucceed())
@@ -155,7 +178,55 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::ResetScreen(uint32_t win
 	current_frame_use = dx12_swapchain->GetCurrentBackBufferIndex();
 	return PancystarEngine::succeed;
 }
-
+void PancyDx12DeviceBasic::FlushGpu()
+{
+	uint64_t fenceValueForSignal = 1;
+	//等待渲染队列结束
+	HANDLE wait_thread_ID_direct;
+	wait_thread_ID_direct = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (wait_thread_ID_direct == nullptr)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Create fence event Error When build commandlist");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render command list", error_message);
+	}
+	command_queue_direct->Signal(queue_fence_direct.Get(), fenceValueForSignal);
+	if (queue_fence_direct->GetCompletedValue() < 1)
+	{
+		queue_fence_direct->SetEventOnCompletion(fenceValueForSignal, wait_thread_ID_direct);
+		WaitForSingleObject(wait_thread_ID_direct, INFINITE);
+	}
+	CloseHandle(wait_thread_ID_direct);
+	//等待计算队列结束
+	HANDLE wait_thread_ID_compute;
+	wait_thread_ID_compute = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (wait_thread_ID_compute == nullptr)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Create fence event Error When build commandlist");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render command list", error_message);
+	}
+	command_queue_compute->Signal(queue_fence_compute.Get(), fenceValueForSignal);
+	if (queue_fence_compute->GetCompletedValue() < 1)
+	{
+		queue_fence_compute->SetEventOnCompletion(fenceValueForSignal, wait_thread_ID_compute);
+		WaitForSingleObject(wait_thread_ID_compute, INFINITE);
+	}
+	CloseHandle(wait_thread_ID_compute);
+	//等待拷贝队列结束
+	HANDLE wait_thread_ID_copy;
+	wait_thread_ID_copy = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (wait_thread_ID_copy == nullptr)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Create fence event Error When build commandlist");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render command list", error_message);
+	}
+	command_queue_copy->Signal(queue_fence_copy.Get(), fenceValueForSignal);
+	if (queue_fence_copy->GetCompletedValue() < 1)
+	{
+		queue_fence_copy->SetEventOnCompletion(fenceValueForSignal, wait_thread_ID_copy);
+		WaitForSingleObject(wait_thread_ID_copy, INFINITE);
+	}
+	CloseHandle(wait_thread_ID_copy);
+}
 void PancyDx12DeviceBasic::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter)
 {
 	ComPtr<IDXGIAdapter1> adapter;

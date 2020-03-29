@@ -2,6 +2,13 @@
 PancyJsonReflect::PancyJsonReflect()
 {
 }
+PancyJsonReflect::~PancyJsonReflect()
+{
+	for (auto child_node = child_node_list.begin(); child_node != child_node_list.end(); ++child_node) 
+	{
+		delete child_node->second;
+	}
+}
 const std::string PancyJsonReflect::GetParentName(const std::string &name_in)
 {
 	int32_t parent_value_tail = name_in.find_last_of('.');

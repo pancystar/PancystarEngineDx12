@@ -9,6 +9,10 @@ class PancyDx12DeviceBasic
 	HWND hwnd_window;
 	uint32_t width;
 	uint32_t height;
+	//清理渲染队列的时候所使用的fence
+	ComPtr<ID3D12Fence> queue_fence_direct;
+	ComPtr<ID3D12Fence> queue_fence_compute;
+	ComPtr<ID3D12Fence> queue_fence_copy;
 	//交换链帧使用信息
 	pancy_object_id current_frame_use;//当前帧的帧号
 	pancy_object_id last_frame_use;//上一帧的帧号
@@ -103,6 +107,7 @@ public:
 	{
 		return last_frame_use;
 	}
+	void FlushGpu();
 private:
 	void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);
 };

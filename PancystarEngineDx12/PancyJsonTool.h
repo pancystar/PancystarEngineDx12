@@ -193,14 +193,13 @@ class PancyJsonTool
 	std::unordered_map<std::string, CommonEnumValueParser*> enum_parse_list;
 	//todo:删掉关于shader的特殊反射
 	std::string name_value_type[7];
-	std::string name_shader_type[6];
-
 	//json反射相关......
 	std::unordered_map<size_t, PancyJsonMemberType> json_type_map;//所有已经被识别的json类型
 	std::unordered_map<std::string, std::string> enum_pointer_value_map;//枚举指针对应的基本类型
 private:
 	PancyJsonTool();
 public:
+	~PancyJsonTool();
 	static PancyJsonTool* GetInstance()
 	{
 		static PancyJsonTool* this_instance;
@@ -243,13 +242,6 @@ public:
 		const int32_t &member_num,
 		const pancy_json_data_type &json_type,
 		pancy_json_value &variable_value
-	);
-	PancystarEngine::EngineFailReason GetJsonShader(
-		const std::string &file_name,
-		const Json::Value &root_value,
-		const Pancy_json_shader_type &json_type,
-		std::string &shader_file_name,
-		std::string &shader_func_name
 	);
 	//更改及输出json数据
 	template<class T>

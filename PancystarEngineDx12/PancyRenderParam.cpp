@@ -129,7 +129,12 @@ BasicRenderParam::BasicRenderParam(const std::string &render_param_name_in)
 }
 BasicRenderParam::~BasicRenderParam()
 {
-	//É¾³ýË½ÓÐÃèÊö·û
+	//todo:É¾³ýË½ÓÐÃèÊö·û
+	/*
+	for (auto release_data = globel_constant_buffer.begin(); release_data != globel_constant_buffer.end(); ++release_data)
+	{
+		PancyDescriptorHeapControl::GetInstance()->DeleteDescriptorHeap();
+	}*/
 	//É¾³ýcbuffer×ÊÔ´
 	for (auto release_data = per_object_cbuffer.begin(); release_data != per_object_cbuffer.end(); ++release_data)
 	{

@@ -28,6 +28,7 @@ class PancyJsonReflect
 
 public:
 	PancyJsonReflect();
+	virtual ~PancyJsonReflect();
 	void Create();
 	//从json文件中加载数据
 	PancystarEngine::EngineFailReason LoadFromJsonFile(const std::string &Json_file);
@@ -126,13 +127,15 @@ PancystarEngine::EngineFailReason PancyJsonReflect::AddAnyVariable(
 template<typename DataClassDesc, typename ReflectClassDesc>
 void PancyJsonReflect::AddChildReflectClass()
 {
-	PancyJsonReflect *pointer = new ReflectClassDesc();
-	pointer->Create();
+	PancyJsonReflect *array_pointer = new ReflectClassDesc();
+	PancyJsonReflect *vector_pointer = new ReflectClassDesc();
+	array_pointer->Create();
+	vector_pointer->Create();
 	std::string now_array_name = typeid(DataClassDesc*).name();
 	std::string now_vector_name = typeid(std::vector<DataClassDesc>).name();
 	auto now_size = sizeof(DataClassDesc);
-	AddChildStruct(pointer, now_array_name, now_size);
-	AddChildStruct(pointer, now_vector_name, now_size);
+	AddChildStruct(array_pointer, now_array_name, now_size);
+	AddChildStruct(vector_pointer, now_vector_name, now_size);
 }
 template<class T1, class T2>
 PancystarEngine::EngineFailReason PancyJsonReflect::SetVectorValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const T2 &input_value)
@@ -188,6 +191,7 @@ protected:
 	ReflectDataType reflect_data;
 public:
 	PancyJsonReflectTemplate();
+	virtual ~PancyJsonReflectTemplate();
 	PancystarEngine::EngineFailReason CopyMemberData(void * dst_pointer, const std::string &data_type_name, const pancy_resource_size & size) override;
 	PancystarEngine::EngineFailReason CopyVectorData(void *vector_pointer, const std::string &data_type_name, const pancy_resource_size &index, const pancy_resource_size &size) override;
 
@@ -197,6 +201,11 @@ public:
 };
 template<typename ReflectDataType>
 PancyJsonReflectTemplate<ReflectDataType>::PancyJsonReflectTemplate()
+{
+
+}
+template<typename ReflectDataType>
+PancyJsonReflectTemplate<ReflectDataType>::~PancyJsonReflectTemplate() 
 {
 
 }

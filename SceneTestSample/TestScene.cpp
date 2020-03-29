@@ -661,7 +661,8 @@ void scene_test_simple::ClearScreen()
 
 	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
-	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+
+	const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	m_commandList->GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
@@ -671,7 +672,7 @@ void scene_test_simple::ClearScreen()
 }
 void scene_test_simple::WaitForPreviousFrame()
 {
-	auto  check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(last_broken_fence_id);
+	auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(last_broken_fence_id);
 }
 void scene_test_simple::Update(float delta_time)
 {
@@ -708,6 +709,6 @@ void scene_test_simple::Update(float delta_time)
 
 scene_test_simple::~scene_test_simple()
 {
-	WaitForPreviousFrame();
+	PancyDx12DeviceBasic::GetInstance()->FlushGpu();
 	delete test_model;
 }

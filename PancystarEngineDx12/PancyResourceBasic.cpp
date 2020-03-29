@@ -35,7 +35,10 @@ VirtualResourcePointer::VirtualResourcePointer(const VirtualResourcePointer & co
 }
 VirtualResourcePointer::~VirtualResourcePointer()
 {
-	PancyGlobelResourceControl::GetInstance()->DeleteResurceReference(resource_id);
+	if (!if_NULL) 
+	{
+		PancyGlobelResourceControl::GetInstance()->DeleteResurceReference(resource_id);
+	}
 }
 VirtualResourcePointer& VirtualResourcePointer::operator=(const VirtualResourcePointer& b)
 {
@@ -323,6 +326,7 @@ void PancyBasicVirtualResource::DeleteReference()
 }
 PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::string &resource_name_in)
 {
+	resource_name = resource_name_in;
 	//根据文件类型决定以何种方式加载资源
 	if (resource_name_in.find(".json") == resource_name_in.size()-5)
 	{
@@ -358,6 +362,7 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 }
 PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::string &resource_name_in, const Json::Value &root_value_in)
 {
+	resource_name = resource_name_in;
 	resource_type_name = typeid(*this).name();
 	BuildJsonReflect(&resource_desc_value);
 	if (resource_desc_value == NULL)
@@ -380,6 +385,7 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 }
 PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::string &resource_name_in, void *resource_data,const std::string &resource_type,const pancy_resource_size &resource_size)
 {
+	resource_name = resource_name_in;
 	resource_type_name = typeid(*this).name();
 	BuildJsonReflect(&resource_desc_value);
 	if (resource_desc_value == NULL)

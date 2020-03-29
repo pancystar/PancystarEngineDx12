@@ -630,12 +630,12 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const P
 				}
 			}
 			check_error = UpdateTextureResource(subresources, new_texture_desc);
-			if (!check_error.CheckIfSucceed()) 
+			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
 			//由于是从文件中读取到的格式数据，这里需要重置反射格式数据
-			check_error = resource_desc_value->ResetMemoryByMemberData(&new_texture_desc,typeid(&new_texture_desc).name(),sizeof(new_texture_desc));
+			check_error = resource_desc_value->ResetMemoryByMemberData(&new_texture_desc, typeid(&new_texture_desc).name(), sizeof(new_texture_desc));
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -648,7 +648,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const P
 			return error_message;
 		}
 	}
-	else 
+	else
 	{
 		PancystarEngine::EngineFailReason error_message(ERROR_INVALID_DATA, "unsupported texture type:" + picture_path_file);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
@@ -691,7 +691,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 	UINT* pNumRows = reinterpret_cast<UINT*>(pRowSizesInBytes + subres_size);
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&texture_desc.texture_res_desc, 0, subres_size, 0, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
 	//拷贝资源数据
-	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, subresources, pLayouts, pRowSizesInBytes, pNumRows, RequiredSize,*texture_data);
+	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, subresources, pLayouts, pRowSizesInBytes, pNumRows, RequiredSize, *texture_data);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -787,12 +787,20 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Pan
 {
 	PancystarEngine::EngineFailReason check_error;
 	ComPtr<ID3D12Resource> resource_data;
+	D3D12_CLEAR_VALUE optClear;
+	optClear.Format = texture_desc.texture_res_desc.Format;
+	optClear.Color[0] = 0.0f;
+	optClear.Color[1] = 0.0f;
+	optClear.Color[2] = 0.0f;
+	optClear.Color[3] = 1.0f;
+	optClear.DepthStencil.Depth = 1.0f;
+	optClear.DepthStencil.Stencil = 0;
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(texture_desc.heap_type),
 		texture_desc.heap_flag_in,
 		&texture_desc.texture_res_desc,
 		D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON,
-		nullptr,
+		&optClear,
 		IID_PPV_ARGS(&resource_data)
 	);
 	if (FAILED(hr))
@@ -881,7 +889,7 @@ void PancyBasicTexture::RebuildTextureDataPath(const std::string &json_file_name
 
 PancystarEngine::EngineFailReason PancyBasicTexture::CaptureTextureDataToWindows(DirectX::ScratchImage *new_image)
 {
-	if (!CheckIfResourceLoadFinish()) 
+	if (!CheckIfResourceLoadFinish())
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "texture not loading finish,could not Capture texture");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::CaptureTextureDataToWindows", error_message);
@@ -912,13 +920,13 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 {
 	HRESULT hr;
 	PancystarEngine::EngineFailReason check_error;
-	
+
 	DirectX::ScratchImage *new_image = NULL, *mipmap_image = NULL, *compress_image = NULL;
 	bool if_mip_gen = false, if_compress_gen = false;
 	new_image = new DirectX::ScratchImage();
 	//将纹理数据拍摄到图片中
 	check_error = CaptureTextureDataToWindows(new_image);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
@@ -956,7 +964,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 		{
 			compress_type = DXGI_FORMAT_BC7_UNORM;
 		}
-		else 
+		else
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "compress format could not recognize: " + std::to_string(texture_desc.Format));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Save texture file:" + file_name, error_message);
@@ -1011,7 +1019,7 @@ ResourceBlockGpu* PancystarEngine::GetTextureResourceData(VirtualResourcePointer
 PancystarEngine::EngineFailReason PancystarEngine::LoadDDSTextureResource(
 	const std::string &name_resource_in,
 	VirtualResourcePointer &id_need
-) 
+)
 {
 	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicTexture>(
 		name_resource_in,

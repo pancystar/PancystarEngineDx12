@@ -20,20 +20,14 @@ PancyJsonTool::PancyJsonTool()
 	{
 		name_value_type[i] = name_value_need[i];
 	}
-	std::string name_shader_need[] =
-	{
-		"VertexShader",
-		"PixelShader",
-		"GeometryShader",
-		"HullShader" ,
-		"DominShader",
-		"ComputeShader",
-	};
-	for (int i = 0; i < 6; ++i)
-	{
-		name_shader_type[i] = name_shader_need[i];
-	}
 	InitBasicType();
+}
+PancyJsonTool::~PancyJsonTool() 
+{
+	for (auto release_data = enum_parse_list.begin(); release_data != enum_parse_list.end(); ++release_data) 
+	{
+		delete release_data->second;
+	}
 }
 PancystarEngine::EngineFailReason PancyJsonTool::LoadJsonFile(const std::string &file_name, Json::Value &root_value)
 {
@@ -138,12 +132,6 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 	pancy_json_value &variable_value
 )
 {
-	//todo:不能用::来设计json的enum格式，因为系统会使用::来代表命名空间，最终使用的时候需要改成-->
-	/*
-	PancystarEngine::EngineFailReason error_message(0, "donot used,need update");
-	PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetJsonMemberData", error_message);
-	return error_message;
-	*/
 	if (enum_type_value == Json::Value::null)
 	{
 		//未能获得json数据
@@ -151,29 +139,6 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 		return error_mesage;
 	}
-	/*
-	//枚举数据
-	else if (json_type == pancy_json_data_type::json_data_enum)
-	{
-		if (enum_type_value.type() != Json::ValueType::stringValue)
-		{
-			int now_type_name = static_cast<int32_t>(enum_type_value.type());
-			//json数据对应的类型不是枚举类型
-			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable NumDescriptors need enum but find " + name_value_type[now_type_name]);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
-			return error_mesage;
-		}
-		std::string value_enum = enum_type_value.asString();
-		variable_value.int_value = GetGlobelVariable(value_enum);
-		if (variable_value.int_value == -1)
-		{
-			//无法将枚举名称转换为有效的枚举值
-			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the enum " + value_enum + " of the variable " + member_name + "can't recognize");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
-			return error_mesage;
-		}
-	}
-	*/
 	//整数数据
 	else if (json_type == pancy_json_data_type::json_data_int)
 	{
@@ -240,35 +205,6 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 		return error_mesage;
 	}
-	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyJsonTool::GetJsonShader(
-	const std::string &file_name,
-	const Json::Value &root_value,
-	const Pancy_json_shader_type &json_type,
-	std::string &shader_file_name,
-	std::string &shader_func_name
-)
-{
-	int32_t shader_type_num = static_cast<uint32_t>(json_type);
-	std::string shader_file_param = name_shader_type[shader_type_num];
-	std::string shader_func_param = name_shader_type[shader_type_num] + "Func";
-	auto shader_file_value = root_value.get(shader_file_param, Json::Value::null);
-	auto shader_func_value = root_value.get(shader_func_param, Json::Value::null);
-	PancystarEngine::EngineFailReason check_error;
-	pancy_json_value new_value;
-	check_error = GetJsonMemberData(file_name, shader_file_value, shader_file_param, pancy_json_data_type::json_data_string, new_value);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	shader_file_name = new_value.string_value;
-	check_error = GetJsonMemberData(file_name, shader_func_value, shader_func_param, pancy_json_data_type::json_data_string, new_value);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	shader_func_name = new_value.string_value;
 	return PancystarEngine::succeed;
 }
 void PancyJsonTool::SplitString(std::string str, const std::string &pattern, std::vector<std::string> &result)
