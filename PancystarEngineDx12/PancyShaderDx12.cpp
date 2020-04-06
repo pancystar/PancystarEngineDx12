@@ -1,6 +1,6 @@
 #include"PancyShaderDx12.h"
 using namespace PancystarEngine;
-RootSignatureParameterDescJsonReflect::RootSignatureParameterDescJsonReflect() 
+RootSignatureParameterDescJsonReflect::RootSignatureParameterDescJsonReflect()
 {
 }
 void RootSignatureParameterDescJsonReflect::InitBasicVariable()
@@ -13,7 +13,7 @@ void RootSignatureParameterDescJsonReflect::InitBasicVariable()
 	Init_Json_Data_Vatriable(reflect_data.num_descriptor_ranges);
 	Init_Json_Data_Vatriable(reflect_data.shader_visibility);
 }
-RootSignatureStaticSamplerJsonReflect::RootSignatureStaticSamplerJsonReflect() 
+RootSignatureStaticSamplerJsonReflect::RootSignatureStaticSamplerJsonReflect()
 {
 }
 void RootSignatureStaticSamplerJsonReflect::InitBasicVariable()
@@ -32,7 +32,7 @@ void RootSignatureStaticSamplerJsonReflect::InitBasicVariable()
 	Init_Json_Data_Vatriable(reflect_data.RegisterSpace);
 	Init_Json_Data_Vatriable(reflect_data.ShaderVisibility);
 }
-RootSignatureDescJsonReflect::RootSignatureDescJsonReflect() 
+RootSignatureDescJsonReflect::RootSignatureDescJsonReflect()
 {
 }
 PancystarEngine::EngineFailReason RootSignatureDescJsonReflect::InitChildReflectClass()
@@ -41,7 +41,7 @@ PancystarEngine::EngineFailReason RootSignatureDescJsonReflect::InitChildReflect
 	AddChildReflectClass<D3D12_STATIC_SAMPLER_DESC, RootSignatureStaticSamplerJsonReflect>();
 	return PancystarEngine::succeed;
 }
-void RootSignatureDescJsonReflect::InitBasicVariable() 
+void RootSignatureDescJsonReflect::InitBasicVariable()
 {
 	Init_Json_Data_Vatriable(reflect_data.root_parameter_data);
 	Init_Json_Data_Vatriable(reflect_data.root_signature_flags);
@@ -137,6 +137,9 @@ void PipelineStateDescGraphicJsonReflect::InitBasicVariable()
 	Init_Json_Data_Vatriable(reflect_data.pso_desc.SampleDesc.Count);
 	Init_Json_Data_Vatriable(reflect_data.pso_desc.SampleDesc.Quality);
 	Init_Json_Data_Vatriable(reflect_data.descriptor_type);
+	//绑定数组的使用数量
+	Bind_Json_Data_Array_Size(reflect_data.pso_desc.RTVFormats, reflect_data.pso_desc.NumRenderTargets);
+	Bind_Json_Data_Array_Size(reflect_data.pso_desc.BlendState.RenderTarget, reflect_data.pso_desc.NumRenderTargets);
 }
 
 //输入顶点格式
@@ -292,14 +295,14 @@ PancystarEngine::EngineFailReason PancyShaderControl::GetShaderData(const std::s
 	{
 		//shader尚未加载，重新从文件中加载shader
 		check_error = LoadShader(shader_file, shader_main_func, shader_type);
-		if (!check_error.CheckIfSucceed()) 
+		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		shader_data = shader_list.find(shader_final_name);
 	}
 	HRESULT hr = shader_data->second->GetShader().As(res_data);
-	if (FAILED(hr)) 
+	if (FAILED(hr))
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy shader data com_ptr of shader " + shader_final_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get shader data", error_message);
@@ -331,7 +334,7 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 		return check_error;
 	}
 	RootSignatureDesc now_root_signature_desc;
-	check_error = root_signature_desc_reflect.CopyMemberData(&now_root_signature_desc,typeid(&now_root_signature_desc).name(),sizeof(now_root_signature_desc));
+	check_error = root_signature_desc_reflect.CopyMemberData(&now_root_signature_desc, typeid(&now_root_signature_desc).name(), sizeof(now_root_signature_desc));
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -341,7 +344,7 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 	CD3DX12_DESCRIPTOR_RANGE1 *ranges;
 	CD3DX12_ROOT_PARAMETER1 *rootParameters;
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc_out;
-	int num_parameter = now_root_signature_desc.root_parameter_data.size();
+	auto num_parameter = now_root_signature_desc.root_parameter_data.size();
 	if (num_parameter > 0)
 	{
 		ranges = new CD3DX12_DESCRIPTOR_RANGE1[num_parameter];
@@ -375,9 +378,9 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 		rootParameters[i].InitAsDescriptorTable(descriptor_range_num, &ranges[i], shader_visibility_type);
 		all_descriptor_num += descriptor_num;
 	}
-	int num_static_sampler;
+	pancy_object_id num_static_sampler;
 	//获取每个静态采样器
-	num_static_sampler = now_root_signature_desc.static_sampler_data.size();
+	num_static_sampler = static_cast<pancy_object_id>(now_root_signature_desc.static_sampler_data.size());
 	if (num_static_sampler > 0)
 	{
 		data_sampledesc = new D3D12_STATIC_SAMPLER_DESC[num_static_sampler];
@@ -386,13 +389,13 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 	{
 		data_sampledesc = NULL;
 	}
-	for (int i = 0; i < num_static_sampler; ++i)
+	for (pancy_object_id i = 0; i < num_static_sampler; ++i)
 	{
 		data_sampledesc[i] = now_root_signature_desc.static_sampler_data[i];
 	}
 	//获取rootsignature格式
 	D3D12_ROOT_SIGNATURE_FLAGS root_signature = now_root_signature_desc.root_signature_flags;
-	desc_out.Init_1_1(num_parameter, rootParameters, num_static_sampler, data_sampledesc, root_signature);
+	desc_out.Init_1_1(static_cast<UINT>(num_parameter), rootParameters, num_static_sampler, data_sampledesc, root_signature);
 	//创建rootsignature
 	check_error = BuildResource(desc_out);
 	if (!check_error.CheckIfSucceed())
@@ -445,7 +448,7 @@ std::string PancyRootSignature::GetJsonFileRealName(const std::string &file_name
 	std::string new_str;
 	int st = 0;
 	int length = -4;
-	for (int i = file_name_in.size() - 2; i >= 0; --i)
+	for (int i = static_cast<int>(file_name_in.size() - 2); i >= 0; --i)
 	{
 		if (file_name_in[i - 1] == '\\')
 		{
@@ -666,7 +669,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::CheckCbuffer(con
 	return PancystarEngine::succeed;
 }
 
-PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetCbuffer(const std::string &cbuffer_name, const Json::Value *& CbufferData) 
+PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetCbuffer(const std::string &cbuffer_name, const Json::Value *& CbufferData)
 {
 	auto cbuffer_data = Cbuffer_map.find(cbuffer_name);
 	if (cbuffer_data == Cbuffer_map.end())
@@ -682,7 +685,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetCbuffer(const
 PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferByName(
 	const std::string &cbuffer_name,
 	PancyConstantBuffer &cbuffer_data_out
-) 
+)
 {
 	auto cbuffer_allocator = Cbuffer_map.find(cbuffer_name);
 	if (cbuffer_allocator == Cbuffer_map.end())
@@ -692,7 +695,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferByNa
 		return error_message;
 	}
 	auto check_error = cbuffer_allocator->second->BuildNewCbuffer(cbuffer_data_out);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
@@ -767,7 +770,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferBySh
 			//填充常量缓冲区
 			Json::Value cbuffer_value;
 			PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_value, "BufferSize", alize_cbuffer_size);
-			for (int i = 0; i < buffer_shader.Variables; ++i)
+			for (UINT i = 0; i < buffer_shader.Variables; ++i)
 			{
 				Json::Value cbuffer_variable_value;
 				auto shader_variable = now_constant_buffer->GetVariableByIndex(i);
@@ -839,15 +842,15 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, pre_read_jsonRoot, "pipeline_state_type", pancy_json_data_type::json_data_string, now_value);
 	std::string enum_data_head;
 	std::string enum_data_tail;
-	int32_t now_divide_pos = now_value.string_value.find("@-->");
-	if (now_divide_pos < 0) 
+	int32_t now_divide_pos = static_cast<int32_t>(now_value.string_value.find("@-->"));
+	if (now_divide_pos < 0)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not recognize PSO type" + pso_name.GetAsciiString());
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyPiplineStateObjectGraph::Create", error_message);
 		return error_message;
 	}
 	enum_data_head = now_value.string_value.substr(0, now_divide_pos);
-	enum_data_tail = now_value.string_value.substr(now_divide_pos + 4, now_value.string_value.size()- now_divide_pos - 4);
+	enum_data_tail = now_value.string_value.substr(now_divide_pos + 4, now_value.string_value.size() - now_divide_pos - 4);
 	int32_t now_enum_value = PancyJsonTool::GetInstance()->GetEnumValue(enum_data_head, enum_data_tail);
 	if (now_enum_value < 0)
 	{
@@ -857,7 +860,6 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 	}
 	pipline_type = static_cast<PSOType>(now_enum_value);
 	//根据管线类型的不同决定使用哪种方式读取管线的信息
-	ID3D12RootSignature* root_signature_use;
 	if (pipline_type == PSOType::PSO_TYPE_GRAPHIC)
 	{
 		//先创建一个图形管线的反射
@@ -912,14 +914,14 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			if (shader_file_name[i] != "0" && shader_func_name[i] != "0")
 			{
 				ComPtr<ID3DBlob> shader_data;
-				check_error = PancyShaderControl::GetInstance()->GetShaderData(shader_file_name[i], shader_func_name[i], shader_version[i],&shader_data);
+				check_error = PancyShaderControl::GetInstance()->GetShaderData(shader_file_name[i], shader_func_name[i], shader_version[i], &shader_data);
 				if (!check_error.CheckIfSucceed())
 				{
 					return check_error;
 				}
 				//获取shader reflect并存储cbuffer的信息
 				ComPtr<ID3D12ShaderReflection> now_shader_reflect;
-				check_error = PancyShaderControl::GetInstance()->GetShaderReflection(shader_file_name[i], shader_func_name[i], shader_version[i],&now_shader_reflect);
+				check_error = PancyShaderControl::GetInstance()->GetShaderReflection(shader_file_name[i], shader_func_name[i], shader_version[i], &now_shader_reflect);
 				if (!check_error.CheckIfSucceed())
 				{
 					return check_error;
@@ -999,7 +1001,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			return check_error;
 		}
 		PipelineStateDescCompute compute_pipeline_desc;
-		compute_reflect.CopyMemberData(&compute_pipeline_desc,typeid(&compute_pipeline_desc).name(),sizeof(compute_pipeline_desc));
+		compute_reflect.CopyMemberData(&compute_pipeline_desc, typeid(&compute_pipeline_desc).name(), sizeof(compute_pipeline_desc));
 		//根据读取的信息建立管线数据
 		check_error = PancyRootSignatureControl::GetInstance()->GetRootSignature(compute_pipeline_desc.root_signature_file, root_signature_ID);
 		if (!check_error.CheckIfSucceed())
@@ -1177,7 +1179,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetInputDesc(Com
 }
 PancyPiplineStateObjectGraph::~PancyPiplineStateObjectGraph()
 {
-	for (auto cbuffer_alloctor_value = Cbuffer_map.begin(); cbuffer_alloctor_value != Cbuffer_map.end(); ++cbuffer_alloctor_value) 
+	for (auto cbuffer_alloctor_value = Cbuffer_map.begin(); cbuffer_alloctor_value != Cbuffer_map.end(); ++cbuffer_alloctor_value)
 	{
 		delete cbuffer_alloctor_value->second;
 	}
@@ -1565,7 +1567,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::BuildCbufferByName(
 	const pancy_object_id &PSO_id,
 	const std::string &cbuffer_name,
 	PancyConstantBuffer &cbuffer_data_out
-) 
+)
 {
 	PancystarEngine::EngineFailReason check_error;
 	auto PSO_array_find = PSO_array.find(PSO_id);
@@ -1587,7 +1589,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::ReleaseCbufferByID(
 	const std::string &cbuffer_name,
 	const pancy_object_id &buffer_resource_id,
 	const pancy_object_id &buffer_offset_id
-) 
+)
 {
 	PancystarEngine::EngineFailReason check_error;
 	auto PSO_array_find = PSO_array.find(PSO_id);
@@ -1667,7 +1669,7 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyC
 			buffer_resource_desc_value,
 			new_buffer_resource,
 			true
-			);
+		);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -1787,7 +1789,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::Create(
 	cbuffer_name = cbuffer_name_in;
 	cbuffer_effect_name = cbuffer_effect_name_in;
 	buffer_ID = buffer_id_in;
-	buffer_offset_id = buffer_offset_id_in;
+	buffer_offset_id = static_cast<pancy_object_id>(buffer_offset_id_in);
 	const PancyBasicBuffer *pointer = dynamic_cast<const PancyBasicBuffer*>(buffer_ID.GetResourceData());
 	cbuffer_size = cbuffer_size_in;
 	map_pointer_out = pointer->GetBufferCPUPointer() + buffer_offset_id * cbuffer_size;
@@ -1828,7 +1830,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyConstantBuffer::GetCbufferDesc", error_mesage);
 		return error_mesage;
 	}
-	for (int32_t i = 0; i < value_cbuffer_member.size(); ++i)
+	for (Json::ArrayIndex i = 0; i < static_cast<Json::ArrayIndex>(value_cbuffer_member.size()); ++i)
 	{
 		CbufferVariable new_variable_data;
 		std::string variable_name;
@@ -1866,7 +1868,7 @@ PancyConstantBuffer::~PancyConstantBuffer()
 	{
 		pancy_object_id effect_pso_id;
 		auto check_error = PancyEffectGraphic::GetInstance()->GetPSO(cbuffer_effect_name, effect_pso_id);
-		if (!check_error.CheckIfSucceed()) 
+		if (!check_error.CheckIfSucceed())
 		{
 			return;
 		}

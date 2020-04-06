@@ -11,9 +11,9 @@ PancyJsonReflect::~PancyJsonReflect()
 }
 const std::string PancyJsonReflect::GetParentName(const std::string &name_in)
 {
-	int32_t parent_value_tail = name_in.find_last_of('.');
-	int32_t parent_pointer_tail = name_in.rfind("->");
-	int32_t max_value = max(parent_value_tail, parent_pointer_tail);
+	int32_t parent_value_tail = static_cast<int32_t>(name_in.find_last_of('.'));
+	int32_t parent_pointer_tail = static_cast<int32_t>(name_in.rfind("->"));
+	auto max_value = max(parent_value_tail, parent_pointer_tail);
 	if (max_value <= 0)
 	{
 		return "";
@@ -95,7 +95,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::AddVariable(const std::strin
 			return error_message;
 		}
 	}
-	check_error = AddReflectData(now_variable_type, name, variable_type_name, variable_data);
+	check_error = AddReflectData(now_variable_type, name, variable_type_name, variable_data,999999999);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -729,8 +729,8 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetNodeArrayValue(JsonReflec
 PancystarEngine::EngineFailReason PancyJsonReflect::SetArrayValue(JsonReflectData &reflect_data, const Json::Value &now_child_value)
 {
 	PancystarEngine::EngineFailReason check_error;
-	reflect_data.real_used_size = now_child_value.size();
-	for (int32_t array_index = 0; array_index < now_child_value.size(); ++array_index)
+	//数组变量对应的大小变量不需要进行存储(json中会有额外的变量映射过来)
+	for (Json::ArrayIndex array_index = 0; array_index < now_child_value.size(); ++array_index)
 	{
 		//先检查数组是否越界
 		if (array_index >= reflect_data.array_size)
@@ -906,7 +906,13 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveSingleValueMemberToJson(
 PancystarEngine::EngineFailReason PancyJsonReflect::SaveArrayEnumMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value)
 {
 	PancystarEngine::EngineFailReason check_error;
-	for (int32_t now_enum_index = 0; now_enum_index < reflect_data.real_used_size; ++now_enum_index)
+	pancy_object_id array_used_size = 0;
+	check_error = GetArrayDataSize(reflect_data, array_used_size);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	for (pancy_object_id now_enum_index = 0; now_enum_index < array_used_size; ++now_enum_index)
 	{
 		std::string member_enum_type_name;
 		check_error = PancyJsonTool::GetInstance()->GetEnumNameByPointerName(reflect_data.data_type_name, member_enum_type_name);
@@ -935,7 +941,13 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveArrayEnumMemberToJson(co
 PancystarEngine::EngineFailReason PancyJsonReflect::SaveVectorEnumMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value)
 {
 	PancystarEngine::EngineFailReason check_error;
-	for (int32_t now_enum_index = 0; now_enum_index < reflect_data.real_used_size; ++now_enum_index)
+	pancy_object_id vector_size = 0;
+	check_error = PancyJsonTool::GetInstance()->GetEnumVectorSize(reflect_data.data_type_name, reflect_data.data_pointer, vector_size);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	for (pancy_object_id now_enum_index = 0; now_enum_index < vector_size; ++now_enum_index)
 	{
 		std::string member_enum_type_name;
 		check_error = PancyJsonTool::GetInstance()->GetEnumNameByPointerName(reflect_data.data_type_name, member_enum_type_name);
@@ -1306,7 +1318,14 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveToJsonNode(const std::st
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SaveToJsonNode", error_message);
 			return error_message;
 		}
-		for (int32_t node_index_array = 0; node_index_array < now_reflect_data->second.real_used_size; ++node_index_array)
+
+		pancy_object_id array_size = 0;
+		check_error = GetArrayDataSize(now_reflect_data->second, array_size);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		for (pancy_object_id node_index_array = 0; node_index_array < array_size; ++node_index_array)
 		{
 			Json::Value array_member_value;
 			check_error = child_reflect_pointer->second->ResetMemoryByArrayData(now_reflect_data->second.data_pointer, now_reflect_data->second.data_type_name, node_index_array, child_size_pointer->second);
@@ -1340,7 +1359,14 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveToJsonNode(const std::st
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SaveToJsonNode", error_message);
 			return error_message;
 		}
-		for (int32_t node_index_array = 0; node_index_array < now_reflect_data->second.real_used_size; ++node_index_array)
+
+		pancy_object_id vector_size = 0;
+		check_error = child_reflect_pointer->second->GetVectorDataSize(now_reflect_data->second.data_pointer, now_reflect_data->second.data_type_name, vector_size);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		for (pancy_object_id node_index_array = 0; node_index_array < vector_size; ++node_index_array)
 		{
 			Json::Value array_member_value;
 			check_error = child_reflect_pointer->second->ResetMemoryByVectorData(now_reflect_data->second.data_pointer, now_reflect_data->second.data_type_name, node_index_array, child_size_pointer->second);
@@ -1497,9 +1523,9 @@ PancystarEngine::EngineFailReason PancyJsonReflect::LoadFromJsonNode(const std::
 }
 std::string PancyJsonReflect::TranslateFullNameToRealName(const std::string &full_name)
 {
-	int32_t self_offset = 1;
-	int32_t offset_value = full_name.rfind(".");
-	int32_t offset_pointer = full_name.rfind("->");
+	size_t self_offset = 1;
+	auto offset_value = full_name.rfind(".");
+	auto offset_pointer = full_name.rfind("->");
 	if (offset_value < offset_pointer)
 	{
 		self_offset = 2;
@@ -1515,4 +1541,121 @@ std::string PancyJsonReflect::TranslateFullNameToRealName(const std::string &ful
 		real_name = full_name;
 	}
 	return real_name;
+}
+PancystarEngine::EngineFailReason PancyJsonReflect::GetArrayDataSize(const JsonReflectData &reflect_data, pancy_object_id &size_out)
+{
+	auto check_array_size_name = array_real_size_map.find(reflect_data.data_name);
+	if (check_array_size_name == array_real_size_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "array: " + reflect_data.data_name +"do not have size variable");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::GetArrayDataSize", error_message);
+		return error_message;
+	}
+	auto check_array_size_value = value_map.find(check_array_size_name->second);
+	if (check_array_size_name == array_real_size_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find array size variable: " + check_array_size_name->second);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::GetArrayDataSize", error_message);
+		return error_message;
+	}
+	switch (reflect_data.data_type)
+	{
+	case PancyJsonMemberType::json_member_int8:
+	{
+		int8_t* now_value_pointer = reinterpret_cast<int8_t*>(reflect_data.data_pointer);
+		size_out = static_cast<pancy_object_id>(*now_value_pointer);
+		break;
+	}
+	case PancyJsonMemberType::json_member_int16:
+	{
+		int16_t* now_value_pointer = reinterpret_cast<int16_t*>(reflect_data.data_pointer);
+		size_out = static_cast<pancy_object_id>(*now_value_pointer);
+		break;
+	}
+	case PancyJsonMemberType::json_member_int32:
+	{
+		int32_t* now_value_pointer = reinterpret_cast<int32_t*>(reflect_data.data_pointer);
+		size_out = static_cast<pancy_object_id>(*now_value_pointer);
+		break;
+	}
+	case PancyJsonMemberType::json_member_int64:
+	{
+		int64_t* now_value_pointer = reinterpret_cast<int64_t*>(reflect_data.data_pointer);
+		size_out = static_cast<pancy_object_id>(*now_value_pointer);
+		break;
+	}
+	case PancyJsonMemberType::json_member_uint8:
+	{
+		uint8_t* now_value_pointer = reinterpret_cast<uint8_t*>(reflect_data.data_pointer);
+		size_out = static_cast<pancy_object_id>(*now_value_pointer);
+		break;
+	}
+	case PancyJsonMemberType::json_member_uint16:
+	{
+		uint16_t* now_value_pointer = reinterpret_cast<uint16_t*>(reflect_data.data_pointer);
+		size_out = static_cast<pancy_object_id>(*now_value_pointer);
+		break;
+	}
+	case PancyJsonMemberType::json_member_uint32:
+	{
+		uint32_t* now_value_pointer = reinterpret_cast<uint32_t*>(reflect_data.data_pointer);
+		size_out = static_cast<pancy_object_id>(*now_value_pointer);
+		break;
+	}
+	case PancyJsonMemberType::json_member_uint64:
+	{
+		uint64_t* now_value_pointer = reinterpret_cast<uint64_t*>(reflect_data.data_pointer);
+		size_out = static_cast<pancy_object_id>(*now_value_pointer);
+		break;
+	}
+	default:
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "array size variable: " + check_array_size_name->second +" is not an int value");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::GetArrayDataSize", error_message);
+		return error_message;
+	}
+	}
+	if (size_out > reflect_data.array_size) 
+	{
+		//数组使用大小越界
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "array size out of range: " + check_array_size_name->second);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::GetArrayDataSize", error_message);
+		size_out = 0;
+		return error_message;
+	}
+	return PancystarEngine::succeed;
+}
+
+PancyJsonReflectControl::PancyJsonReflectControl()
+{
+}
+PancyJsonReflectControl::~PancyJsonReflectControl()
+{
+	for (auto reflect_parse_object = refelct_map.begin(); reflect_parse_object != refelct_map.end(); ++reflect_parse_object)
+	{
+		delete reflect_parse_object->second;
+	}
+}
+template<typename ReflectClassType>
+void PancyJsonReflectControl::InitJsonReflect()
+{
+	std::string class_name = typeid(ReflectClassType).name();
+	auto now_reflect_data = refelct_map.find(class_name);
+	if (now_reflect_data == refelct_map.end())
+	{
+		PancyJsonReflect* new_reflect_data = new ReflectClassType();
+		refelct_map.insert(std::pair<std::string, PancyJsonReflect*>(class_name, new_reflect_data));
+		return new_reflect_data;
+	}
+}
+PancyJsonReflect* PancyJsonReflectControl::GetJsonReflect(const std::string &class_name)
+{
+	auto now_reflect_data = refelct_map.find(class_name);
+	if (now_reflect_data == refelct_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(0, "class: " + class_name + " haven't init to reflect class");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectControl::GetJsonReflect", error_message);
+		return NULL;
+	}
+	return now_reflect_data->second;
 }

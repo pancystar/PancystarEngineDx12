@@ -78,7 +78,7 @@ namespace PancystarEngine
 		//从描述符段里删除一组bindless描述符页并执行一次整理操作
 		PancystarEngine::EngineFailReason DeleteBindlessShaderResourceViewPackAndRefresh(const pancy_object_id &SRV_pack_id);
 		//获取一个描述符页的基础偏移
-		const BindlessResourceViewPointer GetDescriptorPageOffset(const pancy_object_id &descriptor_page_id);
+		const BindlessResourceViewPointer &GetDescriptorPageOffset(const pancy_object_id &descriptor_page_id);
 	private:
 		//根据描述符页的指针信息，在描述符堆开辟描述符
 		PancystarEngine::EngineFailReason BuildShaderResourceView(BindlessResourceViewPointer &resource_view_pointer);

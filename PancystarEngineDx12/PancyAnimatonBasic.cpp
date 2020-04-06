@@ -104,7 +104,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildAnimationBlock(
 	//更新当前的缓冲区指针位置
 	now_used_position_animation = now_used_position_animation + now_ask_size;
 	//将内存块导入到map中
-	pancy_object_id now_ID = animation_block_map.size();
+	pancy_object_id now_ID = static_cast<pancy_object_id>(animation_block_map.size());
 	animation_block_map.insert(std::pair<pancy_object_id, SkinAnimationBlock>(now_ID, new_animation_block));
 	block_id = now_ID;
 	return PancystarEngine::succeed;
@@ -132,7 +132,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildBoneBlock(
 	//更新当前的缓冲区指针位置
 	now_used_position_bone = now_used_position_bone + now_ask_size;
 	//将内存块导入到map中
-	pancy_object_id now_ID = bone_block_map.size();
+	pancy_object_id now_ID = static_cast<pancy_object_id>(bone_block_map.size());
 	bone_block_map.insert(std::pair<pancy_object_id, SkinAnimationBlock>(now_ID, new_bone_block));
 	block_id = now_ID;
 	return PancystarEngine::succeed;
@@ -151,7 +151,7 @@ PancySkinAnimationControl::PancySkinAnimationControl(
 PancySkinAnimationControl::~PancySkinAnimationControl()
 {
 	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	for (int i = 0; i < Frame_num; ++i)
+	for (pancy_object_id i = 0; i < Frame_num; ++i)
 	{
 		delete skin_naimation_buffer[i];
 	}
@@ -170,7 +170,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 	std::vector<VirtualResourcePointer> skin_animation_buffer_data;
 	std::vector<VirtualResourcePointer> bone_buffer_data;
 	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	for (int i = 0; i < Frame_num; ++i)
+	for (pancy_object_id i = 0; i < Frame_num; ++i)
 	{
 		skin_naimation_buffer[i] = new PancySkinAnimationBuffer(animation_buffer_size, bone_buffer_size);
 		check_error = skin_naimation_buffer[i]->Create();
@@ -187,7 +187,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 	std::vector<BasicDescriptorDesc> skin_animation_descriptor_desc;
 	BasicDescriptorDesc skin_animation_SRV_desc;
 	skin_animation_SRV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
-	pancy_object_id number_vertex_num = animation_buffer_size / sizeof(PancystarEngine::mesh_animation_data);
+	pancy_object_id number_vertex_num = static_cast<pancy_object_id>(animation_buffer_size / sizeof(PancystarEngine::mesh_animation_data));
 	skin_animation_SRV_desc.shader_resource_view_desc = {};
 	skin_animation_SRV_desc.shader_resource_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	skin_animation_SRV_desc.shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
@@ -195,7 +195,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.NumElements = number_vertex_num;
 	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.FirstElement = 0;
-	for (int i = 0; i < Frame_num; ++i)
+	for (pancy_object_id i = 0; i < Frame_num; ++i)
 	{
 		skin_animation_descriptor_desc.push_back(skin_animation_SRV_desc);
 	}
@@ -212,11 +212,11 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 	skin_animation_UAV_desc.unordered_access_view_desc.ViewDimension = D3D12_UAV_DIMENSION::D3D12_UAV_DIMENSION_BUFFER;
 	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.StructureByteStride = sizeof(mesh_animation_data);
 	pancy_resource_size vertex_num = animation_buffer_size / sizeof(mesh_animation_data);
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.NumElements = vertex_num;
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.NumElements = static_cast<UINT>(vertex_num);
 	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
 	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.FirstElement = 0;
 	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.CounterOffsetInBytes = 0;
-	for (int i = 0; i < Frame_num; ++i)
+	for (pancy_object_id i = 0; i < Frame_num; ++i)
 	{
 		skin_animation_descriptor_desc.push_back(skin_animation_UAV_desc);
 	}
@@ -233,10 +233,10 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 	skin_bone_srv_desc.shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
 	skin_bone_srv_desc.shader_resource_view_desc.Buffer.StructureByteStride = sizeof(DirectX::XMFLOAT4X4);
 	pancy_resource_size matrix_num = bone_buffer_size / sizeof(DirectX::XMFLOAT4X4);
-	skin_bone_srv_desc.shader_resource_view_desc.Buffer.NumElements = matrix_num;
+	skin_bone_srv_desc.shader_resource_view_desc.Buffer.NumElements = static_cast<UINT>(matrix_num);
 	skin_bone_srv_desc.shader_resource_view_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 	skin_bone_srv_desc.shader_resource_view_desc.Buffer.FirstElement = 0;
-	for (int i = 0; i < Frame_num; ++i)
+	for (pancy_object_id i = 0; i < Frame_num; ++i)
 	{
 		skin_animation_descriptor_desc.push_back(skin_bone_srv_desc);
 	}
@@ -320,10 +320,10 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
 	//填充常量缓冲区
 	DirectX::XMUINT4 data_offset;
 	DirectX::XMUINT4 data_num;
-	data_offset.x = bone_block_pos.start_pos;
-	data_offset.y = animation_block_pos.start_pos;
+	data_offset.x = static_cast<uint32_t>(bone_block_pos.start_pos);
+	data_offset.y = static_cast<uint32_t>(animation_block_pos.start_pos);
 	data_num.x = vertex_num;
-	data_num.y = matrix_num;
+	data_num.y = static_cast<uint32_t>(matrix_num);
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id, "per_object", "data_offset", data_offset, 0);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -348,8 +348,8 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
 	}
 	//修改当前输出顶点资源的使用格式
 	pancy_object_id now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	VirtualResourcePointer bone_matrix_resource = skin_naimation_buffer[now_frame]->GetBoneMatrixResource();
-	VirtualResourcePointer skin_vertex_resource = skin_naimation_buffer[now_frame]->GetSkinVertexResource();
+	VirtualResourcePointer &bone_matrix_resource = skin_naimation_buffer[now_frame]->GetBoneMatrixResource();
+	VirtualResourcePointer &skin_vertex_resource = skin_naimation_buffer[now_frame]->GetSkinVertexResource();
 	auto vertex_output_gpu_buffer = GetBufferResourceData(skin_vertex_resource, check_error);
 	check_error = vertex_output_gpu_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	if (!check_error.CheckIfSucceed())

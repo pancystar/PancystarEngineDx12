@@ -370,7 +370,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildVertexBufferView(
 		//创建描述符
 		VBV_out.BufferLocation = resource_data->GetGPUVirtualAddress() + offset;
 		VBV_out.StrideInBytes = StrideInBytes;
-		VBV_out.SizeInBytes = buffer_size;
+		VBV_out.SizeInBytes = static_cast<UINT>(buffer_size);
 	}
 	else
 	{
@@ -402,7 +402,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildIndexBufferView(
 		//创建描述符
 		IBV_out.BufferLocation = resource_data->GetGPUVirtualAddress() + offset;
 		IBV_out.Format = StrideInBytes;
-		IBV_out.SizeInBytes = buffer_size;
+		IBV_out.SizeInBytes = static_cast<UINT>(buffer_size);
 	}
 	else
 	{
@@ -422,7 +422,7 @@ void ResourceBlockGpu::BuildConstantBufferView(
 	//根据资源数据创建描述符
 	D3D12_CONSTANT_BUFFER_VIEW_DESC  CBV_desc;
 	CBV_desc.BufferLocation = resource_data->GetGPUVirtualAddress() + offset;
-	CBV_desc.SizeInBytes = block_size;
+	CBV_desc.SizeInBytes = static_cast<UINT>(block_size);
 	//创建描述符
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateConstantBufferView(&CBV_desc, DestDescriptor);
 }

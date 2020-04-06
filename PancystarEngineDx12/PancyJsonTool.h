@@ -29,6 +29,7 @@ public:
 	virtual PancystarEngine::EngineFailReason GetEnumValue(void*data_pointer,int32_t &enum_data_out) = 0;
 	virtual PancystarEngine::EngineFailReason GetEnumArrayValue(void*data_pointer, const int32_t &enum_offsetdata,int32_t &enum_data_out) = 0;
 	virtual PancystarEngine::EngineFailReason GetEnumVectorValue(void*data_pointer, const int32_t &enum_offsetdata, int32_t &enum_data_out) = 0;
+	virtual PancystarEngine::EngineFailReason GetEnumVectorSize(void*data_pointer, pancy_object_id &vector_size) = 0;
 };
 
 template<class T>
@@ -42,6 +43,7 @@ public:
 	PancystarEngine::EngineFailReason GetEnumValue(void*data_pointer, int32_t &enum_data_out) override;
 	PancystarEngine::EngineFailReason GetEnumArrayValue(void*data_pointer, const int32_t &enum_offsetdata, int32_t &enum_data_out) override;
 	PancystarEngine::EngineFailReason GetEnumVectorValue(void*data_pointer, const int32_t &enum_offsetdata, int32_t &enum_data_out) override;
+	PancystarEngine::EngineFailReason GetEnumVectorSize(void*data_pointer,pancy_object_id &vector_size) override;
 };
 template<class T>
 PancyEnumValueParser<T>::PancyEnumValueParser() 
@@ -107,6 +109,13 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::GetEnumVectorValue(vo
 		return error_message;
 	}
 	enum_data_out = static_cast<int32_t>((*vec_pointer)[enum_offsetdata]);
+	return PancystarEngine::succeed;
+}
+template<class T>
+PancystarEngine::EngineFailReason PancyEnumValueParser<T>::GetEnumVectorSize(void*data_pointer, pancy_object_id &vector_size)
+{
+	std::vector<T> *vec_pointer = reinterpret_cast<std::vector<T>*>(data_pointer);
+	vector_size = static_cast<pancy_object_id>(vec_pointer->size());
 	return PancystarEngine::succeed;
 }
 //注册枚举变量到json工具
@@ -227,6 +236,7 @@ public:
 	PancystarEngine::EngineFailReason GetEnumMemberValue(const std::string &variable_type, void*value_pointer, int32_t &value_data);
 	PancystarEngine::EngineFailReason GetEnumArrayValue(const std::string &variable_type, void*value_pointer, const int32_t &enum_offsetdata, int32_t &enum_data_out);
 	PancystarEngine::EngineFailReason GetEnumVectorValue(const std::string &variable_type, void*value_pointer, const int32_t &enum_offsetdata, int32_t &enum_data_out);
+	PancystarEngine::EngineFailReason GetEnumVectorSize(const std::string &variable_type, void*value_pointer, pancy_object_id &enum_size_out);
 	PancystarEngine::EngineFailReason GetJsonData
 	(
 		const std::string &file_name,

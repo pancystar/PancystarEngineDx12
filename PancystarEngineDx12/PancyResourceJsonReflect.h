@@ -4,6 +4,7 @@
 #include<type_traits>
 #include"PancyJsonTool.h"
 #define Init_Json_Data_Vatriable(var_name) AddAnyVariable(#var_name, var_name)
+#define Bind_Json_Data_Array_Size(array_value,size_value) BindArraySizeValue<decltype(array_value)>(#array_value, #size_value)
 //基本数据的反射保留内容
 struct JsonReflectData
 {
@@ -11,11 +12,9 @@ struct JsonReflectData
 	std::string data_name;          //标识数据的名称
 	std::string parent_name;        //标识数据的父结构的名称
 	std::string data_type_name;     //标识数据的细节类型名称
-	pancy_object_id array_size = 1;     //标识数据的最大可容纳大小(仅数组与vector)
-	pancy_object_id real_used_size = 1; //标识数据的真实使用大小(仅数组与vector)
+	pancy_object_id array_size = 0; //标识数据的最大可容纳大小(兼容数组)
 	void* data_pointer = NULL;             //数据的内容
 };
-#define MaxVectorSize 999999999
 //基本反射类
 class PancyJsonReflect
 {
@@ -25,7 +24,7 @@ class PancyJsonReflect
 	std::unordered_map<std::string, std::vector<std::string>> child_value_list;//每个成员变量的子变量
 	std::unordered_map<std::string, PancyJsonReflect*> child_node_list;        //每个特殊结构体的子节点处理表
 	std::unordered_map<std::string, pancy_resource_size> child_size_list;      //每个特殊结构体的成员变量大小记录表
-
+	std::unordered_map<std::string, std::string> array_real_size_map;          //每个数组的真实大小对应的变量
 public:
 	PancyJsonReflect();
 	virtual ~PancyJsonReflect();
@@ -48,6 +47,8 @@ public:
 	virtual PancystarEngine::EngineFailReason ResetMemoryByArrayData(void *array_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) = 0;
 	//将指定vector的数据拷贝到类成员数据
 	virtual PancystarEngine::EngineFailReason ResetMemoryByVectorData(void *vector_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) = 0;
+	//获取vector变量的容量
+	virtual PancystarEngine::EngineFailReason GetVectorDataSize(void *vector_pointer, const std::string &data_type_name, pancy_object_id &size) = 0;
 private:
 	//创建子节点映射
 	void BuildChildValueMap();
@@ -94,6 +95,8 @@ private:
 	PancystarEngine::EngineFailReason TranslateStringToEnum(const std::string &basic_string, std::string &enum_type, std::string &enum_value_string, int32_t &enum_value_data);
 	//将变量的完整名称转化为基础名称
 	std::string TranslateFullNameToRealName(const std::string &full_name);
+	//获取数组数据的真实大小
+	PancystarEngine::EngineFailReason GetArrayDataSize(const JsonReflectData &reflect_data,pancy_object_id &size_out);
 protected:
 	template<typename T>
 	PancystarEngine::EngineFailReason AddAnyVariable(
@@ -102,7 +105,12 @@ protected:
 	);
 	PancystarEngine::EngineFailReason AddVariable(const std::string &name, void*variable_data, const size_t &variable_type, const std::string &variable_type_name);
 	PancystarEngine::EngineFailReason AddArray(const std::string &name, void*variable_data, const size_t &variable_type, const std::string &variable_type_name, const pancy_object_id &array_size);
-	PancystarEngine::EngineFailReason AddReflectData(const PancyJsonMemberType &type_data, const std::string &name, const std::string &variable_type_name, void*variable_data, const pancy_object_id &array_size = MaxVectorSize);
+	template<typename ArrayType>
+	PancystarEngine::EngineFailReason BindArraySizeValue(
+		const std::string &array_name,
+		const std::string &value_name
+	);
+	PancystarEngine::EngineFailReason AddReflectData(const PancyJsonMemberType &type_data, const std::string &name, const std::string &variable_type_name, void*variable_data, const pancy_object_id &array_size);
 	PancystarEngine::EngineFailReason AddChildStruct(PancyJsonReflect*data_pointer, const std::string &name, const pancy_resource_size &data_size);
 	template<typename DataClassDesc, typename ReflectClassDesc>
 	void AddChildReflectClass();
@@ -121,6 +129,25 @@ PancystarEngine::EngineFailReason PancyJsonReflect::AddAnyVariable(
 	else
 	{
 		return AddVariable(name, (void*)(&variable_data), typeid(variable_data).hash_code(), typeid(variable_data).name());
+	}
+	return PancystarEngine::succeed;
+}
+template<typename ArrayType>
+PancystarEngine::EngineFailReason PancyJsonReflect::BindArraySizeValue(
+	const std::string &array_name,
+	const std::string &value_name
+) 
+{
+	if constexpr (std::is_array<ArrayType>::value)
+	{
+		array_real_size_map.insert(std::pair<std::string, std::string>(array_name, value_name));
+	}
+	else 
+	{
+		//未找到变量，无法绑定
+		PancystarEngine::EngineFailReason error_message(E_FAIL, array_name + " is not an array value, could not bind it's size to other member: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::BindArraySizeValue", error_message);
+		return error_message;
 	}
 	return PancystarEngine::succeed;
 }
@@ -161,7 +188,14 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveArrayValueMemberToJson(c
 		return error_message;
 	}
 	ArrayType *pointer = reinterpret_cast<ArrayType*>(reflect_data.data_pointer);
-	for (int32_t data_offset_index = 0; data_offset_index < reflect_data.real_used_size; ++data_offset_index)
+	//获取真实使用的数组大小
+	pancy_object_id array_used_size = 0;
+	auto check_error = GetArrayDataSize(reflect_data, array_used_size);
+	if (!check_error.CheckIfSucceed()) 
+	{
+		return check_error;
+	}
+	for (pancy_object_id data_offset_index = 0; data_offset_index < array_used_size; ++data_offset_index)
 	{
 		PancyJsonTool::GetInstance()->AddJsonArrayValue(root_value, TranslateFullNameToRealName(reflect_data.data_name), static_cast<JsonType>(pointer[data_offset_index]));
 	}
@@ -177,7 +211,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveVectorValueMemberToJson(
 		return error_message;
 	}
 	std::vector<ArrayType> *pointer = reinterpret_cast<std::vector<ArrayType>*>(reflect_data.data_pointer);
-	for (int32_t data_offset_index = 0; data_offset_index < reflect_data.real_used_size; ++data_offset_index)
+	for (int32_t data_offset_index = 0; data_offset_index < pointer->size(); ++data_offset_index)
 	{
 		PancyJsonTool::GetInstance()->AddJsonArrayValue(root_value, TranslateFullNameToRealName(reflect_data.data_name), static_cast<JsonType>((*pointer)[data_offset_index]));
 	}
@@ -198,6 +232,7 @@ public:
 	PancystarEngine::EngineFailReason ResetMemoryByMemberData(void *array_pointer, const std::string &data_type_name, const pancy_resource_size &size) override;
 	PancystarEngine::EngineFailReason ResetMemoryByArrayData(void *array_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) override;
 	PancystarEngine::EngineFailReason ResetMemoryByVectorData(void *vector_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) override;
+	PancystarEngine::EngineFailReason GetVectorDataSize(void *vector_pointer, const std::string &data_type_name, pancy_object_id &size) override;
 };
 template<typename ReflectDataType>
 PancyJsonReflectTemplate<ReflectDataType>::PancyJsonReflectTemplate()
@@ -321,3 +356,43 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Res
 	reflect_data = (*pointer)[index];
 	return PancystarEngine::succeed;
 }
+template<typename ReflectDataType>
+PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::GetVectorDataSize(void *vector_pointer, const std::string &data_type_name, pancy_object_id &size)
+{
+	std::string check_data_type_name = typeid(std::vector<ReflectDataType>).name();
+	if (check_data_type_name != data_type_name)
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not push back vector for json reflect,type dismatch");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::GetVectorDataSize", error_message);
+		return error_message;
+	}
+	if (size != sizeof(ReflectDataType))
+	{
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not push back vector for json reflect,size dismatch");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::GetVectorDataSize", error_message);
+		return error_message;
+	}
+	std::vector<ReflectDataType> *pointer = reinterpret_cast<std::vector<ReflectDataType>*>(vector_pointer);
+	size = static_cast<pancy_object_id>((*pointer).size());
+	return PancystarEngine::succeed;
+}
+
+class PancyJsonReflectControl 
+{
+	std::unordered_map<std::string, PancyJsonReflect*> refelct_map;
+	PancyJsonReflectControl();
+public:
+	~PancyJsonReflectControl();
+	template<typename ReflectClassType>
+	void InitJsonReflect();
+	PancyJsonReflect* GetJsonReflect(const std::string &class_name);
+	static PancyJsonReflectControl* GetInstance()
+	{
+		static PancyJsonReflectControl* this_instance;
+		if (this_instance == NULL)
+		{
+			this_instance = new PancyJsonReflectControl();
+		}
+		return this_instance;
+	}
+};

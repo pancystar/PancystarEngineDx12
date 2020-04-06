@@ -21,7 +21,7 @@ BindlessResourceViewSegmental::BindlessResourceViewSegmental(
 //根据描述符页的指针信息，在描述符堆开辟描述符
 PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildShaderResourceView(BindlessResourceViewPointer &resource_view_pointer)
 {
-	for (int i = 0; i < resource_view_pointer.resource_view_num; ++i)
+	for (pancy_object_id i = 0; i < resource_view_pointer.resource_view_num; ++i)
 	{
 		//计算当前的描述符在整个描述符堆的偏移量(段首地址偏移+页首地址偏移+自偏移)
 		pancy_object_id resource_view_heap_offset = segmental_offset_position + resource_view_pointer.resource_view_offset + i;
@@ -31,7 +31,7 @@ PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildShaderReso
 		PancystarEngine::EngineFailReason check_error;
 		//创建描述符
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
-		cpuHandle.Offset(real_offset);
+		cpuHandle.Offset(static_cast<INT>(real_offset));
 		//检测资源格式
 		auto real_resource = resource_view_pointer.describe_memory_data[i].GetResourceData();
 		ResourceBlockGpu* now_gpu_resource = NULL;
@@ -195,17 +195,17 @@ PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessS
 	}
 	return PancystarEngine::succeed;
 }
-const BindlessResourceViewPointer BindlessResourceViewSegmental::GetDescriptorPageOffset(const pancy_object_id &descriptor_page_id)
+const BindlessResourceViewPointer &BindlessResourceViewSegmental::GetDescriptorPageOffset(const pancy_object_id &descriptor_page_id)
 {
 	auto check_descriptor_page = descriptor_data.find(descriptor_page_id);
 	if (check_descriptor_page == descriptor_data.end())
 	{
-		BindlessResourceViewPointer error_pointer;
-		error_pointer.resource_view_offset = 0;
-		error_pointer.resource_view_num = 0;
+		static BindlessResourceViewPointer null_resource_view_pointer;
+		null_resource_view_pointer.resource_view_num = 0;
+		null_resource_view_pointer.resource_view_offset = 0;
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the descriptor page ID: " + std::to_string(descriptor_page_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get descriptor page from Segmental", error_message);
-		return error_pointer;
+		return null_resource_view_pointer;
 	}
 	return check_descriptor_page->second;
 }
@@ -248,14 +248,14 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::Create(
 		return error_message;
 	}
 	//初始化所有的全局描述符ID
-	for (int i = 0; i < bind_descriptor_num; ++i)
+	for (pancy_object_id i = 0; i < bind_descriptor_num; ++i)
 	{
 		bind_descriptor_offset_reuse.push(i);
 	}
 	//为bindless描述符区域初始化每个描述符段
 	pancy_object_id globel_offset = bind_descriptor_num;
 	pancy_object_id segmantal_id_self_add = 0;
-	for (int i = 0; i < bindless_descriptor_num; i += per_segmental_size)
+	for (pancy_object_id i = 0; i < bindless_descriptor_num; i += per_segmental_size)
 	{
 		BindlessResourceViewSegmental *new_segmental = new BindlessResourceViewSegmental(per_segmental_size, globel_offset + i, per_descriptor_size, descriptor_heap_data);
 		if (new_segmental == NULL)
@@ -419,8 +419,8 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindlessShaderResou
 PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessShaderResourceViewSegmental()
 {
 	PancystarEngine::EngineFailReason check_error;
-	int size = bindless_descriptor_id_map.size();
-	for (int i = 0; i < size; ++i)
+	auto size = bindless_descriptor_id_map.size();
+	for (pancy_object_id i = 0; i < static_cast<pancy_object_id>(size); ++i)
 	{
 		BindlessDescriptorID new_id = bindless_descriptor_id_map[i];
 		auto bindlessresource = descriptor_segmental_map.find(new_id);
@@ -608,14 +608,14 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::PreBuildBindDescriptor(
 	}
 	//根据需要创建的描述符的数量来计算每个描述符在描述符堆内的真正偏移量
 	descriptor_cpu_handle.clear();
-	for (int i = 0; i < build_descriptor_num; ++i)
+	for (pancy_object_id i = 0; i < build_descriptor_num; ++i)
 	{
 		new_descriptor_data.descriptor_offset.push_back(bind_descriptor_offset_reuse.front());
 		new_descriptor_data.descriptor_type = descriptor_type;
 		//计算描述符真正的位置
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
 		pancy_resource_size real_descriptor_offset = static_cast<pancy_resource_size>(bind_descriptor_offset_reuse.front()) * static_cast<pancy_resource_size>(per_descriptor_size);
-		cpuHandle.Offset(real_descriptor_offset);
+		cpuHandle.Offset(static_cast<INT>(real_descriptor_offset));
 		descriptor_cpu_handle.push_back(cpuHandle);
 		//删除当前可用的一个ID号
 		bind_descriptor_offset_reuse.pop();
@@ -1221,7 +1221,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonRenderTa
 				return check_error;
 			}
 		}
-		rtv_number = rendertarget_list.size();
+		rtv_number = static_cast<pancy_object_id>(rendertarget_list.size());
 	}
 	//获取深度缓冲区偏移量
 	if (!if_have_depthstencil)

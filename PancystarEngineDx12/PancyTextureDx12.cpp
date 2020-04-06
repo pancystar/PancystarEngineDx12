@@ -589,8 +589,8 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const P
 			}
 			//根据读取到的纹理信息，重建纹理格式数据
 			PancyCommonTextureDesc new_texture_desc = texture_desc;
-			check_error = BuildTextureResource(resDim, twidth, theight, tdepth, reservedMips - skipMip, arraySize,
-				format, D3D12_RESOURCE_FLAG_NONE, loadFlags, subresources.size(), new_texture_desc);
+			check_error = BuildTextureResource(resDim, twidth, theight, tdepth, reservedMips - skipMip, static_cast<size_t>(arraySize),
+				format, D3D12_RESOURCE_FLAG_NONE, loadFlags, static_cast<int32_t>(subresources.size()), new_texture_desc);
 			//修改纹理大小限制重新加载
 			if (!check_error.CheckIfSucceed())
 			{
@@ -608,8 +608,8 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const P
 						twidth, theight, tdepth, skipMip, subresources);
 					if (SUCCEEDED(hr))
 					{
-						check_error = BuildTextureResource(resDim, twidth, theight, tdepth, mipCount - skipMip, arraySize,
-							format, D3D12_RESOURCE_FLAG_NONE, loadFlags, subresources.size(), new_texture_desc);
+						check_error = BuildTextureResource(resDim, twidth, theight, tdepth, mipCount - skipMip, static_cast<size_t>(arraySize),
+							format, D3D12_RESOURCE_FLAG_NONE, loadFlags, static_cast<int32_t>(subresources.size()), new_texture_desc);
 						if (!check_error.CheckIfSucceed())
 						{
 							PancystarEngine::EngineFailReason error_message(E_INVALIDARG, "load: " + picture_path_file + "error, second try create resource");
@@ -827,7 +827,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Pan
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::BuildEmptyPicture", error_message);
 		return error_message;
 	}
-	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&texture_desc.texture_res_desc, 0, numberOfResources, 0, nullptr, nullptr, nullptr, &subresources_size);
+	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&texture_desc.texture_res_desc, 0, static_cast<UINT>(numberOfResources), 0, nullptr, nullptr, nullptr, &subresources_size);
 	//创建资源块结构
 	texture_data = new ResourceBlockGpu(subresources_size, resource_data, texture_desc.heap_type, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
 	tex_srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -851,8 +851,8 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Pan
 void PancyBasicTexture::GetJsonFilePath(const std::string &json_file_name, std::string &file_path_out)
 {
 	file_path_out = "";
-	int32_t copy_size = json_file_name.size();
-	for (int i = json_file_name.size() - 1; i >= 0; --i)
+	auto copy_size = json_file_name.size();
+	for (auto i = json_file_name.size() - 1; i >= 0; --i)
 	{
 		if (json_file_name[i] != '\\' && json_file_name[i] != '/')
 		{
@@ -942,7 +942,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 	//为纹理创建mipmap
 	if (if_automip && texture_desc.MipLevels == 1)
 	{
-		int32_t mipmap_level = MyCountMips(texture_desc.Width, texture_desc.Height);
+		auto mipmap_level = MyCountMips(static_cast<uint32_t>(texture_desc.Width), texture_desc.Height);
 		mipmap_image = new DirectX::ScratchImage();
 		DirectX::GenerateMipMaps(*new_image->GetImages(), TEX_FILTER_DEFAULT | TEX_FILTER_FORCE_NON_WIC, mipmap_level, *mipmap_image);
 		if_mip_gen = true;

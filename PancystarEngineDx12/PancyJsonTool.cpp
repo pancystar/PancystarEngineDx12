@@ -211,8 +211,8 @@ void PancyJsonTool::SplitString(std::string str, const std::string &pattern, std
 {
 	string::size_type pos;
 	str += pattern;//扩展字符串以方便操作
-	int size = str.size();
-	for (int i = 0; i < size; i++) {
+	size_t size = str.size();
+	for (size_t i = 0; i < size; i++) {
 		pos = str.find(pattern, i);
 		if (pos < size) {
 			std::string s = str.substr(i, pos - i);
@@ -456,5 +456,17 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetEnumVectorValue(const std::s
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->GetEnumVectorValue(value_pointer, enum_offsetdata, enum_data_out);
+	return check_error;
+}
+PancystarEngine::EngineFailReason PancyJsonTool::GetEnumVectorSize(const std::string &variable_type, void*value_pointer, pancy_object_id &enum_size_out)
+{
+	auto enum_parse_member = enum_parse_list.find(variable_type);
+	if (enum_parse_member == enum_parse_list.end())
+	{
+		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumMemberValue", error_message);
+		return error_message;
+	}
+	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->GetEnumVectorSize(value_pointer, enum_size_out);
 	return check_error;
 }

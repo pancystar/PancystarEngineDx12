@@ -180,8 +180,8 @@ void PancyBasicModel::FindAnimStEd(const float &input_time, int &st, int &ed, co
 	}
 	if (input_time > input[input.size() - 1].time)
 	{
-		st = input.size() - 1;
-		ed = input.size() - 1;
+		st = static_cast<int>(input.size()) - 1;
+		ed = static_cast<int>(input.size()) - 1;
 		return;
 	}
 	for (int i = 0; i < input.size() - 1; ++i)
@@ -193,8 +193,8 @@ void PancyBasicModel::FindAnimStEd(const float &input_time, int &st, int &ed, co
 			return;
 		}
 	}
-	st = input.size() - 1;
-	ed = input.size() - 1;
+	st = static_cast<int>(input.size()) - 1;
+	ed = static_cast<int>(input.size()) - 1;
 }
 void PancyBasicModel::FindAnimStEd(const float &input_time, int &st, int &ed, const std::vector<vector_animation> &input)
 {
@@ -206,8 +206,8 @@ void PancyBasicModel::FindAnimStEd(const float &input_time, int &st, int &ed, co
 	}
 	if (input_time > input[input.size() - 1].time)
 	{
-		st = input.size() - 1;
-		ed = input.size() - 1;
+		st = static_cast<int>(input.size()) - 1;
+		ed = static_cast<int>(input.size()) - 1;
 		return;
 	}
 	for (int i = 0; i < input.size() - 1; ++i)
@@ -219,8 +219,8 @@ void PancyBasicModel::FindAnimStEd(const float &input_time, int &st, int &ed, co
 			return;
 		}
 	}
-	st = input.size() - 1;
-	ed = input.size() - 1;
+	st = static_cast<int>(input.size()) - 1;
+	ed = static_cast<int>(input.size()) - 1;
 }
 PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 	const pancy_resource_id &animation_ID,
@@ -499,7 +499,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 	}
 	//读取模型的材质数据
 	Json::Value material_value = root_value.get("material", Json::Value::null);
-	for (auto i = 0; i < material_value.size(); ++i)
+	for (Json::ArrayIndex i = 0; i < material_value.size(); ++i)
 	{
 		std::unordered_map<TexType, pancy_object_id> now_material_need;
 		std::vector<pancy_object_id> now_material_id_need;
@@ -581,7 +581,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		}
 		//读取动画信息
 		Json::Value skin_animation_value = root_value.get("SkinAnimation", Json::Value::null);
-		for (auto i = 0; i < skin_animation_value.size(); ++i)
+		for (Json::ArrayIndex i = 0; i < skin_animation_value.size(); ++i)
 		{
 			animation_set new_animation;
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, skin_animation_value, i, pancy_json_data_type::json_data_string, rec_value);

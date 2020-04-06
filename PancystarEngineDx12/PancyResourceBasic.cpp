@@ -262,7 +262,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 		commandlist,
 		new_dynamic_block->dynamic_buffer_resource,
 		pLayouts,
-		subresources.size()
+		static_cast<pancy_object_id>(subresources.size())
 	);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -450,7 +450,7 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::AddResourceToContr
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	int id_now;
+	pancy_object_id id_now;
 	//ÅÐ¶ÏÊÇ·ñÓÐ¿ÕÏÐµÄid±àºÅ
 	if (free_id_list.size() > 0)
 	{
@@ -459,7 +459,7 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::AddResourceToContr
 	}
 	else
 	{
-		id_now = basic_resource_array.size();
+		id_now = static_cast<pancy_object_id>(basic_resource_array.size());
 	}
 	if (!if_allow_repeat)
 	{
