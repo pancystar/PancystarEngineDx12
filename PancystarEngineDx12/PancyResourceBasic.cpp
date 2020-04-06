@@ -307,7 +307,6 @@ PancyBasicVirtualResource::PancyBasicVirtualResource(const bool &if_could_reload
 }
 PancyBasicVirtualResource::~PancyBasicVirtualResource()
 {
-	delete resource_desc_value;
 }
 void PancyBasicVirtualResource::AddReference()
 {
@@ -345,14 +344,7 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 	else 
 	{
 		resource_type_name = typeid(*this).name();
-		BuildJsonReflect(&resource_desc_value);
-		if (resource_desc_value == NULL)
-		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not parse json type: " + resource_name_in);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::Create", error_message);
-			return error_message;
-		}
-		auto check_error = LoadResourceDirect(resource_name_in);
+		auto check_error = InitResourceDirect(resource_name_in);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -364,19 +356,7 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 {
 	resource_name = resource_name_in;
 	resource_type_name = typeid(*this).name();
-	BuildJsonReflect(&resource_desc_value);
-	if (resource_desc_value == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not parse json type: " + resource_name_in);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::Create", error_message);
-		return error_message;
-	}
-	auto check_error = resource_desc_value->LoadFromJsonMemory(resource_name_in, root_value_in);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = InitResource();
+	auto check_error = InitResourceJson(resource_name_in, root_value_in);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -387,31 +367,12 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 {
 	resource_name = resource_name_in;
 	resource_type_name = typeid(*this).name();
-	BuildJsonReflect(&resource_desc_value);
-	if (resource_desc_value == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not parse json type: " + resource_name_in);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::Create", error_message);
-		return error_message;
-	}
-	auto check_error = resource_desc_value->ResetMemoryByMemberData(resource_data, resource_type, resource_size);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	check_error = InitResource();
+	auto check_error = InitResourceMemory(resource_data, resource_type, resource_size);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyBasicVirtualResource::LoadResourceDirect(const std::string &file_name)
-{
-	//默认情况下，不处理任何非json文件的加载
-	PancystarEngine::EngineFailReason error_message(E_FAIL,"could not parse file: " + file_name);
-	PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::LoadResourceDirect", error_message);
-	return error_message;
 }
 //基础资源管理器
 PancyGlobelResourceControl::PancyGlobelResourceControl()

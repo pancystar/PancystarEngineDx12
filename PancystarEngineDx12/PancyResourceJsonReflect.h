@@ -22,8 +22,6 @@ class PancyJsonReflect
 	std::unordered_map<std::string, JsonReflectData> value_map;                //每个成员变量对应的值
 	std::unordered_map<std::string, std::string> parent_list;                  //每个成员变量的父节点
 	std::unordered_map<std::string, std::vector<std::string>> child_value_list;//每个成员变量的子变量
-	std::unordered_map<std::string, PancyJsonReflect*> child_node_list;        //每个特殊结构体的子节点处理表
-	std::unordered_map<std::string, pancy_resource_size> child_size_list;      //每个特殊结构体的成员变量大小记录表
 	std::unordered_map<std::string, std::string> array_real_size_map;          //每个数组的真实大小对应的变量
 public:
 	PancyJsonReflect();
@@ -58,8 +56,6 @@ private:
 	PancystarEngine::EngineFailReason LoadFromJsonArray(const std::string &value_name, const Json::Value &root_value);
 	//将数据写入到json节点
 	PancystarEngine::EngineFailReason SaveToJsonNode(const std::string &parent_name, Json::Value &root_value);
-	//根据结构体反射为子类开辟反射信息
-	virtual PancystarEngine::EngineFailReason InitChildReflectClass();
 	//注册所有的反射变量
 	virtual void InitBasicVariable() = 0;
 	//获取节点的父节点名称
@@ -89,9 +85,6 @@ private:
 	template<typename ArrayType, typename JsonType>
 	PancystarEngine::EngineFailReason SaveVectorValueMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value);
 	PancystarEngine::EngineFailReason SaveVectorEnumMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value);
-	//检查字符串变量是否是已经注册过的结构体或枚举
-	bool CheckIfStruct(const std::string &variable_type_name);
-	bool CheckIfStructList(const std::string &variable_type_name);
 	PancystarEngine::EngineFailReason TranslateStringToEnum(const std::string &basic_string, std::string &enum_type, std::string &enum_value_string, int32_t &enum_value_data);
 	//将变量的完整名称转化为基础名称
 	std::string TranslateFullNameToRealName(const std::string &full_name);
@@ -111,9 +104,6 @@ protected:
 		const std::string &value_name
 	);
 	PancystarEngine::EngineFailReason AddReflectData(const PancyJsonMemberType &type_data, const std::string &name, const std::string &variable_type_name, void*variable_data, const pancy_object_id &array_size);
-	PancystarEngine::EngineFailReason AddChildStruct(PancyJsonReflect*data_pointer, const std::string &name, const pancy_resource_size &data_size);
-	template<typename DataClassDesc, typename ReflectClassDesc>
-	void AddChildReflectClass();
 };
 template<typename T>
 PancystarEngine::EngineFailReason PancyJsonReflect::AddAnyVariable(
@@ -150,19 +140,6 @@ PancystarEngine::EngineFailReason PancyJsonReflect::BindArraySizeValue(
 		return error_message;
 	}
 	return PancystarEngine::succeed;
-}
-template<typename DataClassDesc, typename ReflectClassDesc>
-void PancyJsonReflect::AddChildReflectClass()
-{
-	PancyJsonReflect *array_pointer = new ReflectClassDesc();
-	PancyJsonReflect *vector_pointer = new ReflectClassDesc();
-	array_pointer->Create();
-	vector_pointer->Create();
-	std::string now_array_name = typeid(DataClassDesc*).name();
-	std::string now_vector_name = typeid(std::vector<DataClassDesc>).name();
-	auto now_size = sizeof(DataClassDesc);
-	AddChildStruct(array_pointer, now_array_name, now_size);
-	AddChildStruct(vector_pointer, now_vector_name, now_size);
 }
 template<class T1, class T2>
 PancystarEngine::EngineFailReason PancyJsonReflect::SetVectorValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const T2 &input_value)
@@ -380,12 +357,21 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Get
 class PancyJsonReflectControl 
 {
 	std::unordered_map<std::string, PancyJsonReflect*> refelct_map;
+	std::unordered_map<std::string, std::string> refelct_array_map;
+	std::unordered_map<std::string, pancy_resource_size> refelct_data_desc_size_map;
 	PancyJsonReflectControl();
 public:
 	~PancyJsonReflectControl();
-	template<typename ReflectClassType>
+	template<typename ReflectStructType,typename ReflectClassType>
 	void InitJsonReflect();
 	PancyJsonReflect* GetJsonReflect(const std::string &class_name);
+	PancyJsonReflect* GetJsonReflectByArray(const std::string &class_name);
+	PancystarEngine::EngineFailReason GetReflectDataSizeByMember(const std::string &name, pancy_resource_size &size);
+	PancystarEngine::EngineFailReason GetReflectDataSizeByArray(const std::string &name, pancy_resource_size &size);
+	//通过vector或者array的方式检查结构体是否注册
+	bool CheckIfStructArrayInit(const std::string &class_name);
+	//通过变量的方式检查结构体是否注册
+	bool CheckIfStructMemberInit(const std::string &class_name);
 	static PancyJsonReflectControl* GetInstance()
 	{
 		static PancyJsonReflectControl* this_instance;

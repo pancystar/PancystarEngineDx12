@@ -4,7 +4,7 @@
 namespace PancystarEngine
 {
 	//upload缓冲区资源块
-	struct UploadResourceBlock 
+	struct UploadResourceBlock
 	{
 		//存储开辟空间前后的指针位置，由于并非每次开辟都是首尾相连，所以开辟前的位置+存储区的大小并不一定等于开辟后的位置
 		pancy_resource_size pointer_before_alloc;
@@ -19,7 +19,7 @@ namespace PancystarEngine
 			const D3D12_HEAP_TYPE &resource_usage_in,
 			const D3D12_RESOURCE_STATES &resource_state,
 			ResourceBlockGpu *static_gpu_resource_input
-		):dynamic_buffer_resource(
+		) :dynamic_buffer_resource(
 			memory_size_in,
 			resource_data_in,
 			resource_usage_in,
@@ -31,7 +31,7 @@ namespace PancystarEngine
 			static_gpu_resource = static_gpu_resource_input;
 		}
 	};
-	class PancyDynamicRingBuffer 
+	class PancyDynamicRingBuffer
 	{
 		ComPtr<ID3D12Heap> ringbuffer_heap_data;
 		pancy_resource_size buffer_size;
@@ -82,7 +82,6 @@ namespace PancystarEngine
 	{
 	protected:
 		bool if_could_reload;//资源是否允许重复加载
-		PancyJsonReflect *resource_desc_value = NULL;
 		std::string resource_type_name;
 	protected:
 		std::string resource_name;
@@ -114,12 +113,103 @@ namespace PancystarEngine
 		//检测当前的资源是否已经被载入GPU
 		virtual bool CheckIfResourceLoadFinish() = 0;
 	private:
-		virtual void BuildJsonReflect(PancyJsonReflect **pointer_data) = 0;
 		//注册并加载资源
-		virtual PancystarEngine::EngineFailReason InitResource() = 0;
+		virtual PancystarEngine::EngineFailReason InitResourceJson(const std::string &resource_name_in, const Json::Value &root_value_in) = 0;
+		//从内存中加载资源
+		virtual PancystarEngine::EngineFailReason InitResourceMemory(void *resource_data, const std::string &resource_type, const pancy_resource_size &resource_size) = 0;
 		//直接从文件中加载资源（非json文件）
-		virtual PancystarEngine::EngineFailReason LoadResourceDirect(const std::string &file_name);
+		virtual PancystarEngine::EngineFailReason InitResourceDirect(const std::string &file_name) = 0;
 	};
+	template<typename ResourceDescStruct>
+	class PancyCommonVirtualResource : public PancyBasicVirtualResource
+	{
+		ResourceDescStruct resource_desc;
+	public:
+		PancyCommonVirtualResource();
+		virtual ~PancyCommonVirtualResource();
+	private:
+		//从json类中加载资源
+		PancystarEngine::EngineFailReason InitResourceJson(const std::string &resource_name_in, const Json::Value &root_value_in) override;
+		//从内存中加载资源
+		PancystarEngine::EngineFailReason InitResourceMemory(void *resource_data, const std::string &resource_type, const pancy_resource_size &resource_size) override;
+		//直接从文件中加载资源（非json文件）
+		PancystarEngine::EngineFailReason InitResourceDirect(const std::string &file_name) override;
+		//根据资源格式创建资源数据
+		virtual PancystarEngine::EngineFailReason LoadResoureDataByDesc(const ResourceDescStruct &ResourceDescStruct) = 0;
+		//根据其他文件读取资源，并获取资源格式
+		virtual PancystarEngine::EngineFailReason LoadResoureDataByOtherFile(const std::string &file_name, ResourceDescStruct &resource_desc);
+	};
+	template<typename ResourceDescStruct>
+	PancyCommonVirtualResource<ResourceDescStruct>::PancyCommonVirtualResource()
+	{
+	}
+	template<typename ResourceDescStruct>
+	PancyCommonVirtualResource<ResourceDescStruct>::~PancyCommonVirtualResource()
+	{
+	}
+	template<typename ResourceDescStruct>
+	PancystarEngine::EngineFailReason PancyCommonVirtualResource<ResourceDescStruct>::InitResourceJson(const std::string &resource_name_in, const Json::Value &root_value_in)
+	{
+		PancystarEngine::EngineFailReason check_error;
+		auto reflect_class = PancyJsonReflectControl::GetInstance()->GetJsonReflect(typeid(ResourceDescStruct).name());
+		if (reflect_class == NULL)
+		{
+			PancystarEngine::EngineFailReason error_message(0, "class: " + typeid(ResourceDescStruct).name() + " haven't init to reflect class");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyCommonVirtualResource::InitResourceJson", error_message);
+			return error_message;
+		}
+		check_error = reflect_class->LoadFromJsonMemory(resource_name_in, root_value_in);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		check_error = reflect_class->CopyMemberData(&resource_desc, typeid(&resource_desc).name(), sizeof(resource_desc));
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		check_error = LoadResoureDataByDesc(resource_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		return PancystarEngine::succeed;
+	}
+	template<typename ResourceDescStruct>
+	PancystarEngine::EngineFailReason PancyCommonVirtualResource<ResourceDescStruct>::InitResourceMemory(void *resource_data, const std::string &resource_type, const pancy_resource_size &resource_size)
+	{
+		//进行数据类型检查，检测成功后拷贝数据
+		if ((typeid(ResourceDescStruct*).name() != resource_type) || (resource_size != sizeof(ResourceDescStruct)))
+		{
+			PancystarEngine::EngineFailReason error_message(0, "class type dismatch: " + resource_type + " haven't init to reflect class");
+			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyCommonVirtualResource::InitResourceMemory", error_message);
+			return error_message;
+		}
+		resource_desc = *reinterpret_cast<ResourceDescStruct*>(resource_data);
+		auto check_error = LoadResoureDataByDesc(resource_desc);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		return PancystarEngine::succeed;
+	}
+	template<typename ResourceDescStruct>
+	PancystarEngine::EngineFailReason PancyCommonVirtualResource<ResourceDescStruct>::InitResourceDirect(const std::string &file_name) 
+	{
+		auto check_error = LoadResoureDataByOtherFile(file_name, resource_desc);
+		if (!check_error.CheckIfSucceed()) 
+		{
+			return check_error;
+		}
+	}
+	template<typename ResourceDescStruct>
+	PancystarEngine::EngineFailReason PancyCommonVirtualResource<ResourceDescStruct>::LoadResoureDataByOtherFile(const std::string &file_name, ResourceDescStruct &resource_desc)
+	{
+		//默认情况下，不处理任何非json文件的加载
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not parse file: " + file_name);
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::LoadResourceDirect", error_message);
+		return error_message;
+	}
 	//虚拟资源的模拟智能指针
 	class VirtualResourcePointer
 	{
@@ -188,7 +278,7 @@ namespace PancystarEngine
 		template<class ResourceType>
 		PancystarEngine::EngineFailReason LoadResource(
 			const std::string &name_resource_in,
-			void *resource_data, 
+			void *resource_data,
 			const std::string &resource_type,
 			const pancy_resource_size &resource_size,
 			VirtualResourcePointer &id_need,
@@ -277,7 +367,7 @@ namespace PancystarEngine
 		const pancy_resource_size &resource_size,
 		VirtualResourcePointer &id_need,
 		bool if_allow_repeat
-	) 
+	)
 	{
 		PancystarEngine::EngineFailReason check_error;
 		//资源加载判断重复
