@@ -58,7 +58,6 @@ class RootSignatureDescJsonReflect :public PancyJsonReflectTemplate<RootSignatur
 public:
 	RootSignatureDescJsonReflect();
 private:
-	PancystarEngine::EngineFailReason InitChildReflectClass() override;
 	void InitBasicVariable() override;
 };
 
@@ -75,7 +74,6 @@ private:
 	void InitBasicVariable() override;
 };
 
-
 struct PipelineStateDescCompute 
 {
 	PSOType pipeline_state_type;
@@ -89,11 +87,8 @@ class PipelineStateDescComputeJsonReflect :public PancyJsonReflectTemplate<Pipel
 public:
 	PipelineStateDescComputeJsonReflect();
 private:
-	PancystarEngine::EngineFailReason InitChildReflectClass() override;
 	void InitBasicVariable() override;
 };
-
-
 
 class RenderTargetBlendDescJsonReflect :public PancyJsonReflectTemplate<D3D12_RENDER_TARGET_BLEND_DESC>
 {
@@ -102,7 +97,6 @@ public:
 private:
 	void InitBasicVariable() override;
 };
-
 
 struct PipelineStateDescGraphic
 {
@@ -126,10 +120,8 @@ class PipelineStateDescGraphicJsonReflect :public PancyJsonReflectTemplate<Pipel
 public:
 	PipelineStateDescGraphicJsonReflect();
 private:
-	PancystarEngine::EngineFailReason InitChildReflectClass() override;
 	void InitBasicVariable() override;
 };
-
 //几何体的格式对接类型
 struct PancyVertexBufferDesc
 {
@@ -453,4 +445,5 @@ public:
 private:
 	PancystarEngine::EngineFailReason BuildPso(const std::string &pso_config_file);
 	void AddPSOGlobelVariable();
+	void AddJsonReflect();
 };

@@ -137,12 +137,12 @@ void EngineFailLog::PrintLogToconsole()
 void PancystarEngine::DivideFilePath(const std::string &full_file_name_in, std::string &file_path_out, std::string &file_name_out, std::string &file_tail_out)
 {
 	//获取文件后缀名
-	int length_name = full_file_name_in.size();
+	size_t length_name = full_file_name_in.size();
 	while (full_file_name_in[length_name - 1] != '.') 
 	{
 		length_name -= 1;
 	}
-	for (int i = length_name; i < full_file_name_in.size(); ++i) 
+	for (size_t i = length_name; i < full_file_name_in.size(); ++i) 
 	{
 		file_tail_out += full_file_name_in[i];
 	}

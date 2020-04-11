@@ -95,7 +95,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::AddArray(const std::string &
 	now_variable_type = PancyJsonTool::GetInstance()->GetVariableJsonType(variable_type);
 	if (now_variable_type == PancyJsonMemberType::json_member_unknown)
 	{
-		if (PancyJsonReflectControl::GetInstance()->CheckIfStructMemberInit(variable_type_name))
+		if (PancyJsonReflectControl::GetInstance()->CheckIfStructArrayInit(variable_type_name))
 		{
 			now_variable_type = PancyJsonMemberType::json_member_node_array;
 		}
@@ -1592,23 +1592,6 @@ PancyJsonReflectControl::~PancyJsonReflectControl()
 	for (auto reflect_parse_object = refelct_map.begin(); reflect_parse_object != refelct_map.end(); ++reflect_parse_object)
 	{
 		delete reflect_parse_object->second;
-	}
-}
-template<typename ReflectStructType, typename ReflectClassType>
-void PancyJsonReflectControl::InitJsonReflect()
-{
-	std::string class_name = typeid(ReflectStructType).name();
-	auto now_reflect_data = refelct_map.find(class_name);
-	if (now_reflect_data == refelct_map.end())
-	{
-		PancyJsonReflect* new_reflect_data = new ReflectClassType();
-		new_reflect_data->Create();
-		refelct_map.insert(std::pair<std::string, PancyJsonReflect*>(class_name, new_reflect_data));
-		std::string array_type_name = typeid(ReflectStructType*).name();
-		std::string vector_type_name = typeid(std::vector<ReflectStructType>).name();
-		refelct_array_map.insert(std::pair<std::string, std::string>(array_type_name, class_name));
-		refelct_array_map.insert(std::pair<std::string, std::string>(vector_type_name, class_name));
-		refelct_data_desc_size_map.insert(std::pair<std::string, pancy_resource_size>(class_name,sizeof(ReflectStructType)));
 	}
 }
 PancystarEngine::EngineFailReason PancyJsonReflectControl::GetReflectDataSizeByMember(const std::string &name, pancy_resource_size &size)

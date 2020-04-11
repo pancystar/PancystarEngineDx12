@@ -125,7 +125,11 @@ namespace PancystarEngine
 	{
 		ResourceDescStruct resource_desc;
 	public:
-		PancyCommonVirtualResource();
+		PancyCommonVirtualResource(const bool &if_could_reload_in);
+		inline ResourceDescStruct& GetResourceDesc() 
+		{
+			return resource_desc;
+		};
 		virtual ~PancyCommonVirtualResource();
 	private:
 		//从json类中加载资源
@@ -140,7 +144,7 @@ namespace PancystarEngine
 		virtual PancystarEngine::EngineFailReason LoadResoureDataByOtherFile(const std::string &file_name, ResourceDescStruct &resource_desc);
 	};
 	template<typename ResourceDescStruct>
-	PancyCommonVirtualResource<ResourceDescStruct>::PancyCommonVirtualResource()
+	PancyCommonVirtualResource<ResourceDescStruct>::PancyCommonVirtualResource(const bool &if_could_reload_in) : PancyBasicVirtualResource(if_could_reload_in)
 	{
 	}
 	template<typename ResourceDescStruct>
@@ -154,7 +158,7 @@ namespace PancystarEngine
 		auto reflect_class = PancyJsonReflectControl::GetInstance()->GetJsonReflect(typeid(ResourceDescStruct).name());
 		if (reflect_class == NULL)
 		{
-			PancystarEngine::EngineFailReason error_message(0, "class: " + typeid(ResourceDescStruct).name() + " haven't init to reflect class");
+			PancystarEngine::EngineFailReason error_message(0, std::string("class: ") + typeid(ResourceDescStruct).name() + " haven't init to reflect class");
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyCommonVirtualResource::InitResourceJson", error_message);
 			return error_message;
 		}
@@ -201,6 +205,7 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
+		return PancystarEngine::succeed;
 	}
 	template<typename ResourceDescStruct>
 	PancystarEngine::EngineFailReason PancyCommonVirtualResource<ResourceDescStruct>::LoadResoureDataByOtherFile(const std::string &file_name, ResourceDescStruct &resource_desc)

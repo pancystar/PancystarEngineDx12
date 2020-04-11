@@ -242,29 +242,19 @@ std::string PancyBasicTexture::GetFileTile(const std::string &data_input)
 	return out_final;
 }
 //基础纹理
-PancyBasicTexture::PancyBasicTexture(const bool &if_could_reload) :PancyBasicVirtualResource(if_could_reload)
+PancyBasicTexture::PancyBasicTexture(const bool &if_could_reload) :PancyCommonVirtualResource<PancyCommonTextureDesc>(if_could_reload)
 {
 }
-void PancyBasicTexture::BuildJsonReflect(PancyJsonReflect **pointer_data)
-{
-	*pointer_data = new CommonTextureJsonReflect();
-}
-PancystarEngine::EngineFailReason PancyBasicTexture::InitResource()
+PancystarEngine::EngineFailReason PancyBasicTexture::LoadResoureDataByDesc(const PancyCommonTextureDesc &resource_desc)
 {
 	PancystarEngine::EngineFailReason check_error;
-
-	PancyCommonTextureDesc resource_desc;
-	//将资源的格式信息从反射类内拷贝出来
-	check_error = resource_desc_value->CopyMemberData(&resource_desc, typeid(&resource_desc).name(), sizeof(resource_desc));
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
 	//如果是从文件中读取的纹理文件则进入加载流程
 	if (resource_desc.texture_type == PancyTextureType::Texture_Static_Load)
 	{
+		//const转非const
+		PancyCommonTextureDesc *desc_pointer = const_cast<PancyCommonTextureDesc *>(&resource_desc);
 		//启动从图片中加载纹理数据的流程
-		check_error = LoadPictureFromFile(resource_desc);
+		check_error = LoadPictureFromFile(*desc_pointer);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
@@ -280,7 +270,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::InitResource()
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyBasicTexture::LoadResourceDirect(const std::string &file_name)
+PancystarEngine::EngineFailReason PancyBasicTexture::LoadResoureDataByOtherFile(const std::string &file_name, PancyCommonTextureDesc &resource_desc)
 {
 	PancyCommonTextureDesc texture_desc;
 	texture_desc.texture_type = PancyTextureType::Texture_Static_Load;
@@ -310,10 +300,10 @@ PancyBasicTexture::~PancyBasicTexture()
 		delete texture_data;
 	}
 }
-PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const PancyCommonTextureDesc &texture_desc)
+PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCommonTextureDesc &new_texture_desc)
 {
 	PancystarEngine::EngineFailReason check_error;
-	std::string picture_path_file = texture_desc.texture_data_file;
+	std::string picture_path_file = new_texture_desc.texture_data_file;
 	//根据路径格式决定是否修改为绝对路径
 	//RebuildTextureDataPath(texture_desc.texture_data_file, picture_path_file);
 
@@ -564,11 +554,11 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const P
 		size_t tdepth = 0;
 		hr = MyFillInitData(width, height, depth, mipCount, arraySize,
 			numberOfPlanes, format,
-			texture_desc.max_size, bitSize, bitData,
+			new_texture_desc.max_size, bitSize, bitData,
 			twidth, theight, tdepth, skipMip, subresources);
 		//获取创建格式
 		DirectX::DDS_LOADER_FLAGS loadFlags;
-		if (texture_desc.if_gen_mipmap)
+		if (new_texture_desc.if_gen_mipmap)
 		{
 			loadFlags = DirectX::DDS_LOADER_MIP_AUTOGEN;
 		}
@@ -576,7 +566,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const P
 		{
 			loadFlags = DirectX::DDS_LOADER_DEFAULT;
 		}
-		if (texture_desc.if_force_srgb)
+		if (new_texture_desc.if_force_srgb)
 		{
 			loadFlags = static_cast<DDS_LOADER_FLAGS>(loadFlags | DirectX::DDS_LOADER_FORCE_SRGB);
 		}
@@ -588,13 +578,12 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const P
 				reservedMips = std::min<size_t>(D3D12_REQ_MIP_LEVELS, MyCountMips(width, height));
 			}
 			//根据读取到的纹理信息，重建纹理格式数据
-			PancyCommonTextureDesc new_texture_desc = texture_desc;
 			check_error = BuildTextureResource(resDim, twidth, theight, tdepth, reservedMips - skipMip, static_cast<size_t>(arraySize),
 				format, D3D12_RESOURCE_FLAG_NONE, loadFlags, static_cast<int32_t>(subresources.size()), new_texture_desc);
 			//修改纹理大小限制重新加载
 			if (!check_error.CheckIfSucceed())
 			{
-				if (!texture_desc.max_size && (mipCount > 1))
+				if (!new_texture_desc.max_size && (mipCount > 1))
 				{
 					subresources.clear();
 
@@ -630,12 +619,6 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(const P
 				}
 			}
 			check_error = UpdateTextureResource(subresources, new_texture_desc);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			//由于是从文件中读取到的格式数据，这里需要重置反射格式数据
-			check_error = resource_desc_value->ResetMemoryByMemberData(&new_texture_desc, typeid(&new_texture_desc).name(), sizeof(new_texture_desc));
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -931,13 +914,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 		return check_error;
 	}
 
-	PancyCommonTextureDesc resource_desc;
-	//将资源的格式信息从反射类内拷贝出来
-	check_error = resource_desc_value->CopyMemberData(&resource_desc, typeid(resource_desc).name(), sizeof(resource_desc));
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
+	PancyCommonTextureDesc &resource_desc = GetResourceDesc();
 	D3D12_RESOURCE_DESC texture_desc = resource_desc.texture_res_desc;
 	//为纹理创建mipmap
 	if (if_automip && texture_desc.MipLevels == 1)
@@ -1052,4 +1029,30 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildTextureResource(
 		return check_error;
 	}
 	return PancystarEngine::succeed;
+}
+void PancystarEngine::InitTextureJsonReflect()
+{
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_TYPE_DEFAULT);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_TYPE_UPLOAD);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_TYPE_READBACK);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_TYPE_CUSTOM);
+
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_NONE);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_SHARED);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_DENY_BUFFERS);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_ALLOW_DISPLAY);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_HARDWARE_PROTECTED);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES);
+	JSON_REFLECT_INIT_ENUM(D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES);
+
+	JSON_REFLECT_INIT_ENUM(Texture_Static_Load);
+	JSON_REFLECT_INIT_ENUM(Texture_Render_Target);
+	InitJsonReflectParseClass(PancyCommonTextureDesc, CommonTextureJsonReflect);
 }

@@ -68,7 +68,7 @@ namespace PancystarEngine
 		void InitBasicVariable() override;
 	};
 	//纹理资源
-	class PancyBasicTexture : public PancyBasicVirtualResource
+	class PancyBasicTexture : public PancyCommonVirtualResource<PancyCommonTextureDesc>
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC  tex_srv_desc = {};  //纹理访问格式
 		bool if_cube_map;   //是否是cubemap(仅dds有效)
@@ -83,7 +83,7 @@ namespace PancystarEngine
 			bool if_compress = false
 		);
 		//检测当前的资源是否已经被载入GPU
-		bool CheckIfResourceLoadFinish() override;
+		bool CheckIfResourceLoadFinish() override;;
 		inline ResourceBlockGpu *GetGpuResourceData() const
 		{
 			return texture_data;
@@ -94,11 +94,10 @@ namespace PancystarEngine
 			return tex_srv_desc;
 		}
 	private:
-		void BuildJsonReflect(PancyJsonReflect **pointer_data) override;
-		PancystarEngine::EngineFailReason InitResource() override;
-		PancystarEngine::EngineFailReason LoadResourceDirect(const std::string &file_name) override;
+		PancystarEngine::EngineFailReason LoadResoureDataByDesc(const PancyCommonTextureDesc &ResourceDescStruct) override;
+		PancystarEngine::EngineFailReason LoadResoureDataByOtherFile(const std::string &file_name, PancyCommonTextureDesc &resource_desc) override;
 	private:
-		PancystarEngine::EngineFailReason LoadPictureFromFile(const PancyCommonTextureDesc &texture_desc);
+		PancystarEngine::EngineFailReason LoadPictureFromFile(PancyCommonTextureDesc &texture_desc);
 		PancystarEngine::EngineFailReason BuildEmptyPicture(const PancyCommonTextureDesc &texture_desc);
 		//将纹理图片采样至windows图片中
 		PancystarEngine::EngineFailReason CaptureTextureDataToWindows(DirectX::ScratchImage *new_image);
@@ -131,4 +130,5 @@ namespace PancystarEngine
 		VirtualResourcePointer &id_need,
 		bool if_allow_repeat
 	);
+	void InitTextureJsonReflect();
 }

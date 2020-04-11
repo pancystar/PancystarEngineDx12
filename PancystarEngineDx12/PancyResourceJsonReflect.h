@@ -5,6 +5,9 @@
 #include"PancyJsonTool.h"
 #define Init_Json_Data_Vatriable(var_name) AddAnyVariable(#var_name, var_name)
 #define Bind_Json_Data_Array_Size(array_value,size_value) BindArraySizeValue<decltype(array_value)>(#array_value, #size_value)
+//这里使用#define创建资源可以在编译期检查出类型不匹配的错误
+#define InitJsonReflectParseClass(ReflectStructType,ReflectClassType) PancyJsonReflectTemplate<ReflectStructType> *pointer_##ReflectStructType = new ReflectClassType();\
+																	  PancyJsonReflectControl::GetInstance()->InitJsonReflect<ReflectStructType,ReflectClassType>(pointer_##ReflectStructType);
 //基本数据的反射保留内容
 struct JsonReflectData
 {
@@ -353,7 +356,6 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Get
 	size = static_cast<pancy_object_id>((*pointer).size());
 	return PancystarEngine::succeed;
 }
-
 class PancyJsonReflectControl 
 {
 	std::unordered_map<std::string, PancyJsonReflect*> refelct_map;
@@ -363,7 +365,7 @@ class PancyJsonReflectControl
 public:
 	~PancyJsonReflectControl();
 	template<typename ReflectStructType,typename ReflectClassType>
-	void InitJsonReflect();
+	void InitJsonReflect(PancyJsonReflect* reflect_parse_class);
 	PancyJsonReflect* GetJsonReflect(const std::string &class_name);
 	PancyJsonReflect* GetJsonReflectByArray(const std::string &class_name);
 	PancystarEngine::EngineFailReason GetReflectDataSizeByMember(const std::string &name, pancy_resource_size &size);
@@ -382,3 +384,23 @@ public:
 		return this_instance;
 	}
 };
+template<typename ReflectStructType, typename ReflectClassType>
+void PancyJsonReflectControl::InitJsonReflect(PancyJsonReflect* new_reflect_data)
+{
+	std::string class_name = typeid(ReflectStructType).name();
+	auto now_reflect_data = refelct_map.find(class_name);
+	if (now_reflect_data == refelct_map.end())
+	{
+		new_reflect_data->Create();
+		refelct_map.insert(std::pair<std::string, PancyJsonReflect*>(class_name, new_reflect_data));
+		std::string array_type_name = typeid(ReflectStructType*).name();
+		std::string vector_type_name = typeid(std::vector<ReflectStructType>).name();
+		refelct_array_map.insert(std::pair<std::string, std::string>(array_type_name, class_name));
+		refelct_array_map.insert(std::pair<std::string, std::string>(vector_type_name, class_name));
+		refelct_data_desc_size_map.insert(std::pair<std::string, pancy_resource_size>(class_name, sizeof(ReflectStructType)));
+	}
+	else if (new_reflect_data != NULL)
+	{
+		delete new_reflect_data;
+	}
+}

@@ -27,7 +27,7 @@ namespace PancystarEngine
 	};
 	
 	//缓冲区资源
-	class PancyBasicBuffer : public PancyBasicVirtualResource
+	class PancyBasicBuffer : public PancyCommonVirtualResource<PancyCommonBufferDesc>
 	{
 		pancy_resource_size subresources_size = 0;
 		UINT8* map_pointer = NULL;
@@ -52,8 +52,7 @@ namespace PancystarEngine
 		//将cpu数据拷贝到buffer中
 		PancystarEngine::EngineFailReason WriteDataToBuffer(void* cpu_data_pointer,const pancy_resource_size &data_size);
 	private:
-		void BuildJsonReflect(PancyJsonReflect **pointer_data) override;
-		PancystarEngine::EngineFailReason InitResource() override;
+		PancystarEngine::EngineFailReason LoadResoureDataByDesc(const PancyCommonBufferDesc &ResourceDescStruct) override;
 		PancystarEngine::EngineFailReason CopyCpuDataToBufferGpu(void* cpu_data_pointer, const pancy_resource_size &data_size);
 	};
 	ResourceBlockGpu* GetBufferResourceData(VirtualResourcePointer &virtual_pointer, PancystarEngine::EngineFailReason &check_error);
@@ -63,4 +62,5 @@ namespace PancystarEngine
 		VirtualResourcePointer &id_need,
 		bool if_allow_repeat
 	);
+	void InitBufferJsonReflect();
 }

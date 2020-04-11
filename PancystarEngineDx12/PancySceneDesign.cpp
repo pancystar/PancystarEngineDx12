@@ -296,6 +296,9 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	{
 		return E_FAIL;
 	}
+	//注册反射信息
+	InitBufferJsonReflect();
+	InitTextureJsonReflect();
 	//注册单例
 	PancyShaderControl::GetInstance();
 	PancyRootSignatureControl::GetInstance();
@@ -371,6 +374,7 @@ WPARAM engine_windows_main::game_end()
 	delete PancystarEngine::EngineFailLog::GetInstance();
 	//销毁json反射工具类
 	delete PancyJsonTool::GetInstance();
+	delete PancyJsonReflectControl::GetInstance();
 	//todo::这里释放描述符与资源堆的时候需要检查是否已经是空的了，可以用于检查资源的泄露情况
 	delete PancystarEngine::PancyDescriptorHeapControl::GetInstance();
 	delete PancystarEngine::PancyGlobelResourceControl::GetInstance();
