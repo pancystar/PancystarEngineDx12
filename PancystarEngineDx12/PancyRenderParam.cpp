@@ -123,9 +123,8 @@ bool BasicRenderParam::CheckIfInitFinished()
 	}
 	return if_render_param_inited;
 }
-BasicRenderParam::BasicRenderParam(const std::string &render_param_name_in)
+BasicRenderParam::BasicRenderParam()
 {
-	render_param_name = render_param_name_in;
 }
 BasicRenderParam::~BasicRenderParam()
 {
@@ -218,7 +217,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 			std::string pso_divide_tail;
 			PancystarEngine::DivideFilePath(PSO_name, pso_divide_path, pso_divide_name, pso_divide_tail);
 			PancyConstantBuffer *new_cbuffer = new PancyConstantBuffer();
-			check_error = PancyEffectGraphic::GetInstance()->BuildCbufferByName(PSO_id_need,cbuffer_name, *new_cbuffer);
+			check_error = PancyEffectGraphic::GetInstance()->BuildCbufferByName(PSO_id_need, cbuffer_name, *new_cbuffer);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
@@ -439,7 +438,6 @@ RenderParamSystem::~RenderParamSystem()
 }
 PancystarEngine::EngineFailReason RenderParamSystem::GetCommonRenderParam(
 	const std::string &PSO_name,
-	const std::string &render_param_name,
 	const std::unordered_map<std::string, BindDescriptorPointer> &bind_shader_resource_in,
 	const std::unordered_map<std::string, BindlessDescriptorPointer> &bindless_shader_resource_in,
 	PancyRenderParamID &render_param_id
@@ -459,41 +457,33 @@ PancystarEngine::EngineFailReason RenderParamSystem::GetCommonRenderParam(
 		render_param_id_self_add[PSO_id_need] = 0;
 		render_param_id_reuse_table.insert(std::pair<pancy_object_id, std::queue<pancy_object_id>>(PSO_id_need, std::queue<pancy_object_id>()));
 		render_param_table.insert(std::pair<pancy_object_id, std::unordered_map<pancy_object_id, BasicRenderParam*>>(PSO_id_need, std::unordered_map<pancy_object_id, BasicRenderParam*>()));
-		render_param_name_table.insert(std::pair<pancy_object_id, std::unordered_map<std::string, pancy_object_id>>(PSO_id_need, std::unordered_map<std::string, pancy_object_id>()));
 	}
 	render_param_id.PSO_id = PSO_id_need;
-	auto now_used_name_table = render_param_name_table.find(PSO_id_need);
 	auto now_used_render_param_table = render_param_table.find(PSO_id_need);
-	if (now_used_name_table->second.find(render_param_name) == now_used_name_table->second.end())
+	
+	//未发现渲染单元的模板数据，新创建一个渲染单元
+	BasicRenderParam *new_render_param = new BasicRenderParam();
+	check_error = new_render_param->CommonCreate(PSO_name, bind_shader_resource_in, bindless_shader_resource_in);
+	if (!check_error.CheckIfSucceed())
 	{
-		//未发现渲染单元的模板数据，新创建一个渲染单元
-		BasicRenderParam *new_render_param = new BasicRenderParam(render_param_name);
-		check_error = new_render_param->CommonCreate(PSO_name, bind_shader_resource_in, bindless_shader_resource_in);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		auto now_used_id_self_add = render_param_id_self_add.find(PSO_id_need);
-		auto now_used_id_reuse = render_param_id_reuse_table.find(PSO_id_need);
-		pancy_object_id new_id;
-		if (!now_used_id_reuse->second.empty())
-		{
-			new_id = now_used_id_reuse->second.front();
-			now_used_id_reuse->second.pop();
-		}
-		else
-		{
-			new_id = now_used_id_self_add->second;
-			now_used_id_self_add->second += 1;
-		}
-		now_used_name_table->second.insert(std::pair<std::string, pancy_object_id>(render_param_name, new_id));
-		now_used_render_param_table->second.insert(std::pair<pancy_object_id, BasicRenderParam*>(new_id, new_render_param));
-		render_param_id.render_param_id = new_id;
+		return check_error;
+	}
+	auto now_used_id_self_add = render_param_id_self_add.find(PSO_id_need);
+	auto now_used_id_reuse = render_param_id_reuse_table.find(PSO_id_need);
+	pancy_object_id new_id;
+	if (!now_used_id_reuse->second.empty())
+	{
+		new_id = now_used_id_reuse->second.front();
+		now_used_id_reuse->second.pop();
 	}
 	else
 	{
-		render_param_id.render_param_id = now_used_name_table->second[render_param_name];
+		new_id = now_used_id_self_add->second;
+		now_used_id_self_add->second += 1;
 	}
+	now_used_render_param_table->second.insert(std::pair<pancy_object_id, BasicRenderParam*>(new_id, new_render_param));
+	render_param_id.render_param_id = new_id;
+
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason RenderParamSystem::AddRenderParamToCommandList(

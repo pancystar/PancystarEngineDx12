@@ -5,7 +5,7 @@
 namespace PancystarEngine
 {
 #define MaxBoneNum 100
-#define NouseAssimpStruct -12138
+#define NouseBoneStruct -12138
 #define VertexAnimationID uint32_t
 	enum TexType
 	{
@@ -24,26 +24,6 @@ namespace PancystarEngine
 	{
 		DirectX::XMFLOAT3 min_box_pos;
 		DirectX::XMFLOAT3 max_box_pos;
-	};
-	struct skin_tree
-	{
-		char bone_ID[128];
-		int bone_number;
-		DirectX::XMFLOAT4X4 basic_matrix;
-		DirectX::XMFLOAT4X4 animation_matrix;
-		DirectX::XMFLOAT4X4 now_matrix;
-		skin_tree *brother;
-		skin_tree *son;
-		skin_tree()
-		{
-			bone_ID[0] = '\0';
-			bone_number = NouseAssimpStruct;
-			brother = NULL;
-			son = NULL;
-			DirectX::XMStoreFloat4x4(&basic_matrix, DirectX::XMMatrixIdentity());
-			DirectX::XMStoreFloat4x4(&animation_matrix, DirectX::XMMatrixIdentity());
-			DirectX::XMStoreFloat4x4(&now_matrix, DirectX::XMMatrixIdentity());
-		}
 	};
 	struct bone_struct 
 	{
@@ -90,15 +70,25 @@ namespace PancystarEngine
 		std::vector<animation_data> data_animition;         //该动画的数据
 	};
 	
-	class PancySubModel
+	enum PancyRenderMeshVertexType
 	{
+		PancyMeshVertexCommon = 0,
+		PancyMeshVertexSkin,
+		PancyMeshVertexPointCatch
+	};
+	class PancyRenderMesh
+	{
+		//顶点的格式数据
+		PancyRenderMeshVertexType RenderType;
+		//模型网格数据
 		PancystarEngine::GeometryBasic *model_mesh;
-		pancy_object_id material_use;
+		//todo:包围盒信息
+		BoundingData mesh_bound;
 	public:
-		PancySubModel();
-		~PancySubModel();
+		PancyRenderMesh();
+		~PancyRenderMesh();
 		template<typename T>
-		PancystarEngine::EngineFailReason Create(const T* vertex_need, const IndexType* index_need, const int32_t &vert_num, const int32_t &index_num, const pancy_object_id& material_id)
+		PancystarEngine::EngineFailReason Create(const T* vertex_need, const IndexType* index_need, const int32_t &vert_num, const int32_t &index_num)
 		{
 			model_mesh = new PancystarEngine::GeometryCommonModel<T>(vertex_need, index_need, vert_num, index_num, false, true);
 			auto check_error = model_mesh->Create();
@@ -106,7 +96,6 @@ namespace PancystarEngine
 			{
 				return check_error;
 			}
-			material_use = material_id;
 			return PancystarEngine::succeed;
 		}
 		template<typename T>
@@ -117,10 +106,6 @@ namespace PancystarEngine
 		{
 			PancystarEngine::GeometryCommonModel<T> *model_real = dynamic_cast<PancystarEngine::GeometryCommonModel<T> *>(model_mesh);
 			return model_real->GetModelData(vertex_data_in, index_data_in);
-		}
-		inline pancy_object_id GetMaterial()
-		{
-			return material_use;
 		}
 		inline D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()
 		{
@@ -147,20 +132,14 @@ namespace PancystarEngine
 			return model_mesh->GetVertexBufferResource();
 		};
 	};
-
 	//基础模型
 	class PancyBasicModel
 	{
 		//模型的数据信息
-		std::vector<PancySubModel*> model_resource_list;     //模型的每个子部件
-		std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> material_list;
-		std::unordered_map<pancy_object_id, std::vector<pancy_object_id>> material_id_list;
-		std::vector<VirtualResourcePointer> texture_list;
+		std::vector<PancyRenderMesh*> model_resource_list;     //模型的每个子部件
 		//模型的动画信息
 		bool if_skinmesh;
 		bool if_pointmesh;
-		//模型的pbr格式
-		PbrMaterialType model_pbr_type;
 		//模型的包围以及形变信息
 		BoundingData model_size;
 		DirectX::XMFLOAT4X4 model_translation;
@@ -175,8 +154,6 @@ namespace PancystarEngine
 		std::unordered_map<std::string, pancy_resource_id> skin_animation_name;
 		std::unordered_map<pancy_resource_id, animation_set> skin_animation_map;
 		float now_animation_play_station;//当前正在播放的动画
-		DirectX::XMFLOAT4X4 bind_pose_matrix;//控制模型位置的根骨骼偏移矩阵
-		skin_tree *model_move_skin;//当前控制模型位置的根骨骼
 		bool if_animation_choose;
 		//文件读取器
 		ifstream instream;
@@ -188,7 +165,7 @@ namespace PancystarEngine
 		{
 			return static_cast<pancy_object_id>(model_resource_list.size());
 		};
-		inline PancystarEngine::EngineFailReason GetRenderMesh(const pancy_object_id &submesh_id, PancySubModel **render_mesh)
+		inline PancystarEngine::EngineFailReason GetRenderMesh(const pancy_object_id &submesh_id, PancyRenderMesh **render_mesh)
 		{
 			if (submesh_id >= model_resource_list.size()) 
 			{
@@ -197,30 +174,6 @@ namespace PancystarEngine
 				return error_message;
 			}
 			*render_mesh = model_resource_list[submesh_id];
-			return PancystarEngine::succeed;
-		}
-		//获取材质信息
-		inline size_t GetMaterialNum()
-		{
-			return material_list.size();
-		}
-		inline PancystarEngine::EngineFailReason GetMateriaTexture(const pancy_object_id &material_id, const TexType &texture_type, VirtualResourcePointer &texture_id)
-		{
-			if (material_id > material_list.size())
-			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "material id:" + std::to_string(material_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: ");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find texture from model ", error_message);
-				return error_message;
-			}
-			auto material_data = material_list.find(material_id);
-			auto texture_data = material_data->second.find(texture_type);
-			if (texture_data == material_data->second.end())
-			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the texture id:" + std::to_string(texture_type) + " in material id:" + std::to_string(material_id) + "in model ");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find texture from model ", error_message);
-				return error_message;
-			}
-			texture_id = texture_list[texture_data->second];
 			return PancystarEngine::succeed;
 		}
 		//检验动画信息
@@ -232,11 +185,6 @@ namespace PancystarEngine
 		{
 			return if_pointmesh;
 		}
-		//获取模型的pbr信息
-		inline PbrMaterialType GetModelPbrDesc()
-		{
-			return model_pbr_type;
-		}
 		//获取包围盒信息
 		inline PancystarEngine::GeometryBasic *GetBoundBox()
 		{
@@ -247,11 +195,6 @@ namespace PancystarEngine
 			const pancy_resource_id &animation_ID,
 			const float &animation_time, 
 			std::vector<DirectX::XMFLOAT4X4> &matrix_out
-		);
-		//获取渲染描述符的每个对象的独有资源
-		PancystarEngine::EngineFailReason GetShaderResourcePerObject(
-			std::vector<VirtualResourcePointer> &resource_data_per_frame_out,
-			std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_out
 		);
 		virtual ~PancyBasicModel();
 		bool CheckIfLoadSucceed();
@@ -307,8 +250,8 @@ namespace PancystarEngine
 			
 			instream.read(reinterpret_cast<char*>(index_data), index_size);
 			instream.close();
-			PancySubModel *new_submodel = new PancySubModel();
-			check_error = new_submodel->Create(vertex_data, index_data, vertex_num, index_num, 0);
+			PancyRenderMesh *new_submodel = new PancyRenderMesh();
+			check_error = new_submodel->Create(vertex_data, index_data, vertex_num, index_num);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;

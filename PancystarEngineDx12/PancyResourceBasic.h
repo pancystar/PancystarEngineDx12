@@ -244,6 +244,10 @@ namespace PancystarEngine
 			}
 		}
 	};
+	//todo：weak_ptr处理临时使用资源的情况
+	class VirtualWeakResourcePointer 
+	{
+	};
 	class PancyGlobelResourceControl
 	{
 		std::unordered_map<pancy_object_id, PancyBasicVirtualResource*> basic_resource_array;
@@ -312,6 +316,7 @@ namespace PancystarEngine
 			auto check_data = resource_name_list.find(name_resource_in);
 			if (check_data != resource_name_list.end())
 			{
+				res_pointer.MakeShared(check_data->second);
 				PancystarEngine::EngineFailReason error_message(E_FAIL, "repeat load resource : " + name_resource_in, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Resource", error_message);
 				return error_message;

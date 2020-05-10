@@ -300,7 +300,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindlessShaderResour
 	if (SRV_pack_size <= 0)
 	{
 		//需要创建的SRV数量小于等于0
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture with size:" + SRV_pack_size);
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture with size:" + std::to_string(SRV_pack_size));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV for bindless texture", error_message);
 		return error_message;
 	}
@@ -1135,7 +1135,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonGlobelDe
 		return error_message;
 	}
 	check_error = common_descriptor_heap->second->BindGlobelDescriptor(globel_name, render_param_type, m_commandList, root_signature_offset);
-	if (check_error.CheckIfSucceed())
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
@@ -1157,7 +1157,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonDescript
 		return error_message;
 	}
 	check_error = common_descriptor_heap->second->BindCommonDescriptor(descriptor_id.descriptor_id, render_param_type, m_commandList, root_signature_offset);
-	if (check_error.CheckIfSucceed())
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
@@ -1179,7 +1179,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindBindlessDescri
 		return error_message;
 	}
 	check_error = common_descriptor_heap->second->BindBindlessDescriptor(descriptor_id.descriptor_pack_id, render_param_type, m_commandList, root_signature_offset);
-	if (check_error.CheckIfSucceed())
+	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}

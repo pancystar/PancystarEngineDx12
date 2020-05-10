@@ -346,12 +346,6 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Get
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::GetVectorDataSize", error_message);
 		return error_message;
 	}
-	if (size != sizeof(ReflectDataType))
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not push back vector for json reflect,size dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::GetVectorDataSize", error_message);
-		return error_message;
-	}
 	std::vector<ReflectDataType> *pointer = reinterpret_cast<std::vector<ReflectDataType>*>(vector_pointer);
 	size = static_cast<pancy_object_id>((*pointer).size());
 	return PancystarEngine::succeed;

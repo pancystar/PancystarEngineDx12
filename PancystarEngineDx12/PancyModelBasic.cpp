@@ -1,12 +1,11 @@
 #include"PancyModelBasic.h"
 using namespace PancystarEngine;
 //模型部件
-PancySubModel::PancySubModel()
+PancyRenderMesh::PancyRenderMesh()
 {
 	model_mesh = NULL;
-	material_use = 0;
 }
-PancySubModel::~PancySubModel()
+PancyRenderMesh::~PancyRenderMesh()
 {
 	if (model_mesh != NULL)
 	{
@@ -39,7 +38,6 @@ PancyBasicModel::~PancyBasicModel()
 		delete *data_submodel;
 	}
 	model_resource_list.clear();
-	material_list.clear();
 }
 //骨骼动画处理函数
 PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &filename)
@@ -68,6 +66,27 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &fi
 	instream.close();
 	return PancystarEngine::succeed;
 }
+//todo::取消使用这个结构
+struct skin_tree
+{
+	char bone_ID[128];
+	int bone_number;
+	DirectX::XMFLOAT4X4 basic_matrix;
+	DirectX::XMFLOAT4X4 animation_matrix;
+	DirectX::XMFLOAT4X4 now_matrix;
+	skin_tree *brother;
+	skin_tree *son;
+	skin_tree()
+	{
+		bone_ID[0] = '\0';
+		bone_number = NouseBoneStruct;
+		brother = NULL;
+		son = NULL;
+		DirectX::XMStoreFloat4x4(&basic_matrix, DirectX::XMMatrixIdentity());
+		DirectX::XMStoreFloat4x4(&animation_matrix, DirectX::XMMatrixIdentity());
+		DirectX::XMStoreFloat4x4(&now_matrix, DirectX::XMMatrixIdentity());
+	}
+};
 PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_build_id)
 {
 	char data[11];
@@ -76,7 +95,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_bui
 	//根据读取到的骨骼节点创建一个骨骼结构并赋予编号
 	bone_struct new_bone;
 	bool if_used_skin = false;;
-	if (now_bone_data.bone_number == NouseAssimpStruct)
+	if (now_bone_data.bone_number == NouseBoneStruct)
 	{
 		//当前骨骼并未用于蒙皮信息,重新生成一个ID号
 		now_build_id = bone_object_num;
@@ -88,8 +107,8 @@ PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_bui
 		now_build_id = now_bone_data.bone_number;
 	}
 	new_bone.bone_name = now_bone_data.bone_ID;
-	new_bone.bone_ID_son = NouseAssimpStruct;
-	new_bone.bone_ID_brother = NouseAssimpStruct;
+	new_bone.bone_ID_son = NouseBoneStruct;
+	new_bone.bone_ID_brother = NouseBoneStruct;
 	new_bone.if_used_for_skin = if_used_skin;
 	bone_tree_data.insert(std::pair<int32_t, bone_struct>(now_build_id, new_bone));
 	bone_name_index.insert(std::pair<std::string, int32_t>(new_bone.bone_name, now_build_id));
@@ -97,7 +116,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_bui
 	while (strcmp(data, "*heaphead*") == 0)
 	{
 		//入栈符号，代表子节点
-		int32_t now_son_ID = NouseAssimpStruct;
+		int32_t now_son_ID = NouseBoneStruct;
 		//递归创建子节点
 		auto check_error = ReadBoneTree(now_son_ID);
 		if (!check_error.CheckIfSucceed())
@@ -369,7 +388,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateRoot(
 		matrix_out[root_id] = matrix_combine_save[root_id];
 	}
 	//更新兄弟节点及子节点
-	if (now_root_bone_data->second.bone_ID_brother != NouseAssimpStruct)
+	if (now_root_bone_data->second.bone_ID_brother != NouseBoneStruct)
 	{
 		check_error = UpdateRoot(now_root_bone_data->second.bone_ID_brother, matrix_parent, matrix_animation, matrix_combine_save, matrix_out);
 		if (!check_error.CheckIfSucceed())
@@ -377,7 +396,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateRoot(
 			return check_error;
 		}
 	}
-	if (now_root_bone_data->second.bone_ID_son != NouseAssimpStruct)
+	if (now_root_bone_data->second.bone_ID_son != NouseBoneStruct)
 	{
 		check_error = UpdateRoot(now_root_bone_data->second.bone_ID_son, matrix_combine_save[root_id], matrix_animation, matrix_combine_save, matrix_out);
 		if (!check_error.CheckIfSucceed())
@@ -432,14 +451,6 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		return check_error;
 	}
 	if_pointmesh = rec_value.bool_value;
-	//模型的pbr类型
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "PbrType", pancy_json_data_type::json_data_string, rec_value);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	auto enum_num_value = PancyJsonTool::GetInstance()->GetEnumValue("enum PancystarEngine::PbrMaterialType", rec_value.string_value);
-	model_pbr_type = static_cast<PbrMaterialType>(enum_num_value);
 	//读取模型的网格数据
 	int32_t model_part_num;
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "model_num", pancy_json_data_type::json_data_int, rec_value);
@@ -476,98 +487,6 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 				return check_error;
 			}
 		}
-	}
-	//读取模型的纹理数据
-	int32_t model_texture_num;
-	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "texture_num", pancy_json_data_type::json_data_int, rec_value);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	model_texture_num = rec_value.int_value;
-	for (int i = 0; i < model_texture_num; ++i)
-	{
-		//加载纹理
-		VirtualResourcePointer now_texture_resource;
-		std::string texture_name_now = path_name + file_name + "_tex" + std::to_string(i) + ".dds";
-		check_error = LoadDDSTextureResource(texture_name_now, now_texture_resource);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		texture_list.push_back(now_texture_resource);
-	}
-	//读取模型的材质数据
-	Json::Value material_value = root_value.get("material", Json::Value::null);
-	for (Json::ArrayIndex i = 0; i < material_value.size(); ++i)
-	{
-		std::unordered_map<TexType, pancy_object_id> now_material_need;
-		std::vector<pancy_object_id> now_material_id_need;
-		int32_t material_id;
-		//材质id
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "materialID", pancy_json_data_type::json_data_int, rec_value);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		material_id = rec_value.int_value;
-		//漫反射纹理
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "Albedotex", pancy_json_data_type::json_data_int, rec_value);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, rec_value.int_value));
-		now_material_id_need.push_back(rec_value.int_value);
-		//法线纹理
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "Normaltex", pancy_json_data_type::json_data_int, rec_value);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, rec_value.int_value));
-		now_material_id_need.push_back(rec_value.int_value);
-		//AO纹理
-		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "Ambienttex", pancy_json_data_type::json_data_int, rec_value);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_ambient, rec_value.int_value));
-		now_material_id_need.push_back(rec_value.int_value);
-		//PBR纹理
-		if (model_pbr_type == PbrMaterialType::PbrType_MetallicRoughness)
-		{
-			//金属度纹理
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "MetallicTex", pancy_json_data_type::json_data_int, rec_value);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_metallic, rec_value.int_value));
-			now_material_id_need.push_back(rec_value.int_value);
-			//粗糙度纹理
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "RoughnessTex", pancy_json_data_type::json_data_int, rec_value);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_roughness, rec_value.int_value));
-			now_material_id_need.push_back(rec_value.int_value);
-		}
-		else if (model_pbr_type == PbrMaterialType::PbrType_SpecularSmoothness)
-		{
-			//镜面光&平滑度纹理
-			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, material_value[i], "SpecularSmoothTex", pancy_json_data_type::json_data_int, rec_value);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			now_material_need.insert(std::pair<TexType, pancy_object_id>(TexType::tex_specular_smoothness, rec_value.int_value));
-			now_material_id_need.push_back(rec_value.int_value);
-		}
-		material_list.insert(std::pair<pancy_object_id, std::unordered_map<TexType, pancy_object_id>>(material_id, now_material_need));
-		material_id_list.insert(std::pair<pancy_object_id, std::vector<pancy_object_id>>(material_id, now_material_id_need));
 	}
 	//读取骨骼动画
 	if (if_skinmesh)
@@ -725,15 +644,6 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 }
 bool PancyBasicModel::CheckIfLoadSucceed()
 {
-	//检测所有的纹理资源是否已经加载完毕
-	for (int i = 0; i < texture_list.size(); ++i)
-	{
-		bool if_texture_succeed_load = texture_list[i].GetResourceData()->CheckIfResourceLoadFinish();
-		if (!if_texture_succeed_load)
-		{
-			return false;
-		}
-	}
 	//检测所有的几何体资源是否已经加载完毕
 	for (int i = 0; i < model_resource_list.size(); ++i)
 	{
@@ -744,71 +654,4 @@ bool PancyBasicModel::CheckIfLoadSucceed()
 		}
 	}
 	return true;
-}
-PancystarEngine::EngineFailReason PancyBasicModel::GetShaderResourcePerObject(
-	std::vector<VirtualResourcePointer> &resource_data_per_frame_out,
-	std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &resource_desc_per_frame_out
-)
-{
-	PancystarEngine::EngineFailReason check_error;
-	//整理模型的纹理资源
-	bool if_need_resource_barrier = false;
-	for (int i = 0; i < material_id_list.size(); ++i)
-	{
-		for (int j = 0; j < material_id_list[i].size(); ++j)
-		{
-			D3D12_SHADER_RESOURCE_VIEW_DESC new_SRV_desc;
-			VirtualResourcePointer &now_texture_pointer = texture_list[material_id_list[i][j]];
-			resource_data_per_frame_out.push_back(now_texture_pointer);
-			auto texture_resource_gpu_buffer = GetTextureResourceData(now_texture_pointer, check_error);
-			if (!check_error.CheckIfSucceed())
-			{
-				return check_error;
-			}
-			D3D12_RESOURCE_STATES now_tex_resource_state = texture_resource_gpu_buffer->GetResourceState();
-			if (now_tex_resource_state != D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
-			{
-				if_need_resource_barrier = true;
-			}
-			PancyBasicTexture* texture_resource_pointer = dynamic_cast<PancyBasicTexture*>(now_texture_pointer.GetResourceData());
-			new_SRV_desc = texture_resource_pointer->GetSRVDesc();
-			resource_desc_per_frame_out.push_back(new_SRV_desc);
-		}
-	}
-	if (if_need_resource_barrier)
-	{
-		//有些渲染资源尚未转换为SRV格式，调用主线程统一转换
-		PancyRenderCommandList *m_commandList;
-		PancyThreadIdGPU commdlist_id_use;
-		check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &m_commandList, commdlist_id_use);
-		if (!check_error.CheckIfSucceed())
-		{
-			return check_error;
-		}
-		for (int i = 0; i < material_id_list.size(); ++i)
-		{
-			for (int j = 0; j < material_id_list[i].size(); ++j)
-			{
-				VirtualResourcePointer &now_texture_pointer = texture_list[material_id_list[i][j]];
-				auto texture_resource_gpu_buffer = GetTextureResourceData(now_texture_pointer, check_error);
-				if (!check_error.CheckIfSucceed())
-				{
-					return check_error;
-				}
-				D3D12_RESOURCE_STATES test_state;
-				test_state = texture_resource_gpu_buffer->GetResourceState();
-				if (test_state != D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
-				{
-					check_error = texture_resource_gpu_buffer->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-					if (!check_error.CheckIfSucceed())
-					{
-						return check_error;
-					}
-				};
-			}
-		}
-		m_commandList->UnlockPrepare();
-		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_use);
-	}
-	return PancystarEngine::succeed;
 }

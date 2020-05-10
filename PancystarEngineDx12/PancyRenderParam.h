@@ -5,7 +5,6 @@ namespace PancystarEngine
 {
 	class BasicRenderParam
 	{
-		std::string render_param_name;
 		//渲染管线
 		std::string          PSO_name;
 		ID3D12PipelineState  *PSO_pointer = NULL;
@@ -34,7 +33,7 @@ namespace PancystarEngine
 		//私有存储资源
 		std::unordered_map<std::string, std::vector<PancyConstantBuffer*>> per_object_cbuffer;//每个描述符独享的cbuffer，需要自主管理这片存储区域
 	public:
-		BasicRenderParam(const std::string &render_param_name_in);
+		BasicRenderParam();
 		~BasicRenderParam();
 		PancystarEngine::EngineFailReason GetPsoData(ID3D12PipelineState  **pso_data);
 		PancystarEngine::EngineFailReason SetCbufferMatrix(
@@ -100,7 +99,6 @@ namespace PancystarEngine
 		//存储每一个pso为不同的输入参数所分配的描述符表单
 		std::unordered_map<pancy_object_id, pancy_object_id> render_param_id_self_add;
 		std::unordered_map<pancy_object_id, std::queue<pancy_object_id>> render_param_id_reuse_table;
-		std::unordered_map<pancy_object_id, std::unordered_map<std::string, pancy_object_id>> render_param_name_table;
 		std::unordered_map<pancy_object_id, std::unordered_map<pancy_object_id, BasicRenderParam*>> render_param_table;
 	private:
 		RenderParamSystem();
@@ -117,7 +115,6 @@ namespace PancystarEngine
 		~RenderParamSystem();
 		PancystarEngine::EngineFailReason GetCommonRenderParam(
 			const std::string &PSO_name,
-			const std::string &render_param_name,
 			const std::unordered_map<std::string, BindDescriptorPointer> &bind_shader_resource_in,
 			const std::unordered_map<std::string, BindlessDescriptorPointer> &bindless_shader_resource_in,
 			PancyRenderParamID &render_param_id

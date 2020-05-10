@@ -160,6 +160,12 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
+	//todo:临时使用的材质加载测试
+	check_error = LoadMaterialFromFile("model\\export\\lion\\lion_mat.json", test_material);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	/*
 	check_error = PancystarEngine::PancyModelControl::GetInstance()->LoadResource("model\\export\\multiball\\multiball.json", model_common);
 	if (!check_error.CheckIfSucceed())
@@ -236,48 +242,8 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 {
 	PancystarEngine::EngineFailReason check_error;
-	//加载骨骼动画的描述符信息
-	//std::vector<PancyConstantBuffer *> now_used_cbuffer;
-	//check_error = GetGlobelCbuffer(PSO_test, "per_frame", now_used_cbuffer);
-	//获取模型的描述符数据(todo:后面要改成模型材质分离的格式)
-	std::vector<VirtualResourcePointer> resource_data_per_frame;
-	std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> resource_desc_per_data;
-	check_error = model_skinmesh.GetShaderResourcePerObject(
-		resource_data_per_frame,
-		resource_desc_per_data
-	);
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonBindlessShaderResourceView(resource_desc_per_data, resource_data_per_frame, resource_desc_per_data.size(), model_skinmesh_descriptor_id);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	std::unordered_map<std::string, BindDescriptorPointer> bind_shader_resource_in;
-	std::unordered_map<std::string, BindlessDescriptorPointer> bindless_shader_resource_in;
-	bindless_shader_resource_in.insert(std::pair<std::string, BindlessDescriptorPointer>("texture_model", model_skinmesh_descriptor_id));
-	/*
-	check_error = PancystarEngine::DescriptorControl::GetInstance()->BuildDescriptorGraph(
-		model_skinmesh,
-		PSO_pbr,
-		cbuffer_name_perobj,
-		cbuffer_data_perframe,
-		globel_shader_resource,
-		globel_shader_desc,
-		skinmesh_descriptor
-		);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	*/
-	std::string pso_name_now;
-	PancyEffectGraphic::GetInstance()->GetPSOName(PSO_pbr,pso_name_now);
-	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetCommonRenderParam(
-		pso_name_now,
-		"test_skin_mesh_draw_pass",
-		bind_shader_resource_in,
-		bindless_shader_resource_in,
-		render_param_id_skin_mesh_draw
-	);
+	PancyMaterialBasic* pointer_mat = dynamic_cast<PancyMaterialBasic*>(test_material.GetResourceData());
+	check_error = pointer_mat->BuildRenderParam(render_param_id_skin_mesh_draw);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -288,7 +254,7 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshComputeDescrip
 {
 	PancystarEngine::EngineFailReason check_error;
 	//获取作为输入的顶点缓冲区
-	PancystarEngine::PancySubModel* model_resource_render;
+	PancystarEngine::PancyRenderMesh* model_resource_render;
 	check_error = model_skinmesh.GetRenderMesh(0, &model_resource_render);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -319,7 +285,6 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshComputeDescrip
 	bind_shader_resource_in.insert(std::pair<std::string, BindDescriptorPointer>("vertex_data", mesh_vertex_data_srv));
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetCommonRenderParam(
 		"json\\pipline_state_object\\pso_skinmesh.json",
-		"test_skin_mesh_compute_pass",
 		bind_shader_resource_in,
 		bindless_shader_resource_in,
 		render_param_id_skin_mesh_compute
@@ -479,7 +444,7 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	{
 		return check_error;
 	}
-	PancystarEngine::PancySubModel* model_resource_render;
+	PancystarEngine::PancyRenderMesh* model_resource_render;
 	check_error = model_skinmesh.GetRenderMesh(0, &model_resource_render);
 	if (!check_error.CheckIfSucceed())
 	{

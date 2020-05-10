@@ -218,6 +218,22 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResource(
 	}
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason PancystarEngine::LoadBufferResourceFromFile(
+	const std::string &name_resource_in,
+	VirtualResourcePointer &id_need
+)
+{
+	auto check_error = PancyGlobelResourceControl::GetInstance()->LoadResource<PancyBasicBuffer>(
+		name_resource_in,
+		id_need,
+		false
+		);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
 void PancystarEngine::InitBufferJsonReflect()
 {
 	JSON_REFLECT_INIT_ENUM(Buffer_ShaderResource_static);

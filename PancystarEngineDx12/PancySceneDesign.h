@@ -11,7 +11,7 @@
 #include"PancyRenderParam.h"
 #include"PancyAnimationBasic.h"
 #include"PancyDescriptor.h"
-#include"PancyDescriptor.h"
+#include"PancyMaterial.h"
 class SceneRoot
 {
 private:

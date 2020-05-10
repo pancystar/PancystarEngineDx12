@@ -299,6 +299,7 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	//注册反射信息
 	InitBufferJsonReflect();
 	InitTextureJsonReflect();
+	InitMaterialJsonReflect();
 	//注册单例
 	PancyShaderControl::GetInstance();
 	PancyRootSignatureControl::GetInstance();

@@ -62,5 +62,9 @@ namespace PancystarEngine
 		VirtualResourcePointer &id_need,
 		bool if_allow_repeat
 	);
+	PancystarEngine::EngineFailReason LoadBufferResourceFromFile(
+		const std::string &name_resource_in,
+		VirtualResourcePointer &id_need
+	);
 	void InitBufferJsonReflect();
 }

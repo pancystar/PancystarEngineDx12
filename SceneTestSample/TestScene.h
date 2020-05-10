@@ -38,6 +38,8 @@ class scene_test_simple : public SceneRoot
 	PancystarEngine::VirtualResourcePointer tex_ibl_diffuse_id;
 	//ø’∞◊Œ∆¿Ì
 	PancystarEngine::VirtualResourcePointer tex_empty_id;
+	//≤‚ ‘≤ƒ÷ 
+	PancystarEngine::VirtualResourcePointer test_material;
 	//psoID
 	//pancy_object_id PSO_test;
 	pancy_object_id PSO_pbr;

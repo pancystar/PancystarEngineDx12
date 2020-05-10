@@ -1482,8 +1482,8 @@ PancystarEngine::EngineFailReason PancyJsonReflect::LoadFromJsonNode(const std::
 std::string PancyJsonReflect::TranslateFullNameToRealName(const std::string &full_name)
 {
 	size_t self_offset = 1;
-	auto offset_value = full_name.rfind(".");
-	auto offset_pointer = full_name.rfind("->");
+	int32_t offset_value = static_cast<int32_t>(full_name.rfind("."));
+	int32_t offset_pointer = static_cast<int32_t>(full_name.rfind("->"));
 	if (offset_value < offset_pointer)
 	{
 		self_offset = 2;
