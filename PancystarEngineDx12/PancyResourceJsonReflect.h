@@ -1,6 +1,6 @@
 #pragma once
 #include"PancystarEngineBasicDx12.h"
-#include <typeinfo.h>
+#include <typeinfo>
 #include<type_traits>
 #include"PancyJsonTool.h"
 #define Init_Json_Data_Vatriable(var_name) AddAnyVariable(#var_name, var_name)
