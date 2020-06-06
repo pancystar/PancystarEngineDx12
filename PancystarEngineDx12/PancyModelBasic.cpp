@@ -62,6 +62,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &fi
 	{
 		return check_error;
 	}
+	bone_parent_data[root_id] = 0;
 	//关闭文件
 	instream.close();
 	return PancystarEngine::succeed;
@@ -145,6 +146,8 @@ PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_bui
 			now_data->second.bone_ID_brother = now_parent_data->second.bone_ID_son;
 			//之前父节点的子节点变为当前节点
 			now_parent_data->second.bone_ID_son = now_son_ID;
+			//记录当前节点的父节点
+			bone_parent_data[now_son_ID] = now_build_id+1;
 			instream.read(data, sizeof(data));
 		}
 	}
@@ -269,6 +272,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 	}
 	DirectX::XMFLOAT4X4 matrix_identi;
 	DirectX::XMStoreFloat4x4(&matrix_identi, DirectX::XMMatrixIdentity());
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//开辟一个临时存储所有骨骼递归结果的矩阵数组。由于最终输出的数据仅包
 	//含蒙皮骨骼，因而需要额外的空间存储非蒙皮骨骼的中间信息。
@@ -428,6 +432,25 @@ void PancyBasicModel::GetQuatMatrix(DirectX::XMFLOAT4X4 &resMatrix, const quater
 	resMatrix._34 = 0.0f;
 	resMatrix._44 = 1.0f;
 }
+pancy_object_id PancyBasicModel::FindParentByLayer(
+	const pancy_object_id& bone_id,
+	const pancy_object_id& layer,
+	const std::vector<uint32_t>& bone_node_parent_data
+){
+	pancy_object_id now_parent_id = bone_id;
+	for (pancy_object_id now_layer = 0; now_layer < layer; ++now_layer)
+	{
+		if (now_parent_id == bone_node_parent_data[now_parent_id]) 
+		{
+			return now_parent_id;
+		}
+		else 
+		{
+			now_parent_id = bone_node_parent_data[now_parent_id];
+		}
+	}
+	return now_parent_id;
+}
 //资源加载
 PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Value &root_value, const std::string &resource_name)
 {
@@ -576,7 +599,201 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 			skin_animation_map.insert(std::pair<pancy_resource_id, animation_set>(i, new_animation));
 			instream.close();
 		}
+		//将所有的动画数据组织成一个统一的buffer
+		std::vector<AnimationNodeData> animation_buffer_data;
+		for (auto& skin_anim_data : skin_animation_map)
+		{
+			int32_t max_resample_data = 0;
+			for (auto each_bone_data_anim : skin_anim_data.second.data_animition)
+			{
+				if (each_bone_data_anim.translation_key.size() == each_bone_data_anim.rotation_key.size() && each_bone_data_anim.rotation_key.size() == each_bone_data_anim.scaling_key.size())
+				{
+					if (max_resample_data == 0 || max_resample_data == each_bone_data_anim.translation_key.size())
+					{
+						max_resample_data = static_cast<int32_t>(each_bone_data_anim.translation_key.size());
+						for (int32_t key_index = 0; key_index < max_resample_data; ++key_index)
+						{
+							AnimationNodeData new_animation_data;
+							new_animation_data.translation_key.x = each_bone_data_anim.translation_key[key_index].main_key[0];
+							new_animation_data.translation_key.y = each_bone_data_anim.translation_key[key_index].main_key[1];
+							new_animation_data.translation_key.z = each_bone_data_anim.translation_key[key_index].main_key[2];
+
+							new_animation_data.rotation_key.x = each_bone_data_anim.rotation_key[key_index].main_key[0];
+							new_animation_data.rotation_key.y = each_bone_data_anim.rotation_key[key_index].main_key[1];
+							new_animation_data.rotation_key.z = each_bone_data_anim.rotation_key[key_index].main_key[2];
+							new_animation_data.rotation_key.w = each_bone_data_anim.rotation_key[key_index].main_key[3];
+
+							new_animation_data.scaling_key.x = each_bone_data_anim.scaling_key[key_index].main_key[0];
+							new_animation_data.scaling_key.y = each_bone_data_anim.scaling_key[key_index].main_key[1];
+							new_animation_data.scaling_key.z = each_bone_data_anim.scaling_key[key_index].main_key[2];
+							animation_buffer_data.push_back(new_animation_data);
+						}
+					}
+					else
+					{
+						//todo:其中一个骨骼的采样率和其他骨骼不一样
+						if (each_bone_data_anim.translation_key.size() == 1)
+						{
+							for (int32_t key_index = 0; key_index < max_resample_data; ++key_index)
+							{
+								AnimationNodeData new_animation_data;
+								new_animation_data.translation_key.x = each_bone_data_anim.translation_key[0].main_key[0];
+								new_animation_data.translation_key.y = each_bone_data_anim.translation_key[0].main_key[1];
+								new_animation_data.translation_key.z = each_bone_data_anim.translation_key[0].main_key[2];
+
+								new_animation_data.rotation_key.x = each_bone_data_anim.rotation_key[0].main_key[0];
+								new_animation_data.rotation_key.y = each_bone_data_anim.rotation_key[0].main_key[1];
+								new_animation_data.rotation_key.z = each_bone_data_anim.rotation_key[0].main_key[2];
+								new_animation_data.rotation_key.w = each_bone_data_anim.rotation_key[0].main_key[3];
+
+								new_animation_data.scaling_key.x = each_bone_data_anim.scaling_key[0].main_key[0];
+								new_animation_data.scaling_key.y = each_bone_data_anim.scaling_key[0].main_key[1];
+								new_animation_data.scaling_key.z = each_bone_data_anim.scaling_key[0].main_key[2];
+								animation_buffer_data.push_back(new_animation_data);
+							}
+						}
+						else
+						{
+							PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
+							PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+							return error_message;
+						}
+					}
+				}
+				else
+				{
+					int32_t now_resample = static_cast<int32_t>(max(each_bone_data_anim.translation_key.size(), each_bone_data_anim.rotation_key.size()));
+					now_resample = static_cast<int32_t>(max(now_resample, each_bone_data_anim.scaling_key.size()));
+					if (max_resample_data != 0 && now_resample != max_resample_data)
+					{
+						PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
+						PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+						return error_message;
+					}
+					for (int32_t key_index = 0; key_index < max_resample_data; ++key_index)
+					{
+						AnimationNodeData new_animation_data;
+						if (each_bone_data_anim.translation_key.size() == now_resample)
+						{
+							new_animation_data.translation_key.x = each_bone_data_anim.translation_key[key_index].main_key[0];
+							new_animation_data.translation_key.y = each_bone_data_anim.translation_key[key_index].main_key[1];
+							new_animation_data.translation_key.z = each_bone_data_anim.translation_key[key_index].main_key[2];
+						}
+						else if (each_bone_data_anim.translation_key.size() == 1)
+						{
+							new_animation_data.translation_key.x = each_bone_data_anim.translation_key[0].main_key[0];
+							new_animation_data.translation_key.y = each_bone_data_anim.translation_key[0].main_key[1];
+							new_animation_data.translation_key.z = each_bone_data_anim.translation_key[0].main_key[2];
+						}
+						else
+						{
+							PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
+							PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+							return error_message;
+						}
+
+						if (each_bone_data_anim.rotation_key.size() == now_resample)
+						{
+							new_animation_data.rotation_key.x = each_bone_data_anim.rotation_key[key_index].main_key[0];
+							new_animation_data.rotation_key.y = each_bone_data_anim.rotation_key[key_index].main_key[1];
+							new_animation_data.rotation_key.z = each_bone_data_anim.rotation_key[key_index].main_key[2];
+							new_animation_data.rotation_key.w = each_bone_data_anim.rotation_key[key_index].main_key[3];
+						}
+						else if (each_bone_data_anim.rotation_key.size() == 1)
+						{
+							new_animation_data.rotation_key.x = each_bone_data_anim.rotation_key[0].main_key[0];
+							new_animation_data.rotation_key.y = each_bone_data_anim.rotation_key[0].main_key[1];
+							new_animation_data.rotation_key.z = each_bone_data_anim.rotation_key[0].main_key[2];
+							new_animation_data.rotation_key.w = each_bone_data_anim.rotation_key[0].main_key[3];
+						}
+						else
+						{
+							PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
+							PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+							return error_message;
+						}
+
+						if (each_bone_data_anim.scaling_key.size() == now_resample)
+						{
+							new_animation_data.scaling_key.x = each_bone_data_anim.scaling_key[key_index].main_key[0];
+							new_animation_data.scaling_key.y = each_bone_data_anim.scaling_key[key_index].main_key[1];
+							new_animation_data.scaling_key.z = each_bone_data_anim.scaling_key[key_index].main_key[2];
+						}
+						else if (each_bone_data_anim.scaling_key.size() == 1)
+						{
+							new_animation_data.scaling_key.x = each_bone_data_anim.scaling_key[0].main_key[0];
+							new_animation_data.scaling_key.y = each_bone_data_anim.scaling_key[0].main_key[1];
+							new_animation_data.scaling_key.z = each_bone_data_anim.scaling_key[0].main_key[2];
+						}
+						else
+						{
+							PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
+							PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+							return error_message;
+						}
+						animation_buffer_data.push_back(new_animation_data);
+					}
+				}
+			}
+		}
+		//创建存储动画数据的缓冲区资源(静态缓冲区)
+		auto real_buffer_size = animation_buffer_data.size() * sizeof(AnimationNodeData);
+		check_error = BuildBufferResourceFromMemory(file_name+"_animation", model_animation_buffer, &animation_buffer_data[0], real_buffer_size, true);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//创建骨骼数据的父节点缓冲区资源（注意这里需要添加两个额外的骨骼即头骨骼与尾骨骼。这样会方便Computeshader进行并行处理）
+		std::vector<uint32_t> bone_node_parent_data;
+		bone_node_parent_data.resize(bone_parent_data.size()+2);
+		for (auto now_bone_node : bone_parent_data) 
+		{
+			bone_node_parent_data[static_cast<size_t>(now_bone_node.first) + static_cast<size_t>(1)] = now_bone_node.second;
+		}
+		std::vector<uint32_t> bone_node_parent_multilayer_data;
+		bone_node_parent_multilayer_data.resize(MaxSkinDeSampleTime * bone_node_parent_data.size());
+		int32_t pow2_save[] = { 1,2,4,8,16,32,64,128,256 };
+		for (uint32_t now_node_index = 0;  now_node_index < bone_node_parent_data.size(); ++now_node_index)
+		{
+			for (int32_t layer_index = 1; layer_index < MaxSkinDeSampleTime; ++layer_index)
+			{
+				int32_t globle_index = MaxSkinDeSampleTime * now_node_index + layer_index - 1;
+				int32_t now_index_search = pow2_save[layer_index-1];
+				bone_node_parent_multilayer_data[globle_index] = FindParentByLayer(now_node_index, now_index_search, bone_node_parent_data);
+			}
+		}
+		//创建存储父骨骼数据的缓冲区资源(静态缓冲区)
+		auto real_parent_buffer_size = bone_node_parent_multilayer_data.size() * sizeof(uint32_t);
+		check_error = BuildBufferResourceFromMemory(file_name + "_boneparent", model_bonetree_buffer, &bone_node_parent_multilayer_data[0], real_parent_buffer_size, true);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//创建偏移矩阵缓冲区资源(同样需要头骨骼与尾骨骼)
+		std::vector<DirectX::XMFLOAT4X4> bone_offset_mat_data;
+		DirectX::XMFLOAT4X4 identity_mat;
+		DirectX::XMStoreFloat4x4(&identity_mat,DirectX::XMMatrixIdentity());
+		bone_offset_mat_data.push_back(identity_mat);
+		for (int bone_id = 0; bone_id < bone_object_num; ++bone_id)
+		{
+			bone_offset_mat_data.push_back(identity_mat);
+		}
+		bone_offset_mat_data.push_back(identity_mat);
+		for (int bone_id = 0; bone_id < bone_num; ++bone_id)
+		{
+			bone_offset_mat_data[bone_id+1] = offset_matrix_array[bone_id];
+		}
+		//创建存储偏移矩阵数据的缓冲区资源(静态缓冲区)
+		auto real_offset_buffer_size = bone_offset_mat_data.size() * sizeof(DirectX::XMFLOAT4X4);
+		check_error = BuildBufferResourceFromMemory(file_name + "_boneoffset", model_boneoffset_buffer, &bone_offset_mat_data[0], real_offset_buffer_size, true);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		int a = 0;
 	}
+	
+	
 	//读取顶点动画
 	/*
 	if (if_pointmesh)

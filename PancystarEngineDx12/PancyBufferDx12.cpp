@@ -218,6 +218,70 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResource(
 	}
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResourceFromMemory(
+	const std::string& name_resource_in,
+	VirtualResourcePointer& id_need,
+	void* data_pointer,
+	const pancy_resource_size& resource_size,
+	bool if_allow_repeat,
+	D3D12_RESOURCE_FLAGS flag
+)
+{
+	//创建存储动画数据的缓冲区资源(静态缓冲区)
+	PancyCommonBufferDesc buffer_desc;
+	buffer_desc.buffer_type = Buffer_ShaderResource_static;
+	buffer_desc.buffer_res_desc.Alignment = 0;
+	buffer_desc.buffer_res_desc.DepthOrArraySize = 1;
+	buffer_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	buffer_desc.buffer_res_desc.Flags = flag;
+	buffer_desc.buffer_res_desc.Height = 1;
+	buffer_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	buffer_desc.buffer_res_desc.MipLevels = 1;
+	buffer_desc.buffer_res_desc.SampleDesc.Count = 1;
+	buffer_desc.buffer_res_desc.SampleDesc.Quality = 0;
+	buffer_desc.buffer_res_desc.Width = PancystarEngine::SizeAligned(resource_size, 65536);
+	auto check_error = BuildBufferResource(
+		name_resource_in,
+		buffer_desc,
+		id_need,
+		true
+	);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//获取数据拷贝commondlist
+	PancyRenderCommandList* copy_render_list;
+	PancyThreadIdGPU copy_render_list_ID;
+	check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//拷贝资源数据
+	ResourceBlockGpu* buffer_gpu_resource = GetBufferResourceData(id_need, check_error);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, data_pointer, resource_size, *buffer_gpu_resource);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	copy_render_list->UnlockPrepare();
+	//提交渲染命令
+	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
+	//分配等待眼位
+	PancyFenceIdGPU WaitFence;
+	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
+	check_error = buffer_gpu_resource->SetResourceCopyBrokenFence(WaitFence);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
 PancystarEngine::EngineFailReason PancystarEngine::LoadBufferResourceFromFile(
 	const std::string &name_resource_in,
 	VirtualResourcePointer &id_need

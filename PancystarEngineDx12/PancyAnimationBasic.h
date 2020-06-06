@@ -39,11 +39,9 @@ namespace PancystarEngine
 		//存储每一个骨骼矩阵区域的起始位置
 		std::unordered_map<pancy_object_id, SkinAnimationBlock> bone_block_map;
 		//骨骼动画缓冲区的数据
-		VirtualResourcePointer buffer_animation;//动画结果缓冲区
-		VirtualResourcePointer buffer_bone;     //骨骼矩阵缓冲区
-
-		//骨骼数据的CPU指针
-		UINT8* bone_data_pointer;
+		VirtualResourcePointer buffer_animation;         //动画结果缓冲区
+		std::vector<VirtualResourcePointer> buffer_bone; //骨骼矩阵缓冲区
+		VirtualResourcePointer buffer_globel_index;      //节点全局序号缓冲区
 	public:
 		PancySkinAnimationBuffer(const pancy_resource_size &animation_buffer_size_in, const pancy_resource_size &bone_buffer_size_in);
 		~PancySkinAnimationBuffer();
@@ -66,7 +64,7 @@ namespace PancystarEngine
 		//获取矩阵存储缓冲区
 		inline VirtualResourcePointer& GetBoneMatrixResource()
 		{
-			return buffer_bone;
+			return buffer_bone[0];
 		}
 		//获取蒙皮结果缓冲区
 		inline VirtualResourcePointer& GetSkinVertexResource()

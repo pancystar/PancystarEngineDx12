@@ -155,13 +155,13 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	check_error = model_skinmesh.Create("model\\export\\lion\\lion.json");
+	check_error = model_skinmesh.Create("model\\export\\rabbit\\rabbit.json");
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	//todo:ÁÙÊ±Ê¹ÓÃµÄ²ÄÖÊ¼ÓÔØ²âÊÔ
-	check_error = LoadMaterialFromFile("model\\export\\lion\\lion_mat.json", test_material);
+	check_error = LoadMaterialFromFile("model\\export\\rabbit\\rabbit_mat.json", test_material);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -480,16 +480,6 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_skin);
 	
 	//äÖÈ¾¹Ç÷À¶¯»­
-	/*
-	PancystarEngine::DescriptorObject *data_descriptor_test;
-	check_error = PancystarEngine::DescriptorControl::GetInstance()->GetDescriptor(
-		skinmesh_descriptor,
-		&data_descriptor_test
-	);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}*/
 	//Îª²âÊÔäÖÈ¾ÃèÊö·ûÌî³ä×¨ÓÃµÄcbuffer
 	instance_value new_data;
 	new_data.animation_index = DirectX::XMUINT4(animation_block_pos.start_pos/sizeof(PancystarEngine::mesh_animation_data), 0, 0, 0);
@@ -530,16 +520,6 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	{
 		return check_error;
 	}
-	/*
-	m_commandList->GetCommandList()->SetGraphicsRootSignature(data_descriptor_test->GetRootSignature());
-	ID3D12DescriptorHeap *descriptor_heap_id = data_descriptor_test->GetDescriptoHeap();
-	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &descriptor_heap_id);
-	std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> descriptor_offset = data_descriptor_test->GetDescriptorOffset();
-	for (int i = 0; i < descriptor_offset.size(); ++i)
-	{
-		m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(i, descriptor_offset[i]);
-	}
-	*/
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	ComPtr<ID3D12Resource> screen_rendertarget = PancyDx12DeviceBasic::GetInstance()->GetBackBuffer(rtvHandle);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -566,7 +546,6 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &model_resource_render->GetVertexBufferView());
 	m_commandList->GetCommandList()->IASetIndexBuffer(&model_resource_render->GetIndexBufferView());
 	m_commandList->GetCommandList()->DrawIndexedInstanced(model_resource_render->GetIndexNum(), 1, 0, 0, 0);
-
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 	default_depth_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COMMON);
 	m_commandList->UnlockPrepare();
@@ -578,6 +557,7 @@ PancystarEngine::EngineFailReason ShowModel();
 void scene_test_simple::Display()
 {
 	if (model_skinmesh.CheckIfLoadSucceed())
+
 	{
 		renderlist_ID.clear();
 		if (if_have_previous_frame)

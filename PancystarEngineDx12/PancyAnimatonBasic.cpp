@@ -9,7 +9,6 @@ PancySkinAnimationBuffer::PancySkinAnimationBuffer(const pancy_resource_size &an
 	animation_buffer_size = animation_buffer_size_in;
 	now_used_position_bone = 0;
 	bone_buffer_size = bone_buffer_size_in;
-	bone_data_pointer = NULL;
 }
 PancySkinAnimationBuffer::~PancySkinAnimationBuffer()
 {
@@ -43,39 +42,58 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 	{
 		return check_error;
 	}
-	//加载存储骨骼矩阵的缓冲区资源(动态缓冲区)
-	file_name = "pancy_skin_bone_buffer";
-	PancyCommonBufferDesc bone_buffer_resource_desc;
-	bone_buffer_resource_desc.buffer_type = Buffer_ShaderResource_dynamic;
-	bone_buffer_resource_desc.buffer_res_desc.Alignment = 0;
-	bone_buffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
-	bone_buffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	bone_buffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	bone_buffer_resource_desc.buffer_res_desc.Height = 1;
-	bone_buffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	bone_buffer_resource_desc.buffer_res_desc.MipLevels = 1;
-	bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
-	bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
-	bone_buffer_resource_desc.buffer_res_desc.Width = bone_buffer_size;
+	//创建存储骨骼矩阵的缓冲区资源(UAV用于ping-pong操作)
+	buffer_bone.resize(2);
+	for (int buffer_index = 0; buffer_index < 2; ++buffer_index)
+	{
+		file_name = "pancy_skin_bone_buffer";
+		PancyCommonBufferDesc bone_buffer_resource_desc;
+		bone_buffer_resource_desc.buffer_type = Buffer_UnorderedAccess_static;
+		bone_buffer_resource_desc.buffer_res_desc.Alignment = 0;
+		bone_buffer_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
+		bone_buffer_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		bone_buffer_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+		bone_buffer_resource_desc.buffer_res_desc.Height = 1;
+		bone_buffer_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		bone_buffer_resource_desc.buffer_res_desc.MipLevels = 1;
+		bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
+		bone_buffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
+		bone_buffer_resource_desc.buffer_res_desc.Width = bone_buffer_size;
+		check_error = BuildBufferResource(
+			file_name,
+			bone_buffer_resource_desc,
+			buffer_bone[buffer_index],
+			true
+		);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+	}
+	//创建全局id记录的缓冲区资源
+	PancyCommonBufferDesc bone_parent_resource_desc;
+	bone_parent_resource_desc.buffer_type = Buffer_UnorderedAccess_static;
+	bone_parent_resource_desc.buffer_res_desc.Alignment = 0;
+	bone_parent_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
+	bone_parent_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bone_parent_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	bone_parent_resource_desc.buffer_res_desc.Height = 1;
+	bone_parent_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	bone_parent_resource_desc.buffer_res_desc.MipLevels = 1;
+	bone_parent_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
+	bone_parent_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
+	bone_parent_resource_desc.buffer_res_desc.Width = bone_buffer_size;
 	check_error = BuildBufferResource(
 		file_name,
-		bone_buffer_resource_desc,
-		buffer_bone,
+		bone_parent_resource_desc,
+		buffer_globel_index,
 		true
 	);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//将存储骨骼矩阵的缓冲区在CPU端的指针进行保留
-	const PancyBasicBuffer *buffer_pointer = dynamic_cast<const PancyBasicBuffer*>(buffer_bone.GetResourceData());
-	bone_data_pointer = buffer_pointer->GetBufferCPUPointer();
-	if (bone_data_pointer == NULL)
-	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "failed to get skinmesh bone buffer cpu pointer from resource");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancySkinAnimationBuffer::Create", error_message);
-		return error_message;
-	}
+	
 	return PancystarEngine::succeed;
 }
 void PancySkinAnimationBuffer::ClearUsedBuffer()
@@ -117,6 +135,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildBoneBlock(
 	SkinAnimationBlock &new_bone_block
 )
 {
+	/*
 	pancy_resource_size now_ask_size = matrix_num * sizeof(DirectX::XMFLOAT4X4);
 	new_bone_block.start_pos = now_used_position_bone;
 	new_bone_block.block_size = now_ask_size;
@@ -135,6 +154,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildBoneBlock(
 	pancy_object_id now_ID = static_cast<pancy_object_id>(bone_block_map.size());
 	bone_block_map.insert(std::pair<pancy_object_id, SkinAnimationBlock>(now_ID, new_bone_block));
 	block_id = now_ID;
+	*/
 	return PancystarEngine::succeed;
 }
 //骨骼动画管理器

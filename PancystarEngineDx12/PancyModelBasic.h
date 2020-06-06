@@ -7,6 +7,8 @@ namespace PancystarEngine
 #define MaxBoneNum 100
 #define NouseBoneStruct -12138
 #define VertexAnimationID uint32_t
+//GPU骨骼计算最大的迭代次数
+#define MaxSkinDeSampleTime 8
 	enum TexType
 	{
 		tex_diffuse = 0,
@@ -75,6 +77,12 @@ namespace PancystarEngine
 		PancyMeshVertexCommon = 0,
 		PancyMeshVertexSkin,
 		PancyMeshVertexPointCatch
+	};
+	struct AnimationNodeData 
+	{
+		DirectX::XMFLOAT4 translation_key;
+		DirectX::XMFLOAT4 rotation_key;
+		DirectX::XMFLOAT4 scaling_key;
 	};
 	class PancyRenderMesh
 	{
@@ -148,6 +156,7 @@ namespace PancystarEngine
 		int32_t root_id;
 		std::unordered_map<std::string,pancy_object_id> bone_name_index;//根据骨骼名称索引骨骼ID
 		std::unordered_map<pancy_object_id, bone_struct> bone_tree_data;//骨骼数据
+		std::unordered_map<pancy_object_id, pancy_object_id> bone_parent_data;
 		int bone_num;//用于蒙皮的骨骼数量
 		int bone_object_num;//所有的骨骼数量(包括不用于蒙皮的部分)
 		DirectX::XMFLOAT4X4 offset_matrix_array[MaxBoneNum];
@@ -157,6 +166,10 @@ namespace PancystarEngine
 		bool if_animation_choose;
 		//文件读取器
 		ifstream instream;
+		//动画数据buffer
+		VirtualResourcePointer model_animation_buffer;
+		VirtualResourcePointer model_bonetree_buffer;
+		VirtualResourcePointer model_boneoffset_buffer;
 	public:
 		PancyBasicModel();
 		PancystarEngine::EngineFailReason Create(const std::string &resource_name);
@@ -261,5 +274,11 @@ namespace PancystarEngine
 			delete[] index_data;
 			return PancystarEngine::succeed;
 		}
+		//根据层级获取父节点
+		pancy_object_id FindParentByLayer(
+			const pancy_object_id& bone_id,
+			const pancy_object_id& layer,
+			const std::vector<uint32_t> &bone_node_parent_data
+		);
 	};
 }

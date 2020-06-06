@@ -62,6 +62,14 @@ namespace PancystarEngine
 		VirtualResourcePointer &id_need,
 		bool if_allow_repeat
 	);
+	PancystarEngine::EngineFailReason BuildBufferResourceFromMemory(
+		const std::string& name_resource_in,
+		VirtualResourcePointer& id_need,
+		void* data_pointer,
+		const pancy_resource_size& resource_size,
+		bool if_allow_repeat,
+		D3D12_RESOURCE_FLAGS flag = D3D12_RESOURCE_FLAG_NONE
+	);
 	PancystarEngine::EngineFailReason LoadBufferResourceFromFile(
 		const std::string &name_resource_in,
 		VirtualResourcePointer &id_need

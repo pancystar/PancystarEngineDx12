@@ -247,6 +247,7 @@ namespace PancystarEngine
 	//todo：weak_ptr处理临时使用资源的情况
 	class VirtualWeakResourcePointer 
 	{
+
 	};
 	class PancyGlobelResourceControl
 	{

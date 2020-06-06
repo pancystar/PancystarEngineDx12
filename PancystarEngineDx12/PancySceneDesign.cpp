@@ -1,5 +1,6 @@
 #include"PancySceneDesign.h"
-#define MEMORY_64MB 67108876
+#define MEMORY_8MB 8388608
+#define MEMORY_64MB 67108864
 #define MEMORY_128MB 134217728
 using namespace PancystarEngine;
 SceneRoot::SceneRoot()
@@ -308,7 +309,7 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	PancystarEngine::PancyDescriptorHeapControl::GetInstance();
 	PancyInput::SingleCreate(hwnd, hInstance);
 	PancyCamera::GetInstance();
-	check_error = PancystarEngine::PancySkinAnimationControl::SingleCreate(MEMORY_128MB, MEMORY_64MB);
+	check_error = PancystarEngine::PancySkinAnimationControl::SingleCreate(MEMORY_128MB, MEMORY_8MB);
 	if (!check_error.CheckIfSucceed())
 	{
 		return E_FAIL;
