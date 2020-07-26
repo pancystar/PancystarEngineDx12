@@ -1,0 +1,28 @@
+{
+  "pipeline_state_type": "enum PSOType@-->PSO_TYPE_COMPUTE",
+  "root_signature_file": "json\\root_signature\\skin_matrix_combine_root_signature.json",
+  "compute_shader_file": "shader\\CombineCluster.hlsl",
+  "compute_shader_func": "CSMain",
+  "descriptor_type": [
+    {
+      "name": "animation_sample_param",
+      "type": "enum PancyShaderDescriptorType@-->CbufferPrivate"
+    },
+    {
+      "name": "bone_matrix_input",
+      "type": "enum PancyShaderDescriptorType@-->SRVPrivate"
+    },
+    {
+      "name": "compute_globel_id",
+      "type": "enum PancyShaderDescriptorType@-->SRVGlobel"
+    },
+    {
+      "name": "bone_matrix_output",
+      "type": "enum PancyShaderDescriptorType@-->SRVGlobel"
+    },
+    {
+      "name": "offset_matrix",
+      "type": "enum PancyShaderDescriptorType@-->SRVBindless"
+    }
+  ]
+}

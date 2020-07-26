@@ -1,0 +1,24 @@
+{
+  "pipeline_state_type": "enum PSOType@-->PSO_TYPE_COMPUTE",
+  "root_signature_file": "json\\root_signature\\skin_animation_sample_root_signature.json",
+  "compute_shader_file": "shader\\SkinAniamation.hlsl",
+  "compute_shader_func": "CSMain",
+  "descriptor_type": [
+    {
+      "name": "animation_sample_param",
+      "type": "enum PancyShaderDescriptorType@-->CbufferPrivate"
+    },
+    {
+      "name": "bone_matrix_output",
+      "type": "enum PancyShaderDescriptorType@-->SRVGlobel"
+    },
+    {
+      "name": "compute_globel_id_input",
+      "type": "enum PancyShaderDescriptorType@-->SRVGlobel"
+    },
+    {
+      "name": "animation_data",
+      "type": "enum PancyShaderDescriptorType@-->SRVBindless"
+    }
+  ]
+}

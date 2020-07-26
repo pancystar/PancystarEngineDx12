@@ -19,34 +19,34 @@ struct mesh_anim
 };
 cbuffer per_object : register(b0)
 {
-	uint4 data_offset;//{¹Ç÷ÀÊı¾İµÄ³õÊ¼Æ«ÒÆ,¶¯»­Êı¾İµÄ³õÊ¼Æ«ÒÆ}
-	uint4 data_num;//{Ä£ĞÍµÄ¶¥µãÊıÁ¿,Ä£ĞÍµÄ¹Ç÷ÀÊıÁ¿}
+	uint4 data_offset;//{éª¨éª¼æ•°æ®çš„åˆå§‹åç§»,åŠ¨ç”»æ•°æ®çš„åˆå§‹åç§»}
+	uint4 data_num;//{æ¨¡å‹çš„é¡¶ç‚¹æ•°é‡,æ¨¡å‹çš„éª¨éª¼æ•°é‡}
 }
-StructuredBuffer<VSInputBone> vertex_data : register(t0);	//ÓÃÓÚ¶¯»­ÃÉÆ¤µÄ¶¥µãÊı¾İ
-StructuredBuffer<float4x4>    bone_matrix_buffer        : register(t1);	//CPU¶Ë¸üĞÂµÄ¹Ç÷ÀÊı¾İ
-RWStructuredBuffer<mesh_anim> mesh_anim_data	        : register(u0);	//¼ÆËãÍê±ÏµÄ¶¥µã¶¯»­Êı¾İ
+StructuredBuffer<VSInputBone> vertex_data : register(t0);	//ç”¨äºåŠ¨ç”»è’™çš®çš„é¡¶ç‚¹æ•°æ®
+StructuredBuffer<float4x4>    bone_matrix_buffer        : register(t1);	//æ›´æ–°çš„éª¨éª¼æ•°æ®
+RWStructuredBuffer<mesh_anim> mesh_anim_data	        : register(u0);	//è®¡ç®—å®Œæ¯•çš„é¡¶ç‚¹åŠ¨ç”»æ•°æ®
 
 [numthreads(threadBlockSize, 1, 1)]
 void CSMain(uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-	//¸ù¾İIDºÅ²éÕÒµ½µ±Ç°ËùĞè´¦ÀíµÄ¶¥µãÎ»ÖÃ(¹Ç÷ÀÆ«ÒÆ + Ïß³Ì×éÆ«ÒÆ + Ïß³ÌIDÆ«ÒÆ)
+	//æ ¹æ®IDå·æŸ¥æ‰¾åˆ°å½“å‰æ‰€éœ€å¤„ç†çš„é¡¶ç‚¹ä½ç½®(éª¨éª¼åç§» + çº¿ç¨‹ç»„åç§» + çº¿ç¨‹IDåç§»)
 	uint now_vertex_index = groupId.x * threadBlockSize + groupIndex;
-	//¼ì²âµ±Ç°µÄIDºÅÊÇ·ñÊôÓÚºÏÀíµÄ·¶Î§(IDºÅ³¬¹ıÄ£ĞÍ¶¥µãÊıÁ¿µÄÏß³ÌÖÃ¿Õ)
+	//æ£€æµ‹å½“å‰çš„IDå·æ˜¯å¦å±äºåˆç†çš„èŒƒå›´(IDå·è¶…è¿‡æ¨¡å‹é¡¶ç‚¹æ•°é‡çš„çº¿ç¨‹ç½®ç©º)
 	if (now_vertex_index < data_num.x)
 	{
-		//»ñÈ¡Ô­Ê¼µÄ¹Ç÷À±ä»»¶¥µã
+		//è·å–åŸå§‹çš„éª¨éª¼å˜æ¢é¡¶ç‚¹
 		VSInputBone now_vertex = vertex_data[now_vertex_index];
-		//»ñÈ¡8¸ö¶ÔÓ¦¹Ç÷À±ä»»¾ØÕóµÄÎ»ÖÃ(¹Ç÷ÀÆ«ÒÆ+instancingÆ«ÒÆ+¹Ç÷ÀIdºÅ)
+		//è·å–8ä¸ªå¯¹åº”éª¨éª¼å˜æ¢çŸ©é˜µçš„ä½ç½®(éª¨éª¼åç§»+instancingåç§»+éª¨éª¼Idå·)
 		uint bone_id_mask = MaxBoneNum + 100;
 		uint bone_start_index = data_offset.x + groupId.y * data_num.y;
-		uint bone_id_use0 = bone_start_index + now_vertex.bone_id[0] / bone_id_mask;
-		uint bone_id_use1 = bone_start_index + now_vertex.bone_id[1] / bone_id_mask;
-		uint bone_id_use2 = bone_start_index + now_vertex.bone_id[2] / bone_id_mask;
-		uint bone_id_use3 = bone_start_index + now_vertex.bone_id[3] / bone_id_mask;
-		uint bone_id_use4 = bone_start_index + now_vertex.bone_id[0] % bone_id_mask;
-		uint bone_id_use5 = bone_start_index + now_vertex.bone_id[1] % bone_id_mask;
-		uint bone_id_use6 = bone_start_index + now_vertex.bone_id[2] % bone_id_mask;
-		uint bone_id_use7 = bone_start_index + now_vertex.bone_id[3] % bone_id_mask;
+		uint bone_id_use0 = bone_start_index + now_vertex.bone_id[0] / bone_id_mask + 1;
+		uint bone_id_use1 = bone_start_index + now_vertex.bone_id[1] / bone_id_mask + 1;
+		uint bone_id_use2 = bone_start_index + now_vertex.bone_id[2] / bone_id_mask + 1;
+		uint bone_id_use3 = bone_start_index + now_vertex.bone_id[3] / bone_id_mask + 1;
+		uint bone_id_use4 = bone_start_index + now_vertex.bone_id[0] % bone_id_mask + 1;
+		uint bone_id_use5 = bone_start_index + now_vertex.bone_id[1] % bone_id_mask + 1;
+		uint bone_id_use6 = bone_start_index + now_vertex.bone_id[2] % bone_id_mask + 1;
+		uint bone_id_use7 = bone_start_index + now_vertex.bone_id[3] % bone_id_mask + 1;
 		float3 positon_bone = float3(0.0f, 0.0f, 0.0f);
 		float3 normal_bone = float3(0.0f, 0.0f, 0.0f);
 		float3 tangent_bone = float3(0.0f, 0.0f, 0.0f);
@@ -82,7 +82,7 @@ void CSMain(uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
 		normal_bone += now_vertex.bone_weight1.w * mul(now_vertex.normal, (float3x3)bone_matrix_buffer[bone_id_use7]);
 		tangent_bone += now_vertex.bone_weight1.w * mul(now_vertex.tangent.xyz, (float3x3)bone_matrix_buffer[bone_id_use7]);
 
-		//¸ù¾İinstanceÒÔ¼°µ±Ç°µÄ¶¥µãÎ»ÖÃ»ñÈ¡´æ´¢¶¥µã¶¯»­Êı¾İµÄÎ»ÖÃ
+		//æ ¹æ®instanceä»¥åŠå½“å‰çš„é¡¶ç‚¹ä½ç½®è·å–å­˜å‚¨é¡¶ç‚¹åŠ¨ç”»æ•°æ®çš„ä½ç½®
 		uint vertex_result_index = data_offset.y + groupId.y * data_num.x + now_vertex_index;
 		mesh_anim_data[vertex_result_index].position = positon_bone;
 		mesh_anim_data[vertex_result_index].normal = normal_bone;

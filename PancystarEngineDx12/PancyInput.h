@@ -3,13 +3,13 @@
 using namespace std;
 class PancyInput
 {
-	IDirectInput8 *pancy_dinput;           //DirectInputµÄÉè±¸½Ó¿Ú
-	IDirectInputDevice8 *dinput_keyboard;  //¼üÅÌÉè±¸½Ó¿Ú
-	IDirectInputDevice8 *dinput_mouse;     //Êó±êÉè±¸½Ó¿Ú
-	char                       key_buffer[256];   //¼üÅÌ°´¼üĞÅÏ¢µÄ»º´æ
-	DIMOUSESTATE               mouse_buffer;      //Êó±ê¿ØÖÆĞÅÏ¢µÄ»º´æ
+	IDirectInput8 *pancy_dinput;           //DirectInputçš„è®¾å¤‡æ¥å£
+	IDirectInputDevice8 *dinput_keyboard;  //é”®ç›˜è®¾å¤‡æ¥å£
+	IDirectInputDevice8 *dinput_mouse;     //é¼ æ ‡è®¾å¤‡æ¥å£
+	char                       key_buffer[256];   //é”®ç›˜æŒ‰é”®ä¿¡æ¯çš„ç¼“å­˜
+	DIMOUSESTATE               mouse_buffer;      //é¼ æ ‡æ§åˆ¶ä¿¡æ¯çš„ç¼“å­˜
 private:
-	PancyInput();         //¹¹Ôìº¯Êı
+	PancyInput();         //æ„é€ å‡½æ•°
 public:
 	static PancyInput *pancy_input_pInstance;
 	static PancystarEngine::EngineFailReason SingleCreate(HWND hwnd, HINSTANCE hinst)
@@ -33,13 +33,13 @@ public:
 		return pancy_input_pInstance;
 	}
 	~PancyInput();
-	void GetInput();                                                       //»ñÈ¡ÍâÉèÊäÈë
-	bool CheckKeyboard(int key_value);                                     //¼ì²â¼üÅÌÉÏµÄÄ³¸ö¼ü°´ÏÂÓë·ñ
-	bool CheckMouseDown(int mouse_value);                                  //¼ì²âÊó±êÉÏµÄÄ³¸ö¼ü°´ÏÂÓë·ñ
-	float MouseMove_X();                                                     //»ñÈ¡Êó±êÔÚxÖáµÄÒÆ¶¯Á¿
-	float MouseMove_Y();                                                     //»ñÈ¡Êó±êÔÚyÖáµÄÒÆ¶¯Á¿
-	float MouseMove_Z();                                                     //»ñÈ¡Êó±êÔÚzÖáµÄÒÆ¶¯Á¿
+	void GetInput();                                                       //è·å–å¤–è®¾è¾“å…¥
+	bool CheckKeyboard(int key_value);                                     //æ£€æµ‹é”®ç›˜ä¸Šçš„æŸä¸ªé”®æŒ‰ä¸‹ä¸å¦
+	bool CheckMouseDown(int mouse_value);                                  //æ£€æµ‹é¼ æ ‡ä¸Šçš„æŸä¸ªé”®æŒ‰ä¸‹ä¸å¦
+	float MouseMove_X();                                                     //è·å–é¼ æ ‡åœ¨xè½´çš„ç§»åŠ¨é‡
+	float MouseMove_Y();                                                     //è·å–é¼ æ ‡åœ¨yè½´çš„ç§»åŠ¨é‡
+	float MouseMove_Z();                                                     //è·å–é¼ æ ‡åœ¨zè½´çš„ç§»åŠ¨é‡
 	PancystarEngine::EngineFailReason Init(HWND hwnd, HINSTANCE hinst);
 private:
-	PancystarEngine::EngineFailReason DinputClear(HWND hwnd,DWORD keyboardCoopFlags, DWORD mouseCoopFlags);//³õÊ¼»¯º¯Êı
+	PancystarEngine::EngineFailReason DinputClear(HWND hwnd,DWORD keyboardCoopFlags, DWORD mouseCoopFlags);//åˆå§‹åŒ–å‡½æ•°
 };

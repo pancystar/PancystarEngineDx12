@@ -10,18 +10,18 @@ GeometryBasic::GeometryBasic()
 PancystarEngine::EngineFailReason GeometryBasic::Create()
 {
 	PancystarEngine::EngineFailReason check_error;
-	//¼ìÑéÊÇ·ñ×ÊÔ´ÒÑ¾­´´½¨
+	//æ£€éªŒæ˜¯å¦èµ„æºå·²ç»åˆ›å»º
 	if (if_buffer_created)
 	{
 		return PancystarEngine::succeed;
 	}
-	//×¢²á¼¸ºÎÌå¸ñÊ½
+	//æ³¨å†Œå‡ ä½•ä½“æ ¼å¼
 	check_error = InitGeometryDesc(if_create_adj);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//×¢²á¼¸ºÎÌå×ÊÔ´
+	//æ³¨å†Œå‡ ä½•ä½“èµ„æº
 	check_error = InitGeometry(
 		all_vertex,
 		all_index,

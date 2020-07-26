@@ -1,37 +1,36 @@
 #pragma once
-#include"PancyDescriptor.h"
 #include"PancyShaderDx12.h"
 namespace PancystarEngine
 {
 	class BasicRenderParam
 	{
-		//äÖÈ¾¹ÜÏß
+		//æ¸²æŸ“ç®¡çº¿
 		std::string          PSO_name;
 		ID3D12PipelineState  *PSO_pointer = NULL;
 		ID3D12RootSignature  *rootsignature = NULL;
-		//ÃèÊö·û¶Ñ
+		//æè¿°ç¬¦å †
 		ID3D12DescriptorHeap *descriptor_heap_use = NULL;
-		//äÖÈ¾ËùĞèµÄÃèÊö·ûÊıÁ¿£¬ÓÃÓÚÅĞ¶Ïµ±Ç°µÄäÖÈ¾µ¥ÔªÊÇ·ñÒÑ¾­×¢²áÍê±Ï
+		//æ¸²æŸ“æ‰€éœ€çš„æè¿°ç¬¦æ•°é‡ï¼Œç”¨äºåˆ¤æ–­å½“å‰çš„æ¸²æŸ“å•å…ƒæ˜¯å¦å·²ç»æ³¨å†Œå®Œæ¯•
 		bool if_render_param_inited = false;
 		pancy_object_id globel_cbuffer_num = 99999;
 		pancy_object_id private_cbuffer_num = 99999;
 		pancy_object_id globel_shader_resource_num = 99999;
 		pancy_object_id bind_shader_resource_num = 99999;
 		pancy_object_id bindless_shader_resource_num = 99999;
-		//äÖÈ¾ËùĞèµÄÃèÊö·ûÊı¾İ
-		std::unordered_map<std::string, BindDescriptorPointer> globel_constant_buffer;       //È«¾Ö³£Á¿»º³åÇø
-		std::unordered_map<std::string, BindDescriptorPointer> private_constant_buffer;      //Ë½ÓĞ³£Á¿»º³åÇø
-		std::unordered_map<std::string, BindDescriptorPointer> globel_shader_resource;       //È«¾ÖÃèÊö·û
-		std::unordered_map<std::string, BindDescriptorPointer> bind_shader_resource;         //Ë½ÓĞÃèÊö·û
-		std::unordered_map<std::string, BindlessDescriptorPointer> bindless_shader_resource; //½â°ó¶¨ÃèÊö·û
-		//äÖÈ¾ĞèÒª°ó¶¨µÄrootsignature slot
-		std::unordered_map<std::string, pancy_object_id> globel_constant_buffer_root_signature_offset;    //È«¾Ö³£Á¿»º³åÇøslot
-		std::unordered_map<std::string, pancy_object_id> private_constant_buffer_root_signature_offset;   //Ë½ÓĞ³£Á¿»º³åÇøslot
-		std::unordered_map<std::string, pancy_object_id> globel_shader_resource_root_signature_offset;    //È«¾ÖÃèÊö·ûslot
-		std::unordered_map<std::string, pancy_object_id> bind_shader_resource_root_signature_offset;      //Ë½ÓĞÃèÊö·ûslot
-		std::unordered_map<std::string, pancy_object_id> bindless_shader_resource_root_signature_offset;  //½â°ó¶¨ÃèÊö·ûslot
-		//Ë½ÓĞ´æ´¢×ÊÔ´
-		std::unordered_map<std::string, std::vector<PancyConstantBuffer*>> per_object_cbuffer;//Ã¿¸öÃèÊö·û¶ÀÏíµÄcbuffer£¬ĞèÒª×ÔÖ÷¹ÜÀíÕâÆ¬´æ´¢ÇøÓò
+		//æ¸²æŸ“æ‰€éœ€çš„æè¿°ç¬¦æ•°æ®
+		std::unordered_map<std::string, PancystarEngine::BindDescriptorPointer> globel_constant_buffer;       //å…¨å±€å¸¸é‡ç¼“å†²åŒº
+		std::unordered_map<std::string, PancystarEngine::BindDescriptorPointer> private_constant_buffer;      //ç§æœ‰å¸¸é‡ç¼“å†²åŒº
+		std::unordered_map<std::string, PancystarEngine::BindDescriptorPointer> globel_shader_resource;       //å…¨å±€æè¿°ç¬¦
+		std::unordered_map<std::string, PancystarEngine::BindDescriptorPointer> bind_shader_resource;         //ç§æœ‰æè¿°ç¬¦
+		std::unordered_map<std::string, PancystarEngine::BindlessDescriptorPointer> bindless_shader_resource; //è§£ç»‘å®šæè¿°ç¬¦
+		//æ¸²æŸ“éœ€è¦ç»‘å®šçš„rootsignature slot
+		std::unordered_map<std::string, pancy_object_id> globel_constant_buffer_root_signature_offset;    //å…¨å±€å¸¸é‡ç¼“å†²åŒºslot
+		std::unordered_map<std::string, pancy_object_id> private_constant_buffer_root_signature_offset;   //ç§æœ‰å¸¸é‡ç¼“å†²åŒºslot
+		std::unordered_map<std::string, pancy_object_id> globel_shader_resource_root_signature_offset;    //å…¨å±€æè¿°ç¬¦slot
+		std::unordered_map<std::string, pancy_object_id> bind_shader_resource_root_signature_offset;      //ç§æœ‰æè¿°ç¬¦slot
+		std::unordered_map<std::string, pancy_object_id> bindless_shader_resource_root_signature_offset;  //è§£ç»‘å®šæè¿°ç¬¦slot
+		//ç§æœ‰å­˜å‚¨èµ„æº
+		std::unordered_map<std::string, std::vector<PancyConstantBuffer*>> per_object_cbuffer;//æ¯ä¸ªæè¿°ç¬¦ç‹¬äº«çš„cbufferï¼Œéœ€è¦è‡ªä¸»ç®¡ç†è¿™ç‰‡å­˜å‚¨åŒºåŸŸ
 	public:
 		BasicRenderParam();
 		~BasicRenderParam();
@@ -68,7 +67,7 @@ namespace PancystarEngine
 		);
 		PancystarEngine::EngineFailReason AddToCommandList(PancyRenderCommandList *m_commandList, const D3D12_COMMAND_LIST_TYPE &render_param_type);
 	private:
-		//°ó¶¨ÃèÊö·ûµ½äÖÈ¾¹ÜÏß
+		//ç»‘å®šæè¿°ç¬¦åˆ°æ¸²æŸ“ç®¡çº¿
 		PancystarEngine::EngineFailReason BindDescriptorToRootsignature(
 			const PancyDescriptorType &bind_descriptor_type,
 			const std::unordered_map<std::string, BindDescriptorPointer> &descriptor_data,
@@ -76,7 +75,7 @@ namespace PancystarEngine
 			const D3D12_COMMAND_LIST_TYPE &render_param_type,
 			PancyRenderCommandList *m_commandList
 		);
-		//°ó¶¨½â°ó¶¥ÃèÊö·ûµ½äÖÈ¾¹ÜÏß
+		//ç»‘å®šè§£ç»‘é¡¶æè¿°ç¬¦åˆ°æ¸²æŸ“ç®¡çº¿
 		PancystarEngine::EngineFailReason BindBindlessDescriptorToRootsignature(
 			const PancyDescriptorType &bind_descriptor_type,
 			const std::unordered_map<std::string, BindlessDescriptorPointer> &descriptor_data,
@@ -84,19 +83,19 @@ namespace PancystarEngine
 			const D3D12_COMMAND_LIST_TYPE &render_param_type,
 			PancyRenderCommandList *m_commandList
 		);
-		//¼ì²éµ±Ç°µÄäÖÈ¾µ¥ÔªÊÇ·ñÒÑ¾­×¢²áÍê±Ï
+		//æ£€æŸ¥å½“å‰çš„æ¸²æŸ“å•å…ƒæ˜¯å¦å·²ç»æ³¨å†Œå®Œæ¯•
 		bool CheckIfInitFinished();
 	};
 
 	struct PancyRenderParamID
 	{
-		//äÖÈ¾×´Ì¬IDºÅ
+		//æ¸²æŸ“çŠ¶æ€IDå·
 		pancy_object_id PSO_id;
 		pancy_object_id render_param_id;
 	};
 	class RenderParamSystem
 	{
-		//´æ´¢Ã¿Ò»¸öpsoÎª²»Í¬µÄÊäÈë²ÎÊıËù·ÖÅäµÄÃèÊö·û±íµ¥
+		//å­˜å‚¨æ¯ä¸€ä¸ªpsoä¸ºä¸åŒçš„è¾“å…¥å‚æ•°æ‰€åˆ†é…çš„æè¿°ç¬¦è¡¨å•
 		std::unordered_map<pancy_object_id, pancy_object_id> render_param_id_self_add;
 		std::unordered_map<pancy_object_id, std::queue<pancy_object_id>> render_param_id_reuse_table;
 		std::unordered_map<pancy_object_id, std::unordered_map<pancy_object_id, BasicRenderParam*>> render_param_table;
@@ -157,7 +156,7 @@ namespace PancystarEngine
 			const pancy_resource_size &data_size,
 			const pancy_resource_size &offset
 		);
-		//todo:Ê¹ÓÃÒıÓÃ¼ÆÊıÉ¾³ı²»ĞèÒªµÄäÖÈ¾µ¥Ôª
+		//todo:ä½¿ç”¨å¼•ç”¨è®¡æ•°åˆ é™¤ä¸éœ€è¦çš„æ¸²æŸ“å•å…ƒ
 		PancystarEngine::EngineFailReason DeleteCommonRenderParam(PancyRenderParamID &render_param_id);
 	private:
 		PancystarEngine::EngineFailReason GetResource(const PancyRenderParamID &renderparam_id, BasicRenderParam** data_pointer);

@@ -1,6 +1,5 @@
 #pragma once
 #include"..\\PancystarEngineDx12\\PancySceneDesign.h"
-
 #ifdef _DEBUG
 #pragma comment(lib,"..\\x64\\Debug\\PancystarEngineDx12.lib")
 #else
@@ -11,39 +10,43 @@ class scene_test_simple : public SceneRoot
 {
 	
 	bool if_have_previous_frame;
-	//¹ÜÏß×´Ì¬
+	//ç®¡çº¿çŠ¶æ€
 	ComPtr<ID3D12PipelineState> m_pipelineState;
 	std::vector<PancyThreadIdGPU> renderlist_ID;
-	//ÆÁÄ»¿Õ¼äÄ£ĞÍ
+	//å±å¹•ç©ºé—´æ¨¡å‹
 	PancystarEngine::GeometryBasic *test_model;
-	//Ä£ĞÍ²âÊÔ
+	//æ¨¡å‹æµ‹è¯•
 	PancystarEngine::PancyBasicModel *test_model_common;
 	PancystarEngine::PancyBasicModel *test_model_pointmesh;
 	PancystarEngine::PancyBasicModel *test_model_skinmesh;
-	//ÊÓ¿Ú
+	//è§†å£
 	CD3DX12_VIEWPORT view_port;
 	CD3DX12_RECT view_rect;
-	//Ö¡µÈ´ıfenceºÅÂë
+	//å¸§ç­‰å¾…fenceå·ç 
 	PancyFenceIdGPU last_broken_fence_id;
 	PancyFenceIdGPU broken_fence_id;
-	//Ä£ĞÍIDºÅ
+	//æ¨¡å‹IDå·
 	PancystarEngine::PancyBasicModel model_common, model_skinmesh, model_pointmesh;
 	PancystarEngine::BindlessDescriptorPointer model_skinmesh_descriptor_id;
 	PancystarEngine::PancyRenderParamID render_param_id_skin_mesh_draw;
 	PancystarEngine::PancyRenderParamID render_param_id_skin_mesh_compute;
-	//pbrÎÆÀí
+	//æµ‹è¯•è®¡ç®—éª¨éª¼æ•°æ®
+	PancystarEngine::SkinAnimationBlock animation_block_pos;
+	pancy_object_id bone_block_id;
+	float time = 0.0f;
+	//pbrçº¹ç†
 	PancystarEngine::VirtualResourcePointer tex_brdf_id;
 	PancystarEngine::BindDescriptorPointer brdf_rtv_id;
 	PancystarEngine::VirtualResourcePointer tex_ibl_spec_id;
 	PancystarEngine::VirtualResourcePointer tex_ibl_diffuse_id;
-	//¿Õ°×ÎÆÀí
+	//ç©ºç™½çº¹ç†
 	PancystarEngine::VirtualResourcePointer tex_empty_id;
-	//²âÊÔ²ÄÖÊ
+	//æµ‹è¯•æè´¨
 	PancystarEngine::VirtualResourcePointer test_material;
 	//psoID
 	//pancy_object_id PSO_test;
 	pancy_object_id PSO_pbr;
-	//¹Ç÷À¶¯»­ÃèÊö·û
+	//éª¨éª¼åŠ¨ç”»æè¿°ç¬¦
 	pancy_object_id skinmesh_descriptor;
 	pancy_object_id skinmesh_compute_descriptor;
 public:

@@ -9,7 +9,7 @@ PancyRenderCommandList::PancyRenderCommandList(PancyThreadIdGPU command_list_ID_
 PancystarEngine::EngineFailReason PancyRenderCommandList::Create(ID3D12CommandAllocator *allocator_use_in, ID3D12PipelineState *pso_use_in, D3D12_COMMAND_LIST_TYPE command_list_type_in)
 {
 	command_list_type = command_list_type_in;
-	//´´½¨commondlist
+	//åˆ›å»ºcommondlist
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandList(0, command_list_type_in, allocator_use_in, pso_use_in, IID_PPV_ARGS(&command_list_data));
 	if (FAILED(hr))
 	{
@@ -25,7 +25,7 @@ PancystarEngine::EngineFailReason PancyRenderCommandList::Create(ID3D12CommandAl
 PancystarEngine::EngineFailReason CommandListEngine::Create()
 {
 	HRESULT hr;
-	//´´½¨²¢½âËøalloctor
+	//åˆ›å»ºå¹¶è§£é”alloctor
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandAllocator(engine_type_id, IID_PPV_ARGS(&allocator_use));
 	if (FAILED(hr))
 	{
@@ -34,7 +34,7 @@ PancystarEngine::EngineFailReason CommandListEngine::Create()
 		return error_message;
 	}
 	if_alloctor_locked = false;
-	//´´½¨ÓÃÓÚ½ÓÊÕgpuÍ¬²½ĞÅÏ¢µÄfence
+	//åˆ›å»ºç”¨äºæ¥æ”¶gpuåŒæ­¥ä¿¡æ¯çš„fence
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&GPU_thread_fence));
 	if (FAILED(hr))
 	{
@@ -42,7 +42,7 @@ PancystarEngine::EngineFailReason CommandListEngine::Create()
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render ThreadPoolGPU", error_message);
 		return error_message;
 	}
-	//´´½¨Ò»¸öÍ¬²½fenceÏûÏ¢µÄÊÂ¼ş
+	//åˆ›å»ºä¸€ä¸ªåŒæ­¥fenceæ¶ˆæ¯çš„äº‹ä»¶
 	wait_thread_ID = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (wait_thread_ID == nullptr)
 	{
@@ -61,7 +61,7 @@ CommandListEngine::~CommandListEngine()
 }
 CommandListEngine::CommandListEngine(const D3D12_COMMAND_LIST_TYPE &type_need)
 {
-	//ÎªidºÅÇåÁã
+	//ä¸ºidå·æ¸…é›¶
 	command_list_ID_selfadd = 0;
 	engine_type_id = type_need;
 	fence_value_self_add = 1;
@@ -72,13 +72,13 @@ void CommandListEngine::UpdateLastRenderList()
 {
 	if (if_alloctor_locked)
 	{
-		//¼ì²éÉÏÒ»¸ö´¦ÀíµÄcommandlistÊÇ·ñÒÑ¾­´¦ÀíÍê±Ï
+		//æ£€æŸ¥ä¸Šä¸€ä¸ªå¤„ç†çš„commandlistæ˜¯å¦å·²ç»å¤„ç†å®Œæ¯•
 		auto now_use_commandlist = command_list_empty.find(now_prepare_commandlist);
 		if (now_use_commandlist != command_list_empty.end())
 		{
 			if (!now_use_commandlist->second->CheckIfPrepare())
 			{
-				//ÉÏÒ»¸öcommandlistÒÑ¾­´¦ÀíÍê±Ï£¬½«ÆäÒÆ¶¯µ½ÒÑÍê³ÉÁĞ±í
+				//ä¸Šä¸€ä¸ªcommandlistå·²ç»å¤„ç†å®Œæ¯•ï¼Œå°†å…¶ç§»åŠ¨åˆ°å·²å®Œæˆåˆ—è¡¨
 				command_list_finish.insert(*now_use_commandlist);
 				command_list_empty.erase(now_use_commandlist);
 				if_alloctor_locked = false;
@@ -93,19 +93,19 @@ PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 	PancyThreadIdGPU &command_list_ID
 )
 {
-	//¸üĞÂÒ»ÏÂµ±Ç°ÕıÔÚÊ¹ÓÃ×ÊÔ´·ÖÅäÆ÷µÄGPUÃüÁî£¬¿´ÆäÊÇ·ñÒÑ¾­·ÖÅäÍê±Ï
+	//æ›´æ–°ä¸€ä¸‹å½“å‰æ­£åœ¨ä½¿ç”¨èµ„æºåˆ†é…å™¨çš„GPUå‘½ä»¤ï¼Œçœ‹å…¶æ˜¯å¦å·²ç»åˆ†é…å®Œæ¯•
 	UpdateLastRenderList();
-	//×ÊÔ´·ÖÅäÆ÷ÕıÔÚÊ¹ÓÃ
+	//èµ„æºåˆ†é…å™¨æ­£åœ¨ä½¿ç”¨
 	if (if_alloctor_locked)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource alloctor been using now,could not alloct new resource:");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add command list int Thread Pool GPU", error_message);
 		return error_message;
 	}
-	//¼ì²éµ±Ç°ÊÇ·ñ»¹ÓĞÊ£ÓàµÄ¿ÕÏĞcommandlist
+	//æ£€æŸ¥å½“å‰æ˜¯å¦è¿˜æœ‰å‰©ä½™çš„ç©ºé—²commandlist
 	if (!command_list_empty.empty())
 	{
-		//´Óµ±Ç°¿ÕÏĞµÄcommanlistÀï»ñÈ¡Ò»¸öcommandlist
+		//ä»å½“å‰ç©ºé—²çš„commanlisté‡Œè·å–ä¸€ä¸ªcommandlist
 		command_list_ID = command_list_empty.begin()->first;
 		*command_list_data = command_list_empty.begin()->second;
 		(*command_list_data)->LockPrepare(allocator_use.Get(), pso_use_in);
@@ -113,7 +113,7 @@ PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 	}
 	else
 	{
-		//ĞÂ½¨Ò»¸ö¿ÕÏĞµÄcommandlist
+		//æ–°å»ºä¸€ä¸ªç©ºé—²çš„commandlist
 		PancyRenderCommandList *new_render_command_list = new PancyRenderCommandList(command_list_ID_selfadd);
 		PancystarEngine::EngineFailReason check_error;
 		check_error = new_render_command_list->Create(allocator_use.Get(), pso_use_in, engine_type_id);
@@ -127,7 +127,7 @@ PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 		now_prepare_commandlist = command_list_ID;
 		command_list_ID_selfadd += 1;
 	}
-	//Ëø×¡×ÊÔ´·ÖÅäÆ÷
+	//é”ä½èµ„æºåˆ†é…å™¨
 	if_alloctor_locked = true;
 	return PancystarEngine::succeed;
 }
@@ -160,11 +160,11 @@ PancystarEngine::EngineFailReason CommandListEngine::SubmitRenderlist
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("submit command list int Thread Pool GPU", error_message);
 		return error_message;
 	}
-	//¸üĞÂcommandlist³Ø
+	//æ›´æ–°commandlistæ± 
 	UpdateLastRenderList();
-	//¿ª±ÙÓÃÓÚÌá½»µÄcommandlistÊı×é
+	//å¼€è¾Ÿç”¨äºæäº¤çš„commandlistæ•°ç»„
 	std::vector<PancyRenderCommandList*> now_render_list_array;
-	//×éÖ¯´ıÌá½»µÄËùÓĞcommandlist
+	//ç»„ç»‡å¾…æäº¤çš„æ‰€æœ‰commandlist
 	auto now_working_list = GPU_broken_point.find(fence_value_self_add);
 	if (now_working_list == GPU_broken_point.end())
 	{
@@ -174,21 +174,21 @@ PancystarEngine::EngineFailReason CommandListEngine::SubmitRenderlist
 	}
 	for (uint32_t i = 0; i < command_list_num; ++i)
 	{
-		//½«´ıÌá½»µÄcommandlist¼ÓÈëµ±Ç°µÄGPU¶ÏµãÇøÓò
+		//å°†å¾…æäº¤çš„commandliståŠ å…¥å½“å‰çš„GPUæ–­ç‚¹åŒºåŸŸ
 		now_working_list->second.push_back(command_list_ID[i]);
-		//×é×°commandlist
+		//ç»„è£…commandlist
 		auto finish_command_list_use = command_list_finish.find(command_list_ID[i]);
 		if (finish_command_list_use != command_list_finish.end())
 		{
 			now_render_list_array.push_back(finish_command_list_use->second);
 			commandlist_array[i] = finish_command_list_use->second->GetCommandList();
-			//×ª»»commandlist
+			//è½¬æ¢commandlist
 			command_list_work.insert(*finish_command_list_use);
 			command_list_finish.erase(finish_command_list_use);
 		}
 		else
 		{
-			//ÎŞ·¨ÕÒµ½commandlist
+			//æ— æ³•æ‰¾åˆ°commandlist
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find finish thread ID" + std::to_string(command_list_ID[i]), PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("submit command list int Thread Pool GPU", error_message);
 			return error_message;
@@ -197,7 +197,7 @@ PancystarEngine::EngineFailReason CommandListEngine::SubmitRenderlist
 	if (command_list_num != 0)
 	{
 		ID3D12CommandQueue* now_command_queue;
-		//ÕÒµ½¶ÔÓ¦µÄcommandqueue
+		//æ‰¾åˆ°å¯¹åº”çš„commandqueue
 		if (engine_type_id == D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)
 		{
 			now_command_queue = PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect();
@@ -210,7 +210,7 @@ PancystarEngine::EngineFailReason CommandListEngine::SubmitRenderlist
 		{
 			now_command_queue = PancyDx12DeviceBasic::GetInstance()->GetCommandQueueCompute();
 		}
-		//Ìá½»commandlist
+		//æäº¤commandlist
 		now_command_queue->ExecuteCommandLists(command_list_num, commandlist_array);
 		return PancystarEngine::succeed;
 	}
@@ -219,7 +219,7 @@ PancystarEngine::EngineFailReason CommandListEngine::SubmitRenderlist
 PancystarEngine::EngineFailReason CommandListEngine::SetGpuBrokenFence(PancyFenceIdGPU &broken_point_id)
 {
 	ComPtr<ID3D12CommandQueue> now_command_queue;
-	//ÕÒµ½¶ÔÓ¦µÄcommandqueue
+	//æ‰¾åˆ°å¯¹åº”çš„commandqueue
 	if (engine_type_id == D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)
 	{
 		now_command_queue = PancyDx12DeviceBasic::GetInstance()->GetCommandQueueDirect();
@@ -232,7 +232,7 @@ PancystarEngine::EngineFailReason CommandListEngine::SetGpuBrokenFence(PancyFenc
 	{
 		now_command_queue = PancyDx12DeviceBasic::GetInstance()->GetCommandQueueCompute();
 	}
-	//ÎªGPU´´½¨Ò»¸ö»Øµ÷ĞÅºÅ
+	//ä¸ºGPUåˆ›å»ºä¸€ä¸ªå›è°ƒä¿¡å·
 	HRESULT hr = now_command_queue->Signal(GPU_thread_fence.Get(), fence_value_self_add);
 	if (FAILED(hr))
 	{
@@ -251,7 +251,7 @@ bool CommandListEngine::CheckGpuBrokenFence(const PancyFenceIdGPU &broken_point_
 	{
 		return false;
 	}
-	//½«Ğ¡ÓÚµÈÓÚ¸ÃÑÛÎ»µÄËùÓĞÑÛÎ»Ëù¼àÊÓµÄÏß³ÌÉèÖÃÎªÒÑ¹¤×÷Íê±Ï
+	//å°†å°äºç­‰äºè¯¥çœ¼ä½çš„æ‰€æœ‰çœ¼ä½æ‰€ç›‘è§†çš„çº¿ç¨‹è®¾ç½®ä¸ºå·²å·¥ä½œå®Œæ¯•
 	auto now_working_list = GPU_broken_point.begin();
 	while (now_working_list != GPU_broken_point.end() && now_working_list->first <= broken_point_id) 
 	{
@@ -263,7 +263,7 @@ bool CommandListEngine::CheckGpuBrokenFence(const PancyFenceIdGPU &broken_point_
 				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the working thread id :" + std::to_string(*working_thread));
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("wait fence value in render command list class", error_message);
 			}
-			//½«¸ÃÏß³Ì±ê¼ÇÎªÔËĞĞ½áÊøµÄ´ı»ØÊÕÏß³Ì
+			//å°†è¯¥çº¿ç¨‹æ ‡è®°ä¸ºè¿è¡Œç»“æŸçš„å¾…å›æ”¶çº¿ç¨‹
 			work_command_list_use->second->EndProcessing();
 			command_list_empty.insert(*work_command_list_use);
 			command_list_work.erase(work_command_list_use);
@@ -287,7 +287,7 @@ PancystarEngine::EngineFailReason CommandListEngine::WaitGpuBrokenFence(const Pa
 			return error_message;
 		}
 		WaitForSingleObject(wait_thread_ID, INFINITE);
-		//½«Ğ¡ÓÚµÈÓÚ¸ÃÑÛÎ»µÄËùÓĞÑÛÎ»Ëù¼àÊÓµÄÏß³ÌÉèÖÃÎªÒÑ¹¤×÷Íê±Ï
+		//å°†å°äºç­‰äºè¯¥çœ¼ä½çš„æ‰€æœ‰çœ¼ä½æ‰€ç›‘è§†çš„çº¿ç¨‹è®¾ç½®ä¸ºå·²å·¥ä½œå®Œæ¯•
 		auto now_working_list = GPU_broken_point.begin();
 		while (now_working_list != GPU_broken_point.end() && now_working_list->first <= broken_point_id)
 		{
@@ -300,7 +300,7 @@ PancystarEngine::EngineFailReason CommandListEngine::WaitGpuBrokenFence(const Pa
 					PancystarEngine::EngineFailLog::GetInstance()->AddLog("wait fence value in render command list class", error_message);
 					return error_message;
 				}
-				//½«¸ÃÏß³Ì±ê¼ÇÎªÔËĞĞ½áÊøµÄ´ı»ØÊÕÏß³Ì
+				//å°†è¯¥çº¿ç¨‹æ ‡è®°ä¸ºè¿è¡Œç»“æŸçš„å¾…å›æ”¶çº¿ç¨‹
 				work_command_list_use->second->EndProcessing();
 				command_list_empty.insert(*work_command_list_use);
 				command_list_work.erase(work_command_list_use);
@@ -336,7 +336,7 @@ ThreadPoolGPU::~ThreadPoolGPU()
 PancystarEngine::EngineFailReason ThreadPoolGPU::BuildNewEngine(D3D12_COMMAND_LIST_TYPE engine_type)
 {
 	int32_t frame_num;
-	//»ñÈ¡ÒıÇæËùÊ¹ÓÃµÄ×î´órenameÊıÁ¿
+	//è·å–å¼•æ“æ‰€ä½¿ç”¨çš„æœ€å¤§renameæ•°é‡
 	if (if_rename) 
 	{
 		frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
@@ -345,7 +345,7 @@ PancystarEngine::EngineFailReason ThreadPoolGPU::BuildNewEngine(D3D12_COMMAND_LI
 	{
 		frame_num = 1;
 	}
-	//´´½¨¶ÔÓ¦ÀàĞÍµÄcommandlistÒıÇæ
+	//åˆ›å»ºå¯¹åº”ç±»å‹çš„commandlistå¼•æ“
 	for (int i = 0; i < frame_num; ++i) 
 	{
 		PancystarEngine::EngineFailReason check_error;
@@ -378,7 +378,7 @@ CommandListEngine* ThreadPoolGPU::GetThreadPool(D3D12_COMMAND_LIST_TYPE engine_t
 	auto engine_data = multi_engine_list[now_frame].find(engine_id);
 	if (engine_data == multi_engine_list[now_frame].end())
 	{
-		//ÉĞÎ´´´½¨¶ÔÓ¦ÀàĞÍµÄ´æ´¢¿ª±Ù×°ÖÃ
+		//å°šæœªåˆ›å»ºå¯¹åº”ç±»å‹çš„å­˜å‚¨å¼€è¾Ÿè£…ç½®
 		PancystarEngine::EngineFailReason check_error = BuildNewEngine(engine_type);
 		if (check_error.CheckIfSucceed())
 		{
@@ -407,7 +407,7 @@ CommandListEngine* ThreadPoolGPU::GetLastThreadPool(D3D12_COMMAND_LIST_TYPE engi
 	auto engine_data = multi_engine_list[now_frame].find(engine_id);
 	if (engine_data == multi_engine_list[now_frame].end())
 	{
-		//ÉĞÎ´´´½¨¶ÔÓ¦ÀàĞÍµÄ´æ´¢¿ª±Ù×°ÖÃ
+		//å°šæœªåˆ›å»ºå¯¹åº”ç±»å‹çš„å­˜å‚¨å¼€è¾Ÿè£…ç½®
 		PancystarEngine::EngineFailReason check_error = BuildNewEngine(engine_type);
 		if (check_error.CheckIfSucceed())
 		{
@@ -421,7 +421,7 @@ CommandListEngine* ThreadPoolGPU::GetLastThreadPool(D3D12_COMMAND_LIST_TYPE engi
 	}
 	return engine_data->second;
 }
-//Ïß³Ì³Ø¹ÜÀíÆ÷
+//çº¿ç¨‹æ± ç®¡ç†å™¨
 ThreadPoolGPUControl::ThreadPoolGPUControl()
 {
 	main_contex = NULL;

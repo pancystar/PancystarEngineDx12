@@ -81,5 +81,17 @@
     <FxCompile Include="shader\skinmesh.hlsl">
       <Filter>shader</Filter>
     </FxCompile>
+    <FxCompile Include="shader\SkinAniamation.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\matrix.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\SkinBoneTree.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
+    <FxCompile Include="shader\CombineCluster.hlsl">
+      <Filter>shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

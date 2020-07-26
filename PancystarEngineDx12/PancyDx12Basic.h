@@ -5,28 +5,28 @@
 class PancyDx12DeviceBasic
 {
 	UINT FrameCount;
-	//´°¿ÚĞÅÏ¢
+	//çª—å£ä¿¡æ¯
 	HWND hwnd_window;
 	uint32_t width;
 	uint32_t height;
-	//ÇåÀíäÖÈ¾¶ÓÁĞµÄÊ±ºòËùÊ¹ÓÃµÄfence
+	//æ¸…ç†æ¸²æŸ“é˜Ÿåˆ—çš„æ—¶å€™æ‰€ä½¿ç”¨çš„fence
 	ComPtr<ID3D12Fence> queue_fence_direct;
 	ComPtr<ID3D12Fence> queue_fence_compute;
 	ComPtr<ID3D12Fence> queue_fence_copy;
-	//½»»»Á´Ö¡Ê¹ÓÃĞÅÏ¢
-	pancy_object_id current_frame_use;//µ±Ç°Ö¡µÄÖ¡ºÅ
-	pancy_object_id last_frame_use;//ÉÏÒ»Ö¡µÄÖ¡ºÅ
-	//dxgiÉè±¸(ÓÃÓÚ¸üĞÂ½»»»Á´)
+	//äº¤æ¢é“¾å¸§ä½¿ç”¨ä¿¡æ¯
+	pancy_object_id current_frame_use;//å½“å‰å¸§çš„å¸§å·
+	pancy_object_id last_frame_use;//ä¸Šä¸€å¸§çš„å¸§å·
+	//dxgiè®¾å¤‡(ç”¨äºæ›´æ–°äº¤æ¢é“¾)
 	ComPtr<IDXGIFactory4> dxgi_factory;
-	//d3dÉè±¸
+	//d3dè®¾å¤‡
 	ComPtr<ID3D12Device> m_device;
-	//½»»»Á´
+	//äº¤æ¢é“¾
 	ComPtr<IDXGISwapChain3> dx12_swapchain;
-	//äÖÈ¾¶ÓÁĞ(directÀàĞÍ,copyÀàĞÍ£¬computeÀàĞÍ)
+	//æ¸²æŸ“é˜Ÿåˆ—(directç±»å‹,copyç±»å‹ï¼Œcomputeç±»å‹)
 	ComPtr<ID3D12CommandQueue> command_queue_direct;
 	ComPtr<ID3D12CommandQueue> command_queue_copy;
 	ComPtr<ID3D12CommandQueue> command_queue_compute;
-	//Ä¬ÈÏµÄäÖÈ¾Ä¿±ê
+	//é»˜è®¤çš„æ¸²æŸ“ç›®æ ‡
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 	std::vector<ComPtr<ID3D12Resource>> m_renderTargets;
 private:
@@ -52,7 +52,7 @@ public:
 	}
 	PancystarEngine::EngineFailReason Init();
 	PancystarEngine::EngineFailReason ResetScreen(uint32_t window_width_in, uint32_t window_height_in);
-	//»ñÈ¡com×ÊÔ´ĞÅÏ¢
+	//è·å–comèµ„æºä¿¡æ¯
 	inline ID3D12Device* GetD3dDevice()
 	{
 		return m_device.Get();
@@ -94,7 +94,7 @@ public:
 		return m_renderTargets[now_frame_use].Get();
 	}
 
-	//»ñÈ¡Ö¡Êı×Ö
+	//è·å–å¸§æ•°å­—
 	inline UINT GetFrameNum()
 	{
 		return FrameCount;

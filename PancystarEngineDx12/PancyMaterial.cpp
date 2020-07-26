@@ -28,11 +28,11 @@ PancyJsonMaterialTexureDescriptor::PancyJsonMaterialTexureDescriptor() : PancyJs
 }
 void PancyJsonMaterialTexureDescriptor::InitBasicVariable()
 {
-	//»ù´¡ÊôĞÔ
+	//åŸºç¡€å±æ€§
 	Init_Json_Data_Vatriable(reflect_data.Format);
 	Init_Json_Data_Vatriable(reflect_data.ViewDimension);
 	Init_Json_Data_Vatriable(reflect_data.Shader4ComponentMapping);
-	//ÎÆÀíÊôĞÔ
+	//çº¹ç†å±æ€§
 	Init_Json_Data_Vatriable(reflect_data.MostDetailedMip);
 	Init_Json_Data_Vatriable(reflect_data.MipLevels);
 	Init_Json_Data_Vatriable(reflect_data.PlaneSlice);
@@ -80,7 +80,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::BuildBufferDescriptorByDes
 		return check_error;
 	}
 	resource_pointer_array.push_back(new_res_data);
-	//¶ÁÈ¡bufferµÄshader°ó¶¨¸ñÊ½
+	//è¯»å–bufferçš„shaderç»‘å®šæ ¼å¼
 	auto &now_buffer_shader_resource_desc = descriptor_desc;
 	auto &descriptor_build_desc = resource_descriptor_descr_array.emplace_back();
 	descriptor_build_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
@@ -108,7 +108,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::BuildTextureDescriptorByDe
 		return check_error;
 	}
 	resource_pointer_array.push_back(new_res_data);
-	//¶ÁÈ¡bufferµÄshader°ó¶¨¸ñÊ½
+	//è¯»å–bufferçš„shaderç»‘å®šæ ¼å¼
 	auto &now_texture_shader_resource_desc = descriptor_desc;
 	auto &descriptor_build_desc = resource_descriptor_descr_array.emplace_back();
 	descriptor_build_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
@@ -197,16 +197,16 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::BuildTextureDescriptorByDe
 PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(const PancyCommonMaterialDesc &ResourceDescStruct)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//±éÀúËùÓĞµÄË½ÓĞbufferÊı¾İ£¬ÎªbufferÊı¾İ¿ª±Ù¿Õ¼ä
+	//éå†æ‰€æœ‰çš„ç§æœ‰bufferæ•°æ®ï¼Œä¸ºbufferæ•°æ®å¼€è¾Ÿç©ºé—´
 	for (size_t now_res_index = 0; now_res_index < ResourceDescStruct.marterial_buffer_slot_data.size(); ++now_res_index)
 	{
 		std::vector<VirtualResourcePointer> all_resource_array;
 		std::vector<BasicDescriptorDesc> all_descriptor_array;
 		auto &now_buffer_desc = ResourceDescStruct.marterial_buffer_slot_data[now_res_index];
-		//»ñÈ¡°ó¶¨bufferµÄ×ÊÔ´
+		//è·å–ç»‘å®šbufferçš„èµ„æº
 		if (ResourceDescStruct.marterial_buffer_slot_data[now_res_index].shader_resource_type == MaterialShaderResourceType::MaterialShaderResourceBufferBind)
 		{
-			//bindÀàĞÍµÄ×ÊÔ´£¬Ö»È¡µÚÒ»¸öÊı¾İÖÆ×÷ÃèÊö·û
+			//bindç±»å‹çš„èµ„æºï¼Œåªå–ç¬¬ä¸€ä¸ªæ•°æ®åˆ¶ä½œæè¿°ç¬¦
 			check_error = BuildBufferDescriptorByDesc(
 				now_buffer_desc.shader_resource_path[0],
 				now_buffer_desc.buffer_descriptor_desc[0],
@@ -217,20 +217,20 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 			{
 				return check_error;
 			}
-			//´´½¨ÃèÊö·û
+			//åˆ›å»ºæè¿°ç¬¦
 			BindDescriptorPointer new_res_descriptor;
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(all_descriptor_array, all_resource_array, false, new_res_descriptor);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
-			//½«ÃèÊö·û¼ÓÈëµ½mapÖĞ
+			//å°†æè¿°ç¬¦åŠ å…¥åˆ°mapä¸­
 			bind_shader_resource.insert(std::pair<std::string, BindDescriptorPointer>(now_buffer_desc.shader_resource_slot_name, new_res_descriptor));
 		}
 		else if (ResourceDescStruct.marterial_buffer_slot_data[now_res_index].shader_resource_type == MaterialShaderResourceType::MaterialShaderResourceBufferBindLess)
 		{
 			std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> bindless_srv_array;
-			//bindlessÀàĞÍµÄ×ÊÔ´£¬ĞèÒªÃ¿Ò»×éÊı¾İ¾ù²ÎÓëÃèÊö·ûÖÆ×÷
+			//bindlessç±»å‹çš„èµ„æºï¼Œéœ€è¦æ¯ä¸€ç»„æ•°æ®å‡å‚ä¸æè¿°ç¬¦åˆ¶ä½œ
 			for (size_t buffer_bindless_id = 0; buffer_bindless_id < now_buffer_desc.shader_resource_path.size(); ++buffer_bindless_id)
 			{
 				check_error = BuildBufferDescriptorByDesc(
@@ -244,12 +244,12 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 					return check_error;
 				}
 			}
-			//½«srvÊı¾İ×éÖ¯²¢¿½±´µ½vector
+			//å°†srvæ•°æ®ç»„ç»‡å¹¶æ‹·è´åˆ°vector
 			for (size_t bindless_descriptor_id = 0; bindless_descriptor_id < all_descriptor_array.size(); ++bindless_descriptor_id)
 			{
 				bindless_srv_array.push_back(all_descriptor_array[bindless_descriptor_id].shader_resource_view_desc);
 			}
-			//´´½¨ÃèÊö·û
+			//åˆ›å»ºæè¿°ç¬¦
 			BindlessDescriptorPointer new_res_descriptor;
 			pancy_object_id resource_size = static_cast<pancy_object_id>(all_resource_array.size());
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonBindlessShaderResourceView(bindless_srv_array, all_resource_array, resource_size, new_res_descriptor);
@@ -257,7 +257,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 			{
 				return check_error;
 			}
-			//½«ÃèÊö·û¼ÓÈëµ½mapÖĞ
+			//å°†æè¿°ç¬¦åŠ å…¥åˆ°mapä¸­
 			bindless_shader_resource.insert(std::pair<std::string, BindlessDescriptorPointer>(now_buffer_desc.shader_resource_slot_name, new_res_descriptor));
 		}
 		else
@@ -267,20 +267,20 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 			return error_message;
 		}
 	}
-	//±éÀúËùÓĞµÄË½ÓĞtextureÊı¾İ£¬ÎªtextureÊı¾İ¿ª±Ù¿Õ¼ä
+	//éå†æ‰€æœ‰çš„ç§æœ‰textureæ•°æ®ï¼Œä¸ºtextureæ•°æ®å¼€è¾Ÿç©ºé—´
 	for (size_t now_res_index = 0; now_res_index < ResourceDescStruct.marterial_texture_slot_data.size(); ++now_res_index)
 	{
 		std::vector<VirtualResourcePointer> all_resource_array;
 		std::vector<BasicDescriptorDesc> all_descriptor_array;
 		auto &now_buffer_desc = ResourceDescStruct.marterial_texture_slot_data[now_res_index];
-		//»ñÈ¡°ó¶¨bufferµÄ×ÊÔ´
+		//è·å–ç»‘å®šbufferçš„èµ„æº
 		if (now_buffer_desc.shader_resource_type == MaterialShaderResourceType::MaterialShaderResourceTextureBind)
 		{
 			std::string resource_real_path;
 			std::string resource_real_name;
 			std::string resource_real_type;
 			PancystarEngine::DivideFilePath(resource_name, resource_real_path, resource_real_name, resource_real_type);
-			//bindÀàĞÍµÄ×ÊÔ´£¬Ö»È¡µÚÒ»¸öÊı¾İÖÆ×÷ÃèÊö·û
+			//bindç±»å‹çš„èµ„æºï¼Œåªå–ç¬¬ä¸€ä¸ªæ•°æ®åˆ¶ä½œæè¿°ç¬¦
 			check_error = BuildTextureDescriptorByDesc(
 				resource_real_path + now_buffer_desc.shader_resource_path[0],
 				now_buffer_desc.texture_descriptor_desc[0],
@@ -291,14 +291,14 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 			{
 				return check_error;
 			}
-			//´´½¨ÃèÊö·û
+			//åˆ›å»ºæè¿°ç¬¦
 			BindDescriptorPointer new_res_descriptor;
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(all_descriptor_array, all_resource_array, false, new_res_descriptor);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
-			//½«ÃèÊö·û¼ÓÈëµ½mapÖĞ
+			//å°†æè¿°ç¬¦åŠ å…¥åˆ°mapä¸­
 			bind_shader_resource.insert(std::pair<std::string, BindDescriptorPointer>(now_buffer_desc.shader_resource_slot_name, new_res_descriptor));
 		}
 		else if (now_buffer_desc.shader_resource_type == MaterialShaderResourceType::MaterialShaderResourceTextureBindLess)
@@ -310,14 +310,14 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 				return error_message;
 			}
 			std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> bindless_srv_array;
-			//bindlessÀàĞÍµÄ×ÊÔ´£¬ĞèÒªÃ¿Ò»×éÊı¾İ¾ù²ÎÓëÃèÊö·ûÖÆ×÷
+			//bindlessç±»å‹çš„èµ„æºï¼Œéœ€è¦æ¯ä¸€ç»„æ•°æ®å‡å‚ä¸æè¿°ç¬¦åˆ¶ä½œ
 			for (size_t buffer_bindless_id = 0; buffer_bindless_id < now_buffer_desc.shader_resource_path.size(); ++buffer_bindless_id)
 			{
 				std::string resource_real_path;
 				std::string resource_real_name;
 				std::string resource_real_type;
 				PancystarEngine::DivideFilePath(resource_name, resource_real_path, resource_real_name, resource_real_type);
-				//ÕâÀï¸ù¾İ²ÄÖÊÎÄ¼şËùÔÚµÄÎ»ÖÃĞŞ¸ÄÎÆÀíµÄÂ·¾¶ĞÅÏ¢
+				//è¿™é‡Œæ ¹æ®æè´¨æ–‡ä»¶æ‰€åœ¨çš„ä½ç½®ä¿®æ”¹çº¹ç†çš„è·¯å¾„ä¿¡æ¯
 				check_error = BuildTextureDescriptorByDesc(
 					resource_real_path + now_buffer_desc.shader_resource_path[buffer_bindless_id],
 					now_buffer_desc.texture_descriptor_desc[buffer_bindless_id],
@@ -329,12 +329,12 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 					return check_error;
 				}
 			}
-			//½«srvÊı¾İ×éÖ¯²¢¿½±´µ½vector
+			//å°†srvæ•°æ®ç»„ç»‡å¹¶æ‹·è´åˆ°vector
 			for (size_t bindless_descriptor_id = 0; bindless_descriptor_id < all_descriptor_array.size(); ++bindless_descriptor_id)
 			{
 				bindless_srv_array.push_back(all_descriptor_array[bindless_descriptor_id].shader_resource_view_desc);
 			}
-			//´´½¨ÃèÊö·û
+			//åˆ›å»ºæè¿°ç¬¦
 			BindlessDescriptorPointer new_res_descriptor;
 			pancy_object_id resource_size = static_cast<pancy_object_id>(all_resource_array.size());
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonBindlessShaderResourceView(bindless_srv_array, all_resource_array, resource_size, new_res_descriptor);
@@ -342,7 +342,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 			{
 				return check_error;
 			}
-			//½«ÃèÊö·û¼ÓÈëµ½mapÖĞ
+			//å°†æè¿°ç¬¦åŠ å…¥åˆ°mapä¸­
 			bindless_shader_resource.insert(std::pair<std::string, BindlessDescriptorPointer>(now_buffer_desc.shader_resource_slot_name, new_res_descriptor));
 		}
 		else

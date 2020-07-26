@@ -2,17 +2,17 @@
 #include"PancystarEngineBasicDx12.h"
 class GlobelTimeCount
 {
-	double   count_freq;      //ÏµÍ³Ê±ÖÓÆµÂÊ
-	double   delta_time;      //Á½Ö¡Ö®¼äÊ±¼ä²î
-	double   all_timeneed;    //×ÜÔËĞĞÊ±¼ä
-	double   all_pause_time;  //ÔİÍ£µÄ×ÜÊ±¼ä
-	__int64  start_time;      //ÆğÊ¼Ê±¼ä
-	__int64  stop_time;       //Í£Ö¹Ê±¼ä
-	__int64  now_time;        //µ±Ç°Ê±¼ä
-	__int64  last_time;       //ÉÏÒ»Ö¡µÄÊ±¼ä
-	bool     if_stop;         //ÊÇ·ñÔİÍ£
+	double   count_freq;      //ç³»ç»Ÿæ—¶é’Ÿé¢‘ç‡
+	double   delta_time;      //ä¸¤å¸§ä¹‹é—´æ—¶é—´å·®
+	double   all_timeneed;    //æ€»è¿è¡Œæ—¶é—´
+	double   all_pause_time;  //æš‚åœçš„æ€»æ—¶é—´
+	__int64  start_time;      //èµ·å§‹æ—¶é—´
+	__int64  stop_time;       //åœæ­¢æ—¶é—´
+	__int64  now_time;        //å½“å‰æ—¶é—´
+	__int64  last_time;       //ä¸Šä¸€å¸§çš„æ—¶é—´
+	bool     if_stop;         //æ˜¯å¦æš‚åœ
 private:
-	GlobelTimeCount();          //¹¹Ôìº¯Êı
+	GlobelTimeCount();          //æ„é€ å‡½æ•°
 public:
 	static GlobelTimeCount* GetInstance()
 	{
@@ -23,17 +23,17 @@ public:
 		}
 		return this_instance;
 	}
-	void Reset();          //Ê±¼äÖØÖÃ
-	void Start();          //¿ªÊ¼¼ÆÊ±
-	void Stop();           //ÔİÍ£¼ÆÊ±
-	void Refresh();        //Ë¢ĞÂ¼ÆÊ±Æ÷
-	float GetPause();      //»ñÈ¡×ÜµÄÔİÍ£Ê±¼ä
-	float GetDelta();      //»ñÈ¡Ö¡¼äÊ±¼ä²î
-	float GetAllTime();    //»ñÈ¡×ÜÊ±¼ä
-	__int64 GetSystemTime();//»ñÈ¡ÏµÍ³Ê±¼ä
+	void Reset();          //æ—¶é—´é‡ç½®
+	void Start();          //å¼€å§‹è®¡æ—¶
+	void Stop();           //æš‚åœè®¡æ—¶
+	void Refresh();        //åˆ·æ–°è®¡æ—¶å™¨
+	float GetPause();      //è·å–æ€»çš„æš‚åœæ—¶é—´
+	float GetDelta();      //è·å–å¸§é—´æ—¶é—´å·®
+	float GetAllTime();    //è·å–æ€»æ—¶é—´
+	__int64 GetSystemTime();//è·å–ç³»ç»Ÿæ—¶é—´
 	double GetSystemFreq()
 	{
 		return count_freq;
-	};//»ñÈ¡ÏµÍ³Ã¿Î¢ÃëÊ±¼ä¼ä¸ô
+	};//è·å–ç³»ç»Ÿæ¯å¾®ç§’æ—¶é—´é—´éš”
 
 };

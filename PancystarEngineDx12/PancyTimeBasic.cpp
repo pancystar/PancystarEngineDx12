@@ -2,7 +2,7 @@
 GlobelTimeCount::GlobelTimeCount()
 {
 	__int64 rec_frequency;
-	if (QueryPerformanceFrequency((LARGE_INTEGER*)&rec_frequency))//»ñÈ¡ÏµÍ³µÄÊ±ÖÓÆµÂÊ
+	if (QueryPerformanceFrequency((LARGE_INTEGER*)&rec_frequency))//è·å–ç³»ç»Ÿçš„æ—¶é’Ÿé¢‘ç‡
 	{
 		count_freq = 1.0 / (double)rec_frequency;
 	}
@@ -16,12 +16,12 @@ GlobelTimeCount::GlobelTimeCount()
 }
 void GlobelTimeCount::Reset()
 {
-	QueryPerformanceCounter((LARGE_INTEGER*)&start_time);//ÉèÖÃ³õÊ¼Ê±¼ä
+	QueryPerformanceCounter((LARGE_INTEGER*)&start_time);//è®¾ç½®åˆå§‹æ—¶é—´
 	if_stop = false;
 	now_time = start_time;
 	last_time = start_time;
 }
-void GlobelTimeCount::Start()//¿ªÊ¼¼ÆÊ±£¬È¡ÏûÔİÍ£×´Ì¬£¬½«ÔİÍ£Ê±¼ä¹éÁã
+void GlobelTimeCount::Start()//å¼€å§‹è®¡æ—¶ï¼Œå–æ¶ˆæš‚åœçŠ¶æ€ï¼Œå°†æš‚åœæ—¶é—´å½’é›¶
 {
 	if (if_stop)
 	{
@@ -29,7 +29,7 @@ void GlobelTimeCount::Start()//¿ªÊ¼¼ÆÊ±£¬È¡ÏûÔİÍ£×´Ì¬£¬½«ÔİÍ£Ê±¼ä¹éÁã
 		all_pause_time = 0;
 	}
 }
-void GlobelTimeCount::Stop()//ÔİÍ£¼ÆÊ±£¬Ë¢ĞÂ¿ªÊ¼ÔİÍ£µÄÊ±¿Ì²¢¿ªÊ¼¼ÆËãÔİÍ£Ê±¼ä
+void GlobelTimeCount::Stop()//æš‚åœè®¡æ—¶ï¼Œåˆ·æ–°å¼€å§‹æš‚åœçš„æ—¶åˆ»å¹¶å¼€å§‹è®¡ç®—æš‚åœæ—¶é—´
 {
 	if (!if_stop)
 	{
@@ -41,13 +41,13 @@ void GlobelTimeCount::Stop()//ÔİÍ£¼ÆÊ±£¬Ë¢ĞÂ¿ªÊ¼ÔİÍ£µÄÊ±¿Ì²¢¿ªÊ¼¼ÆËãÔİÍ£Ê±¼ä
 }
 void GlobelTimeCount::Refresh()
 {
-	if (!if_stop)//Ê±¼äÎ´±»ÔİÍ££¬¿ÉÒÔÕı³£¼ÆÊ±
+	if (!if_stop)//æ—¶é—´æœªè¢«æš‚åœï¼Œå¯ä»¥æ­£å¸¸è®¡æ—¶
 	{
 		last_time = now_time;
 		QueryPerformanceCounter((LARGE_INTEGER*)(&now_time));
 		delta_time = static_cast<double>(now_time - last_time) * count_freq;
 	}
-	else//Ê±¼ä±»ÔİÍ££¬¼ÆËã×ÜµÄÔİÍ£Ê±¼ä
+	else//æ—¶é—´è¢«æš‚åœï¼Œè®¡ç®—æ€»çš„æš‚åœæ—¶é—´
 	{
 		QueryPerformanceCounter((LARGE_INTEGER*)(&now_time));
 		all_pause_time = static_cast<double>(now_time - stop_time) * count_freq;
@@ -68,7 +68,7 @@ float GlobelTimeCount::GetAllTime()
 }
 __int64 GlobelTimeCount::GetSystemTime()
 {
-	__int64  system_time;      //ÆğÊ¼Ê±¼ä
+	__int64  system_time;      //èµ·å§‹æ—¶é—´
 	QueryPerformanceCounter((LARGE_INTEGER*)(&system_time));
 	return system_time;
 }

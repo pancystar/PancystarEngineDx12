@@ -122,33 +122,33 @@ public:
 private:
 	void InitBasicVariable() override;
 };
-//¼¸ºÎÌåµÄ¸ñÊ½¶Ô½ÓÀàĞÍ
+//å‡ ä½•ä½“çš„æ ¼å¼å¯¹æ¥ç±»å‹
 struct PancyVertexBufferDesc
 {
 	std::string vertex_desc_name;
 	size_t input_element_num;
 	D3D12_INPUT_ELEMENT_DESC *inputElementDescs = NULL;
 };
-//³£Á¿»º³åÇø
-//³£Á¿»º³åÇø
+//å¸¸é‡ç¼“å†²åŒº
+//å¸¸é‡ç¼“å†²åŒº
 struct CbufferVariable
 {
 	pancy_resource_size variable_size;
 	pancy_resource_size start_offset;
 };
-//todo:ÕâÀïÖ®ºóĞèÒª½«cbufferÄÉÈëresource¹ÜÀí
+//todo:è¿™é‡Œä¹‹åéœ€è¦å°†cbufferçº³å…¥resourceç®¡ç†
 class PancyConstantBuffer
 {
 	bool if_loaded = false;
-	std::string cbuffer_name;       //³£Á¿»º³åÇøµÄÃû³Æ
-	std::string cbuffer_effect_name; //´´½¨³£Á¿»º³åÇøµÄäÖÈ¾¹ÜÏßÃû³Æ
-	//³£Á¿»º³åÇøµÄÊı¾İ
+	std::string cbuffer_name;       //å¸¸é‡ç¼“å†²åŒºçš„åç§°
+	std::string cbuffer_effect_name; //åˆ›å»ºå¸¸é‡ç¼“å†²åŒºçš„æ¸²æŸ“ç®¡çº¿åç§°
+	//å¸¸é‡ç¼“å†²åŒºçš„æ•°æ®
 	PancystarEngine::VirtualResourcePointer buffer_ID;
 	pancy_object_id buffer_offset_id;
 	pancy_resource_size cbuffer_size;
-	//ËùÓĞ³ÉÔ±±äÁ¿µÄÆğÊ¼Î»ÖÃ
+	//æ‰€æœ‰æˆå‘˜å˜é‡çš„èµ·å§‹ä½ç½®
 	std::unordered_map<std::string, CbufferVariable> member_variable;
-	//³£Á¿»º³åÇøÔÚCPU¶ËµÄÖ¸Õë
+	//å¸¸é‡ç¼“å†²åŒºåœ¨CPUç«¯çš„æŒ‡é’ˆ
 	UINT8* map_pointer_out;
 public:
 	PancyConstantBuffer();
@@ -208,12 +208,12 @@ struct CbufferPackList
 };
 class ConstantBufferAlloctor
 {
-	pancy_resource_size cbuffer_size;       //Ã¿¸ö³£Á¿»º³åÇøµÄ´óĞ¡
-	std::string cbuffer_name;               //³£Á¿»º³åÇøµÄÃû³Æ
-	std::string cbuffer_effect_name;        //´´½¨³£Á¿»º³åÇøµÄäÖÈ¾¹ÜÏßÃû³Æ
+	pancy_resource_size cbuffer_size;       //æ¯ä¸ªå¸¸é‡ç¼“å†²åŒºçš„å¤§å°
+	std::string cbuffer_name;               //å¸¸é‡ç¼“å†²åŒºçš„åç§°
+	std::string cbuffer_effect_name;        //åˆ›å»ºå¸¸é‡ç¼“å†²åŒºçš„æ¸²æŸ“ç®¡çº¿åç§°
 	PancystarEngine::PancyCommonBufferDesc buffer_resource_desc_value;
-	//Json::Value buffer_resource_desc_value; //buffer×ÊÔ´¸ñÊ½
-	Json::Value cbuffer_desc_value;         //cbuffer¸ñÊ½
+	//Json::Value buffer_resource_desc_value; //bufferèµ„æºæ ¼å¼
+	Json::Value cbuffer_desc_value;         //cbufferæ ¼å¼
 	std::unordered_map<pancy_object_id, CbufferPackList*> all_cbuffer_list;
 public:
 	ConstantBufferAlloctor(
@@ -226,7 +226,7 @@ public:
 	PancystarEngine::EngineFailReason BuildNewCbuffer(PancyConstantBuffer &cbuffer_data);
 	PancystarEngine::EngineFailReason ReleaseCbuffer(const pancy_object_id &buffer_resource_id, const pancy_object_id &buffer_offset_id);
 };
-//¼¸ºÎÌå¸ñÊ½¹ÜÀíÆ÷(ÓÃÓÚ×¢²á¶¥µã)
+//å‡ ä½•ä½“æ ¼å¼ç®¡ç†å™¨(ç”¨äºæ³¨å†Œé¡¶ç‚¹)
 class InputLayoutDesc
 {
 	std::unordered_map<std::string, PancyVertexBufferDesc> vertex_buffer_desc_map;
@@ -318,13 +318,13 @@ private:
 	std::string GetJsonFileRealName(const std::string &file_name_in);
 };
 
-//RootSignature¹ÜÀíÆ÷
+//RootSignatureç®¡ç†å™¨
 class PancyRootSignatureControl
 {
-	//¿ÕÏĞµÄRootSignature IDºÅ
+	//ç©ºé—²çš„RootSignature IDå·
 	pancy_object_id RootSig_id_self_add;
 	std::queue<pancy_object_id> empty_RootSig_id;
-	//RootSignatureµÄ´æ´¢½á¹¹
+	//RootSignatureçš„å­˜å‚¨ç»“æ„
 	std::unordered_map<std::string, pancy_object_id> RootSig_name;
 	std::unordered_map<pancy_object_id, std::string> RootSig_name_reflect;
 	std::unordered_map<pancy_object_id, PancyRootSignature*> root_signature_array;
@@ -354,7 +354,7 @@ class PancyPiplineStateObjectGraph
 	PSOType pipline_type;
 	//std::unordered_map<std::string,Json::Value> Cbuffer_map;
 	std::unordered_map<std::string, ConstantBufferAlloctor*> Cbuffer_map;
-	//todo£ºÇø·Ö°ó¶¨×ÊÔ´µÄ¸ñÊ½
+	//todoï¼šåŒºåˆ†ç»‘å®šèµ„æºçš„æ ¼å¼
 	std::vector<PancyDescriptorPSODescription> globel_cbuffer;
 	std::vector<PancyDescriptorPSODescription> private_cbuffer;
 	std::vector<PancyDescriptorPSODescription> globel_shader_res;
@@ -364,7 +364,7 @@ class PancyPiplineStateObjectGraph
 	pancy_object_id root_signature_ID;
 	PancystarEngine::PancyString pso_name;
 	ComPtr<ID3D12PipelineState> pso_data;
-	//·´Éä¶ÁÈ¡
+	//åå°„è¯»å–
 	PipelineStateDescGraphicJsonReflect grapthic_reflect;
 	PipelineStateDescComputeJsonReflect compute_reflect;
 public:
@@ -397,13 +397,13 @@ private:
 };
 
 
-//pso¹ÜÀíÆ÷
+//psoç®¡ç†å™¨
 class PancyEffectGraphic
 {
-	//¿ÕÏĞµÄPSO IDºÅ
+	//ç©ºé—²çš„PSO IDå·
 	pancy_object_id PSO_id_self_add;
 	std::queue<pancy_object_id> empty_PSO_id;
-	//PSOµÄ´æ´¢½á¹¹
+	//PSOçš„å­˜å‚¨ç»“æ„
 	std::unordered_map<std::string, pancy_object_id> PSO_name;
 	std::unordered_map<pancy_object_id,std::string> PSO_name_reflect;
 	std::unordered_map<pancy_object_id, PancyPiplineStateObjectGraph*> PSO_array;

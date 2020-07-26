@@ -25,7 +25,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::AddReflectData(const PancyJs
 	new_data.parent_name = GetParentName(name);
 	new_data.data_pointer = variable_data;
 	new_data.data_type_name = variable_type_name;
-	//¼ì²â½ÚµãÊÇ·ñ´æÔÚÖØ¸´Ìí¼ÓµÄÇé¿ö
+	//æ£€æµ‹èŠ‚ç‚¹æ˜¯å¦å­˜åœ¨é‡å¤æ·»åŠ çš„æƒ…å†µ
 	if (parent_list.find(name) != parent_list.end())
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the variable: " + name + " has been inited before, do not repeat init");
@@ -38,7 +38,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::AddReflectData(const PancyJs
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("init Variable of json reflect class", error_message);
 		return error_message;
 	}
-	//ÖÇÄÜ´¦Àí¸¸½ÚµãÎªnodeÀàĞÍ
+	//æ™ºèƒ½å¤„ç†çˆ¶èŠ‚ç‚¹ä¸ºnodeç±»å‹
 	std::string next_parent = new_data.parent_name;
 	while (next_parent != "")
 	{
@@ -152,7 +152,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::TranslateStringToEnum(const 
 	}
 	return PancystarEngine::succeed;
 }
-//ÉèÖÃÆÕÍ¨±äÁ¿
+//è®¾ç½®æ™®é€šå˜é‡
 PancystarEngine::EngineFailReason PancyJsonReflect::SetIntValue(JsonReflectData &reflect_data, const int64_t &int_value)
 {
 	switch (reflect_data.data_type)
@@ -260,25 +260,25 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetStringValue(JsonReflectDa
 	{
 	case PancyJsonMemberType::json_member_string:
 	{
-		//ÆÕÍ¨µÄ×Ö·û´®
+		//æ™®é€šçš„å­—ç¬¦ä¸²
 		std::string* data_pointer = reinterpret_cast<std::string*>(reflect_data.data_pointer);
 		*data_pointer = static_cast<std::string>(string_value);
 	}
 	break;
 	case PancyJsonMemberType::json_member_enum:
 	{
-		//Ã¶¾Ù±äÁ¿×Ö·û´®
+		//æšä¸¾å˜é‡å­—ç¬¦ä¸²
 		std::string value_enum_type;
 		std::string value_enum_value_name;
-		//¼ì²âÃ¶¾Ù±äÁ¿ÊÇ·ñÌîĞ´ÕıÈ·
+		//æ£€æµ‹æšä¸¾å˜é‡æ˜¯å¦å¡«å†™æ­£ç¡®
 		if (string_value.find(reflect_data.data_type_name) < 0)
 		{
-			//Ã¶¾ÙÀàĞÍ²»Æ¥Åä
+			//æšä¸¾ç±»å‹ä¸åŒ¹é…
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "enum member : " + reflect_data.data_name + " write wrong, need type: " + reflect_data.data_type_name);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetStringValue", error_message);
 			return error_message;
 		}
-		//¸ù¾İÃ¶¾Ù±äÁ¿µÄÀàĞÍ£¬½«Ã¶¾Ù±äÁ¿¸³Öµ
+		//æ ¹æ®æšä¸¾å˜é‡çš„ç±»å‹ï¼Œå°†æšä¸¾å˜é‡èµ‹å€¼
 		int32_t enum_value;
 		check_error = TranslateStringToEnum(string_value, value_enum_type, value_enum_value_name, enum_value);
 		if (!check_error.CheckIfSucceed())
@@ -306,7 +306,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetIntArrayValue(JsonReflect
 {
 	PancystarEngine::EngineFailReason check_error;
 	JsonReflectData single_member;
-	//¼ì²éÊı¾İÊÇ²»ÊÇvectorÀàĞÍµÄÊı×é
+	//æ£€æŸ¥æ•°æ®æ˜¯ä¸æ˜¯vectorç±»å‹çš„æ•°ç»„
 	bool if_vector_value = true;
 	switch (reflect_data.data_type)
 	{
@@ -389,10 +389,10 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetIntArrayValue(JsonReflect
 	}
 	if (if_vector_value)
 	{
-		//ÒÑ¾­³É¹¦µ±×÷vector´¦Àí£¬ÍË³ö
+		//å·²ç»æˆåŠŸå½“ä½œvectorå¤„ç†ï¼Œé€€å‡º
 		return PancystarEngine::succeed;
 	}
-	//ÏÈ¼ì²éÊı×éÊÇ·ñÔ½½ç
+	//å…ˆæ£€æŸ¥æ•°ç»„æ˜¯å¦è¶Šç•Œ
 	if (offset_value >= reflect_data.array_size)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the array variable: " + reflect_data.data_name + " size only have " + std::to_string(reflect_data.array_size) + " could not get index" + std::to_string(offset_value));
@@ -451,7 +451,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetDoubleArrayValue(JsonRefl
 {
 	PancystarEngine::EngineFailReason check_error;
 	JsonReflectData single_member;
-	//¼ì²éÊı¾İÊÇ²»ÊÇvectorÀàĞÍµÄÊı×é
+	//æ£€æŸ¥æ•°æ®æ˜¯ä¸æ˜¯vectorç±»å‹çš„æ•°ç»„
 	bool if_vector_value = true;
 	switch (reflect_data.data_type)
 	{
@@ -480,10 +480,10 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetDoubleArrayValue(JsonRefl
 	}
 	if (if_vector_value)
 	{
-		//ÒÑ¾­³É¹¦µ±×÷vector´¦Àí£¬ÍË³ö
+		//å·²ç»æˆåŠŸå½“ä½œvectorå¤„ç†ï¼Œé€€å‡º
 		return PancystarEngine::succeed;
 	}
-	//ÏÈ¼ì²éÊı×éÊÇ·ñÔ½½ç
+	//å…ˆæ£€æŸ¥æ•°ç»„æ˜¯å¦è¶Šç•Œ
 	if (offset_value >= reflect_data.array_size)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the array variable: " + reflect_data.data_name + " size only have " + std::to_string(reflect_data.array_size) + " could not get index" + std::to_string(offset_value));
@@ -516,7 +516,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetDoubleArrayValue(JsonRefl
 PancystarEngine::EngineFailReason PancyJsonReflect::SetBoolArrayValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const bool &bool_value)
 {
 	JsonReflectData single_member;
-	//¼ì²éÊı¾İÊÇ²»ÊÇvectorÀàĞÍµÄÊı×é
+	//æ£€æŸ¥æ•°æ®æ˜¯ä¸æ˜¯vectorç±»å‹çš„æ•°ç»„
 	if (reflect_data.data_type == PancyJsonMemberType::json_member_bool_list)
 	{
 		return SetVectorValue<bool>(reflect_data, offset_value, bool_value);
@@ -527,7 +527,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetBoolArrayValue(JsonReflec
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetIntArrayValue", error_message);
 		return error_message;
 	}
-	//ÏÈ¼ì²éÊı×éÊÇ·ñÔ½½ç
+	//å…ˆæ£€æŸ¥æ•°ç»„æ˜¯å¦è¶Šç•Œ
 	if (offset_value >= reflect_data.array_size)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the array variable: " + reflect_data.data_name + " size only have " + std::to_string(reflect_data.array_size) + " could not get index" + std::to_string(offset_value));
@@ -548,14 +548,14 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetStringArrayValue(JsonRefl
 {
 	PancystarEngine::EngineFailReason check_error;
 	JsonReflectData single_member;
-	//¼ì²éÊı¾İÊÇ²»ÊÇvectorÀàĞÍµÄÊı×é
+	//æ£€æŸ¥æ•°æ®æ˜¯ä¸æ˜¯vectorç±»å‹çš„æ•°ç»„
 	if (reflect_data.data_type == PancyJsonMemberType::json_member_string_list)
 	{
 		return SetVectorValue<std::string>(reflect_data, offset_value, string_value);
 	}
 	else if (reflect_data.data_type == PancyJsonMemberType::json_member_enum_list)
 	{
-		//todo:enum»òÔËËã
+		//todo:enumæˆ–è¿ç®—
 		std::string value_enum_type;
 		std::string value_enum_value_name;
 		int32_t enum_value;
@@ -568,14 +568,14 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetStringArrayValue(JsonRefl
 		PancyJsonTool::GetInstance()->GetEnumNameByPointerName(reflect_data.data_type_name, now_dealed_enum_type);
 		if (now_dealed_enum_type != value_enum_type)
 		{
-			//Ã¶¾ÙÀàĞÍ²»Æ¥Åä
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "enum member: " + reflect_data.data_name + " :type dismatch: " + now_dealed_enum_type + " Dismatch£º " + value_enum_type);
+			//æšä¸¾ç±»å‹ä¸åŒ¹é…
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "enum member: " + reflect_data.data_name + " :type dismatch: " + now_dealed_enum_type + " Dismatchï¼š " + value_enum_type);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetStringArrayValue", error_message);
 			return error_message;
 		}
 		return PancyJsonTool::GetInstance()->SetEnumVectorValue(value_enum_type, reflect_data.data_pointer, offset_value, enum_value);
 	}
-	//ÏÈ¼ì²éÊı×éÊÇ·ñÔ½½ç
+	//å…ˆæ£€æŸ¥æ•°ç»„æ˜¯å¦è¶Šç•Œ
 	if (offset_value >= reflect_data.array_size)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the array variable: " + reflect_data.data_name + " size only have " + std::to_string(reflect_data.array_size) + " could not get index" + std::to_string(offset_value));
@@ -597,24 +597,24 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetStringArrayValue(JsonRefl
 	{
 		std::string value_enum_type, value_enum_value_name;
 		int32_t enum_value;
-		//ÏÈ½«×Ö·û´®Êı¾İ½âÎöÎªÃ¶¾ÙÊı¾İ
+		//å…ˆå°†å­—ç¬¦ä¸²æ•°æ®è§£æä¸ºæšä¸¾æ•°æ®
 		check_error = TranslateStringToEnum(string_value, value_enum_type, value_enum_value_name, enum_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//»ñÈ¡Êı×éÃ¶¾Ù±äÁ¿µÄÕæÊµ±äÁ¿ÀàĞÍ
+		//è·å–æ•°ç»„æšä¸¾å˜é‡çš„çœŸå®å˜é‡ç±»å‹
 		std::string member_enum_type_name;
 		check_error = PancyJsonTool::GetInstance()->GetEnumNameByPointerName(reflect_data.data_type_name, member_enum_type_name);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//¼ì²âÀàĞÍÊÇ·ñÆ¥Åä
+		//æ£€æµ‹ç±»å‹æ˜¯å¦åŒ¹é…
 		if (value_enum_type != member_enum_type_name)
 		{
-			//Ã¶¾ÙÀàĞÍ²»Æ¥Åä
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "enum member: " + reflect_data.data_name + " :type dismatch: " + value_enum_type + " Dismatch£º " + reflect_data.data_type_name);
+			//æšä¸¾ç±»å‹ä¸åŒ¹é…
+			PancystarEngine::EngineFailReason error_message(E_FAIL, "enum member: " + reflect_data.data_name + " :type dismatch: " + value_enum_type + " Dismatchï¼š " + reflect_data.data_type_name);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetStringArrayValue", error_message);
 			return error_message;
 		}
@@ -635,7 +635,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetStringArrayValue(JsonRefl
 PancystarEngine::EngineFailReason PancyJsonReflect::SetNodeArrayValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const Json::Value &now_child_value)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//¸ù¾İ½ÚµãµÄÀàĞÍ´´½¨Ò»¸öĞÂµÄ´¦ÀíÀàÀ´½âÎö½ÚµãÊı¾İ
+	//æ ¹æ®èŠ‚ç‚¹çš„ç±»å‹åˆ›å»ºä¸€ä¸ªæ–°çš„å¤„ç†ç±»æ¥è§£æèŠ‚ç‚¹æ•°æ®
 	;
 	auto child_reflect_pointer = PancyJsonReflectControl::GetInstance()->GetJsonReflectByArray(reflect_data.data_type_name);
 	if (child_reflect_pointer == NULL)
@@ -657,7 +657,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetNodeArrayValue(JsonReflec
 	}
 	if (reflect_data.data_type == PancyJsonMemberType::json_member_node_list)
 	{
-		//vectorÀàĞÍµÄ½ÚµãÊı×é
+		//vectorç±»å‹çš„èŠ‚ç‚¹æ•°ç»„
 		check_error = child_reflect_pointer->CopyVectorData(reflect_data.data_pointer, reflect_data.data_type_name, offset_value, now_data_type_size);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -666,17 +666,17 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetNodeArrayValue(JsonReflec
 	}
 	else if (reflect_data.data_type == PancyJsonMemberType::json_member_node_array)
 	{
-		//ÏÈ¼ì²éÊı×éÊÇ·ñÔ½½ç
+		//å…ˆæ£€æŸ¥æ•°ç»„æ˜¯å¦è¶Šç•Œ
 		if (offset_value >= reflect_data.array_size)
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "the array variable: " + reflect_data.data_name + " size only have " + std::to_string(reflect_data.array_size) + " could not get index" + std::to_string(offset_value));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetNodeArrayValue", error_message);
 			return error_message;
 		}
-		//ÏÈ¸ù¾İÆ«ÒÆÁ¿½«½ÚµãÊı×éµÄÖ¸ÕëÆ«ÒÆµ½ÕıÈ·µÄÎ»ÖÃ
+		//å…ˆæ ¹æ®åç§»é‡å°†èŠ‚ç‚¹æ•°ç»„çš„æŒ‡é’ˆåç§»åˆ°æ­£ç¡®çš„ä½ç½®
 		char* now_array_pointer = reinterpret_cast<char*>(reflect_data.data_pointer);
 		now_array_pointer = now_array_pointer + offset_value * now_data_type_size;
-		//½«´¦ÀíÍêµÄÊı¾İ¿½±´µ½Ö¸¶¨Î»ÖÃ
+		//å°†å¤„ç†å®Œçš„æ•°æ®æ‹·è´åˆ°æŒ‡å®šä½ç½®
 		child_reflect_pointer->CopyMemberData(now_array_pointer, reflect_data.data_type_name, now_data_type_size);
 	}
 	else
@@ -687,14 +687,14 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetNodeArrayValue(JsonReflec
 	}
 	return PancystarEngine::succeed;
 }
-//ÉèÖÃÊı×é±äÁ¿
+//è®¾ç½®æ•°ç»„å˜é‡
 PancystarEngine::EngineFailReason PancyJsonReflect::SetArrayValue(JsonReflectData &reflect_data, const Json::Value &now_child_value)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//Êı×é±äÁ¿¶ÔÓ¦µÄ´óĞ¡±äÁ¿²»ĞèÒª½øĞĞ´æ´¢(jsonÖĞ»áÓĞ¶îÍâµÄ±äÁ¿Ó³Éä¹ıÀ´)
+	//æ•°ç»„å˜é‡å¯¹åº”çš„å¤§å°å˜é‡ä¸éœ€è¦è¿›è¡Œå­˜å‚¨(jsonä¸­ä¼šæœ‰é¢å¤–çš„å˜é‡æ˜ å°„è¿‡æ¥)
 	for (Json::ArrayIndex array_index = 0; array_index < now_child_value.size(); ++array_index)
 	{
-		//ÏÈ¼ì²éÊı×éÊÇ·ñÔ½½ç
+		//å…ˆæ£€æŸ¥æ•°ç»„æ˜¯å¦è¶Šç•Œ
 		if (array_index >= reflect_data.array_size)
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "the array variable: " + reflect_data.data_name + " size only have " + std::to_string(reflect_data.array_size) + " could not get index" + std::to_string(array_index));
@@ -733,7 +733,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetArrayValue(JsonReflectDat
 			check_error = SetNodeArrayValue(reflect_data, array_index, now_child_value[array_index]);
 		}
 		break;
-		//todo:½ÚµãÊı×é
+		//todo:èŠ‚ç‚¹æ•°ç»„
 		default:
 			break;
 		}
@@ -759,7 +759,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::LoadFromJsonMemory(const std
 	return LoadFromJsonNode("reflect_data", value_name, root_value);
 }
 
-//»ñÈ¡ÆÕÍ¨±äÁ¿
+//è·å–æ™®é€šå˜é‡
 PancystarEngine::EngineFailReason PancyJsonReflect::SaveSingleValueMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value)
 {
 	switch (reflect_data.data_type)
@@ -1265,7 +1265,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveToJsonNode(const std::st
 	}
 	case PancyJsonMemberType::json_member_node_array:
 	{
-		//¸ù¾İ½ÚµãµÄÀàĞÍ»ñÈ¡¶ÔÓ¦µÄ´¦ÀíÀàÀ´½âÎö½ÚµãÊı¾İ
+		//æ ¹æ®èŠ‚ç‚¹çš„ç±»å‹è·å–å¯¹åº”çš„å¤„ç†ç±»æ¥è§£æèŠ‚ç‚¹æ•°æ®
 		auto child_reflect_pointer = PancyJsonReflectControl::GetInstance()->GetJsonReflectByArray(now_reflect_data->second.data_type_name);
 		if (child_reflect_pointer == NULL)
 		{
@@ -1317,7 +1317,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveToJsonNode(const std::st
 		{
 			return check_error;
 		}
-		//¸ù¾İ½ÚµãµÄÀàĞÍ»ñÈ¡¶ÔÓ¦µÄ´¦ÀíÀàÀ´½âÎö½ÚµãÊı¾İ
+		//æ ¹æ®èŠ‚ç‚¹çš„ç±»å‹è·å–å¯¹åº”çš„å¤„ç†ç±»æ¥è§£æèŠ‚ç‚¹æ•°æ®
 		pancy_object_id vector_size = 0;
 		check_error = child_reflect_pointer->GetVectorDataSize(now_reflect_data->second.data_pointer, now_reflect_data->second.data_type_name, vector_size);
 		if (!check_error.CheckIfSucceed())
@@ -1351,7 +1351,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::LoadFromJsonArray(const std:
 	auto now_reflect_data = value_map.find(value_name);
 	if (now_reflect_data == value_map.end())
 	{
-		//Î´ÕÒµ½¶ÔÓ¦µÄ·´ÉäÊı¾İ
+		//æœªæ‰¾åˆ°å¯¹åº”çš„åå°„æ•°æ®
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find JSON reflect variable: " + value_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::LoadFromJson", error_message);
 		return error_message;
@@ -1365,11 +1365,11 @@ PancystarEngine::EngineFailReason PancyJsonReflect::LoadFromJsonNode(const std::
 	std::vector<Json::ValueType> check_value;
 	for (int member_index = 0; member_index < all_member_name.size(); ++member_index)
 	{
-		//»ñÈ¡×Ó½ÚµãµÄjsonÊı¾İ
+		//è·å–å­èŠ‚ç‚¹çš„jsonæ•°æ®
 		Json::Value now_child_value = root_value.get(all_member_name[member_index], Json::Value::null);
-		//²éÕÒ¶ÔÓ¦½ÚµãµÄ·´ÉäĞÅÏ¢
-		std::string now_combine_value_common = parent_name;//Í¨¹ı.Á´½ÓµÄ½á¹¹ÌåĞÅÏ¢
-		std::string now_combine_value_pointer = parent_name;//Í¨¹ı->Á´½ÓµÄ½á¹¹ÌåÖ¸ÕëĞÅÏ¢
+		//æŸ¥æ‰¾å¯¹åº”èŠ‚ç‚¹çš„åå°„ä¿¡æ¯
+		std::string now_combine_value_common = parent_name;//é€šè¿‡.é“¾æ¥çš„ç»“æ„ä½“ä¿¡æ¯
+		std::string now_combine_value_pointer = parent_name;//é€šè¿‡->é“¾æ¥çš„ç»“æ„ä½“æŒ‡é’ˆä¿¡æ¯
 		if (parent_name != "")
 		{
 			now_combine_value_common += ".";
@@ -1377,7 +1377,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::LoadFromJsonNode(const std::
 		}
 		now_combine_value_common += all_member_name[member_index];
 		now_combine_value_pointer += all_member_name[member_index];
-		//´æ´¢µ±Ç°½ÚµãµÄÕæÕıµÄÃû³Æ£¬ÓÉÓÚÓĞĞ©nodeÒÀ¿¿.À´±ê¼Ç×Ó½Úµã£¬¶øÓĞĞ©ĞèÒªÒÀ¿¿->±ê¼Ç
+		//å­˜å‚¨å½“å‰èŠ‚ç‚¹çš„çœŸæ­£çš„åç§°ï¼Œç”±äºæœ‰äº›nodeä¾é .æ¥æ ‡è®°å­èŠ‚ç‚¹ï¼Œè€Œæœ‰äº›éœ€è¦ä¾é ->æ ‡è®°
 		std::string now_node_name = now_combine_value_common;
 		auto now_reflect_data = value_map.find(now_combine_value_common);
 		if (now_reflect_data == value_map.end())
@@ -1385,7 +1385,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::LoadFromJsonNode(const std::
 			now_reflect_data = value_map.find(now_combine_value_pointer);
 			if (now_reflect_data == value_map.end())
 			{
-				//Î´ÕÒµ½¶ÔÓ¦µÄ·´ÉäÊı¾İ
+				//æœªæ‰¾åˆ°å¯¹åº”çš„åå°„æ•°æ®
 				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find JSON reflect variable: " + now_combine_value_common + " while load json node " + value_name);
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::LoadFromJson", error_message);
 				return error_message;
@@ -1393,12 +1393,12 @@ PancystarEngine::EngineFailReason PancyJsonReflect::LoadFromJsonNode(const std::
 			now_node_name = now_combine_value_pointer;
 		}
 		auto json_data_type = now_child_value.type();
-		//¸ù¾İ·´ÉäÊı¾İµÄÀàĞÍ£¬¾ö¶¨Êı¾İµÄÔØÈë·½Ê½
+		//æ ¹æ®åå°„æ•°æ®çš„ç±»å‹ï¼Œå†³å®šæ•°æ®çš„è½½å…¥æ–¹å¼
 		switch (json_data_type)
 		{
 		case Json::nullValue:
 		{
-			//Ëğ»µµÄÊı¾İ
+			//æŸåçš„æ•°æ®
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "the variable: " + all_member_name[member_index] + " could not be recognized by json tool");
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::LoadFromJson", error_message);
 			return error_message;
@@ -1465,7 +1465,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::LoadFromJsonNode(const std::
 		break;
 		case Json::objectValue:
 		{
-			//½ÚµãÊı¾İ
+			//èŠ‚ç‚¹æ•°æ®
 			check_error = LoadFromJsonNode(now_node_name, value_name, now_child_value);
 			if (!check_error.CheckIfSucceed())
 			{
@@ -1575,7 +1575,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::GetArrayDataSize(const JsonR
 	}
 	if (size_out > reflect_data.array_size) 
 	{
-		//Êı×éÊ¹ÓÃ´óĞ¡Ô½½ç
+		//æ•°ç»„ä½¿ç”¨å¤§å°è¶Šç•Œ
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "array size out of range: " + check_array_size_name->second);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::GetArrayDataSize", error_message);
 		size_out = 0;

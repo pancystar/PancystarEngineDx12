@@ -5,93 +5,93 @@
 #include"PancyJsonTool.h"
 #define Init_Json_Data_Vatriable(var_name) AddAnyVariable(#var_name, var_name)
 #define Bind_Json_Data_Array_Size(array_value,size_value) BindArraySizeValue<decltype(array_value)>(#array_value, #size_value)
-//ÕâÀïÊ¹ÓÃ#define´´½¨×ÊÔ´¿ÉÒÔÔÚ±àÒëÆÚ¼ì²é³öÀàĞÍ²»Æ¥ÅäµÄ´íÎó
+//è¿™é‡Œä½¿ç”¨#defineåˆ›å»ºèµ„æºå¯ä»¥åœ¨ç¼–è¯‘æœŸæ£€æŸ¥å‡ºç±»å‹ä¸åŒ¹é…çš„é”™è¯¯
 #define InitJsonReflectParseClass(ReflectStructType,ReflectClassType) PancyJsonReflectTemplate<ReflectStructType> *pointer_##ReflectStructType = new ReflectClassType();\
 																	  PancyJsonReflectControl::GetInstance()->InitJsonReflect<ReflectStructType,ReflectClassType>(pointer_##ReflectStructType);
-//»ù±¾Êı¾İµÄ·´Éä±£ÁôÄÚÈİ
+//åŸºæœ¬æ•°æ®çš„åå°„ä¿ç•™å†…å®¹
 struct JsonReflectData
 {
-	PancyJsonMemberType data_type;  //±êÊ¶Êı¾İµÄ»ù±¾¸ñÊ½
-	std::string data_name;          //±êÊ¶Êı¾İµÄÃû³Æ
-	std::string parent_name;        //±êÊ¶Êı¾İµÄ¸¸½á¹¹µÄÃû³Æ
-	std::string data_type_name;     //±êÊ¶Êı¾İµÄÏ¸½ÚÀàĞÍÃû³Æ
-	pancy_object_id array_size = 0; //±êÊ¶Êı¾İµÄ×î´ó¿ÉÈİÄÉ´óĞ¡(¼æÈİÊı×é)
-	void* data_pointer = NULL;             //Êı¾İµÄÄÚÈİ
+	PancyJsonMemberType data_type;  //æ ‡è¯†æ•°æ®çš„åŸºæœ¬æ ¼å¼
+	std::string data_name;          //æ ‡è¯†æ•°æ®çš„åç§°
+	std::string parent_name;        //æ ‡è¯†æ•°æ®çš„çˆ¶ç»“æ„çš„åç§°
+	std::string data_type_name;     //æ ‡è¯†æ•°æ®çš„ç»†èŠ‚ç±»å‹åç§°
+	pancy_object_id array_size = 0; //æ ‡è¯†æ•°æ®çš„æœ€å¤§å¯å®¹çº³å¤§å°(å…¼å®¹æ•°ç»„)
+	void* data_pointer = NULL;             //æ•°æ®çš„å†…å®¹
 };
-//»ù±¾·´ÉäÀà
+//åŸºæœ¬åå°„ç±»
 class PancyJsonReflect
 {
-	//½«jsonÊı¾İ°ó¶¨µ½ÆÕÍ¨½á¹¹ÌåµÄÊı¾İ½á¹¹
-	std::unordered_map<std::string, JsonReflectData> value_map;                //Ã¿¸ö³ÉÔ±±äÁ¿¶ÔÓ¦µÄÖµ
-	std::unordered_map<std::string, std::string> parent_list;                  //Ã¿¸ö³ÉÔ±±äÁ¿µÄ¸¸½Úµã
-	std::unordered_map<std::string, std::vector<std::string>> child_value_list;//Ã¿¸ö³ÉÔ±±äÁ¿µÄ×Ó±äÁ¿
-	std::unordered_map<std::string, std::string> array_real_size_map;          //Ã¿¸öÊı×éµÄÕæÊµ´óĞ¡¶ÔÓ¦µÄ±äÁ¿
+	//å°†jsonæ•°æ®ç»‘å®šåˆ°æ™®é€šç»“æ„ä½“çš„æ•°æ®ç»“æ„
+	std::unordered_map<std::string, JsonReflectData> value_map;                //æ¯ä¸ªæˆå‘˜å˜é‡å¯¹åº”çš„å€¼
+	std::unordered_map<std::string, std::string> parent_list;                  //æ¯ä¸ªæˆå‘˜å˜é‡çš„çˆ¶èŠ‚ç‚¹
+	std::unordered_map<std::string, std::vector<std::string>> child_value_list;//æ¯ä¸ªæˆå‘˜å˜é‡çš„å­å˜é‡
+	std::unordered_map<std::string, std::string> array_real_size_map;          //æ¯ä¸ªæ•°ç»„çš„çœŸå®å¤§å°å¯¹åº”çš„å˜é‡
 public:
 	PancyJsonReflect();
 	virtual ~PancyJsonReflect();
 	void Create();
-	//´ÓjsonÎÄ¼şÖĞ¼ÓÔØÊı¾İ
+	//ä»jsonæ–‡ä»¶ä¸­åŠ è½½æ•°æ®
 	PancystarEngine::EngineFailReason LoadFromJsonFile(const std::string &Json_file);
-	//´ÓjsonÄÚ´æÖĞ¼ÓÔØÊı¾İ
+	//ä»jsonå†…å­˜ä¸­åŠ è½½æ•°æ®
 	PancystarEngine::EngineFailReason LoadFromJsonMemory(const std::string &value_name, const Json::Value &root_value);
-	//½«Àà³ÉÔ±Êı¾İ´æ´¢µ½jsonÎÄ¼ş
+	//å°†ç±»æˆå‘˜æ•°æ®å­˜å‚¨åˆ°jsonæ–‡ä»¶
 	PancystarEngine::EngineFailReason SaveToJsonFile(const std::string &json_name);
-	//½«Àà³ÉÔ±Êı¾İ´æ´¢µ½jsonÄÚ´æ
+	//å°†ç±»æˆå‘˜æ•°æ®å­˜å‚¨åˆ°jsonå†…å­˜
 	PancystarEngine::EngineFailReason SaveToJsonMemory(Json::Value &root_value);
-	//½«Àà³ÉÔ±Êı¾İ¿½±´µ½Ö¸¶¨Ö¸Õë
+	//å°†ç±»æˆå‘˜æ•°æ®æ‹·è´åˆ°æŒ‡å®šæŒ‡é’ˆ
 	virtual PancystarEngine::EngineFailReason CopyMemberData(void *dst_pointer, const std::string &data_type_name, const pancy_resource_size &size) = 0;
-	//½«Àà³ÉÔ±Êı¾İÌí¼Óµ½vectorÖĞ
+	//å°†ç±»æˆå‘˜æ•°æ®æ·»åŠ åˆ°vectorä¸­
 	virtual PancystarEngine::EngineFailReason CopyVectorData(void *vector_pointer, const std::string &data_type_name, const pancy_resource_size &index, const pancy_resource_size &size) = 0;
-	//½«Ö¸¶¨Ö¸ÕëµÄÊı¾İ¿½±´µ½Àà³ÉÔ±Êı¾İ
+	//å°†æŒ‡å®šæŒ‡é’ˆçš„æ•°æ®æ‹·è´åˆ°ç±»æˆå‘˜æ•°æ®
 	virtual PancystarEngine::EngineFailReason ResetMemoryByMemberData(void *memory_pointer, const std::string &data_type_name, const pancy_resource_size &size) = 0;
-	//½«Ö¸¶¨Êı×éµÄÊı¾İ¿½±´µ½Àà³ÉÔ±Êı¾İ
+	//å°†æŒ‡å®šæ•°ç»„çš„æ•°æ®æ‹·è´åˆ°ç±»æˆå‘˜æ•°æ®
 	virtual PancystarEngine::EngineFailReason ResetMemoryByArrayData(void *array_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) = 0;
-	//½«Ö¸¶¨vectorµÄÊı¾İ¿½±´µ½Àà³ÉÔ±Êı¾İ
+	//å°†æŒ‡å®švectorçš„æ•°æ®æ‹·è´åˆ°ç±»æˆå‘˜æ•°æ®
 	virtual PancystarEngine::EngineFailReason ResetMemoryByVectorData(void *vector_pointer, const std::string &data_type_name, const pancy_object_id &index, const pancy_resource_size &size) = 0;
-	//»ñÈ¡vector±äÁ¿µÄÈİÁ¿
+	//è·å–vectorå˜é‡çš„å®¹é‡
 	virtual PancystarEngine::EngineFailReason GetVectorDataSize(void *vector_pointer, const std::string &data_type_name, pancy_object_id &size) = 0;
 private:
-	//´´½¨×Ó½ÚµãÓ³Éä
+	//åˆ›å»ºå­èŠ‚ç‚¹æ˜ å°„
 	void BuildChildValueMap();
-	//´Ójson½ÚµãÖĞ¼ÓÔØÊı¾İ
+	//ä»jsonèŠ‚ç‚¹ä¸­åŠ è½½æ•°æ®
 	PancystarEngine::EngineFailReason LoadFromJsonNode(const std::string &parent_name, const std::string &value_name, const Json::Value &root_value);
-	//´ÓjsonÊı×éÖĞ¼ÓÔØÊı¾İ
+	//ä»jsonæ•°ç»„ä¸­åŠ è½½æ•°æ®
 	PancystarEngine::EngineFailReason LoadFromJsonArray(const std::string &value_name, const Json::Value &root_value);
-	//½«Êı¾İĞ´Èëµ½json½Úµã
+	//å°†æ•°æ®å†™å…¥åˆ°jsonèŠ‚ç‚¹
 	PancystarEngine::EngineFailReason SaveToJsonNode(const std::string &parent_name, Json::Value &root_value);
-	//×¢²áËùÓĞµÄ·´Éä±äÁ¿
+	//æ³¨å†Œæ‰€æœ‰çš„åå°„å˜é‡
 	virtual void InitBasicVariable() = 0;
-	//»ñÈ¡½ÚµãµÄ¸¸½ÚµãÃû³Æ
+	//è·å–èŠ‚ç‚¹çš„çˆ¶èŠ‚ç‚¹åç§°
 	const std::string GetParentName(const std::string &name_in);
-	//ÉèÖÃ»ù´¡±äÁ¿
+	//è®¾ç½®åŸºç¡€å˜é‡
 	PancystarEngine::EngineFailReason SetIntValue(JsonReflectData &reflect_data, const int64_t &int_value);
 	PancystarEngine::EngineFailReason SetDoubleValue(JsonReflectData &reflect_data, const double &double_value);
 	PancystarEngine::EngineFailReason SetBoolValue(JsonReflectData &reflect_data, const bool &bool_value);
 	PancystarEngine::EngineFailReason SetStringValue(JsonReflectData &reflect_data, const std::string &string_value);
-	//ÉèÖÃÊı×é±äÁ¿
+	//è®¾ç½®æ•°ç»„å˜é‡
 	PancystarEngine::EngineFailReason SetArrayValue(JsonReflectData &reflect_data, const Json::Value &now_child_value);
 	PancystarEngine::EngineFailReason SetIntArrayValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const int64_t &int_value);
 	PancystarEngine::EngineFailReason SetDoubleArrayValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const double &double_value);
 	PancystarEngine::EngineFailReason SetBoolArrayValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const bool &bool_value);
 	PancystarEngine::EngineFailReason SetStringArrayValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const std::string &string_value);
 	PancystarEngine::EngineFailReason SetNodeArrayValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const Json::Value &now_child_value);
-	//²åÈëvectorÊı¾İ
+	//æ’å…¥vectoræ•°æ®
 	template<class T1, class T2>
 	PancystarEngine::EngineFailReason SetVectorValue(JsonReflectData &reflect_data, const pancy_object_id &offset_value, const T2 &input_value);
-	//»ñÈ¡»ù´¡±äÁ¿
+	//è·å–åŸºç¡€å˜é‡
 	PancystarEngine::EngineFailReason SaveSingleValueMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value);
-	//»ñÈ¡Êı×é±äÁ¿
+	//è·å–æ•°ç»„å˜é‡
 	template<typename ArrayType, typename JsonType>
 	PancystarEngine::EngineFailReason SaveArrayValueMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value);
 	PancystarEngine::EngineFailReason SaveArrayEnumMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value);
-	//»ñÈ¡vector±äÁ¿
+	//è·å–vectorå˜é‡
 	template<typename ArrayType, typename JsonType>
 	PancystarEngine::EngineFailReason SaveVectorValueMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value);
 	PancystarEngine::EngineFailReason SaveVectorEnumMemberToJson(const JsonReflectData &reflect_data, Json::Value &root_value);
 	PancystarEngine::EngineFailReason TranslateStringToEnum(const std::string &basic_string, std::string &enum_type, std::string &enum_value_string, int32_t &enum_value_data);
-	//½«±äÁ¿µÄÍêÕûÃû³Æ×ª»¯Îª»ù´¡Ãû³Æ
+	//å°†å˜é‡çš„å®Œæ•´åç§°è½¬åŒ–ä¸ºåŸºç¡€åç§°
 	std::string TranslateFullNameToRealName(const std::string &full_name);
-	//»ñÈ¡Êı×éÊı¾İµÄÕæÊµ´óĞ¡
+	//è·å–æ•°ç»„æ•°æ®çš„çœŸå®å¤§å°
 	PancystarEngine::EngineFailReason GetArrayDataSize(const JsonReflectData &reflect_data,pancy_object_id &size_out);
 protected:
 	template<typename T>
@@ -137,7 +137,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::BindArraySizeValue(
 	}
 	else 
 	{
-		//Î´ÕÒµ½±äÁ¿£¬ÎŞ·¨°ó¶¨
+		//æœªæ‰¾åˆ°å˜é‡ï¼Œæ— æ³•ç»‘å®š
 		PancystarEngine::EngineFailReason error_message(E_FAIL, array_name + " is not an array value, could not bind it's size to other member: ");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::BindArraySizeValue", error_message);
 		return error_message;
@@ -150,7 +150,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetVectorValue(JsonReflectDa
 	std::vector<T1> *now_data_pointer = reinterpret_cast<std::vector<T1>*>(reflect_data.data_pointer);
 	if (now_data_pointer->size() != offset_value)
 	{
-		//Æ«ÒÆÁ¿²»ÕıÈ·£¬²åÈëµÚi¸öÔªËØÒª±£Ö¤ÒÑ¾­ÓĞÁËi¸ö³ÉÔ±
+		//åç§»é‡ä¸æ­£ç¡®ï¼Œæ’å…¥ç¬¬iä¸ªå…ƒç´ è¦ä¿è¯å·²ç»æœ‰äº†iä¸ªæˆå‘˜
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "reflect vector have wrong offset: " + reflect_data.data_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetIntArrayValue", error_message);
 		return error_message;
@@ -168,7 +168,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveArrayValueMemberToJson(c
 		return error_message;
 	}
 	ArrayType *pointer = reinterpret_cast<ArrayType*>(reflect_data.data_pointer);
-	//»ñÈ¡ÕæÊµÊ¹ÓÃµÄÊı×é´óĞ¡
+	//è·å–çœŸå®ä½¿ç”¨çš„æ•°ç»„å¤§å°
 	pancy_object_id array_used_size = 0;
 	auto check_error = GetArrayDataSize(reflect_data, array_used_size);
 	if (!check_error.CheckIfSucceed()) 
@@ -197,7 +197,7 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveVectorValueMemberToJson(
 	}
 	return PancystarEngine::succeed;
 }
-//Ä£°å·´ÉäÀà
+//æ¨¡æ¿åå°„ç±»
 template<typename ReflectDataType>
 class PancyJsonReflectTemplate :public PancyJsonReflect
 {
@@ -364,9 +364,9 @@ public:
 	PancyJsonReflect* GetJsonReflectByArray(const std::string &class_name);
 	PancystarEngine::EngineFailReason GetReflectDataSizeByMember(const std::string &name, pancy_resource_size &size);
 	PancystarEngine::EngineFailReason GetReflectDataSizeByArray(const std::string &name, pancy_resource_size &size);
-	//Í¨¹ıvector»òÕßarrayµÄ·½Ê½¼ì²é½á¹¹ÌåÊÇ·ñ×¢²á
+	//é€šè¿‡vectoræˆ–è€…arrayçš„æ–¹å¼æ£€æŸ¥ç»“æ„ä½“æ˜¯å¦æ³¨å†Œ
 	bool CheckIfStructArrayInit(const std::string &class_name);
-	//Í¨¹ı±äÁ¿µÄ·½Ê½¼ì²é½á¹¹ÌåÊÇ·ñ×¢²á
+	//é€šè¿‡å˜é‡çš„æ–¹å¼æ£€æŸ¥ç»“æ„ä½“æ˜¯å¦æ³¨å†Œ
 	bool CheckIfStructMemberInit(const std::string &class_name);
 	static PancyJsonReflectControl* GetInstance()
 	{

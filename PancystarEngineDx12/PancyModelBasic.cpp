@@ -1,6 +1,6 @@
 #include"PancyModelBasic.h"
 using namespace PancystarEngine;
-//Ä£ĞÍ²¿¼ş
+//æ¨¡å‹éƒ¨ä»¶
 PancyRenderMesh::PancyRenderMesh()
 {
 	model_mesh = NULL;
@@ -12,7 +12,7 @@ PancyRenderMesh::~PancyRenderMesh()
 		delete model_mesh;
 	}
 }
-//Ä£ĞÍÀà
+//æ¨¡å‹ç±»
 PancyBasicModel::PancyBasicModel()
 {
 }
@@ -39,7 +39,7 @@ PancyBasicModel::~PancyBasicModel()
 	}
 	model_resource_list.clear();
 }
-//¹Ç÷À¶¯»­´¦Àíº¯Êı
+//éª¨éª¼åŠ¨ç”»å¤„ç†å‡½æ•°
 PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &filename)
 {
 	instream.open(filename, ios::binary);
@@ -49,13 +49,13 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &fi
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Model From File", error_message);
 		return error_message;
 	}
-	//¶ÁÈ¡Æ«ÒÆ¾ØÕó
+	//è¯»å–åç§»çŸ©é˜µ
 	instream.read(reinterpret_cast<char*>(&bone_num), sizeof(bone_num));
 	instream.read(reinterpret_cast<char*>(offset_matrix_array), bone_num * sizeof(DirectX::XMFLOAT4X4));
-	//ÏÈ¶ÁÈ¡µÚÒ»¸öÈëÕ»·û
+	//å…ˆè¯»å–ç¬¬ä¸€ä¸ªå…¥æ ˆç¬¦
 	char data[11];
 	instream.read(reinterpret_cast<char*>(data), sizeof(data));
-	//µİ¹éÖØ½¨¹Ç÷ÀÊ÷
+	//é€’å½’é‡å»ºéª¨éª¼æ ‘
 	bone_object_num = bone_num;
 	auto check_error = ReadBoneTree(root_id);
 	if (!check_error.CheckIfSucceed())
@@ -63,11 +63,54 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &fi
 		return check_error;
 	}
 	bone_parent_data[root_id] = 0;
-	//¹Ø±ÕÎÄ¼ş
+	//å…³é—­æ–‡ä»¶
 	instream.close();
 	return PancystarEngine::succeed;
 }
-//todo::È¡ÏûÊ¹ÓÃÕâ¸ö½á¹¹
+PancystarEngine::EngineFailReason PancyBasicModel::BuildBoneDataPerFrame(pancy_object_id& bone_block_id, PancystarEngine::SkinAnimationBlock& new_animation_block)
+{
+	D3D12_SHADER_RESOURCE_VIEW_DESC animation_buffer_desc = {};
+	animation_buffer_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	animation_buffer_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+	animation_buffer_desc.Buffer.StructureByteStride = sizeof(DirectX::XMFLOAT4);
+	animation_buffer_desc.Buffer.NumElements = static_cast<UINT>(animation_buffer_size);
+	animation_buffer_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	animation_buffer_desc.Buffer.FirstElement = 0;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC boneoffset_buffer_desc = {};
+	boneoffset_buffer_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	boneoffset_buffer_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+	boneoffset_buffer_desc.Buffer.StructureByteStride = sizeof(DirectX::XMFLOAT4X4);
+	boneoffset_buffer_desc.Buffer.NumElements = static_cast<UINT>(boneoffset_buffer_size);
+	boneoffset_buffer_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	boneoffset_buffer_desc.Buffer.FirstElement = 0;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC bonetree_buffer_desc = {};
+	bonetree_buffer_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	bonetree_buffer_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+	bonetree_buffer_desc.Buffer.StructureByteStride = sizeof(uint32_t);
+	bonetree_buffer_desc.Buffer.NumElements = static_cast<UINT>(bonetree_buffer_size);
+	bonetree_buffer_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	bonetree_buffer_desc.Buffer.FirstElement = 0;
+
+	PancySkinAnimationControl::GetInstance()->BuildBoneBlock(
+		model_animation_buffer, 
+		model_boneoffset_buffer,
+		model_bonetree_buffer,
+		animation_buffer_desc,
+		boneoffset_buffer_desc,
+		bonetree_buffer_desc,
+		animation_resample_size[0],
+		animation_start_offset[0],
+		boneoffset_buffer_size,
+		bonetree_buffer_size,
+		boneoffset_buffer_size,
+		bone_block_id, 
+		new_animation_block
+		);
+	return PancystarEngine::succeed;
+}
+//todo::å–æ¶ˆä½¿ç”¨è¿™ä¸ªç»“æ„
 struct skin_tree
 {
 	char bone_ID[128];
@@ -93,12 +136,12 @@ PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_bui
 	char data[11];
 	skin_tree now_bone_data;
 	instream.read(reinterpret_cast<char*>(&now_bone_data), sizeof(now_bone_data));
-	//¸ù¾İ¶ÁÈ¡µ½µÄ¹Ç÷À½Úµã´´½¨Ò»¸ö¹Ç÷À½á¹¹²¢¸³Óè±àºÅ
+	//æ ¹æ®è¯»å–åˆ°çš„éª¨éª¼èŠ‚ç‚¹åˆ›å»ºä¸€ä¸ªéª¨éª¼ç»“æ„å¹¶èµ‹äºˆç¼–å·
 	bone_struct new_bone;
 	bool if_used_skin = false;;
 	if (now_bone_data.bone_number == NouseBoneStruct)
 	{
-		//µ±Ç°¹Ç÷À²¢Î´ÓÃÓÚÃÉÆ¤ĞÅÏ¢,ÖØĞÂÉú³ÉÒ»¸öIDºÅ
+		//å½“å‰éª¨éª¼å¹¶æœªç”¨äºè’™çš®ä¿¡æ¯,é‡æ–°ç”Ÿæˆä¸€ä¸ªIDå·
 		now_build_id = bone_object_num;
 		bone_object_num += 1;
 	}
@@ -116,9 +159,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_bui
 	instream.read(data, sizeof(data));
 	while (strcmp(data, "*heaphead*") == 0)
 	{
-		//ÈëÕ»·ûºÅ£¬´ú±í×Ó½Úµã
+		//å…¥æ ˆç¬¦å·ï¼Œä»£è¡¨å­èŠ‚ç‚¹
 		int32_t now_son_ID = NouseBoneStruct;
-		//µİ¹é´´½¨×Ó½Úµã
+		//é€’å½’åˆ›å»ºå­èŠ‚ç‚¹
 		auto check_error = ReadBoneTree(now_son_ID);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -128,25 +171,25 @@ PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_bui
 		auto now_data = bone_tree_data.find(now_son_ID);
 		if (now_parent_data == bone_tree_data.end())
 		{
-			//´«ÈëµÄ¸¸½Úµã²»ºÏÀí
+			//ä¼ å…¥çš„çˆ¶èŠ‚ç‚¹ä¸åˆç†
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find Parent bone ID " + std::to_string(now_build_id));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Model Bone Data From File", error_message);
 			return error_message;
 		}
 		else if (now_data == bone_tree_data.end())
 		{
-			//Éú³ÉµÄ×Ó½Úµã²»ºÏÀí
+			//ç”Ÿæˆçš„å­èŠ‚ç‚¹ä¸åˆç†
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find Son Bone ID " + std::to_string(now_son_ID));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Model Bone Data From File", error_message);
 			return error_message;
 		}
 		else
 		{
-			//µ±Ç°½ÚµãµÄĞÖµÜ½Úµã´æ´¢Ö®Ç°¸¸½ÚµãµÄ×Ó½Úµã
+			//å½“å‰èŠ‚ç‚¹çš„å…„å¼ŸèŠ‚ç‚¹å­˜å‚¨ä¹‹å‰çˆ¶èŠ‚ç‚¹çš„å­èŠ‚ç‚¹
 			now_data->second.bone_ID_brother = now_parent_data->second.bone_ID_son;
-			//Ö®Ç°¸¸½ÚµãµÄ×Ó½Úµã±äÎªµ±Ç°½Úµã
+			//ä¹‹å‰çˆ¶èŠ‚ç‚¹çš„å­èŠ‚ç‚¹å˜ä¸ºå½“å‰èŠ‚ç‚¹
 			now_parent_data->second.bone_ID_son = now_son_ID;
-			//¼ÇÂ¼µ±Ç°½ÚµãµÄ¸¸½Úµã
+			//è®°å½•å½“å‰èŠ‚ç‚¹çš„çˆ¶èŠ‚ç‚¹
 			bone_parent_data[now_son_ID] = now_build_id+1;
 			instream.read(data, sizeof(data));
 		}
@@ -251,7 +294,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//ÏÈÅĞ¶ÏÄ£ĞÍÊı¾İÊÇ·ñÖ§³Ö¹Ç÷À¶¯»­
+	//å…ˆåˆ¤æ–­æ¨¡å‹æ•°æ®æ˜¯å¦æ”¯æŒéª¨éª¼åŠ¨ç”»
 	if (!if_skinmesh)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "model: don't have skin mesh message");
@@ -262,7 +305,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 	matrix_animation_save.resize(bone_object_num);
 	for (int i = 0; i < bone_object_num; ++i)
 	{
-		//Ê¹ÓÃµ¥Î»¾ØÕó½«¶¯»­¾ØÕóÇå¿Õ
+		//ä½¿ç”¨å•ä½çŸ©é˜µå°†åŠ¨ç”»çŸ©é˜µæ¸…ç©º
 		DirectX::XMStoreFloat4x4(&matrix_animation_save[i], DirectX::XMMatrixIdentity());
 	}
 	check_error = UpdateAnimData(animation_ID, animation_time, matrix_animation_save);
@@ -274,8 +317,8 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 	DirectX::XMStoreFloat4x4(&matrix_identi, DirectX::XMMatrixIdentity());
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//¿ª±ÙÒ»¸öÁÙÊ±´æ´¢ËùÓĞ¹Ç÷Àµİ¹é½á¹ûµÄ¾ØÕóÊı×é¡£ÓÉÓÚ×îÖÕÊä³öµÄÊı¾İ½ö°ü
-	//º¬ÃÉÆ¤¹Ç÷À£¬Òò¶øĞèÒª¶îÍâµÄ¿Õ¼ä´æ´¢·ÇÃÉÆ¤¹Ç÷ÀµÄÖĞ¼äĞÅÏ¢¡£
+	//å¼€è¾Ÿä¸€ä¸ªä¸´æ—¶å­˜å‚¨æ‰€æœ‰éª¨éª¼é€’å½’ç»“æœçš„çŸ©é˜µæ•°ç»„ã€‚ç”±äºæœ€ç»ˆè¾“å‡ºçš„æ•°æ®ä»…åŒ…
+	//å«è’™çš®éª¨éª¼ï¼Œå› è€Œéœ€è¦é¢å¤–çš„ç©ºé—´å­˜å‚¨éè’™çš®éª¨éª¼çš„ä¸­é—´ä¿¡æ¯ã€‚
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::vector<DirectX::XMFLOAT4X4> matrix_combine_save;
 	matrix_combine_save.resize(bone_object_num);
@@ -286,11 +329,30 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 	std::vector<DirectX::XMFLOAT4X4> matrix_out_save;
 	matrix_out_save.resize(bone_num);
 	bone_final_matrix.resize(bone_num);
+	auto check_matrix0 = XMLoadFloat4x4(&matrix_animation_save[0]);
+	auto check_matrix3 = XMLoadFloat4x4(&matrix_animation_save[3]);
+	auto check_matrix4 = XMLoadFloat4x4(&matrix_animation_save[4]);
+	auto check_matrix20 = XMLoadFloat4x4(&matrix_animation_save[20]);
+
+	auto check_matrix22 = XMLoadFloat4x4(&matrix_animation_save[22]);
+	auto check_matrix11 = XMLoadFloat4x4(&matrix_animation_save[11]);
+	auto check_matrix33 = XMLoadFloat4x4(&matrix_animation_save[33]);
+	auto check_matrix32 = XMLoadFloat4x4(&matrix_animation_save[32]);
+	DirectX::XMFLOAT4X4 mat_line1, mat_line2, mat_line3;
+	XMStoreFloat4x4(&mat_line1, check_matrix0 * check_matrix3);
+	XMStoreFloat4x4(&mat_line2, check_matrix4 * check_matrix20);
+	XMStoreFloat4x4(&mat_line3, check_matrix0 * check_matrix3 * check_matrix4 * check_matrix20);
+
+	DirectX::XMFLOAT4X4 mat_line4, mat_line5, mat_line6;
+
+	XMStoreFloat4x4(&mat_line4, check_matrix22 * check_matrix11);
+	XMStoreFloat4x4(&mat_line5, check_matrix33 * check_matrix32);
+	XMStoreFloat4x4(&mat_line6, check_matrix22 * check_matrix11 * check_matrix33 * check_matrix32);
 	UpdateRoot(root_id, matrix_identi, matrix_animation_save, matrix_combine_save, matrix_out_save);
-	//½«¸üĞÂºóµÄ¶¯»­¾ØÕó×öÆ«ÒÆ
+	//å°†æ›´æ–°åçš„åŠ¨ç”»çŸ©é˜µåšåç§»
 	for (int i = 0; i < bone_num; ++i)
 	{
-		//Ê¹ÓÃµ¥Î»¾ØÕó½«»ìºÏ¾ØÕóÇå¿Õ
+		//ä½¿ç”¨å•ä½çŸ©é˜µå°†æ··åˆçŸ©é˜µæ¸…ç©º
 		DirectX::XMStoreFloat4x4(&bone_final_matrix[i], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&offset_matrix_array[i]) * DirectX::XMLoadFloat4x4(&matrix_out_save[i])));
 	}
 	return PancystarEngine::succeed;
@@ -301,7 +363,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateAnimData(
 	std::vector<DirectX::XMFLOAT4X4> &matrix_out
 )
 {
-	//¸ù¾İ¶¯»­µÄIDºÅ²éÕÒ¶ÔÓ¦µÄ¶¯»­Êı¾İ
+	//æ ¹æ®åŠ¨ç”»çš„IDå·æŸ¥æ‰¾å¯¹åº”çš„åŠ¨ç”»æ•°æ®
 	auto skin_anim_data = skin_animation_map.find(animation_ID);
 	if (skin_anim_data == skin_animation_map.end())
 	{
@@ -319,7 +381,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateAnimData(
 
 		int start_anim, end_anim;
 		FindAnimStEd(input_time, start_anim, end_anim, now.rotation_key);
-		//ËÄÔªÊı²åÖµ²¢Ñ°ÕÒ±ä»»¾ØÕó
+		//å››å…ƒæ•°æ’å€¼å¹¶å¯»æ‰¾å˜æ¢çŸ©é˜µ
 		quaternion_animation rotation_now;
 		if (start_anim == end_anim || end_anim >= now.rotation_key.size())
 		{
@@ -330,7 +392,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateAnimData(
 			Interpolate(rotation_now, now.rotation_key[start_anim], now.rotation_key[end_anim], (input_time - now.rotation_key[start_anim].time) / (now.rotation_key[end_anim].time - now.rotation_key[start_anim].time));
 		}
 		GetQuatMatrix(rec_rot, rotation_now);
-		//Ëõ·Å±ä»»
+		//ç¼©æ”¾å˜æ¢
 		FindAnimStEd(input_time, start_anim, end_anim, now.scaling_key);
 		vector_animation scalling_now;
 		if (start_anim == end_anim)
@@ -342,7 +404,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateAnimData(
 			Interpolate(scalling_now, now.scaling_key[start_anim], now.scaling_key[end_anim], (input_time - now.scaling_key[start_anim].time) / (now.scaling_key[end_anim].time - now.scaling_key[start_anim].time));
 		}
 		rec_scal = DirectX::XMMatrixScaling(scalling_now.main_key[0], scalling_now.main_key[1], scalling_now.main_key[2]);
-		//Æ½ÒÆ±ä»»
+		//å¹³ç§»å˜æ¢
 		FindAnimStEd(input_time, start_anim, end_anim, now.translation_key);
 		vector_animation translation_now;
 		if (start_anim == end_anim)
@@ -354,7 +416,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateAnimData(
 			Interpolate(translation_now, now.translation_key[start_anim], now.translation_key[end_anim], (input_time - now.translation_key[start_anim].time) / (now.translation_key[end_anim].time - now.translation_key[start_anim].time));
 		}
 		rec_trans = DirectX::XMMatrixTranslation(translation_now.main_key[0], translation_now.main_key[1], translation_now.main_key[2]);
-		//¼ì²âµ±Ç°¶¯»­½Úµã¶ÔÓ¦µÄ¹Ç÷ÀÊı¾İÊÇ·ñ»¹Õı³£
+		//æ£€æµ‹å½“å‰åŠ¨ç”»èŠ‚ç‚¹å¯¹åº”çš„éª¨éª¼æ•°æ®æ˜¯å¦è¿˜æ­£å¸¸
 		auto bone_data = bone_tree_data.find(now.bone_ID);
 		if (bone_data == bone_tree_data.end())
 		{
@@ -375,7 +437,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateRoot(
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//²éÕÒµ±Ç°µÄ¸¸½ÚµãÊÇ·ñ´æÔÚ
+	//æŸ¥æ‰¾å½“å‰çš„çˆ¶èŠ‚ç‚¹æ˜¯å¦å­˜åœ¨
 	auto now_root_bone_data = bone_tree_data.find(root_id);
 	if (now_root_bone_data == bone_tree_data.end())
 	{
@@ -383,15 +445,15 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateRoot(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Bone tree", error_message);
 		return error_message;
 	}
-	//»ñÈ¡µ±Ç°¹Ç÷ÀµÄ¶¯»­¾ØÕó
+	//è·å–å½“å‰éª¨éª¼çš„åŠ¨ç”»çŸ©é˜µ
 	DirectX::XMMATRIX rec = DirectX::XMLoadFloat4x4(&matrix_animation[root_id]);
 	DirectX::XMStoreFloat4x4(&matrix_combine_save[root_id], rec * DirectX::XMLoadFloat4x4(&matrix_parent));
-	//¶ÔÓÚÃÉÆ¤ĞèÒªµÄ¹Ç÷À£¬½«Æäµ¼³ö
+	//å¯¹äºè’™çš®éœ€è¦çš„éª¨éª¼ï¼Œå°†å…¶å¯¼å‡º
 	if (now_root_bone_data->second.if_used_for_skin)
 	{
 		matrix_out[root_id] = matrix_combine_save[root_id];
 	}
-	//¸üĞÂĞÖµÜ½Úµã¼°×Ó½Úµã
+	//æ›´æ–°å…„å¼ŸèŠ‚ç‚¹åŠå­èŠ‚ç‚¹
 	if (now_root_bone_data->second.bone_ID_brother != NouseBoneStruct)
 	{
 		check_error = UpdateRoot(now_root_bone_data->second.bone_ID_brother, matrix_parent, matrix_animation, matrix_combine_save, matrix_out);
@@ -451,7 +513,7 @@ pancy_object_id PancyBasicModel::FindParentByLayer(
 	}
 	return now_parent_id;
 }
-//×ÊÔ´¼ÓÔØ
+//èµ„æºåŠ è½½
 PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Value &root_value, const std::string &resource_name)
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -460,21 +522,21 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 	std::string tile_name = "";
 	DivideFilePath(resource_name, path_name, file_name, tile_name);
 	pancy_json_value rec_value;
-	//ÊÇ·ñ°üº¬¹Ç÷À¶¯»­
+	//æ˜¯å¦åŒ…å«éª¨éª¼åŠ¨ç”»
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "IfHaveSkinAnimation", pancy_json_data_type::json_data_bool, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	if_skinmesh = rec_value.bool_value;
-	//ÊÇ·ñ°üº¬¶¥µã¶¯»­
+	//æ˜¯å¦åŒ…å«é¡¶ç‚¹åŠ¨ç”»
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "IfHavePoinAnimation", pancy_json_data_type::json_data_bool, rec_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	if_pointmesh = rec_value.bool_value;
-	//¶ÁÈ¡Ä£ĞÍµÄÍø¸ñÊı¾İ
+	//è¯»å–æ¨¡å‹çš„ç½‘æ ¼æ•°æ®
 	int32_t model_part_num;
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "model_num", pancy_json_data_type::json_data_int, rec_value);
 	if (!check_error.CheckIfSucceed())
@@ -511,17 +573,17 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 			}
 		}
 	}
-	//¶ÁÈ¡¹Ç÷À¶¯»­
+	//è¯»å–éª¨éª¼åŠ¨ç”»
 	if (if_skinmesh)
 	{
 		std::string bone_data_name = path_name + file_name + ".bone";
-		//¶ÁÈ¡¹Ç÷ÀĞÅÏ¢
+		//è¯»å–éª¨éª¼ä¿¡æ¯
 		check_error = LoadSkinTree(bone_data_name);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//¶ÁÈ¡¶¯»­ĞÅÏ¢
+		//è¯»å–åŠ¨ç”»ä¿¡æ¯
 		Json::Value skin_animation_value = root_value.get("SkinAnimation", Json::Value::null);
 		for (Json::ArrayIndex i = 0; i < skin_animation_value.size(); ++i)
 		{
@@ -541,7 +603,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 			for (int l = 0; l < animation_bone_num; ++l)
 			{
 				animation_data new_bone_data;
-				//¹Ç÷ÀĞÅÏ¢
+				//éª¨éª¼ä¿¡æ¯
 				int32_t bone_name_size = -1;
 				instream.read(reinterpret_cast<char*>(&bone_name_size), sizeof(bone_name_size));
 				char *name = new char[bone_name_size];
@@ -556,7 +618,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 				}
 				new_bone_data.bone_ID = now_used_bone_ID->second;
 				delete[] name;
-				//Ğı×ªÏòÁ¿
+				//æ—‹è½¬å‘é‡
 				int32_t rotation_key_num = 0;
 				instream.read(reinterpret_cast<char*>(&rotation_key_num), sizeof(rotation_key_num));
 				quaternion_animation *new_rotation_key = new quaternion_animation[rotation_key_num];
@@ -567,7 +629,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 				{
 					new_bone_data.rotation_key.push_back(new_rotation_key[j]);
 				}
-				//Æ½ÒÆÏòÁ¿
+				//å¹³ç§»å‘é‡
 				int32_t translation_key_num = 0;
 				instream.read(reinterpret_cast<char*>(&translation_key_num), sizeof(translation_key_num));
 				vector_animation *new_translation_key = new vector_animation[translation_key_num];
@@ -578,7 +640,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 					new_bone_data.translation_key.push_back(new_translation_key[j]);
 				}
 
-				//Ëõ·ÅÏòÁ¿
+				//ç¼©æ”¾å‘é‡
 				int32_t scaling_key_num = 0;
 				instream.read(reinterpret_cast<char*>(&scaling_key_num), sizeof(scaling_key_num));
 				vector_animation *new_scaling_key = new vector_animation[scaling_key_num];
@@ -589,31 +651,62 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 					new_bone_data.scaling_key.push_back(new_scaling_key[j]);
 				}
 				new_animation.data_animition.push_back(new_bone_data);
-				//É¾³ıÁÙÊ±±äÁ¿
+				//åˆ é™¤ä¸´æ—¶å˜é‡
 				delete[] new_rotation_key;
 				delete[] new_translation_key;
 				delete[] new_scaling_key;
 			}
-			//½«¶¯»­ĞÅÏ¢¼ÓÈë±íµ¥
+			//å°†åŠ¨ç”»ä¿¡æ¯åŠ å…¥è¡¨å•
 			skin_animation_name.insert(std::pair<std::string, pancy_resource_id>(now_animation_name, i));
 			skin_animation_map.insert(std::pair<pancy_resource_id, animation_set>(i, new_animation));
 			instream.close();
 		}
-		//½«ËùÓĞµÄ¶¯»­Êı¾İ×éÖ¯³ÉÒ»¸öÍ³Ò»µÄbuffer
+		//å°†æ‰€æœ‰çš„åŠ¨ç”»æ•°æ®ç»„ç»‡æˆä¸€ä¸ªç»Ÿä¸€çš„buffer
 		std::vector<AnimationNodeData> animation_buffer_data;
 		for (auto& skin_anim_data : skin_animation_map)
 		{
 			int32_t max_resample_data = 0;
+			AnimationNodeData identity_animation_data;
+			identity_animation_data.rotation_key.x = 0;
+			identity_animation_data.rotation_key.y = 0;
+			identity_animation_data.rotation_key.z = 0;
+			identity_animation_data.rotation_key.w = 1;
+			identity_animation_data.scaling_key.x = 1;
+			identity_animation_data.scaling_key.y = 1;
+			identity_animation_data.scaling_key.z = 1;
+			identity_animation_data.scaling_key.w = 0;
+			identity_animation_data.translation_key.x = 0;
+			identity_animation_data.translation_key.y = 0;
+			identity_animation_data.translation_key.z = 0;
+			identity_animation_data.translation_key.w = 0;
+			pancy_object_id now_animation_begin = static_cast<pancy_object_id>(animation_buffer_data.size());
+			animation_start_offset.push_back(now_animation_begin * 3);
 			for (auto each_bone_data_anim : skin_anim_data.second.data_animition)
 			{
+				if (static_cast<int32_t>(each_bone_data_anim.rotation_key.size()) > max_resample_data)
+				{
+					max_resample_data = static_cast<int32_t>(each_bone_data_anim.rotation_key.size());
+				}
+			}
+			for (int32_t bone_id_use = 0; bone_id_use < static_cast<int32_t>(GetBoneNum()+1); ++bone_id_use)
+			{
+				for (int32_t sample_id_use = 0; sample_id_use < max_resample_data; ++sample_id_use)
+				{
+					animation_buffer_data.push_back(identity_animation_data);
+				}
+			}
+
+			for (auto each_bone_data_anim : skin_anim_data.second.data_animition)
+			{
+				pancy_object_id now_bone_id = each_bone_data_anim.bone_ID;
+				pancy_object_id now_begin_id = now_animation_begin + (now_bone_id + 1) * max_resample_data;
 				if (each_bone_data_anim.translation_key.size() == each_bone_data_anim.rotation_key.size() && each_bone_data_anim.rotation_key.size() == each_bone_data_anim.scaling_key.size())
 				{
 					if (max_resample_data == 0 || max_resample_data == each_bone_data_anim.translation_key.size())
 					{
-						max_resample_data = static_cast<int32_t>(each_bone_data_anim.translation_key.size());
 						for (int32_t key_index = 0; key_index < max_resample_data; ++key_index)
 						{
-							AnimationNodeData new_animation_data;
+							AnimationNodeData &new_animation_data = animation_buffer_data[now_begin_id + key_index];
 							new_animation_data.translation_key.x = each_bone_data_anim.translation_key[key_index].main_key[0];
 							new_animation_data.translation_key.y = each_bone_data_anim.translation_key[key_index].main_key[1];
 							new_animation_data.translation_key.z = each_bone_data_anim.translation_key[key_index].main_key[2];
@@ -626,17 +719,16 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 							new_animation_data.scaling_key.x = each_bone_data_anim.scaling_key[key_index].main_key[0];
 							new_animation_data.scaling_key.y = each_bone_data_anim.scaling_key[key_index].main_key[1];
 							new_animation_data.scaling_key.z = each_bone_data_anim.scaling_key[key_index].main_key[2];
-							animation_buffer_data.push_back(new_animation_data);
 						}
 					}
 					else
 					{
-						//todo:ÆäÖĞÒ»¸ö¹Ç÷ÀµÄ²ÉÑùÂÊºÍÆäËû¹Ç÷À²»Ò»Ñù
+						//todo:å…¶ä¸­ä¸€ä¸ªéª¨éª¼çš„é‡‡æ ·ç‡å’Œå…¶ä»–éª¨éª¼ä¸ä¸€æ ·
 						if (each_bone_data_anim.translation_key.size() == 1)
 						{
 							for (int32_t key_index = 0; key_index < max_resample_data; ++key_index)
 							{
-								AnimationNodeData new_animation_data;
+								AnimationNodeData& new_animation_data = animation_buffer_data[now_begin_id + key_index];
 								new_animation_data.translation_key.x = each_bone_data_anim.translation_key[0].main_key[0];
 								new_animation_data.translation_key.y = each_bone_data_anim.translation_key[0].main_key[1];
 								new_animation_data.translation_key.z = each_bone_data_anim.translation_key[0].main_key[2];
@@ -649,7 +741,6 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 								new_animation_data.scaling_key.x = each_bone_data_anim.scaling_key[0].main_key[0];
 								new_animation_data.scaling_key.y = each_bone_data_anim.scaling_key[0].main_key[1];
 								new_animation_data.scaling_key.z = each_bone_data_anim.scaling_key[0].main_key[2];
-								animation_buffer_data.push_back(new_animation_data);
 							}
 						}
 						else
@@ -672,7 +763,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 					}
 					for (int32_t key_index = 0; key_index < max_resample_data; ++key_index)
 					{
-						AnimationNodeData new_animation_data;
+						AnimationNodeData& new_animation_data = animation_buffer_data[now_begin_id + key_index];
 						if (each_bone_data_anim.translation_key.size() == now_resample)
 						{
 							new_animation_data.translation_key.x = each_bone_data_anim.translation_key[key_index].main_key[0];
@@ -731,19 +822,20 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 							PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
 							return error_message;
 						}
-						animation_buffer_data.push_back(new_animation_data);
 					}
 				}
 			}
+			animation_resample_size.push_back(max_resample_data);
 		}
-		//´´½¨´æ´¢¶¯»­Êı¾İµÄ»º³åÇø×ÊÔ´(¾²Ì¬»º³åÇø)
+		//åˆ›å»ºå­˜å‚¨åŠ¨ç”»æ•°æ®çš„ç¼“å†²åŒºèµ„æº(é™æ€ç¼“å†²åŒº)
 		auto real_buffer_size = animation_buffer_data.size() * sizeof(AnimationNodeData);
+		animation_buffer_size = 3 * animation_buffer_data.size();
 		check_error = BuildBufferResourceFromMemory(file_name+"_animation", model_animation_buffer, &animation_buffer_data[0], real_buffer_size, true);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//´´½¨¹Ç÷ÀÊı¾İµÄ¸¸½Úµã»º³åÇø×ÊÔ´£¨×¢ÒâÕâÀïĞèÒªÌí¼ÓÁ½¸ö¶îÍâµÄ¹Ç÷À¼´Í·¹Ç÷ÀÓëÎ²¹Ç÷À¡£ÕâÑù»á·½±ãComputeshader½øĞĞ²¢ĞĞ´¦Àí£©
+		//åˆ›å»ºéª¨éª¼æ•°æ®çš„çˆ¶èŠ‚ç‚¹ç¼“å†²åŒºèµ„æºï¼ˆæ³¨æ„è¿™é‡Œéœ€è¦æ·»åŠ ä¸¤ä¸ªé¢å¤–çš„éª¨éª¼å³å¤´éª¨éª¼ä¸å°¾éª¨éª¼ã€‚è¿™æ ·ä¼šæ–¹ä¾¿Computeshaderè¿›è¡Œå¹¶è¡Œå¤„ç†ï¼‰
 		std::vector<uint32_t> bone_node_parent_data;
 		bone_node_parent_data.resize(bone_parent_data.size()+2);
 		for (auto now_bone_node : bone_parent_data) 
@@ -762,14 +854,15 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 				bone_node_parent_multilayer_data[globle_index] = FindParentByLayer(now_node_index, now_index_search, bone_node_parent_data);
 			}
 		}
-		//´´½¨´æ´¢¸¸¹Ç÷ÀÊı¾İµÄ»º³åÇø×ÊÔ´(¾²Ì¬»º³åÇø)
+		//åˆ›å»ºå­˜å‚¨çˆ¶éª¨éª¼æ•°æ®çš„ç¼“å†²åŒºèµ„æº(é™æ€ç¼“å†²åŒº)
 		auto real_parent_buffer_size = bone_node_parent_multilayer_data.size() * sizeof(uint32_t);
+		bonetree_buffer_size = bone_node_parent_multilayer_data.size();
 		check_error = BuildBufferResourceFromMemory(file_name + "_boneparent", model_bonetree_buffer, &bone_node_parent_multilayer_data[0], real_parent_buffer_size, true);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//´´½¨Æ«ÒÆ¾ØÕó»º³åÇø×ÊÔ´(Í¬ÑùĞèÒªÍ·¹Ç÷ÀÓëÎ²¹Ç÷À)
+		//åˆ›å»ºåç§»çŸ©é˜µç¼“å†²åŒºèµ„æº(åŒæ ·éœ€è¦å¤´éª¨éª¼ä¸å°¾éª¨éª¼)
 		std::vector<DirectX::XMFLOAT4X4> bone_offset_mat_data;
 		DirectX::XMFLOAT4X4 identity_mat;
 		DirectX::XMStoreFloat4x4(&identity_mat,DirectX::XMMatrixIdentity());
@@ -783,8 +876,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		{
 			bone_offset_mat_data[bone_id+1] = offset_matrix_array[bone_id];
 		}
-		//´´½¨´æ´¢Æ«ÒÆ¾ØÕóÊı¾İµÄ»º³åÇø×ÊÔ´(¾²Ì¬»º³åÇø)
+		//åˆ›å»ºå­˜å‚¨åç§»çŸ©é˜µæ•°æ®çš„ç¼“å†²åŒºèµ„æº(é™æ€ç¼“å†²åŒº)
 		auto real_offset_buffer_size = bone_offset_mat_data.size() * sizeof(DirectX::XMFLOAT4X4);
+		boneoffset_buffer_size = bone_offset_mat_data.size();
 		check_error = BuildBufferResourceFromMemory(file_name + "_boneoffset", model_boneoffset_buffer, &bone_offset_mat_data[0], real_offset_buffer_size, true);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -794,7 +888,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 	}
 	
 	
-	//¶ÁÈ¡¶¥µã¶¯»­
+	//è¯»å–é¡¶ç‚¹åŠ¨ç”»
 	/*
 	if (if_pointmesh)
 	{
@@ -861,7 +955,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 }
 bool PancyBasicModel::CheckIfLoadSucceed()
 {
-	//¼ì²âËùÓĞµÄ¼¸ºÎÌå×ÊÔ´ÊÇ·ñÒÑ¾­¼ÓÔØÍê±Ï
+	//æ£€æµ‹æ‰€æœ‰çš„å‡ ä½•ä½“èµ„æºæ˜¯å¦å·²ç»åŠ è½½å®Œæ¯•
 	for (int i = 0; i < model_resource_list.size(); ++i)
 	{
 		bool if_mesh_succeed_load = model_resource_list[i]->CheckIfLoadSucceed();

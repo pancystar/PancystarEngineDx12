@@ -49,7 +49,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferFloat4(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer float4", error_message);
 		return error_message;
 	}
-	//Ğ´²Ù×÷×÷ÓÃÔÚ¸ôÒ»Ö¡µÄ»º³åÇø
+	//å†™æ“ä½œä½œç”¨åœ¨éš”ä¸€å¸§çš„ç¼“å†²åŒº
 	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
 	check_error = cbuffer_data->second[now_frame_id]->SetFloat4(variable_name, data_in, offset);
 	if (!check_error.CheckIfSucceed())
@@ -73,7 +73,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferUint4(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer uint4", error_message);
 		return error_message;
 	}
-	//Ğ´²Ù×÷×÷ÓÃÔÚ¸ôÒ»Ö¡µÄ»º³åÇø
+	//å†™æ“ä½œä½œç”¨åœ¨éš”ä¸€å¸§çš„ç¼“å†²åŒº
 	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
 	check_error = cbuffer_data->second[now_frame_id]->SetUint4(variable_name, data_in, offset);
 	if (!check_error.CheckIfSucceed())
@@ -98,7 +98,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferStructData(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer struct", error_message);
 		return error_message;
 	}
-	//Ğ´²Ù×÷×÷ÓÃÔÚ¸ôÒ»Ö¡µÄ»º³åÇø
+	//å†™æ“ä½œä½œç”¨åœ¨éš”ä¸€å¸§çš„ç¼“å†²åŒº
 	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
 	check_error = cbuffer_data->second[now_frame_id]->SetStruct(variable_name, data_in, data_size, offset);
 	if (!check_error.CheckIfSucceed())
@@ -128,13 +128,13 @@ BasicRenderParam::BasicRenderParam()
 }
 BasicRenderParam::~BasicRenderParam()
 {
-	//todo:É¾³ıË½ÓĞÃèÊö·û
+	//todo:åˆ é™¤ç§æœ‰æè¿°ç¬¦
 	/*
 	for (auto release_data = globel_constant_buffer.begin(); release_data != globel_constant_buffer.end(); ++release_data)
 	{
 		PancyDescriptorHeapControl::GetInstance()->DeleteDescriptorHeap();
 	}*/
-	//É¾³ıcbuffer×ÊÔ´
+	//åˆ é™¤cbufferèµ„æº
 	for (auto release_data = per_object_cbuffer.begin(); release_data != per_object_cbuffer.end(); ++release_data)
 	{
 		for (int i = 0; i < release_data->second.size(); ++i)
@@ -153,7 +153,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_object_id PSO_id_need;
-	//PSOÊı¾İ
+	//PSOæ•°æ®
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id_need);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -164,19 +164,19 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 	{
 		return check_error;
 	}
-	//rootsignatureÊı¾İ
+	//rootsignatureæ•°æ®
 	check_error = PancyEffectGraphic::GetInstance()->GetRootSignatureResource(PSO_id_need, &rootsignature);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//ÃèÊö·û¶ÑÊı¾İ
+	//æè¿°ç¬¦å †æ•°æ®
 	check_error = PancyDescriptorHeapControl::GetInstance()->GetBasicDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, &descriptor_heap_use);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//»ñÈ¡ËùÓĞµÄÈ«¾Ö°ó¶¨CbufferĞÅÏ¢
+	//è·å–æ‰€æœ‰çš„å…¨å±€ç»‘å®šCbufferä¿¡æ¯
 	const std::vector<PancyDescriptorPSODescription> *globel_cbuffer_desc;
 	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::CbufferGlobel, globel_cbuffer_desc);
 	if (!check_error.CheckIfSucceed())
@@ -194,10 +194,10 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 			return check_error;
 		}
 		globel_constant_buffer.insert(std::pair<std::string, BindDescriptorPointer>(cbuffer_name, now_cbuffer_descriptor));
-		//ÎªÈ«¾Ö³£Á¿»º³åÇøÃèÊö·û¼ÇÂ¼ÆäslotµØÖ·
+		//ä¸ºå…¨å±€å¸¸é‡ç¼“å†²åŒºæè¿°ç¬¦è®°å½•å…¶slotåœ°å€
 		globel_constant_buffer_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(cbuffer_name, now_bind_id));
 	}
-	//¿ªÊ¼×¢²áËùÓĞµÄË½ÓĞ³£Á¿»º³åÇø
+	//å¼€å§‹æ³¨å†Œæ‰€æœ‰çš„ç§æœ‰å¸¸é‡ç¼“å†²åŒº
 	const std::vector<PancyDescriptorPSODescription> *private_cbuffer_desc;
 	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::CbufferPrivate, private_cbuffer_desc);
 	if (!check_error.CheckIfSucceed())
@@ -208,7 +208,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 	{
 		const std::string &cbuffer_name = (*private_cbuffer_desc)[i].descriptor_name;
 		const pancy_object_id &now_bind_id = (*private_cbuffer_desc)[i].rootsignature_slot;
-		//Ê×ÏÈÎªËùÓĞµÄË½ÓĞcbuffer¿ª±Ù¿Õ¼ä
+		//é¦–å…ˆä¸ºæ‰€æœ‰çš„ç§æœ‰cbufferå¼€è¾Ÿç©ºé—´
 		std::vector<PancyConstantBuffer*> cbuffer_double_list;
 		for (UINT i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
 		{
@@ -225,7 +225,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 			cbuffer_double_list.push_back(new_cbuffer);
 		}
 		per_object_cbuffer.insert(std::pair<std::string, std::vector<PancyConstantBuffer*>>(cbuffer_name, cbuffer_double_list));
-		//È»ºóÎªË½ÓĞµÄcbuffer´´½¨ÃèÊö·û
+		//ç„¶åä¸ºç§æœ‰çš„cbufferåˆ›å»ºæè¿°ç¬¦
 		std::vector<BasicDescriptorDesc> descriptor_desc_list;
 		std::vector<VirtualResourcePointer> cbuffer_memory_data;
 		for (UINT i = 0; i < PancyDx12DeviceBasic::GetInstance()->GetFrameNum(); ++i)
@@ -246,10 +246,10 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 			return check_error;
 		}
 		private_constant_buffer.insert(std::pair<std::string, BindDescriptorPointer>(cbuffer_name, now_cbuffer_descriptor));
-		//ÎªË½ÓĞ³£Á¿»º³åÇøÃèÊö·û¼ÇÂ¼ÆäslotµØÖ·
+		//ä¸ºç§æœ‰å¸¸é‡ç¼“å†²åŒºæè¿°ç¬¦è®°å½•å…¶slotåœ°å€
 		private_constant_buffer_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(cbuffer_name, now_bind_id));
 	}
-	//»ñÈ¡ËùÓĞµÄÈ«¾Ö°ó¶¨ShaderResourceĞÅÏ¢
+	//è·å–æ‰€æœ‰çš„å…¨å±€ç»‘å®šShaderResourceä¿¡æ¯
 	const std::vector<PancyDescriptorPSODescription> *globel_shader_resource_desc;
 	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::SRVGlobel, globel_shader_resource_desc);
 	if (!check_error.CheckIfSucceed())
@@ -267,17 +267,17 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 			return check_error;
 		}
 		globel_shader_resource.insert(std::pair<std::string, BindDescriptorPointer>(shader_resource_name, now_shader_resource_descriptor));
-		//ÎªÈ«¾Öresource viewÃèÊö·û¼ÇÂ¼ÆäslotµØÖ·
+		//ä¸ºå…¨å±€resource viewæè¿°ç¬¦è®°å½•å…¶slotåœ°å€
 		globel_shader_resource_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(shader_resource_name, now_shader_resource_bind_id));
 	}
-	//¿½±´ËùÓĞµÄ°ó¶¨ÃèÊö·û
+	//æ‹·è´æ‰€æœ‰çš„ç»‘å®šæè¿°ç¬¦
 	const std::vector<PancyDescriptorPSODescription> *bind_shader_resource_desc;
 	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::SRVPrivate, bind_shader_resource_desc);
 	for (int i = 0; i < bind_shader_resource_desc->size(); ++i)
 	{
 		const std::string &shader_resource_name = (*bind_shader_resource_desc)[i].descriptor_name;
 		const pancy_object_id &now_shader_resource_bind_id = (*bind_shader_resource_desc)[i].rootsignature_slot;
-		//ÔÚÊäÈëµÄÃèÊö·ûÊı¾İÀï²éÕÒµ±Ç°slotËùĞèÒªµÄÃèÊö·û
+		//åœ¨è¾“å…¥çš„æè¿°ç¬¦æ•°æ®é‡ŒæŸ¥æ‰¾å½“å‰slotæ‰€éœ€è¦çš„æè¿°ç¬¦
 		auto check_if_have_resource = bind_shader_resource_in.find(shader_resource_name);
 		if (check_if_have_resource == bind_shader_resource_in.end())
 		{
@@ -286,17 +286,17 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 			return error_message;
 		}
 		bind_shader_resource.insert(std::pair<std::string, BindDescriptorPointer>(check_if_have_resource->first, check_if_have_resource->second));
-		//ÎªË½ÓĞ°ó¶¨ÃèÊö·û¼ÇÂ¼ÆäslotµØÖ·
+		//ä¸ºç§æœ‰ç»‘å®šæè¿°ç¬¦è®°å½•å…¶slotåœ°å€
 		bind_shader_resource_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(shader_resource_name, now_shader_resource_bind_id));
 	}
-	//¿½±´ËùÓĞµÄbindlessÃèÊö·û
+	//æ‹·è´æ‰€æœ‰çš„bindlessæè¿°ç¬¦
 	const std::vector<PancyDescriptorPSODescription> *bindless_shader_resource_desc;
 	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::SRVBindless, bindless_shader_resource_desc);
 	for (int i = 0; i < bindless_shader_resource_desc->size(); ++i)
 	{
 		const std::string &shader_resource_name = (*bindless_shader_resource_desc)[i].descriptor_name;
 		const pancy_object_id &now_shader_resource_bind_id = (*bindless_shader_resource_desc)[i].rootsignature_slot;
-		//ÔÚÊäÈëµÄÃèÊö·ûÊı¾İÀï²éÕÒµ±Ç°slotËùĞèÒªµÄÃèÊö·û
+		//åœ¨è¾“å…¥çš„æè¿°ç¬¦æ•°æ®é‡ŒæŸ¥æ‰¾å½“å‰slotæ‰€éœ€è¦çš„æè¿°ç¬¦
 		auto check_if_have_resource = bindless_shader_resource_in.find(shader_resource_name);
 		if (check_if_have_resource == bindless_shader_resource_in.end())
 		{
@@ -305,7 +305,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 			return error_message;
 		}
 		bindless_shader_resource.insert(std::pair<std::string, BindlessDescriptorPointer>(check_if_have_resource->first, check_if_have_resource->second));
-		//ÎªË½ÓĞ°ó¶¨ÃèÊö·û¼ÇÂ¼ÆäslotµØÖ·
+		//ä¸ºç§æœ‰ç»‘å®šæè¿°ç¬¦è®°å½•å…¶slotåœ°å€
 		bindless_shader_resource_root_signature_offset.insert(std::pair<std::string, pancy_object_id>(shader_resource_name, now_shader_resource_bind_id));
 	}
 	return PancystarEngine::succeed;
@@ -313,7 +313,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 PancystarEngine::EngineFailReason BasicRenderParam::AddToCommandList(PancyRenderCommandList *m_commandList, const D3D12_COMMAND_LIST_TYPE &render_param_type)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//ÉèÖÃrootsignature
+	//è®¾ç½®rootsignature
 	switch (render_param_type)
 	{
 	case D3D12_COMMAND_LIST_TYPE_DIRECT:
@@ -328,9 +328,9 @@ PancystarEngine::EngineFailReason BasicRenderParam::AddToCommandList(PancyRender
 		return error_message;
 		break;
 	}
-	//ÉèÖÃÃèÊö·û¶Ñ(SrvUavCbv)
+	//è®¾ç½®æè¿°ç¬¦å †(SrvUavCbv)
 	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &descriptor_heap_use);
-	//°ó¶¨ÆÕÍ¨µÄÃèÊö·û¶ÑµÄÊı¾İ(todo:ÏÈ°´ÕÕ×Ö·û´®½øĞĞ°ó¶¨£¬Ö®ºóÔÙÓÅ»¯)
+	//ç»‘å®šæ™®é€šçš„æè¿°ç¬¦å †çš„æ•°æ®(todo:å…ˆæŒ‰ç…§å­—ç¬¦ä¸²è¿›è¡Œç»‘å®šï¼Œä¹‹åå†ä¼˜åŒ–)
 	check_error = BindDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeConstantBufferView, globel_constant_buffer, globel_constant_buffer_root_signature_offset, render_param_type, m_commandList);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -351,7 +351,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::AddToCommandList(PancyRender
 	{
 		return PancystarEngine::succeed;
 	}
-	//°ó¶¨½â°ó¶¥µÄÃèÊö·û¶ÑµÄÊı¾İ
+	//ç»‘å®šè§£ç»‘é¡¶çš„æè¿°ç¬¦å †çš„æ•°æ®
 	check_error = BindBindlessDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeShaderResourceView, bindless_shader_resource, bindless_shader_resource_root_signature_offset, render_param_type, m_commandList);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -445,7 +445,7 @@ PancystarEngine::EngineFailReason RenderParamSystem::GetCommonRenderParam(
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_object_id PSO_id_need;
-	//PSOÊı¾İ
+	//PSOæ•°æ®
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id_need);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -453,7 +453,7 @@ PancystarEngine::EngineFailReason RenderParamSystem::GetCommonRenderParam(
 	}
 	if (render_param_id_self_add.find(PSO_id_need) == render_param_id_self_add.end())
 	{
-		//¶ÔÓ¦psoµÄäÖÈ¾µ¥Ôª´æ´¢ÇøÉĞÎ´¿ª±Ù£¬ÏÈÎªÆä¿ª±ÙäÖÈ¾µ¥Ôª´æ´¢Çø
+		//å¯¹åº”psoçš„æ¸²æŸ“å•å…ƒå­˜å‚¨åŒºå°šæœªå¼€è¾Ÿï¼Œå…ˆä¸ºå…¶å¼€è¾Ÿæ¸²æŸ“å•å…ƒå­˜å‚¨åŒº
 		render_param_id_self_add[PSO_id_need] = 0;
 		render_param_id_reuse_table.insert(std::pair<pancy_object_id, std::queue<pancy_object_id>>(PSO_id_need, std::queue<pancy_object_id>()));
 		render_param_table.insert(std::pair<pancy_object_id, std::unordered_map<pancy_object_id, BasicRenderParam*>>(PSO_id_need, std::unordered_map<pancy_object_id, BasicRenderParam*>()));
@@ -461,7 +461,7 @@ PancystarEngine::EngineFailReason RenderParamSystem::GetCommonRenderParam(
 	render_param_id.PSO_id = PSO_id_need;
 	auto now_used_render_param_table = render_param_table.find(PSO_id_need);
 	
-	//Î´·¢ÏÖäÖÈ¾µ¥ÔªµÄÄ£°åÊı¾İ£¬ĞÂ´´½¨Ò»¸öäÖÈ¾µ¥Ôª
+	//æœªå‘ç°æ¸²æŸ“å•å…ƒçš„æ¨¡æ¿æ•°æ®ï¼Œæ–°åˆ›å»ºä¸€ä¸ªæ¸²æŸ“å•å…ƒ
 	BasicRenderParam *new_render_param = new BasicRenderParam();
 	check_error = new_render_param->CommonCreate(PSO_name, bind_shader_resource_in, bindless_shader_resource_in);
 	if (!check_error.CheckIfSucceed())

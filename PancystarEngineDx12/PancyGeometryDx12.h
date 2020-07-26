@@ -7,71 +7,71 @@
 #define IndexType uint32_t
 namespace PancystarEngine
 {
-	//´¿¶¥µã¸ñÊ½(ÓÃÓÚÍø¸ñÏÔÊ¾)
+	//çº¯é¡¶ç‚¹æ ¼å¼(ç”¨äºç½‘æ ¼æ˜¾ç¤º)
 	struct PointPositionSingle
 	{
 		DirectX::XMFLOAT4 position;
 	};
-	//2D¶¥µã¸ñÊ½
+	//2Dé¡¶ç‚¹æ ¼å¼
 	struct Point2D
 	{
 		DirectX::XMFLOAT4 position;
-		DirectX::XMFLOAT4 tex_color;  //ÓÃÓÚ²ÉÑùµÄ×ø±ê
-		//DirectX::XMFLOAT4 tex_range;  //ÓÃÓÚÏŞÖÆ²ÉÑù¾ØĞÎµÄ×ø±ê
+		DirectX::XMFLOAT4 tex_color;  //ç”¨äºé‡‡æ ·çš„åæ ‡
+		//DirectX::XMFLOAT4 tex_range;  //ç”¨äºé™åˆ¶é‡‡æ ·çŸ©å½¢çš„åæ ‡
 	};
 	struct PointUI
 	{
 		DirectX::XMFLOAT4 position;
-		DirectX::XMFLOAT4 tex_color;  //ÓÃÓÚ²ÉÑùµÄ×ø±ê
-		DirectX::XMUINT4  tex_id;     //UIµÄIDºÅ
+		DirectX::XMFLOAT4 tex_color;  //ç”¨äºé‡‡æ ·çš„åæ ‡
+		DirectX::XMUINT4  tex_id;     //UIçš„IDå·
 	};
-	//±ê×¼3D¶¥µã¸ñÊ½
+	//æ ‡å‡†3Dé¡¶ç‚¹æ ¼å¼
 	struct PointCommon
 	{
-		DirectX::XMFLOAT3 position;   //Î»ÖÃ
-		DirectX::XMFLOAT3 normal;     //·¨Ïß
-		DirectX::XMFLOAT3 tangent;    //ÇĞÏß
-		DirectX::XMUINT4  tex_id;     //Ê¹ÓÃµÄÎÆÀíIDºÅ
-		DirectX::XMFLOAT4 tex_uv;     //ÓÃÓÚ²ÉÑùµÄ×ø±ê
+		DirectX::XMFLOAT3 position;   //ä½ç½®
+		DirectX::XMFLOAT3 normal;     //æ³•çº¿
+		DirectX::XMFLOAT3 tangent;    //åˆ‡çº¿
+		DirectX::XMUINT4  tex_id;     //ä½¿ç”¨çš„çº¹ç†IDå·
+		DirectX::XMFLOAT4 tex_uv;     //ç”¨äºé‡‡æ ·çš„åæ ‡
 	};
-	//´ø¹Ç÷ÀµÄ¶¥µã¸ñÊ½(×î´óÖ§³Öµ¥¶¥µã4¹Ç÷À)
+	//å¸¦éª¨éª¼çš„é¡¶ç‚¹æ ¼å¼(æœ€å¤§æ”¯æŒå•é¡¶ç‚¹4éª¨éª¼)
 	struct PointSkinCommon4
 	{
-		DirectX::XMFLOAT3 position;   //Î»ÖÃ
-		DirectX::XMFLOAT3 normal;     //·¨Ïß
-		DirectX::XMFLOAT3 tangent;    //ÇĞÏß
-		DirectX::XMUINT4  tex_id;     //Ê¹ÓÃµÄÎÆÀíIDºÅ
-		DirectX::XMFLOAT4 tex_uv;     //ÓÃÓÚ²ÉÑùµÄ×ø±ê
-		DirectX::XMUINT4  bone_id;    //¹Ç÷ÀIDºÅ
-		DirectX::XMFLOAT4 bone_weight;//¹Ç÷ÀÈ¨ÖØ
+		DirectX::XMFLOAT3 position;   //ä½ç½®
+		DirectX::XMFLOAT3 normal;     //æ³•çº¿
+		DirectX::XMFLOAT3 tangent;    //åˆ‡çº¿
+		DirectX::XMUINT4  tex_id;     //ä½¿ç”¨çš„çº¹ç†IDå·
+		DirectX::XMFLOAT4 tex_uv;     //ç”¨äºé‡‡æ ·çš„åæ ‡
+		DirectX::XMUINT4  bone_id;    //éª¨éª¼IDå·
+		DirectX::XMFLOAT4 bone_weight;//éª¨éª¼æƒé‡
 	};
-	//´ø¹Ç÷ÀµÄ¶¥µã¸ñÊ½(×î´óÖ§³Öµ¥¶¥µã8¹Ç÷À)
+	//å¸¦éª¨éª¼çš„é¡¶ç‚¹æ ¼å¼(æœ€å¤§æ”¯æŒå•é¡¶ç‚¹8éª¨éª¼)
 	struct PointSkinCommon8
 	{
-		DirectX::XMFLOAT3 position;     //Î»ÖÃ
-		DirectX::XMFLOAT3 normal;       //·¨Ïß
-		DirectX::XMFLOAT3 tangent;      //ÇĞÏß
-		DirectX::XMUINT4  tex_id;       //Ê¹ÓÃµÄÎÆÀíIDºÅ
-		DirectX::XMFLOAT4 tex_uv;       //ÓÃÓÚ²ÉÑùµÄ×ø±ê
-		DirectX::XMUINT4  bone_id;      //¹Ç÷ÀIDºÅ
-		DirectX::XMFLOAT4 bone_weight0; //¹Ç÷ÀÈ¨ÖØ
-		DirectX::XMFLOAT4 bone_weight1; //¹Ç÷ÀÈ¨ÖØ
+		DirectX::XMFLOAT3 position;     //ä½ç½®
+		DirectX::XMFLOAT3 normal;       //æ³•çº¿
+		DirectX::XMFLOAT3 tangent;      //åˆ‡çº¿
+		DirectX::XMUINT4  tex_id;       //ä½¿ç”¨çš„çº¹ç†IDå·
+		DirectX::XMFLOAT4 tex_uv;       //ç”¨äºé‡‡æ ·çš„åæ ‡
+		DirectX::XMUINT4  bone_id;      //éª¨éª¼IDå·
+		DirectX::XMFLOAT4 bone_weight0; //éª¨éª¼æƒé‡
+		DirectX::XMFLOAT4 bone_weight1; //éª¨éª¼æƒé‡
 	};
-	//´ø¶¥µã¶¯»­µÄ¶¥µã¸ñÊ½
+	//å¸¦é¡¶ç‚¹åŠ¨ç”»çš„é¡¶ç‚¹æ ¼å¼
 	struct PointCatchCommon
 	{
-		DirectX::XMFLOAT3 position;   //Î»ÖÃ
-		DirectX::XMFLOAT3 normal;     //·¨Ïß
-		DirectX::XMFLOAT3 tangent;    //ÇĞÏß
-		DirectX::XMUINT4  tex_id;     //Ê¹ÓÃµÄÎÆÀíIDºÅ
-		DirectX::XMFLOAT4 tex_uv;     //ÓÃÓÚ²ÉÑùµÄ×ø±ê
-		DirectX::XMUINT4  anim_id;    //¶ÔÓ¦µÄ¶¯»­¶¥µã
+		DirectX::XMFLOAT3 position;   //ä½ç½®
+		DirectX::XMFLOAT3 normal;     //æ³•çº¿
+		DirectX::XMFLOAT3 tangent;    //åˆ‡çº¿
+		DirectX::XMUINT4  tex_id;     //ä½¿ç”¨çš„çº¹ç†IDå·
+		DirectX::XMFLOAT4 tex_uv;     //ç”¨äºé‡‡æ ·çš„åæ ‡
+		DirectX::XMUINT4  anim_id;    //å¯¹åº”çš„åŠ¨ç”»é¡¶ç‚¹
 	};
-	//¼¸ºÎÌå»ù´¡ÀàĞÍ
+	//å‡ ä½•ä½“åŸºç¡€ç±»å‹
 	class GeometryBasic
 	{
 	protected:
-		//¼¸ºÎÌåµÄäÖÈ¾buffer
+		//å‡ ä½•ä½“çš„æ¸²æŸ“buffer
 		VirtualResourcePointer geometry_vertex_buffer;
 		VirtualResourcePointer geometry_index_buffer;
 		VirtualResourcePointer geometry_adjindex_buffer;
@@ -81,16 +81,16 @@ namespace PancystarEngine
 		uint32_t all_vertex;
 		uint32_t all_index;
 		uint32_t all_index_adj;
-		//¼¸ºÎÌåµÄ´´½¨ĞÅÏ¢
+		//å‡ ä½•ä½“çš„åˆ›å»ºä¿¡æ¯
 		bool if_create_adj;
 		bool if_buffer_created;
 	public:
 		GeometryBasic();
 		PancystarEngine::EngineFailReason Create();
 		virtual ~GeometryBasic();
-		//¼ì²âÊı¾İÊÇ·ñÕıÈ·´´½¨
+		//æ£€æµ‹æ•°æ®æ˜¯å¦æ­£ç¡®åˆ›å»º
 		bool CheckIfCreateSucceed();
-		//»ñÈ¡»º³åÇøÊı¾İµÄ´óĞ¡
+		//è·å–ç¼“å†²åŒºæ•°æ®çš„å¤§å°
 		inline uint32_t GetVetexNum()
 		{
 			return all_vertex;
@@ -103,7 +103,7 @@ namespace PancystarEngine
 		{
 			return all_index_adj;
 		}
-		//»ñÈ¡»º³åÇøÊı¾İµÄäÖÈ¾Ö¸Õë(ÃèÊö·û)
+		//è·å–ç¼“å†²åŒºæ•°æ®çš„æ¸²æŸ“æŒ‡é’ˆ(æè¿°ç¬¦)
 		inline D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()
 		{
 			return geometry_vertex_buffer_view;
@@ -116,7 +116,7 @@ namespace PancystarEngine
 		{
 			return geometry_adj_index_buffer_view;
 		};
-		//»ñÈ¡»º³åÇøÊı¾İµÄĞéÄâÖ¸Õë
+		//è·å–ç¼“å†²åŒºæ•°æ®çš„è™šæ‹ŸæŒ‡é’ˆ
 		inline VirtualResourcePointer& GetVertexBufferResource()
 		{
 			return geometry_vertex_buffer;
@@ -146,15 +146,15 @@ namespace PancystarEngine
 		) = 0;
 	};
 	
-	//»ù±¾Ä£ĞÍ¼¸ºÎÌå
+	//åŸºæœ¬æ¨¡å‹å‡ ä½•ä½“
 	template<typename T>
 	class GeometryCommonModel : public GeometryBasic
 	{
 		T *vertex_data;
 		IndexType *index_data;
-		bool if_save_CPU_data;//ÊÇ·ñ±£Áôcpu±¸·İ
+		bool if_save_CPU_data;//æ˜¯å¦ä¿ç•™cpuå¤‡ä»½
 		
-		//Ä£ĞÍµÄ»ù±¾Êı¾İ
+		//æ¨¡å‹çš„åŸºæœ¬æ•°æ®
 		bool if_model_adj;
 		uint32_t all_model_vertex;
 		uint32_t all_model_index;
@@ -199,7 +199,7 @@ namespace PancystarEngine
 		bool if_save_cpu_data_in
 	) 
 	{
-		//¿½±´CPUÊı¾İ
+		//æ‹·è´CPUæ•°æ®
 		vertex_data = NULL;
 		index_data = NULL;
 		if (input_vert_num != 0) 
@@ -271,7 +271,7 @@ namespace PancystarEngine
 		}
 		auto VertexBufferSize = PancystarEngine::SizeAligned(vbuffer_realszie,65536);
 		auto IndexBufferSize = PancystarEngine::SizeAligned(ibuffer_real_size, 65536);
-		//´´½¨¶¥µã»º³åÇø
+		//åˆ›å»ºé¡¶ç‚¹ç¼“å†²åŒº
 		PancyCommonBufferDesc buffer_resource_desc;
 		buffer_resource_desc.buffer_type = Buffer_Vertex;
 		buffer_resource_desc.buffer_res_desc.Alignment = 0;
@@ -294,7 +294,7 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
-		//´´½¨Ë÷Òı»º³åÇø
+		//åˆ›å»ºç´¢å¼•ç¼“å†²åŒº
 		buffer_resource_desc.buffer_type = Buffer_Index;
 		buffer_resource_desc.buffer_res_desc.Width = IndexBufferSize;
 		check_error = BuildBufferResource(
@@ -308,12 +308,12 @@ namespace PancystarEngine
 			return check_error;
 		}
 
-		//todo ÁÚ½ÓÈı½ÇÃæ¼ÆËã
+		//todo é‚»æ¥ä¸‰è§’é¢è®¡ç®—
 		if (if_model_adj)
 		{
 		}
-		//todo:ĞŞ¸Ä³ÉÊ¹ÓÃresource¿½±´µÄ¸ñÊ½
-		//»ñÈ¡ÓÃÓÚ¿½±´µÄcommond list
+		//todo:ä¿®æ”¹æˆä½¿ç”¨resourceæ‹·è´çš„æ ¼å¼
+		//è·å–ç”¨äºæ‹·è´çš„commond list
 		PancyRenderCommandList *copy_render_list;
 		PancyThreadIdGPU copy_render_list_ID;
 		check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
@@ -321,7 +321,7 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
-		//¿½±´×ÊÔ´Êı¾İ(¶¥µã»º³åÇø)
+		//æ‹·è´èµ„æºæ•°æ®(é¡¶ç‚¹ç¼“å†²åŒº)
 		ResourceBlockGpu* vertex_buffer_gpu_resource = GetBufferResourceData(geometry_vertex_buffer_in, check_error);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -332,7 +332,7 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
-		//¿½±´×ÊÔ´Êı¾İ(Ë÷Òı»º³åÇø)
+		//æ‹·è´èµ„æºæ•°æ®(ç´¢å¼•ç¼“å†²åŒº)
 		ResourceBlockGpu* index_buffer_gpu_resource = GetBufferResourceData(geometry_index_buffer_in, check_error);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -344,9 +344,9 @@ namespace PancystarEngine
 			return check_error;
 		}
 		copy_render_list->UnlockPrepare();
-		//Ìá½»äÖÈ¾ÃüÁî
+		//æäº¤æ¸²æŸ“å‘½ä»¤
 		ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
-		//·ÖÅäµÈ´ıÑÛÎ»
+		//åˆ†é…ç­‰å¾…çœ¼ä½
 		PancyFenceIdGPU WaitFence;
 		ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
 		check_error = vertex_buffer_gpu_resource->SetResourceCopyBrokenFence(WaitFence);
@@ -359,7 +359,7 @@ namespace PancystarEngine
 		{
 			return check_error;
 		}
-		//É¾³ıCPU±¸·İ
+		//åˆ é™¤CPUå¤‡ä»½
 		if (!if_save_CPU_data) 
 		{
 			if (vertex_data != NULL) 
@@ -373,13 +373,13 @@ namespace PancystarEngine
 				index_data = NULL;
 			}
 		}
-		//´´½¨¶¥µã»º´æÊÓÍ¼
+		//åˆ›å»ºé¡¶ç‚¹ç¼“å­˜è§†å›¾
 		check_error = vertex_buffer_gpu_resource->BuildVertexBufferView(0, vbuffer_realszie,sizeof(T), geometry_vertex_buffer_view_in);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//´´½¨Ë÷Òı»º´æÊÓÍ¼
+		//åˆ›å»ºç´¢å¼•ç¼“å­˜è§†å›¾
 		DXGI_FORMAT index_format;
 		if (sizeof(IndexType) == sizeof(UINT))
 		{

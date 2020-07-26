@@ -94,7 +94,7 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildGlobelTextureSRV(const
 PancystarEngine::EngineFailReason scene_test_simple::Init()
 {
 	PancystarEngine::EngineFailReason check_error;
-	//´´½¨È«ÆÁÈı½ÇĞÎ
+	//åˆ›å»ºå…¨å±ä¸‰è§’å½¢
 	PancystarEngine::Point2D point[4];
 	point[0].position = DirectX::XMFLOAT4(-1.0f, -1.0f, 0.0f, 1.0f);
 	point[1].position = DirectX::XMFLOAT4(-1.0f, +1.0f, 0.0f, 1.0f);
@@ -121,19 +121,19 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	//¶ÁÈ¡¿Õ°×ÎÆÀí
+	//è¯»å–ç©ºç™½çº¹ç†
 	check_error = LoadDDSTextureResource("data\\white.dds", tex_empty_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//¶ÁÈ¡pbrÎÆÀí
+	//è¯»å–pbrçº¹ç†
 	check_error = LoadDDSTextureResource("data\\Cubemap.dds", tex_ibl_spec_id);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//¼ÓÔØĞèÒªµÄpbrÎÆÀí
+	//åŠ è½½éœ€è¦çš„pbrçº¹ç†
 	check_error = BuildGlobelTextureSRV("environment_IBL_spec", tex_ibl_spec_id);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -149,7 +149,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	//todo:ÁÙÊ±Ê¹ÓÃµÄÄ£ĞÍ²âÊÔ´úÂë
+	//todo:ä¸´æ—¶ä½¿ç”¨çš„æ¨¡å‹æµ‹è¯•ä»£ç 
 	check_error = model_common.Create("model\\export\\multiball\\multiball.json");
 	if (!check_error.CheckIfSucceed())
 	{
@@ -160,7 +160,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	{
 		return check_error;
 	}
-	//todo:ÁÙÊ±Ê¹ÓÃµÄ²ÄÖÊ¼ÓÔØ²âÊÔ
+	//todo:ä¸´æ—¶ä½¿ç”¨çš„æè´¨åŠ è½½æµ‹è¯•
 	check_error = LoadMaterialFromFile("model\\export\\rabbit\\rabbit_mat.json", test_material);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -194,7 +194,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	*/
 
 	
-	//¼ÓÔØÒ»¸öpso
+	//åŠ è½½ä¸€ä¸ªpso
 	/*
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_test.json", PSO_test);
 	if (!check_error.CheckIfSucceed())
@@ -202,7 +202,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 		return check_error;
 	}
 	*/
-	//¼ÓÔØÒ»¸öpso
+	//åŠ è½½ä¸€ä¸ªpso
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_pbr.json", PSO_pbr);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -210,14 +210,14 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	}
 
 	/*
-	//Ä£ĞÍ¼ÓÔØ²âÊÔ
+	//æ¨¡å‹åŠ è½½æµ‹è¯•
 	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log.json");
 
 	PancystarEngine::ResourceStateType now_id_state;
 	check_error = PancystarEngine::PancyModelControl::GetInstance()->GetResourceState(model_skinmesh, now_id_state);
 	SubresourceControl::GetInstance()->WriteSubMemoryMessageToFile("memory_log4.json");
 	*/
-	//µ÷ÓÃÒ»´Î¹Ç÷À¶¯»­µ¥Àı£¬Íê³ÉÈ«¾Ö»º³åÇøµÄ×¢²á
+	//è°ƒç”¨ä¸€æ¬¡éª¨éª¼åŠ¨ç”»å•ä¾‹ï¼Œå®Œæˆå…¨å±€ç¼“å†²åŒºçš„æ³¨å†Œ
 	PancystarEngine::PancySkinAnimationControl::GetInstance();
 	std::vector<PancyConstantBuffer *> now_used_cbuffer;
 	check_error = GetGlobelCbuffer(PSO_pbr, "per_frame", now_used_cbuffer);
@@ -253,14 +253,14 @@ PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshDescriptor()
 PancystarEngine::EngineFailReason scene_test_simple::BuildSkinmeshComputeDescriptor()
 {
 	PancystarEngine::EngineFailReason check_error;
-	//»ñÈ¡×÷ÎªÊäÈëµÄ¶¥µã»º³åÇø
+	//è·å–ä½œä¸ºè¾“å…¥çš„é¡¶ç‚¹ç¼“å†²åŒº
 	PancystarEngine::PancyRenderMesh* model_resource_render;
 	check_error = model_skinmesh.GetRenderMesh(0, &model_resource_render);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//¸ù¾İÊäÈë¶¥µã»º³åÇø´´½¨Ò»¸öÃÉÆ¤¼ÆËãÃèÊö·û
+	//æ ¹æ®è¾“å…¥é¡¶ç‚¹ç¼“å†²åŒºåˆ›å»ºä¸€ä¸ªè’™çš®è®¡ç®—æè¿°ç¬¦
 	BasicDescriptorDesc now_buffer_desc;
 	now_buffer_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
 	now_buffer_desc.shader_resource_view_desc = {};
@@ -328,7 +328,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	{
 		return check_error;
 	}
-	//¼ÓÔØbrdfÔ¤´¦ÀíÎÆÀí
+	//åŠ è½½brdfé¢„å¤„ç†çº¹ç†
 	D3D12_RESOURCE_DESC default_tex_RGB_desc;
 	default_tex_RGB_desc.Alignment = 0;
 	default_tex_RGB_desc.DepthOrArraySize = 1;
@@ -355,7 +355,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	{
 		return check_error;
 	}
-	//´´½¨äÖÈ¾Ä¿±ê
+	//åˆ›å»ºæ¸²æŸ“ç›®æ ‡
 	std::vector<BasicDescriptorDesc> now_descriptor_desc_in;
 	std::vector<VirtualResourcePointer> memory_data;
 	BasicDescriptorDesc rtv_brdf;
@@ -373,7 +373,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	{
 		return check_error;
 	}
-	//ÉèÖÃÔ¤äÖÈ¾²ÎÊı
+	//è®¾ç½®é¢„æ¸²æŸ“å‚æ•°
 	PancyRenderCommandList *m_commandList;
 	ID3D12PipelineState *PSO_res_brdfgen;
 	auto pso_data = PancyEffectGraphic::GetInstance()->GetPSOResource(PSO_brdfgen, &PSO_res_brdfgen);
@@ -396,7 +396,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	{
 		return check_error;
 	}
-	//ÉèÖÃäÖÈ¾Ä¿±ê
+	//è®¾ç½®æ¸²æŸ“ç›®æ ‡
 	std::vector<pancy_object_id> render_target_list;
 	render_target_list.push_back(brdf_rtv_id.descriptor_id);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BindCommonRenderTargetUncontiguous(render_target_list, 0, m_commandList,true,false);
@@ -404,10 +404,10 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	{
 		return check_error;
 	}
-	//todo£ºrendertargetµÄÇå¿Õ¹¤×÷
+	//todoï¼šrendertargetçš„æ¸…ç©ºå·¥ä½œ
 	//const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	//m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	//äÖÈ¾µ½ÎÆÀí
+	//æ¸²æŸ“åˆ°çº¹ç†
 	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &test_model->GetVertexBufferView());
 	m_commandList->GetCommandList()->IASetIndexBuffer(&test_model->GetIndexBufferView());
@@ -435,11 +435,9 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	PancystarEngine::EngineFailReason check_error;
 	static float time = 0.0f;
 	time += 0.01;
-	//²âÊÔ¼ÆËã×ÅÉ«Æ÷½øĞĞ¹Ç÷ÀÃÉÆ¤
-	PancystarEngine::SkinAnimationBlock animation_block_pos;
-	PancystarEngine::PancySkinAnimationControl::GetInstance()->ClearUsedBuffer();
+	//æµ‹è¯•è®¡ç®—ç€è‰²å™¨è¿›è¡Œéª¨éª¼è’™çš®
 	std::vector<DirectX::XMFLOAT4X4> matrix_out_bone;
-	check_error = model_skinmesh.GetBoneByAnimation(4, time, matrix_out_bone);
+	check_error = model_skinmesh.GetBoneByAnimation(0, 0, matrix_out_bone);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -465,11 +463,11 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 		return check_error;
 	}
 	check_error = PancystarEngine::PancySkinAnimationControl::GetInstance()->BuildCommandList(
+		bone_block_id,
 		model_resource_render->GetVertexBuffer(),
 		model_resource_render->GetVertexNum(),
 		render_param_id_skin_mesh_compute,
-		matrix_out_bone.size(),
-		&matrix_out_bone[0],
+		model_skinmesh.GetBoneNum(),
 		animation_block_pos,
 		m_commandList_skin
 	);
@@ -479,8 +477,8 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	}
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_skin);
 	
-	//äÖÈ¾¹Ç÷À¶¯»­
-	//Îª²âÊÔäÖÈ¾ÃèÊö·ûÌî³ä×¨ÓÃµÄcbuffer
+	//æ¸²æŸ“éª¨éª¼åŠ¨ç”»
+	//ä¸ºæµ‹è¯•æ¸²æŸ“æè¿°ç¬¦å¡«å……ä¸“ç”¨çš„cbuffer
 	instance_value new_data;
 	new_data.animation_index = DirectX::XMUINT4(animation_block_pos.start_pos/sizeof(PancystarEngine::mesh_animation_data), 0, 0, 0);
 	DirectX::XMStoreFloat4x4(&new_data.world_mat, DirectX::XMMatrixScaling(0.1,0.1,0.1));
@@ -494,11 +492,8 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	{
 		return check_error;
 	}
-	if (time > 1.0f) 
-	{
-		time -= 1.0f;
-	}
-	//°ó¶¨²¢ÖÆÔìcommandlist
+	
+	//ç»‘å®šå¹¶åˆ¶é€ commandlist
 	PancyRenderCommandList *m_commandList;
 	PancyThreadIdGPU commdlist_id_use;
 	ID3D12PipelineState *pso_data_draw;
@@ -523,7 +518,7 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	ComPtr<ID3D12Resource> screen_rendertarget = PancyDx12DeviceBasic::GetInstance()->GetBackBuffer(rtvHandle);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-	//ĞŞ¸Ä×ÊÔ´¸ñÊ½Îªdsv
+	//ä¿®æ”¹èµ„æºæ ¼å¼ä¸ºdsv
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	auto default_depth_tex_res = GetTextureResourceData(Default_depthstencil_buffer[now_render_num], check_error);
 	check_error = default_depth_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
@@ -531,7 +526,7 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	{
 		return check_error;
 	}
-	//»ñÈ¡Éî¶È»º³åÇø
+	//è·å–æ·±åº¦ç¼“å†²åŒº
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	BindDescriptorPointer dsv_descriptor_id;
 	check_error = PancyDescriptorHeapControl::GetInstance()->GetCommonGlobelDescriptorID(PancyDescriptorType::DescriptorTypeDepthStencilView,"DefaultDepthBufferSRV", dsv_descriptor_id);
@@ -541,7 +536,7 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	}
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetCommonDepthStencilBufferOffset(dsv_descriptor_id.descriptor_id, dsvHandle);
 	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-	//ÉèÖÃäÖÈ¾µ¥Ôª
+	//è®¾ç½®æ¸²æŸ“å•å…ƒ
 	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &model_resource_render->GetVertexBufferView());
 	m_commandList->GetCommandList()->IASetIndexBuffer(&model_resource_render->GetIndexBufferView());
@@ -549,21 +544,26 @@ PancystarEngine::EngineFailReason scene_test_simple::ShowSkinModel()
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 	default_depth_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COMMON);
 	m_commandList->UnlockPrepare();
-	//Ìá½»äÖÈ¾ÃüÁî
+	//æäº¤æ¸²æŸ“å‘½ä»¤
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_use);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason ShowModel();
 void scene_test_simple::Display()
 {
+	time += 0.01;
+	if (time > 1.0f)
+	{
+		time = 0.0f;
+	}
 	if (model_skinmesh.CheckIfLoadSucceed())
-
 	{
 		renderlist_ID.clear();
 		if (if_have_previous_frame)
 		{
 			auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->FreeAlloctor();
 		}
+		PancystarEngine::PancySkinAnimationControl::GetInstance()->ComputeBoneMatrix(time);
 		ClearScreen();
 		auto check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(renderlist_ID.size(), &renderlist_ID[0]);
 		last_broken_fence_id = broken_fence_id;
@@ -594,11 +594,11 @@ void scene_test_simple::ClearScreen()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	ComPtr<ID3D12Resource> screen_rendertarget = PancyDx12DeviceBasic::GetInstance()->GetBackBuffer(rtvHandle);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-	//ĞŞ¸Ä×ÊÔ´¸ñÊ½Îªdsv
+	//ä¿®æ”¹èµ„æºæ ¼å¼ä¸ºdsv
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	auto default_depth_tex_res = GetTextureResourceData(Default_depthstencil_buffer[now_render_num], check_error);
 	check_error = default_depth_tex_res->ResourceBarrier(m_commandList, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	//»ñÈ¡Éî¶È»º³åÇø
+	//è·å–æ·±åº¦ç¼“å†²åŒº
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	BindDescriptorPointer dsv_descriptor_id;
 	check_error = PancyDescriptorHeapControl::GetInstance()->GetCommonGlobelDescriptorID(PancyDescriptorType::DescriptorTypeDepthStencilView, "DefaultDepthBufferSRV", dsv_descriptor_id);
@@ -622,13 +622,15 @@ void scene_test_simple::WaitForPreviousFrame()
 void scene_test_simple::Update(float delta_time)
 {
 	updateinput(delta_time);
+	PancystarEngine::PancySkinAnimationControl::GetInstance()->ClearUsedBuffer();
 	PancystarEngine::EngineFailReason check_error;
 	PancyConstantBuffer *PSO_test_cbuffer, *PSO_pbr_cbuffer;
 	//check_error = GetGlobelCbuffer(PSO_test, "per_frame", &PSO_test_cbuffer);
 	check_error = GetGlobelCbuffer(PSO_pbr, "per_frame", &PSO_pbr_cbuffer);
 	if (check_error.CheckIfSucceed())
 	{
-		//¸üĞÂÃ¿Ö¡¸ü±äµÄ±äÁ¿
+		model_skinmesh.BuildBoneDataPerFrame(bone_block_id, animation_block_pos);
+		//æ›´æ–°æ¯å¸§æ›´å˜çš„å˜é‡
 		DirectX::XMMATRIX proj_mat = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, 1280.0f / 720.0f, 0.1f, 1000.0f);
 		DirectX::XMFLOAT4X4 view_matrix, proj_matrix, view_proj_matrix, invview_matrix;
 		DirectX::XMFLOAT4 view_pos;
@@ -650,6 +652,7 @@ void scene_test_simple::Update(float delta_time)
 		PSO_pbr_cbuffer->SetMatrix("invview_matrix", invview_matrix, 0);
 		PSO_pbr_cbuffer->SetFloat4("view_position", view_pos, 0);
 	}
+	
 }
 
 scene_test_simple::~scene_test_simple()

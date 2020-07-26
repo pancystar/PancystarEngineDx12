@@ -12,20 +12,21 @@
 #include"PancyAnimationBasic.h"
 #include"PancyDescriptor.h"
 #include"PancyMaterial.h"
+#include"PancyModelBasic.h"
 class SceneRoot
 {
 private:
 	std::vector<std::unordered_map<pancy_object_id, std::unordered_map<std::string, PancyConstantBuffer *>>> frame_constant_buffer;
 protected:
 	int32_t                               back_buffer_num;
-	DirectX::XMFLOAT3                     scene_center_pos;//³¡¾°ÖĞĞÄ
-	float                                 time_game;       //ÓÎÏ·Ê±¼ä
+	DirectX::XMFLOAT3                     scene_center_pos;//åœºæ™¯ä¸­å¿ƒ
+	float                                 time_game;       //æ¸¸æˆæ—¶é—´
 	int32_t                               Scene_width;
 	int32_t                               Scene_height;
 	bool                                  If_dsv_loaded;
 	std::vector<PancystarEngine::VirtualResourcePointer>   Default_depthstencil_buffer;
 
-	//ÓëÆÁÄ»´óĞ¡Ò»ÖÂµÄ¼¸ÖÖÎÆÀí¸ñÊ½(ÆÕÍ¨RGB£¬SRGB£¬¸¡µãÎÆÀí£¬±ê×¼D24S8Éî¶È»º³åÇø)
+	//ä¸å±å¹•å¤§å°ä¸€è‡´çš„å‡ ç§çº¹ç†æ ¼å¼(æ™®é€šRGBï¼ŒSRGBï¼Œæµ®ç‚¹çº¹ç†ï¼Œæ ‡å‡†D24S8æ·±åº¦ç¼“å†²åŒº)
 	PancystarEngine::PancyCommonTextureDesc default_tex_desc_RGB;
 	PancystarEngine::PancyCommonTextureDesc default_tex_desc_SRGB;
 	PancystarEngine::PancyCommonTextureDesc default_tex_desc_float;
@@ -55,7 +56,7 @@ private:
 	virtual PancystarEngine::EngineFailReason Init() = 0;
 	virtual PancystarEngine::EngineFailReason ScreenChange() = 0;
 protected:
-	//todo£ºÈ«¾Öcbuffer²»Ó¦¸Ã´ÓPSOÖĞ»ñÈ¡£¬¶øÓ¦µ±´ÓÎÄ¼şÖĞ»ñÈ¡
+	//todoï¼šå…¨å±€cbufferä¸åº”è¯¥ä»PSOä¸­è·å–ï¼Œè€Œåº”å½“ä»æ–‡ä»¶ä¸­è·å–
 	PancystarEngine::EngineFailReason GetGlobelCbuffer(
 		const pancy_object_id &PSO_id,
 		const std::string &cbuffer_name,
@@ -78,8 +79,8 @@ private:
 
 class engine_windows_main
 {
-	HWND         hwnd;                                                  //Ö¸ÏòwindowsÀàµÄ¾ä±ú¡£
-	MSG          msg;                                                   //´æ´¢ÏûÏ¢µÄ½á¹¹¡£
+	HWND         hwnd;                                                  //æŒ‡å‘windowsç±»çš„å¥æŸ„ã€‚
+	MSG          msg;                                                   //å­˜å‚¨æ¶ˆæ¯çš„ç»“æ„ã€‚
 	WNDCLASS     wndclass;
 	int32_t      window_width;
 	int32_t      window_height;

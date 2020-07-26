@@ -120,12 +120,12 @@ void PipelineStateDescGraphicJsonReflect::InitBasicVariable()
 	Init_Json_Data_Vatriable(reflect_data.pso_desc.SampleDesc.Count);
 	Init_Json_Data_Vatriable(reflect_data.pso_desc.SampleDesc.Quality);
 	Init_Json_Data_Vatriable(reflect_data.descriptor_type);
-	//°ó¶¨Êı×éµÄÊ¹ÓÃÊıÁ¿
+	//ç»‘å®šæ•°ç»„çš„ä½¿ç”¨æ•°é‡
 	Bind_Json_Data_Array_Size(reflect_data.pso_desc.RTVFormats, reflect_data.pso_desc.NumRenderTargets);
 	Bind_Json_Data_Array_Size(reflect_data.pso_desc.BlendState.RenderTarget, reflect_data.pso_desc.NumRenderTargets);
 }
 
-//ÊäÈë¶¥µã¸ñÊ½
+//è¾“å…¥é¡¶ç‚¹æ ¼å¼
 InputLayoutDesc::InputLayoutDesc()
 {
 }
@@ -152,7 +152,7 @@ void InputLayoutDesc::AddVertexDesc(std::string vertex_desc_name_in, std::vector
 	}
 	vertex_buffer_desc_map.insert(std::pair<std::string, PancyVertexBufferDesc>(vertex_desc_name_in, new_vertex_desc));
 }
-//shader±àÒëÆ÷
+//shaderç¼–è¯‘å™¨
 PancyShaderBasic::PancyShaderBasic(
 	const std::string &shader_file_in,
 	const std::string &main_func_name,
@@ -172,9 +172,9 @@ PancystarEngine::EngineFailReason PancyShaderBasic::Create()
 #else
 	UINT compileFlags = 0 | D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 #endif
-	//±àÒëshaderÎÄ¼ş
+	//ç¼–è¯‘shaderæ–‡ä»¶
 	ID3D10Blob *error_message = NULL;
-	HRESULT hr = D3DCompileFromFile(shader_file_name.GetUnicodeString().c_str(), nullptr, nullptr, shader_entry_point_name.GetAsciiString().c_str(), shader_type_name.GetAsciiString().c_str(), compileFlags, 0, &shader_memory_pointer, &error_message);
+	HRESULT hr = D3DCompileFromFile(shader_file_name.GetUnicodeString().c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, shader_entry_point_name.GetAsciiString().c_str(), shader_type_name.GetAsciiString().c_str(), compileFlags, 0, &shader_memory_pointer, &error_message);
 	if (FAILED(hr))
 	{
 
@@ -187,7 +187,7 @@ PancystarEngine::EngineFailReason PancyShaderBasic::Create()
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("load shader from file", error_message);
 		return error_message;
 	}
-	//»ñÈ¡shader·´Éä
+	//è·å–shaderåå°„
 	hr = D3DReflect(shader_memory_pointer->GetBufferPointer(), shader_memory_pointer->GetBufferSize(), IID_ID3D12ShaderReflection, &shader_reflection);
 	if (FAILED(hr))
 	{
@@ -195,7 +195,7 @@ PancystarEngine::EngineFailReason PancyShaderBasic::Create()
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("load shader from file", error_message);
 		return error_message;
 	}
-	//»ñÈ¡ÊäÈë¸ñÊ½
+	//è·å–è¾“å…¥æ ¼å¼
 	D3D12_SHADER_DESC shader_desc;
 	shader_reflection->GetDesc(&shader_desc);
 	for (UINT i = 0; i < shader_desc.InputParameters; ++i)
@@ -203,7 +203,7 @@ PancystarEngine::EngineFailReason PancyShaderBasic::Create()
 		D3D12_SIGNATURE_PARAMETER_DESC now_param_desc;
 		shader_reflection->GetInputParameterDesc(i, &now_param_desc);
 	}
-	//»ñÈ¡³£Á¿»º³åÇø
+	//è·å–å¸¸é‡ç¼“å†²åŒº
 	/*
 	for (UINT i = 0; i < shader_desc.ConstantBuffers; ++i)
 	{
@@ -222,7 +222,7 @@ PancystarEngine::EngineFailReason PancyShaderBasic::Create()
 	*/
 	return PancystarEngine::succeed;
 }
-//shader¹ÜÀíÆ÷
+//shaderç®¡ç†å™¨
 PancyShaderControl::PancyShaderControl()
 {
 
@@ -253,7 +253,7 @@ PancystarEngine::EngineFailReason PancyShaderControl::GetShaderReflection(const 
 	auto shader_data = shader_list.find(shader_final_name);
 	if (shader_data == shader_list.end())
 	{
-		//shaderÉĞÎ´¼ÓÔØ£¬ÖØĞÂ´ÓÎÄ¼şÖĞ¼ÓÔØshader
+		//shaderå°šæœªåŠ è½½ï¼Œé‡æ–°ä»æ–‡ä»¶ä¸­åŠ è½½shader
 		check_error = LoadShader(shader_file, shader_main_func, shader_type);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -276,7 +276,7 @@ PancystarEngine::EngineFailReason PancyShaderControl::GetShaderData(const std::s
 	auto shader_data = shader_list.find(shader_final_name);
 	if (shader_data == shader_list.end())
 	{
-		//shaderÉĞÎ´¼ÓÔØ£¬ÖØĞÂ´ÓÎÄ¼şÖĞ¼ÓÔØshader
+		//shaderå°šæœªåŠ è½½ï¼Œé‡æ–°ä»æ–‡ä»¶ä¸­åŠ è½½shader
 		check_error = LoadShader(shader_file, shader_main_func, shader_type);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -309,7 +309,7 @@ PancyRootSignature::PancyRootSignature(const std::string &file_name)
 PancystarEngine::EngineFailReason PancyRootSignature::Create()
 {
 	PancystarEngine::EngineFailReason check_error;
-	//½èÖújson·´Éä½«ÎÄ¼şÖĞµÄ¸ñÊ½¶ÁÈ¡µ½ÀàÖĞ
+	//å€ŸåŠ©jsonåå°„å°†æ–‡ä»¶ä¸­çš„æ ¼å¼è¯»å–åˆ°ç±»ä¸­
 	root_signature_desc_reflect.Create();
 	check_error = root_signature_desc_reflect.LoadFromJsonFile(root_signature_name.GetAsciiString());
 	if (!check_error.CheckIfSucceed())
@@ -322,7 +322,7 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 	{
 		return check_error;
 	}
-	//´´½¨rootsignature
+	//åˆ›å»ºrootsignature
 	D3D12_STATIC_SAMPLER_DESC *data_sampledesc;
 	CD3DX12_DESCRIPTOR_RANGE1 *ranges;
 	CD3DX12_ROOT_PARAMETER1 *rootParameters;
@@ -341,28 +341,28 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 	int32_t all_descriptor_num = 0;
 	for (int i = 0; i < num_parameter; ++i)
 	{
-		//»ñÈ¡ĞèÒªrange_type(cbv/srv/......)
+		//è·å–éœ€è¦range_type(cbv/srv/......)
 		D3D12_DESCRIPTOR_RANGE_TYPE range_type = now_root_signature_desc.root_parameter_data[i].range_type;
-		//»ñÈ¡ĞèÒª´´½¨µÄdescriptor(cbv/srv/......)µÄÊıÁ¿
+		//è·å–éœ€è¦åˆ›å»ºçš„descriptor(cbv/srv/......)çš„æ•°é‡
 		int32_t descriptor_num = now_root_signature_desc.root_parameter_data[i].num_descriptors;
-		//»ñÈ¡Õâ×édescriptor±äÁ¿¶ÔÓ¦µÄÊ×¸ö¼Ä´æÆ÷µÄµØÖ·
+		//è·å–è¿™ç»„descriptorå˜é‡å¯¹åº”çš„é¦–ä¸ªå¯„å­˜å™¨çš„åœ°å€
 		int32_t base_registor = now_root_signature_desc.root_parameter_data[i].base_shader_register;
-		//»ñÈ¡Õâ×édescriptor±äÁ¿¶ÔÓ¦µÄ¼Ä´æÆ÷ÓòµÄµØÖ·
+		//è·å–è¿™ç»„descriptorå˜é‡å¯¹åº”çš„å¯„å­˜å™¨åŸŸçš„åœ°å€
 		int32_t base_registor_space = now_root_signature_desc.root_parameter_data[i].register_space;
-		//»ñÈ¡Õâ×édescriptor±äÁ¿¶ÔÓ¦µÄ¸ñÊ½
+		//è·å–è¿™ç»„descriptorå˜é‡å¯¹åº”çš„æ ¼å¼
 		D3D12_DESCRIPTOR_RANGE_FLAGS flag_type = now_root_signature_desc.root_parameter_data[i].flags;
-		//×¢²ádescriptor range
+		//æ³¨å†Œdescriptor range
 		ranges[i].Init(range_type, descriptor_num, base_registor, base_registor_space, flag_type);
-		//»ñÈ¡¸Ãdescriptor rangeĞèÒª±»´´½¨µÄ´ÎÊı
+		//è·å–è¯¥descriptor rangeéœ€è¦è¢«åˆ›å»ºçš„æ¬¡æ•°
 		int32_t descriptor_range_num = now_root_signature_desc.root_parameter_data[i].num_descriptor_ranges;
-		//»ñÈ¡shaderµÄ·ÃÎÊÈ¨ÏŞ
+		//è·å–shaderçš„è®¿é—®æƒé™
 		D3D12_SHADER_VISIBILITY shader_visibility_type = now_root_signature_desc.root_parameter_data[i].shader_visibility;
-		//×¢²árootsignature¸ñÊ½
+		//æ³¨å†Œrootsignatureæ ¼å¼
 		rootParameters[i].InitAsDescriptorTable(descriptor_range_num, &ranges[i], shader_visibility_type);
 		all_descriptor_num += descriptor_num;
 	}
 	pancy_object_id num_static_sampler;
-	//»ñÈ¡Ã¿¸ö¾²Ì¬²ÉÑùÆ÷
+	//è·å–æ¯ä¸ªé™æ€é‡‡æ ·å™¨
 	num_static_sampler = static_cast<pancy_object_id>(now_root_signature_desc.static_sampler_data.size());
 	if (num_static_sampler > 0)
 	{
@@ -376,16 +376,16 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 	{
 		data_sampledesc[i] = now_root_signature_desc.static_sampler_data[i];
 	}
-	//»ñÈ¡rootsignature¸ñÊ½
+	//è·å–rootsignatureæ ¼å¼
 	D3D12_ROOT_SIGNATURE_FLAGS root_signature = now_root_signature_desc.root_signature_flags;
 	desc_out.Init_1_1(static_cast<UINT>(num_parameter), rootParameters, num_static_sampler, data_sampledesc, root_signature);
-	//´´½¨rootsignature
+	//åˆ›å»ºrootsignature
 	check_error = BuildResource(desc_out);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//É¾³ıÁÙÊ±×ÊÔ´
+	//åˆ é™¤ä¸´æ—¶èµ„æº
 	if (ranges != NULL)
 	{
 		delete[] ranges;
@@ -445,7 +445,7 @@ std::string PancyRootSignature::GetJsonFileRealName(const std::string &file_name
 	}
 	return file_name_in.substr(st, length);
 }
-//rootsignature¹ÜÀíÆ÷
+//rootsignatureç®¡ç†å™¨
 PancyRootSignatureControl::PancyRootSignatureControl()
 {
 	RootSig_id_self_add = 0;
@@ -453,25 +453,25 @@ PancyRootSignatureControl::PancyRootSignatureControl()
 }
 void PancyRootSignatureControl::AddRootSignatureGlobelVariable()
 {
-	//descriptor range¸ñÊ½
+	//descriptor rangeæ ¼å¼
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_RANGE_TYPE_SRV);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER);
-	//descriptor flag¸ñÊ½
+	//descriptor flagæ ¼å¼
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_RANGE_FLAG_NONE);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-	//shader·ÃÎÊÈ¨ÏŞ
+	//shaderè®¿é—®æƒé™
 	JSON_REFLECT_INIT_ENUM(D3D12_SHADER_VISIBILITY_ALL);
 	JSON_REFLECT_INIT_ENUM(D3D12_SHADER_VISIBILITY_VERTEX);
 	JSON_REFLECT_INIT_ENUM(D3D12_SHADER_VISIBILITY_HULL);
 	JSON_REFLECT_INIT_ENUM(D3D12_SHADER_VISIBILITY_DOMAIN);
 	JSON_REFLECT_INIT_ENUM(D3D12_SHADER_VISIBILITY_GEOMETRY);
 	JSON_REFLECT_INIT_ENUM(D3D12_SHADER_VISIBILITY_PIXEL);
-	//²ÉÑù¸ñÊ½
+	//é‡‡æ ·æ ¼å¼
 	JSON_REFLECT_INIT_ENUM(D3D12_FILTER_MIN_MAG_MIP_POINT);
 	JSON_REFLECT_INIT_ENUM(D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR);
 	JSON_REFLECT_INIT_ENUM(D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT);
@@ -508,13 +508,13 @@ void PancyRootSignatureControl::AddRootSignatureGlobelVariable()
 	JSON_REFLECT_INIT_ENUM(D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT);
 	JSON_REFLECT_INIT_ENUM(D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR);
 	JSON_REFLECT_INIT_ENUM(D3D12_FILTER_MAXIMUM_ANISOTROPIC);
-	//Ñ°Ö·¸ñÊ½
+	//å¯»å€æ ¼å¼
 	JSON_REFLECT_INIT_ENUM(D3D12_TEXTURE_ADDRESS_MODE_WRAP);
 	JSON_REFLECT_INIT_ENUM(D3D12_TEXTURE_ADDRESS_MODE_MIRROR);
 	JSON_REFLECT_INIT_ENUM(D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 	JSON_REFLECT_INIT_ENUM(D3D12_TEXTURE_ADDRESS_MODE_BORDER);
 	JSON_REFLECT_INIT_ENUM(D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE);
-	//±È½Ïº¯Êı¸ñÊ½
+	//æ¯”è¾ƒå‡½æ•°æ ¼å¼
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_NEVER);
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_LESS);
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_EQUAL);
@@ -523,11 +523,11 @@ void PancyRootSignatureControl::AddRootSignatureGlobelVariable()
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_NOT_EQUAL);
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_GREATER_EQUAL);
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_ALWAYS);
-	//³¬³ö±ß½çµÄ²ÉÑùÑÕÉ«
+	//è¶…å‡ºè¾¹ç•Œçš„é‡‡æ ·é¢œè‰²
 	JSON_REFLECT_INIT_ENUM(D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK);
 	JSON_REFLECT_INIT_ENUM(D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK);
 	JSON_REFLECT_INIT_ENUM(D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE);
-	//root signatureµÄ·ÃÎÊÈ¨ÏŞ
+	//root signatureçš„è®¿é—®æƒé™
 	JSON_REFLECT_INIT_ENUM(D3D12_ROOT_SIGNATURE_FLAG_NONE);
 	JSON_REFLECT_INIT_ENUM(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	JSON_REFLECT_INIT_ENUM(D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS);
@@ -554,7 +554,7 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::BuildRootSignature(
 {
 	PancystarEngine::EngineFailReason check_error;
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC root_signature_desc = {};
-	//ÅĞ¶ÏÖØ¸´
+	//åˆ¤æ–­é‡å¤
 	auto check_data = RootSig_name.find(rootsig_config_file);
 	if (check_data != RootSig_name.end())
 	{
@@ -562,14 +562,14 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::BuildRootSignature(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("build new root signature", error_message);
 		return error_message;
 	}
-	//´´½¨RootSignature
+	//åˆ›å»ºRootSignature
 	PancyRootSignature *data_root_signature = new PancyRootSignature(rootsig_config_file);
 	check_error = data_root_signature->Create();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//¸ù¾İID³ØÊÇ·ñÎª¿ÕÀ´¾ö¶¨ĞÂ¿ª±ÙµÄ×ÊÔ´IDºÅ
+	//æ ¹æ®IDæ± æ˜¯å¦ä¸ºç©ºæ¥å†³å®šæ–°å¼€è¾Ÿçš„èµ„æºIDå·
 	pancy_object_id now_next_id;
 	if (empty_RootSig_id.size() > 0)
 	{
@@ -581,7 +581,7 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::BuildRootSignature(
 		now_next_id = RootSig_id_self_add;
 		RootSig_id_self_add += 1;
 	}
-	//½«×ÊÔ´²åÈëµ½×ÊÔ´±í
+	//å°†èµ„æºæ’å…¥åˆ°èµ„æºè¡¨
 	RootSig_name.insert(std::pair<std::string, pancy_object_id >(rootsig_config_file, now_next_id));
 	RootSig_name_reflect.insert(std::pair<pancy_object_id, std::string>(now_next_id, rootsig_config_file));
 	root_signature_array.insert(std::pair<pancy_object_id, PancyRootSignature*>(now_next_id, data_root_signature));
@@ -593,7 +593,7 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetRootSignature(co
 	auto root_signature_find = RootSig_name.find(name_in);
 	if (root_signature_find == RootSig_name.end())
 	{
-		//Î´ÕÒµ½root signature£¬³¢ÊÔ¼ÓÔØ
+		//æœªæ‰¾åˆ°root signatureï¼Œå°è¯•åŠ è½½
 		check_error = BuildRootSignature(name_in);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -716,22 +716,22 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferBySh
 		now_constant_buffer->GetDesc(&buffer_shader);
 		if (Cbuffer_map.find(buffer_shader.Name) == Cbuffer_map.end())
 		{
-			//½«cbufferµÄ´óĞ¡½øĞĞ256Î»¶ÔÆë
+			//å°†cbufferçš„å¤§å°è¿›è¡Œ256ä½å¯¹é½
 			pancy_resource_size alize_cbuffer_size = buffer_shader.Size;
 			pancy_resource_size alize_buffer_resource_size = 65536;
 			if (alize_cbuffer_size % 256 != 0)
 			{
 				alize_cbuffer_size = (1 + (alize_cbuffer_size / 256)) * 256;
 			}
-			//¸ù¾İcbufferµÄ´óĞ¡À´¾ö¶¨¿ª±ÙµÄbuffer×ÊÔ´µÄ´óĞ¡
+			//æ ¹æ®cbufferçš„å¤§å°æ¥å†³å®šå¼€è¾Ÿçš„bufferèµ„æºçš„å¤§å°
 			if (alize_cbuffer_size > 256 * 6)
 			{
-				//´óĞÍCbuffer(¿ÉÄÜÓÉinstanceÊı¾İ),¿ª±Ù256kµÄbuffer×÷Îª³ĞÔØbuffer
+				//å¤§å‹Cbuffer(å¯èƒ½ç”±instanceæ•°æ®),å¼€è¾Ÿ256kçš„bufferä½œä¸ºæ‰¿è½½buffer
 				alize_buffer_resource_size = 256 * 1024;
 			}
 			else
 			{
-				//Ğ¡ĞÍcbuffer£¬¿ª±Ù64kµÄbuffer×÷Îª³ĞÔØbuffer
+				//å°å‹cbufferï¼Œå¼€è¾Ÿ64kçš„bufferä½œä¸ºæ‰¿è½½buffer
 				alize_buffer_resource_size = 64 * 1024;
 			}
 			PancyCommonBufferDesc cbuffer_resource_desc;
@@ -746,11 +746,11 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferBySh
 			cbuffer_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
 			cbuffer_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
 			cbuffer_resource_desc.buffer_res_desc.Width = alize_buffer_resource_size;
-			//×¼±¸´´½¨Ò»¸öĞÂµÄ³£Á¿»º³åÇø
+			//å‡†å¤‡åˆ›å»ºä¸€ä¸ªæ–°çš„å¸¸é‡ç¼“å†²åŒº
 			Json::Value new_cbuffer_desc_value;
-			//´´½¨×ÊÔ´¸ñÊ½
+			//åˆ›å»ºèµ„æºæ ¼å¼
 			PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "BufferType", "Buffer_Constant");
-			//Ìî³ä³£Á¿»º³åÇø
+			//å¡«å……å¸¸é‡ç¼“å†²åŒº
 			Json::Value cbuffer_value;
 			PancyJsonTool::GetInstance()->SetJsonValue(cbuffer_value, "BufferSize", alize_cbuffer_size);
 			for (UINT i = 0; i < buffer_shader.Variables; ++i)
@@ -765,7 +765,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferBySh
 				PancyJsonTool::GetInstance()->AddJsonArrayValue(cbuffer_value, "VariableMember", cbuffer_variable_value);
 			}
 			PancyJsonTool::GetInstance()->SetJsonValue(new_cbuffer_desc_value, "CbufferDesc", cbuffer_value);
-			//½«µ±Ç°cbufferµÄ¸ñÊ½±£´æÔÚmapÖĞ
+			//å°†å½“å‰cbufferçš„æ ¼å¼ä¿å­˜åœ¨mapä¸­
 			ConstantBufferAlloctor *new_cbuffer_alloctar = new ConstantBufferAlloctor(
 				alize_cbuffer_size,
 				buffer_shader.Name,
@@ -813,7 +813,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 {
 	//D3D12_GRAPHICS_PIPELINE_STATE_DESC desc_out = {};
 	std::string file_name = pso_name.GetAsciiString();
-	//»ñÈ¡¸ñÊ½
+	//è·å–æ ¼å¼
 	Json::Value pre_read_jsonRoot;
 	auto check_error = PancyJsonTool::GetInstance()->LoadJsonFile(file_name, pre_read_jsonRoot);
 	if (!check_error.CheckIfSucceed())
@@ -821,7 +821,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		return check_error;
 	}
 	pancy_json_value now_value;
-	//ÏÈÔ¤¶ÁÈ¡µ±Ç°pipelineµÄ¸ñÊ½
+	//å…ˆé¢„è¯»å–å½“å‰pipelineçš„æ ¼å¼
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, pre_read_jsonRoot, "pipeline_state_type", pancy_json_data_type::json_data_string, now_value);
 	std::string enum_data_head;
 	std::string enum_data_tail;
@@ -842,12 +842,12 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		return error_message;
 	}
 	pipline_type = static_cast<PSOType>(now_enum_value);
-	//¸ù¾İ¹ÜÏßÀàĞÍµÄ²»Í¬¾ö¶¨Ê¹ÓÃÄÄÖÖ·½Ê½¶ÁÈ¡¹ÜÏßµÄĞÅÏ¢
+	//æ ¹æ®ç®¡çº¿ç±»å‹çš„ä¸åŒå†³å®šä½¿ç”¨å“ªç§æ–¹å¼è¯»å–ç®¡çº¿çš„ä¿¡æ¯
 	if (pipline_type == PSOType::PSO_TYPE_GRAPHIC)
 	{
-		//ÏÈ´´½¨Ò»¸öÍ¼ĞÎ¹ÜÏßµÄ·´Éä
+		//å…ˆåˆ›å»ºä¸€ä¸ªå›¾å½¢ç®¡çº¿çš„åå°„
 		grapthic_reflect.Create();
-		//¶ÁÈ¡¹ÜÏßµÄ¸ñÊ½ĞÅÏ¢
+		//è¯»å–ç®¡çº¿çš„æ ¼å¼ä¿¡æ¯
 		check_error = grapthic_reflect.LoadFromJsonMemory(file_name, pre_read_jsonRoot);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -855,7 +855,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		}
 		PipelineStateDescGraphic graphic_pipeline_desc;
 		grapthic_reflect.CopyMemberData(&graphic_pipeline_desc, typeid(&graphic_pipeline_desc).name(), sizeof(graphic_pipeline_desc));
-		//¸ù¾İ¶ÁÈ¡µÄĞÅÏ¢½¨Á¢¹ÜÏßÊı¾İ
+		//æ ¹æ®è¯»å–çš„ä¿¡æ¯å»ºç«‹ç®¡çº¿æ•°æ®
 		check_error = PancyRootSignatureControl::GetInstance()->GetRootSignature(graphic_pipeline_desc.root_signature_file, root_signature_ID);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -867,7 +867,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC &desc_out = graphic_pipeline_desc.pso_desc;
 		desc_out = graphic_pipeline_desc.pso_desc;
 		desc_out.pRootSignature = root_signature_use;
-		//»ñÈ¡×ÅÉ«Æ÷
+		//è·å–ç€è‰²å™¨
 		std::string shader_file_name[] =
 		{
 			graphic_pipeline_desc.vertex_shader_file,
@@ -902,7 +902,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 				{
 					return check_error;
 				}
-				//»ñÈ¡shader reflect²¢´æ´¢cbufferµÄĞÅÏ¢
+				//è·å–shader reflectå¹¶å­˜å‚¨cbufferçš„ä¿¡æ¯
 				ComPtr<ID3D12ShaderReflection> now_shader_reflect;
 				check_error = PancyShaderControl::GetInstance()->GetShaderReflection(shader_file_name[i], shader_func_name[i], shader_version[i], &now_shader_reflect);
 				if (!check_error.CheckIfSucceed())
@@ -914,7 +914,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 				{
 					return check_error;
 				}
-				//Ìî³äshaderĞÅÏ¢
+				//å¡«å……shaderä¿¡æ¯
 				switch (i)
 				{
 				case 0:
@@ -937,7 +937,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 				}
 			}
 		}
-		//¸ù¾İ¶¥µã×ÅÉ«Æ÷»ñÈ¡¶¥µãÊäÈë¸ñÊ½
+		//æ ¹æ®é¡¶ç‚¹ç€è‰²å™¨è·å–é¡¶ç‚¹è¾“å…¥æ ¼å¼
 		ComPtr<ID3D12ShaderReflection> vertex_shader_reflect;
 		check_error = PancyShaderControl::GetInstance()->GetShaderReflection(graphic_pipeline_desc.vertex_shader_file, graphic_pipeline_desc.vertex_shader_func, "vs_5_1", &vertex_shader_reflect);
 		if (!check_error.CheckIfSucceed())
@@ -946,7 +946,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		}
 		if (InputLayoutDesc::GetInstance()->GetVertexDesc(graphic_pipeline_desc.vertex_shader_file + "::" + graphic_pipeline_desc.vertex_shader_func) == NULL)
 		{
-			//Î´ÕÒµ½ÊäÈë»º³åÇø£¬Ìí¼ÓĞÂµÄ»º³åÇø
+			//æœªæ‰¾åˆ°è¾“å…¥ç¼“å†²åŒºï¼Œæ·»åŠ æ–°çš„ç¼“å†²åŒº
 			std::vector<D3D12_INPUT_ELEMENT_DESC> input_desc_array;
 			check_error = GetInputDesc(vertex_shader_reflect, input_desc_array);
 			if (!check_error.CheckIfSucceed())
@@ -958,13 +958,13 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		auto vertex_desc = InputLayoutDesc::GetInstance()->GetVertexDesc(graphic_pipeline_desc.vertex_shader_file + "::" + graphic_pipeline_desc.vertex_shader_func);
 		desc_out.InputLayout.pInputElementDescs = vertex_desc->inputElementDescs;
 		desc_out.InputLayout.NumElements = static_cast<UINT>(vertex_desc->input_element_num);
-		//¶ÁÈ¡µ±Ç°pipelineµÄ×ÊÔ´°ó¶¨¸ñÊ½
+		//è¯»å–å½“å‰pipelineçš„èµ„æºç»‘å®šæ ¼å¼
 		check_error = ParseDiscriptorDistribution(graphic_pipeline_desc.descriptor_type);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//´´½¨×ÊÔ´
+		//åˆ›å»ºèµ„æº
 		HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateGraphicsPipelineState(&desc_out, IID_PPV_ARGS(&pso_data));
 		if (FAILED(hr))
 		{
@@ -975,9 +975,9 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 	}
 	else if (pipline_type == PSOType::PSO_TYPE_COMPUTE)
 	{
-		//ÏÈ´´½¨Ò»¸ö¼ÆËã¹ÜÏßµÄ·´Éä
+		//å…ˆåˆ›å»ºä¸€ä¸ªè®¡ç®—ç®¡çº¿çš„åå°„
 		compute_reflect.Create();
-		//¶ÁÈ¡¹ÜÏßµÄĞÅÏ¢
+		//è¯»å–ç®¡çº¿çš„ä¿¡æ¯
 		check_error = compute_reflect.LoadFromJsonMemory(file_name, pre_read_jsonRoot);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -985,7 +985,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		}
 		PipelineStateDescCompute compute_pipeline_desc;
 		compute_reflect.CopyMemberData(&compute_pipeline_desc, typeid(&compute_pipeline_desc).name(), sizeof(compute_pipeline_desc));
-		//¸ù¾İ¶ÁÈ¡µÄĞÅÏ¢½¨Á¢¹ÜÏßÊı¾İ
+		//æ ¹æ®è¯»å–çš„ä¿¡æ¯å»ºç«‹ç®¡çº¿æ•°æ®
 		check_error = PancyRootSignatureControl::GetInstance()->GetRootSignature(compute_pipeline_desc.root_signature_file, root_signature_ID);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -996,17 +996,17 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 
 		D3D12_COMPUTE_PIPELINE_STATE_DESC  desc_out = {};
 		desc_out.pRootSignature = root_signature_use;
-		//¼ÆËã×ÅÉ«Æ÷pipeline
+		//è®¡ç®—ç€è‰²å™¨pipeline
 		if (compute_pipeline_desc.compute_shader_file != "0" && compute_pipeline_desc.compute_shader_func != "0")
 		{
-			//»ñÈ¡shaderÊı¾İ
+			//è·å–shaderæ•°æ®
 			ComPtr<ID3DBlob> shader_data;
 			check_error = PancyShaderControl::GetInstance()->GetShaderData(compute_pipeline_desc.compute_shader_file, compute_pipeline_desc.compute_shader_func, "cs_5_1", &shader_data);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
-			//»ñÈ¡shader reflect²¢´æ´¢cbufferµÄĞÅÏ¢
+			//è·å–shader reflectå¹¶å­˜å‚¨cbufferçš„ä¿¡æ¯
 			ComPtr<ID3D12ShaderReflection> now_shader_reflect;
 			check_error = PancyShaderControl::GetInstance()->GetShaderReflection(compute_pipeline_desc.compute_shader_file, compute_pipeline_desc.compute_shader_func, "cs_5_1", &now_shader_reflect);
 			if (!check_error.CheckIfSucceed())
@@ -1018,15 +1018,15 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			{
 				return check_error;
 			}
-			//Ìî³äshaderĞÅÏ¢
+			//å¡«å……shaderä¿¡æ¯
 			desc_out.CS = CD3DX12_SHADER_BYTECODE(shader_data.Get());
-			//¶ÁÈ¡µ±Ç°pipelineµÄ×ÊÔ´°ó¶¨¸ñÊ½
+			//è¯»å–å½“å‰pipelineçš„èµ„æºç»‘å®šæ ¼å¼
 			check_error = ParseDiscriptorDistribution(compute_pipeline_desc.descriptor_type);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
-			//´´½¨×ÊÔ´
+			//åˆ›å»ºèµ„æº
 			HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateComputePipelineState(&desc_out, IID_PPV_ARGS(&pso_data));
 			if (FAILED(hr))
 			{
@@ -1177,17 +1177,17 @@ PancyEffectGraphic::PancyEffectGraphic()
 }
 void PancyEffectGraphic::AddPSOGlobelVariable()
 {
-	//PSO¸ñÊ½
+	//PSOæ ¼å¼
 	JSON_REFLECT_INIT_ENUM(PSO_TYPE_GRAPHIC);
 	JSON_REFLECT_INIT_ENUM(PSO_TYPE_COMPUTE);
-	//¼¸ºÎÌåÌî³ä¸ñÊ½
+	//å‡ ä½•ä½“å¡«å……æ ¼å¼
 	JSON_REFLECT_INIT_ENUM(D3D12_FILL_MODE_WIREFRAME);
 	JSON_REFLECT_INIT_ENUM(D3D12_FILL_MODE_SOLID);
-	//¼¸ºÎÌåÏûÒş¸ñÊ½
+	//å‡ ä½•ä½“æ¶ˆéšæ ¼å¼
 	JSON_REFLECT_INIT_ENUM(D3D12_CULL_MODE_NONE);
 	JSON_REFLECT_INIT_ENUM(D3D12_CULL_MODE_FRONT);
 	JSON_REFLECT_INIT_ENUM(D3D12_CULL_MODE_BACK);
-	//alpha»ìºÏÏµÊı
+	//alphaæ··åˆç³»æ•°
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_ZERO);
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_ONE);
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_SRC_COLOR);
@@ -1205,13 +1205,13 @@ void PancyEffectGraphic::AddPSOGlobelVariable()
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_INV_SRC1_COLOR);
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_SRC1_ALPHA);
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_INV_SRC1_ALPHA);
-	//alpha»ìºÏ²Ù×÷
+	//alphaæ··åˆæ“ä½œ
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_OP_ADD);
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_OP_SUBTRACT);
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_OP_REV_SUBTRACT);
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_OP_MIN);
 	JSON_REFLECT_INIT_ENUM(D3D12_BLEND_OP_MAX);
-	//alpha»ìºÏlogic²Ù×÷
+	//alphaæ··åˆlogicæ“ä½œ
 	JSON_REFLECT_INIT_ENUM(D3D12_LOGIC_OP_CLEAR);
 	JSON_REFLECT_INIT_ENUM(D3D12_LOGIC_OP_SET);
 	JSON_REFLECT_INIT_ENUM(D3D12_LOGIC_OP_COPY);
@@ -1228,16 +1228,16 @@ void PancyEffectGraphic::AddPSOGlobelVariable()
 	JSON_REFLECT_INIT_ENUM(D3D12_LOGIC_OP_AND_INVERTED);
 	JSON_REFLECT_INIT_ENUM(D3D12_LOGIC_OP_OR_REVERSE);
 	JSON_REFLECT_INIT_ENUM(D3D12_LOGIC_OP_OR_INVERTED);
-	//alpha»ìºÏÄ¿±êÑÚÂë
+	//alphaæ··åˆç›®æ ‡æ©ç 
 	JSON_REFLECT_INIT_ENUM(D3D12_COLOR_WRITE_ENABLE_RED);
 	JSON_REFLECT_INIT_ENUM(D3D12_COLOR_WRITE_ENABLE_GREEN);
 	JSON_REFLECT_INIT_ENUM(D3D12_COLOR_WRITE_ENABLE_BLUE);
 	JSON_REFLECT_INIT_ENUM(D3D12_COLOR_WRITE_ENABLE_ALPHA);
 	JSON_REFLECT_INIT_ENUM(D3D12_COLOR_WRITE_ENABLE_ALL);
-	//Éî¶È»º³åÇøĞ´ÑÚÂë
+	//æ·±åº¦ç¼“å†²åŒºå†™æ©ç 
 	JSON_REFLECT_INIT_ENUM(D3D12_DEPTH_WRITE_MASK_ZERO);
 	JSON_REFLECT_INIT_ENUM(D3D12_DEPTH_WRITE_MASK_ALL);
-	//Éî¶È»º³åÇø±È½Ïº¯Êı
+	//æ·±åº¦ç¼“å†²åŒºæ¯”è¾ƒå‡½æ•°
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_NEVER);
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_LESS);
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_EQUAL);
@@ -1246,7 +1246,7 @@ void PancyEffectGraphic::AddPSOGlobelVariable()
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_NOT_EQUAL);
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_GREATER_EQUAL);
 	JSON_REFLECT_INIT_ENUM(D3D12_COMPARISON_FUNC_ALWAYS);
-	//Ä£°å»º³åÇø²Ù×÷
+	//æ¨¡æ¿ç¼“å†²åŒºæ“ä½œ
 	JSON_REFLECT_INIT_ENUM(D3D12_STENCIL_OP_KEEP);
 	JSON_REFLECT_INIT_ENUM(D3D12_STENCIL_OP_ZERO);
 	JSON_REFLECT_INIT_ENUM(D3D12_STENCIL_OP_REPLACE);
@@ -1255,13 +1255,13 @@ void PancyEffectGraphic::AddPSOGlobelVariable()
 	JSON_REFLECT_INIT_ENUM(D3D12_STENCIL_OP_INVERT);
 	JSON_REFLECT_INIT_ENUM(D3D12_STENCIL_OP_INCR);
 	JSON_REFLECT_INIT_ENUM(D3D12_STENCIL_OP_DECR);
-	//äÖÈ¾Í¼Ôª¸ñÊ½
+	//æ¸²æŸ“å›¾å…ƒæ ¼å¼
 	JSON_REFLECT_INIT_ENUM(D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED);
 	JSON_REFLECT_INIT_ENUM(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT);
 	JSON_REFLECT_INIT_ENUM(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
 	JSON_REFLECT_INIT_ENUM(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 	JSON_REFLECT_INIT_ENUM(D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH);
-	//Descriptor¸ñÊ½
+	//Descriptoræ ¼å¼
 	JSON_REFLECT_INIT_ENUM(CbufferPrivate);
 	JSON_REFLECT_INIT_ENUM(CbufferGlobel);
 	JSON_REFLECT_INIT_ENUM(SRVGlobel);
@@ -1281,14 +1281,14 @@ void PancyEffectGraphic::AddJsonReflect()
 PancystarEngine::EngineFailReason PancyEffectGraphic::BuildPso(const std::string &pso_config_file)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//¼ÓÔØÒ»¸öĞÂµÄPSO½á¹¹
+	//åŠ è½½ä¸€ä¸ªæ–°çš„PSOç»“æ„
 	PancyPiplineStateObjectGraph *new_pancy = new PancyPiplineStateObjectGraph(pso_config_file);
 	check_error = new_pancy->Create();
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//¸ù¾İID³ØÊÇ·ñÎª¿ÕÀ´¾ö¶¨ĞÂ¿ª±ÙµÄ×ÊÔ´IDºÅ
+	//æ ¹æ®IDæ± æ˜¯å¦ä¸ºç©ºæ¥å†³å®šæ–°å¼€è¾Ÿçš„èµ„æºIDå·
 	pancy_object_id now_next_id;
 	if (empty_PSO_id.size() > 0)
 	{
@@ -1300,7 +1300,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::BuildPso(const std::string
 		now_next_id = PSO_id_self_add;
 		PSO_id_self_add += 1;
 	}
-	//½«×ÊÔ´²åÈëµ½×ÊÔ´±í
+	//å°†èµ„æºæ’å…¥åˆ°èµ„æºè¡¨
 	PSO_name.insert(std::pair<std::string, pancy_object_id>(pso_config_file, now_next_id));
 	PSO_name_reflect.insert(std::pair<pancy_object_id, std::string>(now_next_id, pso_config_file));
 	PSO_array.insert(std::pair<pancy_object_id, PancyPiplineStateObjectGraph*>(now_next_id, new_pancy));
@@ -1374,7 +1374,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetPSO(const std::string &
 	auto PSO_array_find = PSO_name.find(name_in);
 	if (PSO_array_find == PSO_name.end())
 	{
-		//Î´ÕÒµ½PSO£¬³¢ÊÔ¼ÓÔØ
+		//æœªæ‰¾åˆ°PSOï¼Œå°è¯•åŠ è½½
 		check_error = BuildPso(name_in);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -1509,7 +1509,7 @@ ConstantBufferAlloctor::ConstantBufferAlloctor(
 PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyConstantBuffer &cbuffer_data)
 {
 	CbufferPackList *now_used_buffer_resource = NULL;
-	//ÏÈ´ÓÏÖÓĞµÄbufferÖĞÑ°ÕÒÓĞÃ»ÓĞ¿ÕÏĞµÄ´æ´¢¿é
+	//å…ˆä»ç°æœ‰çš„bufferä¸­å¯»æ‰¾æœ‰æ²¡æœ‰ç©ºé—²çš„å­˜å‚¨å—
 	for (auto buffer_resource_data = all_cbuffer_list.begin(); buffer_resource_data != all_cbuffer_list.end(); ++buffer_resource_data)
 	{
 		if (buffer_resource_data->second->now_empty_offset.size() > 0)
@@ -1518,7 +1518,7 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyC
 			break;
 		}
 	}
-	//Èç¹ûÏÖÓĞµÄbuffer´æ´¢¿é¶¼ÒÑ¾­±»Ê¹ÓÃÁË£¬ÔòĞÂ¿ªÒ»¸ö¿ÕµÄbuffer
+	//å¦‚æœç°æœ‰çš„bufferå­˜å‚¨å—éƒ½å·²ç»è¢«ä½¿ç”¨äº†ï¼Œåˆ™æ–°å¼€ä¸€ä¸ªç©ºçš„buffer
 	if (now_used_buffer_resource == NULL)
 	{
 		VirtualResourcePointer new_buffer_resource;
@@ -1535,7 +1535,7 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyC
 		now_used_buffer_resource = new CbufferPackList(new_buffer_resource, cbuffer_size);
 		all_cbuffer_list.insert(std::pair<pancy_object_id, CbufferPackList*>(new_buffer_resource.GetResourceId(), now_used_buffer_resource));
 	}
-	//´ÓĞÂµÄ´æ´¢¿éµÄÖ¸¶¨Æ«ÒÆµã´´½¨Ò»¸öĞÂµÄcbuffer
+	//ä»æ–°çš„å­˜å‚¨å—çš„æŒ‡å®šåç§»ç‚¹åˆ›å»ºä¸€ä¸ªæ–°çš„cbuffer
 	auto now_alloc_data = *now_used_buffer_resource->now_empty_offset.begin();
 	auto check_error = cbuffer_data.Create(
 		cbuffer_name,
@@ -1549,14 +1549,14 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyC
 	{
 		return check_error;
 	}
-	//±ê¼ÇÖ¸¶¨µÄ´æ´¢¿éÒÑ¾­±»Ê¹ÓÃ
+	//æ ‡è®°æŒ‡å®šçš„å­˜å‚¨å—å·²ç»è¢«ä½¿ç”¨
 	now_used_buffer_resource->now_empty_offset.erase(now_alloc_data);
 	now_used_buffer_resource->now_use_offset.insert(now_alloc_data);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason ConstantBufferAlloctor::ReleaseCbuffer(const pancy_object_id &buffer_resource_id, const pancy_object_id &buffer_offset_id)
 {
-	//ÏÈ¼ì²é¸ø¶¨µÄ×ÊÔ´ÊÇ·ñÊÇÒÑ¾­¿ª±ÙµÄ×ÊÔ´
+	//å…ˆæ£€æŸ¥ç»™å®šçš„èµ„æºæ˜¯å¦æ˜¯å·²ç»å¼€è¾Ÿçš„èµ„æº
 	auto buffer_resource_pointer = all_cbuffer_list.find(buffer_resource_id);
 	if (buffer_resource_pointer == all_cbuffer_list.end())
 	{
@@ -1570,10 +1570,10 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::ReleaseCbuffer(const p
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ConstantBufferAlloctor::ReleaseCbuffer", error_message);
 		return error_message;
 	}
-	//½«×ÊÔ´µÄÆ«ÒÆÁ¿ÊÍ·Å
+	//å°†èµ„æºçš„åç§»é‡é‡Šæ”¾
 	buffer_resource_pointer->second->now_use_offset.erase(buffer_offset_id);
 	buffer_resource_pointer->second->now_empty_offset.insert(buffer_offset_id);
-	//Èç¹ûÊÍ·ÅÍê±Ïºó×ÊÔ´Ã»ÓĞÈÎºÎÒıÓÃÔòÉ¾³ıµô¸Ã×ÊÔ´
+	//å¦‚æœé‡Šæ”¾å®Œæ¯•åèµ„æºæ²¡æœ‰ä»»ä½•å¼•ç”¨åˆ™åˆ é™¤æ‰è¯¥èµ„æº
 	if (buffer_resource_pointer->second->now_use_offset.size() == 0)
 	{
 		delete buffer_resource_pointer->second;
@@ -1581,7 +1581,7 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::ReleaseCbuffer(const p
 	}
 	return PancystarEngine::succeed;
 }
-//³£Á¿»º³åÇø
+//å¸¸é‡ç¼“å†²åŒº
 PancystarEngine::EngineFailReason PancyConstantBuffer::SetMatrix(const std::string &variable, const DirectX::XMFLOAT4X4 &mat_data, const pancy_resource_size &offset)
 {
 	auto start_pos = member_variable.find(variable);
@@ -1589,7 +1589,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::SetMatrix(const std::stri
 	{
 		return ErrorVariableNotFind(variable);
 	}
-	//´«ÈëCbufferÖĞµÄ¾ØÕóĞèÒª×ö×ªÖÃ²Ù×÷
+	//ä¼ å…¥Cbufferä¸­çš„çŸ©é˜µéœ€è¦åšè½¬ç½®æ“ä½œ
 	DirectX::XMFLOAT4X4 transpose_mat;
 	DirectX::XMStoreFloat4x4(&transpose_mat, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&mat_data)));
 	memcpy(map_pointer_out + start_pos->second.start_offset + offset * sizeof(DirectX::XMFLOAT4X4), &transpose_mat, sizeof(transpose_mat));
@@ -1643,7 +1643,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::Create(
 	const Json::Value &root_value
 )
 {
-	//Ìî³ä»ù±¾ĞÅÏ¢
+	//å¡«å……åŸºæœ¬ä¿¡æ¯
 	cbuffer_name = cbuffer_name_in;
 	cbuffer_effect_name = cbuffer_effect_name_in;
 	buffer_ID = buffer_id_in;
@@ -1651,7 +1651,7 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::Create(
 	const PancyBasicBuffer *pointer = dynamic_cast<const PancyBasicBuffer*>(buffer_ID.GetResourceData());
 	cbuffer_size = cbuffer_size_in;
 	map_pointer_out = pointer->GetBufferCPUPointer() + buffer_offset_id * cbuffer_size;
-	//´ÓjsonÎÄ¼şÖĞ¶ÁÈ¡cbufferµÄ²¼¾Ö·´Éä
+	//ä»jsonæ–‡ä»¶ä¸­è¯»å–cbufferçš„å¸ƒå±€åå°„
 	PancystarEngine::EngineFailReason check_error;
 	std::string cbuffer_final_name = cbuffer_effect_name + "_" + cbuffer_name;
 	if (!check_error.CheckIfSucceed())
@@ -1677,10 +1677,10 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyConstantBuffer::GetCbufferDesc", error_mesage);
 		return error_mesage;
 	}
-	//¶ÁÈ¡»º³åÇø´óĞ¡
+	//è¯»å–ç¼“å†²åŒºå¤§å°
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_desc, "BufferSize", pancy_json_data_type::json_data_int, now_value);
 	cbuffer_size = static_cast<pancy_resource_size>(now_value.int_value);
-	//¶ÁÈ¡³£Á¿»º³åÇøµÄËùÓĞ±äÁ¿
+	//è¯»å–å¸¸é‡ç¼“å†²åŒºçš„æ‰€æœ‰å˜é‡
 	Json::Value value_cbuffer_member = value_cbuffer_desc.get("VariableMember", Json::Value::null);
 	if (value_cbuffer_member == Json::Value::null)
 	{
@@ -1694,28 +1694,28 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 		std::string variable_name;
 		Json::Value value_cbuffer_variable;
 		value_cbuffer_variable = value_cbuffer_member.get(i, Json::nullValue);
-		//¶ÁÈ¡±äÁ¿Ãû³Æ
+		//è¯»å–å˜é‡åç§°
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "Name", pancy_json_data_type::json_data_string, now_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		variable_name = now_value.string_value;
-		//¶ÁÈ¡±äÁ¿´óĞ¡
+		//è¯»å–å˜é‡å¤§å°
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "Size", pancy_json_data_type::json_data_int, now_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		new_variable_data.variable_size = now_value.int_value;
-		//¶ÁÈ¡±äÁ¿Æ«ÒÆ
+		//è¯»å–å˜é‡åç§»
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "StartOffset", pancy_json_data_type::json_data_int, now_value);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
 		new_variable_data.start_offset = now_value.int_value;
-		//¼ÇÂ¼µ±Ç°µÄĞÂ±äÁ¿
+		//è®°å½•å½“å‰çš„æ–°å˜é‡
 		member_variable.insert(std::pair<std::string, CbufferVariable>(variable_name, new_variable_data));
 	}
 	return PancystarEngine::succeed;

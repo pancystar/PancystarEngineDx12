@@ -8,14 +8,14 @@
 #define PancyEngineIdGPU uint8_t
 #define MaxSubmitCommandList 256
 #define PancyNowGraphicsCommandList ID3D12GraphicsCommandList1
-//commandlist¹ÜÀí(GPUÏß³Ì(fence)¹ÜÀí)
+//commandlistç®¡ç†(GPUçº¿ç¨‹(fence)ç®¡ç†)
 class PancyRenderCommandList
 {
-	std::atomic<bool> if_preparing;                       //ÊÇ·ñÕıÔÚ×¼±¸
-	std::atomic<bool> if_finish;                          //ÊÇ·ñÒÑ¾­ÓÉGPU´¦ÀíÍê±Ï
-	PancyThreadIdGPU command_list_ID;                     //commandlistµÄ±àºÅ
-	ComPtr<PancyNowGraphicsCommandList> command_list_data;  //commandlistÖ¸Õë
-	D3D12_COMMAND_LIST_TYPE command_list_type;            //commandlistÀàĞÍ
+	std::atomic<bool> if_preparing;                       //æ˜¯å¦æ­£åœ¨å‡†å¤‡
+	std::atomic<bool> if_finish;                          //æ˜¯å¦å·²ç»ç”±GPUå¤„ç†å®Œæ¯•
+	PancyThreadIdGPU command_list_ID;                     //commandlistçš„ç¼–å·
+	ComPtr<PancyNowGraphicsCommandList> command_list_data;  //commandlistæŒ‡é’ˆ
+	D3D12_COMMAND_LIST_TYPE command_list_type;            //commandlistç±»å‹
 public:
 	PancyRenderCommandList(PancyThreadIdGPU command_list_ID_in);
 	PancystarEngine::EngineFailReason Create
@@ -32,17 +32,17 @@ public:
 	{
 		return command_list_data.Get();
 	}
-	//¼ì²âµ±Ç°µÄcommandlistÊÇ·ñÕı´¦ÓÚ×¼±¸×´Ì¬(ÊÇ·ñÕıÔÚÕ¼¾İalloctor½øĞĞ×ÊÔ´·ÖÅä)
+	//æ£€æµ‹å½“å‰çš„commandlistæ˜¯å¦æ­£å¤„äºå‡†å¤‡çŠ¶æ€(æ˜¯å¦æ­£åœ¨å æ®alloctorè¿›è¡Œèµ„æºåˆ†é…)
 	inline bool CheckIfPrepare()
 	{
 		return if_preparing.load();
 	};
-	//¼ì²âµ±Ç°µÄcommandlistÊÇ·ñÒÑ¾­´¦ÀíÍê±Ï(ÊÇ·ñ¿ÉÒÔÊÍ·Å»òÖØĞÂÊ¹ÓÃ)
+	//æ£€æµ‹å½“å‰çš„commandlistæ˜¯å¦å·²ç»å¤„ç†å®Œæ¯•(æ˜¯å¦å¯ä»¥é‡Šæ”¾æˆ–é‡æ–°ä½¿ç”¨)
 	inline bool CheckIfFinish()
 	{
 		return if_finish.load();
 	}
-	//Ëø×¡×ÊÔ´·ÖÅäÆ÷£¬¿ªÆôcommandlistµÄ×ÊÔ´·ÖÅä(½øÈëÌî³äÃüÁî×´Ì¬,Ç°ÖÃ×´Ì¬Îª->Ö´ĞĞÍê±Ï×´Ì¬)
+	//é”ä½èµ„æºåˆ†é…å™¨ï¼Œå¼€å¯commandlistçš„èµ„æºåˆ†é…(è¿›å…¥å¡«å……å‘½ä»¤çŠ¶æ€,å‰ç½®çŠ¶æ€ä¸º->æ‰§è¡Œå®Œæ¯•çŠ¶æ€)
 	inline void LockPrepare(ID3D12CommandAllocator *allocator_use_in, ID3D12PipelineState *pso_use_in)
 	{
 		if (if_preparing.load() == false && if_finish.load() == true)
@@ -52,7 +52,7 @@ public:
 			command_list_data->Reset(allocator_use_in, pso_use_in);
 		}
 	}
-	//½âËø×ÊÔ´·ÖÅäÆ÷£¬¹Ø±ÕcommandlistµÄ×ÊÔ´·ÖÅä(½øÈë¹¤×÷/´ı¹¤×÷×´Ì¬,Ç°ÖÃ×´Ì¬Îª->Ìî³äÃüÁî×´Ì¬)
+	//è§£é”èµ„æºåˆ†é…å™¨ï¼Œå…³é—­commandlistçš„èµ„æºåˆ†é…(è¿›å…¥å·¥ä½œ/å¾…å·¥ä½œçŠ¶æ€,å‰ç½®çŠ¶æ€ä¸º->å¡«å……å‘½ä»¤çŠ¶æ€)
 	inline void UnlockPrepare()
 	{
 		if (if_preparing.load() == true)
@@ -61,7 +61,7 @@ public:
 			if_preparing.store(false);
 		}
 	}
-	//±êÖ¾×ÊÔ´´¦ÀíÍê±Ï(½øÈëÖ´ĞĞÍê±Ï×´Ì¬,Ç°ÖÃ×´Ì¬Îª->¹¤×÷/´ı¹¤×÷×´Ì¬)
+	//æ ‡å¿—èµ„æºå¤„ç†å®Œæ¯•(è¿›å…¥æ‰§è¡Œå®Œæ¯•çŠ¶æ€,å‰ç½®çŠ¶æ€ä¸º->å·¥ä½œ/å¾…å·¥ä½œçŠ¶æ€)
 	inline void EndProcessing() 
 	{
 		if (if_preparing.load() == false && if_finish.load() == false) 
@@ -72,54 +72,54 @@ public:
 };
 class CommandListEngine
 {
-	bool if_alloctor_locked;//×ÊÔ´·ÖÅäÆ÷ÊÇ·ñÕıÔÚÊ¹ÓÃ
-	D3D12_COMMAND_LIST_TYPE engine_type_id;//GPU´¦Àíµ¥ÔªµÄ±àºÅ(Í¼ĞÎ´¦Àí/Í¨ÓÃ¼ÆËã/×ÊÔ´ÉÏ´«/ÊÓÆµ½âÎö)
-	PancyThreadIdGPU now_prepare_commandlist;//µ±Ç°ÕıÔÚ±»·ÖÅäµÄcommandlist(Èç¹û×ÊÔ´·ÖÅäÆ÷Î´ÔÚÊ¹ÓÃÔò´ËÏîÎŞĞ§)
-	PancyThreadIdGPU command_list_ID_selfadd;//×ÔÔö³¤µÄcommandlistµÄidºÅ
-	ComPtr<ID3D12CommandAllocator> allocator_use;//commandlist·ÖÅäÆ÷
+	bool if_alloctor_locked;//èµ„æºåˆ†é…å™¨æ˜¯å¦æ­£åœ¨ä½¿ç”¨
+	D3D12_COMMAND_LIST_TYPE engine_type_id;//GPUå¤„ç†å•å…ƒçš„ç¼–å·(å›¾å½¢å¤„ç†/é€šç”¨è®¡ç®—/èµ„æºä¸Šä¼ /è§†é¢‘è§£æ)
+	PancyThreadIdGPU now_prepare_commandlist;//å½“å‰æ­£åœ¨è¢«åˆ†é…çš„commandlist(å¦‚æœèµ„æºåˆ†é…å™¨æœªåœ¨ä½¿ç”¨åˆ™æ­¤é¡¹æ— æ•ˆ)
+	PancyThreadIdGPU command_list_ID_selfadd;//è‡ªå¢é•¿çš„commandlistçš„idå·
+	ComPtr<ID3D12CommandAllocator> allocator_use;//commandliståˆ†é…å™¨
 	HANDLE wait_thread_ID;
-	ComPtr<ID3D12Fence> GPU_thread_fence;//ÓÃÓÚÔÚ½ÓÊÕµ±Ç°Ïß³Ì´¦ÀíGPUÍ¬²½ÏûÏ¢µÄfence
-	PancyFenceIdGPU fence_value_self_add;//×ÔÔö³¤µÄfencevalue
-	std::map<PancyFenceIdGPU, std::vector<PancyThreadIdGPU>> GPU_broken_point;//¼ÇÂ¼Ã¿¸öÇëÇóµÄGPU¶ÏµãËùÓ°Ïìµ½µÄcommandlist
-	//ÕıÔÚ¹¤×÷µÄcommandlist
+	ComPtr<ID3D12Fence> GPU_thread_fence;//ç”¨äºåœ¨æ¥æ”¶å½“å‰çº¿ç¨‹å¤„ç†GPUåŒæ­¥æ¶ˆæ¯çš„fence
+	PancyFenceIdGPU fence_value_self_add;//è‡ªå¢é•¿çš„fencevalue
+	std::map<PancyFenceIdGPU, std::vector<PancyThreadIdGPU>> GPU_broken_point;//è®°å½•æ¯ä¸ªè¯·æ±‚çš„GPUæ–­ç‚¹æ‰€å½±å“åˆ°çš„commandlist
+	//æ­£åœ¨å·¥ä½œçš„commandlist
 	std::unordered_map<PancyThreadIdGPU, PancyRenderCommandList*> command_list_work;
-	//ÖÆ×÷Íê±ÏµÄcommandlist
+	//åˆ¶ä½œå®Œæ¯•çš„commandlist
 	std::unordered_map<PancyThreadIdGPU, PancyRenderCommandList*> command_list_finish;
-	//¹¤×÷Íê±ÏµÄ¿ÕÏĞcommandlist
+	//å·¥ä½œå®Œæ¯•çš„ç©ºé—²commandlist
 	std::unordered_map<PancyThreadIdGPU, PancyRenderCommandList*> command_list_empty;
 	ID3D12CommandList* commandlist_array[MaxSubmitCommandList];
 public:
 	CommandListEngine(const D3D12_COMMAND_LIST_TYPE &type_need);
 	~CommandListEngine();
 	PancystarEngine::EngineFailReason Create();
-	//»ñÈ¡Ò»¸ö¿ÕÏĞµÄcommandlist
+	//è·å–ä¸€ä¸ªç©ºé—²çš„commandlist
 	PancystarEngine::EngineFailReason GetEmptyRenderlist
 	(
 		ID3D12PipelineState *pso_use_in,
 		PancyRenderCommandList** command_list_data,
 		PancyThreadIdGPU &command_list_ID
 	);
-	//ÉèÖÃÒ»¸öGPU¶Ïµã
+	//è®¾ç½®ä¸€ä¸ªGPUæ–­ç‚¹
 	PancystarEngine::EngineFailReason SetGpuBrokenFence(PancyFenceIdGPU &broken_point_id);
-	//²éÑ¯Ò»¸öGPU¶Ïµã
+	//æŸ¥è¯¢ä¸€ä¸ªGPUæ–­ç‚¹
 	bool CheckGpuBrokenFence(const PancyFenceIdGPU &broken_point_id);
-	//µÈ´ıÒ»¸öGPU¶Ïµã
+	//ç­‰å¾…ä¸€ä¸ªGPUæ–­ç‚¹
 	PancystarEngine::EngineFailReason WaitGpuBrokenFence(const PancyFenceIdGPU &broken_point_id);
-	//»ñÈ¡ÏÂÒ»¸ö½«Òª½øĞĞµÄGPU¶Ïµã
+	//è·å–ä¸‹ä¸€ä¸ªå°†è¦è¿›è¡Œçš„GPUæ–­ç‚¹
 	inline PancyFenceIdGPU GetNextBrokenFence() 
 	{
 		return fence_value_self_add;
 	}
-	//Ìá½»Ò»¸ö×¼±¸Íê±ÏµÄcommandlist
+	//æäº¤ä¸€ä¸ªå‡†å¤‡å®Œæ¯•çš„commandlist
 	PancystarEngine::EngineFailReason SubmitRenderlist
 	(
 		const uint32_t command_list_num,
 		const PancyThreadIdGPU *command_list_ID
 	);
-	//ÊÍ·ÅcommandalloctorµÄÄÚ´æ
+	//é‡Šæ”¾commandalloctorçš„å†…å­˜
 	PancystarEngine::EngineFailReason FreeAlloctor();
 private:
-	//¸üĞÂµ±Ç°ÕıÔÚ±»·ÖÅäµÄcommandlist£¬¼ì²âÆäÊÇ·ñÒÑ¾­·ÖÅäÍê±Ï
+	//æ›´æ–°å½“å‰æ­£åœ¨è¢«åˆ†é…çš„commandlistï¼Œæ£€æµ‹å…¶æ˜¯å¦å·²ç»åˆ†é…å®Œæ¯•
 	void UpdateLastRenderList();
 	template<class T>
 	void ReleaseList(T &list_in)
@@ -137,16 +137,16 @@ class ThreadPoolGPU
 {
 	PancyThreadPoolIdGPU GPUThreadPoolID;
 	int32_t pre_thread_id;
-	//multi engine ±äÁ¿(¸ù¾İbackbufferµÄÊıÁ¿À´¾ö¶¨Ê¹ÓÃ¼¸¸örename»º³åÇø)
+	//multi engine å˜é‡(æ ¹æ®backbufferçš„æ•°é‡æ¥å†³å®šä½¿ç”¨å‡ ä¸ªrenameç¼“å†²åŒº)
 	std::vector<std::unordered_map<PancyEngineIdGPU, CommandListEngine*>> multi_engine_list;
-	//Ïß³Ì³ØÊÇ·ñ¸úËæ½»»»Á´½øĞĞrename²Ù×÷
+	//çº¿ç¨‹æ± æ˜¯å¦è·Ÿéšäº¤æ¢é“¾è¿›è¡Œrenameæ“ä½œ
 	bool if_rename;
 public:
 	ThreadPoolGPU(uint32_t GPUThreadPoolID_in,bool if_rename_in = true);
 	~ThreadPoolGPU();
-	//»ñÈ¡¶ÔÓ¦ÀàĞÍµÄÏß³Ì³Ø
+	//è·å–å¯¹åº”ç±»å‹çš„çº¿ç¨‹æ± 
 	CommandListEngine* GetThreadPool(D3D12_COMMAND_LIST_TYPE engine_type);
-	//»ñÈ¡ÉÏÒ»Ö¡µÄÏß³Ì³Ø
+	//è·å–ä¸Šä¸€å¸§çš„çº¿ç¨‹æ± 
 	CommandListEngine* GetLastThreadPool(D3D12_COMMAND_LIST_TYPE engine_type);
 	PancystarEngine::EngineFailReason Create();
 private:
@@ -164,8 +164,8 @@ private:
 
 class ThreadPoolGPUControl
 {
-	ThreadPoolGPU* main_contex;         //Ö÷äÖÈ¾Ïß³Ì³Ø
-	ThreadPoolGPU* resource_load_contex;//×ÊÔ´¼ÓÔØÏß³Ì³Ø
+	ThreadPoolGPU* main_contex;         //ä¸»æ¸²æŸ“çº¿ç¨‹æ± 
+	ThreadPoolGPU* resource_load_contex;//èµ„æºåŠ è½½çº¿ç¨‹æ± 
 	int GPU_thread_pool_self_add;
 	std::unordered_map<uint32_t, ThreadPoolGPU*> GPU_thread_pool_empty;
 	std::unordered_map<uint32_t, ThreadPoolGPU*> GPU_thread_pool_working;
@@ -200,5 +200,5 @@ public:
 		return main_contex;
 	}
 	~ThreadPoolGPUControl();
-	//todo:ÎªCPU¶àÏß³Ì·ÖÅäcommand alloctor
+	//todo:ä¸ºCPUå¤šçº¿ç¨‹åˆ†é…command alloctor
 };

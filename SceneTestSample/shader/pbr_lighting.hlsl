@@ -1,6 +1,6 @@
 #define PI 3.14159265359f
 #define MaxInstanceNum 100
-//³£Á¿»º³åÇø
+//å¸¸é‡ç¼“å†²åŒº
 struct instance_data
 {
 	float4x4 world_matrix;
@@ -18,11 +18,11 @@ cbuffer per_frame : register(b1)
 	float4x4 invview_matrix;
 	float4   view_position;
 }
-//»·¾³¹âIBLÓëbrdfÔ¤¼ÆËã
+//ç¯å¢ƒå…‰IBLä¸brdfé¢„è®¡ç®—
 TextureCube environment_IBL_spec    : register(t0);
 TextureCube environment_IBL_diffuse : register(t1);
 texture2D   environment_brdf        : register(t2);
-//¶¥µã¶¯»­
+//é¡¶ç‚¹åŠ¨ç”»
 struct mesh_anim
 {
 	float3 pos;
@@ -30,11 +30,11 @@ struct mesh_anim
 	float3 tangent;
 };
 StructuredBuffer<mesh_anim> input_point: register(t3);
-//Ä£ĞÍ×Ô´øµÄÌùÍ¼
+//æ¨¡å‹è‡ªå¸¦çš„è´´å›¾
 texture2D   texture_model[]         : register(t4);
-//¾²Ì¬²ÉÑùÆ÷
+//é™æ€é‡‡æ ·å™¨
 SamplerState samTex_liner : register(s0);
-//ÎŞ¶¯»­¶¥µã¸ñÊ½
+//æ— åŠ¨ç”»é¡¶ç‚¹æ ¼å¼
 struct VSInput
 {
 	float3 position : POSITION;
@@ -42,10 +42,10 @@ struct VSInput
 	float3 tangent  : TANGENT;
 	uint4  tex_id   : TEXID;
 	float4 tex_uv   : TEXUV;
-	uint InstanceId : SV_InstanceID;//instaceË÷ÒıºÅ
+	uint InstanceId : SV_InstanceID;//instaceç´¢å¼•å·
 };
 
-//¹Ç÷À¶¯»­¶¥µã¸ñÊ½
+//éª¨éª¼åŠ¨ç”»é¡¶ç‚¹æ ¼å¼
 struct VSInputBone
 {
 	float3 position     : POSITION;
@@ -56,11 +56,11 @@ struct VSInputBone
 	uint4  bone_id      : BONEID;
 	float4 bone_weight0 : BONEWEIGHTFIR;
 	float4 bone_weight1 : BONEWEIGHTSEC;
-	uint   InstanceId : SV_InstanceID;//ÊµÀıIDºÅ
-	uint   VertexID   : SV_VertexID;  //¶¥µãIDºÅ
+	uint   InstanceId : SV_InstanceID;//å®ä¾‹IDå·
+	uint   VertexID   : SV_VertexID;  //é¡¶ç‚¹IDå·
 };
 
-//¶¥µã±äĞÎ¶¯»­¶¥µã¸ñÊ½
+//é¡¶ç‚¹å˜å½¢åŠ¨ç”»é¡¶ç‚¹æ ¼å¼
 struct VSInputCatch
 {
 	float3 position : POSITION;
@@ -69,7 +69,7 @@ struct VSInputCatch
 	uint4  tex_id   : TEXID;
 	float4 tex_uv   : TEXUV;
 	uint4  anim_id  : ANIMID;
-	uint InstanceId : SV_InstanceID;//instaceË÷ÒıºÅ
+	uint InstanceId : SV_InstanceID;//instaceç´¢å¼•å·
 };
 struct PSInput
 {
@@ -92,7 +92,7 @@ PSInput VSMain(VSInput vinput)
 	result.position = mul(float4(vinput.position, 1.0f), _Instances[vinput.InstanceId].world_matrix);
 	result.position = mul(result.position, view_projectmatrix);
 	result.pos_out = mul(float4(vinput.position, 1.0), _Instances[vinput.InstanceId].world_matrix);
-	//Ä£ĞÍ²»×ö²»µÈËõ·Å,¿ÉÒÔÊ¹ÓÃÊÀ½ç±ä»»×÷Îª·¨Ïß±ä»»
+	//æ¨¡å‹ä¸åšä¸ç­‰ç¼©æ”¾,å¯ä»¥ä½¿ç”¨ä¸–ç•Œå˜æ¢ä½œä¸ºæ³•çº¿å˜æ¢
 	result.normal = normalize(mul(float4(vinput.normal, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
 	result.tangent = normalize(mul(float4(vinput.tangent, 0.0), _Instances[vinput.InstanceId].world_matrix).xyz);
 	result.tex_id = vinput.tex_id;
@@ -103,13 +103,13 @@ PSInput VSMain(VSInput vinput)
 PSInput VSMainBone(VSInputBone vinput)
 {
 	PSInput result;
-	//¸ù¾İcbufferÖĞµÄ¶¥µã¶¯»­Æ«ÒÆÒÔ¼°¶¥µãµÄIDºÅ»ñÈ¡µ±Ç°¶¥µãµÄ¶¯»­Êı¾İÎ»ÖÃ
+	//æ ¹æ®cbufferä¸­çš„é¡¶ç‚¹åŠ¨ç”»åç§»ä»¥åŠé¡¶ç‚¹çš„IDå·è·å–å½“å‰é¡¶ç‚¹çš„åŠ¨ç”»æ•°æ®ä½ç½®
 	uint index_anim = _Instances[vinput.InstanceId].animation_offset.x + vinput.VertexID;
-	//»ñÈ¡µ±Ç°¶¥µã¹Ç÷À±ä»»ºóµÄ½á¹ûÊı¾İ
+	//è·å–å½“å‰é¡¶ç‚¹éª¨éª¼å˜æ¢åçš„ç»“æœæ•°æ®
 	float3 used_position = input_point[index_anim].pos;
 	float3 used_normal = normalize(input_point[index_anim].norm);
 	float3 used_tangent = normalize(input_point[index_anim].tangent);
-	//Ê¹ÓÃ»ñÈ¡µ½µÄÃÉÆ¤Êı¾İ½øĞĞ¼¸ºÎ±ä»»
+	//ä½¿ç”¨è·å–åˆ°çš„è’™çš®æ•°æ®è¿›è¡Œå‡ ä½•å˜æ¢
 	result.position = mul(float4(used_position, 1.0f), _Instances[vinput.InstanceId].world_matrix);
 	result.position = mul(result.position, view_projectmatrix);
 	result.pos_out = mul(float4(used_position, 1.0), _Instances[vinput.InstanceId].world_matrix);
@@ -123,7 +123,7 @@ PSInput VSMainBone(VSInputBone vinput)
 PSInput VSMainPointCatch(VSInputCatch vinput)
 {
 }
-//·ÆÄù¶ûÏµÊı
+//è²æ¶…å°”ç³»æ•°
 float3 Fresnel_Schlick(float3 specularColor, float3 h, float3 v)
 {
 	return (specularColor + (1.0f - specularColor) * pow((1.0f - saturate(dot(v, h))), 5));
@@ -139,7 +139,7 @@ float3 Fresnel_CookTorrance(float3 specularColor, float3 h, float3 v)
 
 	return max(0.0f.xxx, 0.5f * part1 * part1 * (1 + part2 * part2));
 }
-//·¨ÏßÈÅÂÒÏµÊı
+//æ³•çº¿æ‰°ä¹±ç³»æ•°
 float NormalDistribution_GGX(float a, float NdH)
 {
 	// Isotropic ggx.
@@ -163,7 +163,7 @@ float NormalDistribution_Beckmann(float a, float NdH)
 
 	return (1.0f / (PI * a2 * NdH2 * NdH2 + 0.001)) * exp((NdH2 - 1.0f) / (a2 * NdH2));
 }
-//¼¸ºÎÌå×ÔÕÚµ²ÏµÊı
+//å‡ ä½•ä½“è‡ªé®æŒ¡ç³»æ•°
 float Geometric_Implicit(float a, float NdV, float NdL)
 {
 	return NdL * NdV;
@@ -216,7 +216,7 @@ float Geometric_Smith_Schlick_GGX(float a, float NdV, float NdL)
 
 	return GV * GL;
 }
-//¼ÆËãpbrÖ±½Ó¹âÕÕ
+//è®¡ç®—pbrç›´æ¥å…‰ç…§
 float3 count_pbr_reflect(
 	float3 light_color,
 	float3 realAlbedo,
@@ -229,20 +229,20 @@ float3 count_pbr_reflect(
 	float3 reflect_dir
 )
 {
-	//½«½ğÊô¶È¼°Âş·´ÉäÑÕÉ«»¹Ô­ÎªÂş·´ÉäÏµÊıÒÔ¼°¾µÃæ·´ÉäÏµÊı
+	//å°†é‡‘å±åº¦åŠæ¼«åå°„é¢œè‰²è¿˜åŸä¸ºæ¼«åå°„ç³»æ•°ä»¥åŠé•œé¢åå°„ç³»æ•°
 	/*
 	float3 realAlbedo = tex_albedo_in.rgb - tex_albedo_in.rgb * tex_matallic;
 	float3 F0 = lerp(0.03f, tex_albedo_in.rgb, tex_matallic);
 	*/
-	//°ë½Ç·½Ïò
+	//åŠè§’æ–¹å‘
 	float3 h_vec = normalize((light_dir_in + direction_view) / 2.0f);
-	//Âş·´ÉäÇ¿¶È(albedoµÄÂş·´Éä·ÖÁ¿)
+	//æ¼«åå°„å¼ºåº¦(albedoçš„æ¼«åå°„åˆ†é‡)
 	float3 diffuse_out = realAlbedo / PI;
-	//ÊÓÏßÓë·¨ÏßµÄ¼Ğ½Ç
+	//è§†çº¿ä¸æ³•çº¿çš„å¤¹è§’
 	float view_angle = max(0.03f, dot(direction_view, normal));
-	//·ÆÄù¶ûÏµÊı
+	//è²æ¶…å°”ç³»æ•°
 	float3 fresnel = Fresnel_CookTorrance(F0, direction_view, h_vec);
-	//NDF·¨ÏßÈÅÂÒÏî
+	//NDFæ³•çº¿æ‰°ä¹±é¡¹
 	//float alpha = max(0.001f, roughness * roughness);
 	float nh_mul = saturate(dot(normal, h_vec));
 	float ndf = NormalDistribution_GGX(alpha, nh_mul);
@@ -251,7 +251,7 @@ float3 count_pbr_reflect(
 	float divide_ndf2 = PI * divide_ndf1 *divide_ndf1;
 	float ndf = (alpha*alpha) / divide_ndf2;
 	*/
-	//GGXÕÚµ²Ïî
+	//GGXé®æŒ¡é¡¹
 	float ggx = Geometric_Smith_Schlick_GGX(alpha, view_angle, diffuse_angle);
 	/*
 	float ggx_k = (tex_roughness + 1.0f) * (tex_roughness + 1.0f) / 8.0f;
@@ -261,11 +261,11 @@ float3 count_pbr_reflect(
 	float3 v = reflect(light_dir_in, normal);
 	float blin_phong = pow(max(dot(v, direction_view), 0.0f), 10);
 	*/
-	//×îÖÕµÄ¾µÃæ·´ÉäÏî
+	//æœ€ç»ˆçš„é•œé¢åå°„é¡¹
 	float3 specular_out = (fresnel * ndf * ggx) / (4 * view_angle * diffuse_angle);
 	return light_color * diffuse_angle * (diffuse_out * (1.0f - specular_out) + specular_out);
 }
-//¼ÆËãpbr»·¾³¹âÕÕ
+//è®¡ç®—pbrç¯å¢ƒå…‰ç…§
 float3 count_pbr_environment(
 	float tex_roughness,
 	float NoV,
@@ -288,26 +288,26 @@ float3 count_pbr_environment(
 }
 float4 PSMain(PSInput pin) : SV_TARGET
 {
-	//²ÉÑùÄ£ĞÍ×Ô´øµÄÎÆÀí
-	uint self_id_diffuse = pin.tex_id.x+0;     //Âş·´ÉäÌùÍ¼
-	uint self_id_normal = pin.tex_id.x + 1; //·¨ÏßÌùÍ¼
-	uint self_id_metallic = pin.tex_id.x + 3; //½ğÊô¶ÈÌùÍ¼
-	uint self_id_roughness = pin.tex_id.x + 4; //´Ö²Ú¶ÈÌùÍ¼
+	//é‡‡æ ·æ¨¡å‹è‡ªå¸¦çš„çº¹ç†
+	uint self_id_diffuse = pin.tex_id.x+0;     //æ¼«åå°„è´´å›¾
+	uint self_id_normal = pin.tex_id.x + 1; //æ³•çº¿è´´å›¾
+	uint self_id_metallic = pin.tex_id.x + 3; //é‡‘å±åº¦è´´å›¾
+	uint self_id_roughness = pin.tex_id.x + 4; //ç²—ç³™åº¦è´´å›¾
 	float4 diffuse_color = texture_model[self_id_diffuse].Sample(samTex_liner, pin.tex_uv.xy);
 	float4 normal_color = texture_model[self_id_normal].Sample(samTex_liner, pin.tex_uv.xy);
 	float4 metallic_color = texture_model[self_id_metallic].Sample(samTex_liner, pin.tex_uv.xy);
 	float4 roughness_color = texture_model[self_id_roughness].Sample(samTex_liner, pin.tex_uv.xy);
-	//·¨Ïß±ä»»¼ÆËãÕæÊµµÄÏ¸½Ú·¨Ïß
+	//æ³•çº¿å˜æ¢è®¡ç®—çœŸå®çš„ç»†èŠ‚æ³•çº¿
 	float3 N = pin.normal;
 	float3 T = normalize(pin.tangent - N * pin.tangent * N);
 	float3 B = cross(N, T);
 	float3x3 T2W = float3x3(T, B, N);
 	float3 real_normal = 2 * normal_color.rgb - 1;
 	real_normal = normalize(mul(real_normal, T2W));
-	//ĞéÄâ·½Ïò¹â¹âÔ´
+	//è™šæ‹Ÿæ–¹å‘å…‰å…‰æº
 	float3 light_color = float3(1.0, 1.0, 1.0);
 	float3 light_dir = normalize(float3(1,1,0));
-	//¼ÆËãÖ±½Ó¹âÕÕËùĞèµÄpbr²ÎÊı
+	//è®¡ç®—ç›´æ¥å…‰ç…§æ‰€éœ€çš„pbrå‚æ•°
 	float3 view_dir = normalize(view_position.xyz - pin.pos_out.xyz);
 	float3 realAlbedo = diffuse_color.rgb - diffuse_color.rgb * metallic_color.r;
 	float3 F0 = lerp(0.03f, diffuse_color.rgb, metallic_color.r);

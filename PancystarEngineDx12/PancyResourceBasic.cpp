@@ -1,9 +1,9 @@
 #include"PancyResourceBasic.h"
 using namespace PancystarEngine;
-//ĞéÄâ×ÊÔ´µÄÖÇÄÜÖ¸Õë
+//è™šæ‹Ÿèµ„æºçš„æ™ºèƒ½æŒ‡é’ˆ
 VirtualResourcePointer::VirtualResourcePointer()
 {
-	//×ÊÔ´IDºÅ
+	//èµ„æºIDå·
 	resource_id = 0;
 	if_NULL = true;
 }
@@ -71,7 +71,7 @@ PancystarEngine::EngineFailReason VirtualResourcePointer::MakeShared(const pancy
 	if_NULL = false;
 	return PancystarEngine::succeed;
 }
-//ÖĞ¼ä¶¯Ì¬×ÊÔ´µÄ·ÖÅä³Ø
+//ä¸­é—´åŠ¨æ€èµ„æºçš„åˆ†é…æ± 
 PancyDynamicRingBuffer::PancyDynamicRingBuffer()
 {
 	LoadInitData();
@@ -107,16 +107,16 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//Èç¹ûring-bufferÖĞ»¹´æÔÚ´ı´¦ÀíµÄĞÅÏ¢£¬ÔòÔËĞĞÒ»±é×ÊÔ´ÇåÀíº¯Êı
+	//å¦‚æœring-bufferä¸­è¿˜å­˜åœ¨å¾…å¤„ç†çš„ä¿¡æ¯ï¼Œåˆ™è¿è¡Œä¸€éèµ„æºæ¸…ç†å‡½æ•°
 	if (!ResourceUploadingMap.empty())
 	{
 		RefreshOldDynamicData();
 	}
 	pancy_resource_size alloc_start_position;
-	//²é¿´µ±Ç°»º³åÇøÊÇ·ñÓĞ×ã¹»µÄ¿Õ¼ä
+	//æŸ¥çœ‹å½“å‰ç¼“å†²åŒºæ˜¯å¦æœ‰è¶³å¤Ÿçš„ç©ºé—´
 	if (pointer_tail_offset > pointer_head_offset)
 	{
-		//Í·Ö¸ÕëĞ¡ÓÚÎ²Ö¸Õë£¬´ËÊ±µÄ¿ÉÓÃ¿Õ¼ä½öÓĞÍ·Î²Ö¸ÕëÖ®¼äµÄ¿Õ¼ä
+		//å¤´æŒ‡é’ˆå°äºå°¾æŒ‡é’ˆï¼Œæ­¤æ—¶çš„å¯ç”¨ç©ºé—´ä»…æœ‰å¤´å°¾æŒ‡é’ˆä¹‹é—´çš„ç©ºé—´
 		pancy_resource_size head_could_use_size = pointer_tail_offset - pointer_head_offset;
 		if (head_could_use_size < data_size)
 		{
@@ -128,7 +128,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
 	}
 	else
 	{
-		//Í·Ö¸Õë´óÓÚÎ²Ö¸Õë£¬´ËÊ±µÄ¿ÉÓÃ¿Õ¼äÓĞÁ½Æ¬£¬ÆäÒ»ÊÇÍ·Ö¸Õëµ½bufferÎ²²¿µÄ¿Õ¼ä£¬Æä¶şÊÇbufferÍ·µ½Î²Ö¸ÕëµÄ¿Õ¼ä
+		//å¤´æŒ‡é’ˆå¤§äºå°¾æŒ‡é’ˆï¼Œæ­¤æ—¶çš„å¯ç”¨ç©ºé—´æœ‰ä¸¤ç‰‡ï¼Œå…¶ä¸€æ˜¯å¤´æŒ‡é’ˆåˆ°bufferå°¾éƒ¨çš„ç©ºé—´ï¼Œå…¶äºŒæ˜¯bufferå¤´åˆ°å°¾æŒ‡é’ˆçš„ç©ºé—´
 		pancy_resource_size head_could_use_size_1 = buffer_size - pointer_head_offset;
 		if (head_could_use_size_1 >= data_size)
 		{
@@ -149,7 +149,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
 			}
 		}
 	}
-	//¸ù¾İĞÂµÄÍ·²¿Ö¸ÕëĞÅÏ¢£¬¿ª±ÙbufferÊı¾İ
+	//æ ¹æ®æ–°çš„å¤´éƒ¨æŒ‡é’ˆä¿¡æ¯ï¼Œå¼€è¾Ÿbufferæ•°æ®
 	ComPtr<ID3D12Resource> resource_data;
 	D3D12_RESOURCE_DESC resource_desc;
 	resource_desc.Alignment = 0;
@@ -177,7 +177,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDynamicRingBuffer::AllocNewDynamicData", check_error);
 		return check_error;
 	}
-	//½«´´½¨³É¹¦µÄ×ÊÔ´°ó¶¨µ½gpu×ÊÔ´
+	//å°†åˆ›å»ºæˆåŠŸçš„èµ„æºç»‘å®šåˆ°gpuèµ„æº
 	*new_block = new UploadResourceBlock(
 		pointer_head_offset,
 		alloc_start_position + data_size,
@@ -205,13 +205,13 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 	{
 		return check_error;
 	}
-	//½«Êı¾İ´ÓCPU¿½±´µ½dynamic-buffer
+	//å°†æ•°æ®ä»CPUæ‹·è´åˆ°dynamic-buffer
 	check_error = new_dynamic_block->dynamic_buffer_resource.WriteFromCpuToBuffer(0, data_pointer, data_size_in);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//½«Êı¾İ´Ódynamic-buffer¿½±´µ½ÏÔ´æ
+	//å°†æ•°æ®ä»dynamic-bufferæ‹·è´åˆ°æ˜¾å­˜
 	check_error = new_dynamic_block->static_gpu_resource->CopyFromDynamicBufferToGpu(
 		commandlist,
 		new_dynamic_block->dynamic_buffer_resource,
@@ -223,7 +223,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 	{
 		return check_error;
 	}
-	//Ìí¼Ó×ÊÔ´¼ÇÂ¼µ½¶ÓÁĞ
+	//æ·»åŠ èµ„æºè®°å½•åˆ°é˜Ÿåˆ—
 	ResourceUploadingMap.push(new_dynamic_block);
 	return PancystarEngine::succeed;
 }
@@ -245,7 +245,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 	{
 		return check_error;
 	}
-	//½«Êı¾İ´ÓCPU¿½±´µ½dynamic-buffer
+	//å°†æ•°æ®ä»CPUæ‹·è´åˆ°dynamic-buffer
 	check_error = new_dynamic_block->dynamic_buffer_resource.WriteFromCpuToBuffer(
 		0,
 		subresources,
@@ -257,7 +257,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 	{
 		return check_error;
 	}
-	//½«Êı¾İ´Ódynamic-buffer¿½±´µ½ÏÔ´æ
+	//å°†æ•°æ®ä»dynamic-bufferæ‹·è´åˆ°æ˜¾å­˜
 	check_error = new_dynamic_block->static_gpu_resource->CopyFromDynamicBufferToGpu(
 		commandlist,
 		new_dynamic_block->dynamic_buffer_resource,
@@ -269,7 +269,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 
 		return check_error;
 	}
-	//Ìí¼Ó×ÊÔ´¼ÇÂ¼µ½¶ÓÁĞ
+	//æ·»åŠ èµ„æºè®°å½•åˆ°é˜Ÿåˆ—
 	ResourceUploadingMap.push(new_dynamic_block);
 	return PancystarEngine::succeed;
 }
@@ -281,14 +281,14 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::RefreshOldDynamicData(
 		if (top_data->static_gpu_resource->GetResourceLoadingState() == PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH)
 		{
 			ResourceUploadingMap.pop();
-			//¼ì²âµ±Ç°×ÊÔ´ÊÍ·ÅÖ®Ç°µÄÖ¸ÕëÊÇ·ñÓëÆÚ´ıµÄÒ»ÖÂ
+			//æ£€æµ‹å½“å‰èµ„æºé‡Šæ”¾ä¹‹å‰çš„æŒ‡é’ˆæ˜¯å¦ä¸æœŸå¾…çš„ä¸€è‡´
 			if (top_data->pointer_before_alloc != pointer_tail_offset)
 			{
 				PancystarEngine::EngineFailReason error_message(E_FAIL, "dynamic buffer pointer dismatch");
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::RefreshOldDynamicData", error_message);
 				return error_message;
 			}
-			//ÊÍ·ÅÍê±ÏºóĞŞ¸ÄÎ²Ö¸Õë
+			//é‡Šæ”¾å®Œæ¯•åä¿®æ”¹å°¾æŒ‡é’ˆ
 			pointer_tail_offset = top_data->pointer_after_alloc;
 			delete top_data;
 		}
@@ -299,7 +299,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::RefreshOldDynamicData(
 	}
 	return PancystarEngine::succeed;
 }
-//»ù´¡×ÊÔ´
+//åŸºç¡€èµ„æº
 PancyBasicVirtualResource::PancyBasicVirtualResource(const bool &if_could_reload_in)
 {
 	if_could_reload = if_could_reload_in;
@@ -326,7 +326,7 @@ void PancyBasicVirtualResource::DeleteReference()
 PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::string &resource_name_in)
 {
 	resource_name = resource_name_in;
-	//¸ù¾İÎÄ¼şÀàĞÍ¾ö¶¨ÒÔºÎÖÖ·½Ê½¼ÓÔØ×ÊÔ´
+	//æ ¹æ®æ–‡ä»¶ç±»å‹å†³å®šä»¥ä½•ç§æ–¹å¼åŠ è½½èµ„æº
 	if (resource_name_in.find(".json") == resource_name_in.size()-5)
 	{
 		Json::Value jsonRoot;
@@ -374,7 +374,7 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 	}
 	return PancystarEngine::succeed;
 }
-//»ù´¡×ÊÔ´¹ÜÀíÆ÷
+//åŸºç¡€èµ„æºç®¡ç†å™¨
 PancyGlobelResourceControl::PancyGlobelResourceControl()
 {
 }
@@ -412,7 +412,7 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::AddResourceToContr
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_object_id id_now;
-	//ÅĞ¶ÏÊÇ·ñÓĞ¿ÕÏĞµÄid±àºÅ
+	//åˆ¤æ–­æ˜¯å¦æœ‰ç©ºé—²çš„idç¼–å·
 	if (free_id_list.size() > 0)
 	{
 		id_now = *free_id_list.begin();
@@ -424,10 +424,10 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::AddResourceToContr
 	}
 	if (!if_allow_repeat)
 	{
-		//Ìí¼ÓÃû³Æ-id±íÓÃÓÚÅĞÖØ
+		//æ·»åŠ åç§°-idè¡¨ç”¨äºåˆ¤é‡
 		resource_name_list.insert(std::pair<std::string, pancy_object_id>(name_resource_in, id_now));
 	}
-	//²åÈëµ½×ÊÔ´ÁĞ±í
+	//æ’å…¥åˆ°èµ„æºåˆ—è¡¨
 	basic_resource_array.insert(std::pair<pancy_object_id, PancyBasicVirtualResource*>(id_now, new_data));
 	check_error = res_pointer.MakeShared(id_now);
 	if (!check_error.CheckIfSucceed())
@@ -458,14 +458,14 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::DeleteResurceRefer
 		return error_message;
 	}
 	data_now->second->DeleteReference();
-	//ÒıÓÃ¼ÆÊıÎª0,É¾³ı¸Ã×ÊÔ´
+	//å¼•ç”¨è®¡æ•°ä¸º0,åˆ é™¤è¯¥èµ„æº
 	if (data_now->second->GetReferenceCount() == 0)
 	{
-		//É¾³ı×ÊÔ´¶ÔÓ¦Ãû³Æ
+		//åˆ é™¤èµ„æºå¯¹åº”åç§°
 		resource_name_list.erase(data_now->second->GetResourceName());
-		//Ìí¼Óµ½¿ÕÏĞ×ÊÔ´
+		//æ·»åŠ åˆ°ç©ºé—²èµ„æº
 		free_id_list.insert(data_now->first);
-		//É¾³ı×ÊÔ´
+		//åˆ é™¤èµ„æº
 		delete data_now->second;
 		basic_resource_array.erase(data_now);
 	}

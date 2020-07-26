@@ -26,12 +26,12 @@ namespace PancystarEngine
 		void InitBasicVariable() override;
 	};
 	
-	//»º³åÇø×ÊÔ´
+	//ç¼“å†²åŒºèµ„æº
 	class PancyBasicBuffer : public PancyCommonVirtualResource<PancyCommonBufferDesc>
 	{
 		pancy_resource_size subresources_size = 0;
 		UINT8* map_pointer = NULL;
-		ResourceBlockGpu *buffer_data = nullptr;     //bufferÊı¾İÖ¸Õë
+		ResourceBlockGpu *buffer_data = nullptr;     //bufferæ•°æ®æŒ‡é’ˆ
 	public:
 		PancyBasicBuffer(const bool &if_could_reload);
 		~PancyBasicBuffer();
@@ -47,9 +47,9 @@ namespace PancystarEngine
 		{
 			return buffer_data;
 		}
-		//¼ì²âµ±Ç°µÄ×ÊÔ´ÊÇ·ñÒÑ¾­±»ÔØÈëGPU
+		//æ£€æµ‹å½“å‰çš„èµ„æºæ˜¯å¦å·²ç»è¢«è½½å…¥GPU
 		bool CheckIfResourceLoadFinish() override;
-		//½«cpuÊı¾İ¿½±´µ½bufferÖĞ
+		//å°†cpuæ•°æ®æ‹·è´åˆ°bufferä¸­
 		PancystarEngine::EngineFailReason WriteDataToBuffer(void* cpu_data_pointer,const pancy_resource_size &data_size);
 	private:
 		PancystarEngine::EngineFailReason LoadResoureDataByDesc(const PancyCommonBufferDesc &ResourceDescStruct) override;

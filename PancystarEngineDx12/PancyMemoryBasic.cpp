@@ -1,5 +1,5 @@
 #include"PancyMemoryBasic.h"
-//GPU¿É·ÃÎÊµÄ×ÊÔ´¿é
+//GPUå¯è®¿é—®çš„èµ„æºå—
 ResourceBlockGpu::ResourceBlockGpu(
 	const uint64_t &memory_size_in,
 	ComPtr<ID3D12Resource> resource_data_in,
@@ -37,7 +37,7 @@ PancyResourceLoadState ResourceBlockGpu::GetResourceLoadingState()
 		bool if_GPU_finished = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->CheckGpuBrokenFence(wait_fence);
 		if (if_GPU_finished)
 		{
-			//×ÊÔ´¼ÓÔØÍê±Ï
+			//èµ„æºåŠ è½½å®Œæ¯•
 			now_res_load_state = PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH;
 			if_start_copying_gpu = false;
 		}
@@ -46,16 +46,16 @@ PancyResourceLoadState ResourceBlockGpu::GetResourceLoadingState()
 }
 PancystarEngine::EngineFailReason ResourceBlockGpu::WaitForResourceLoading()
 {
-	//ÏÈ¼ì²é×ÊÔ´ÊÇ·ñÕıÔÚÍùGPUÖĞ¿½±´
+	//å…ˆæ£€æŸ¥èµ„æºæ˜¯å¦æ­£åœ¨å¾€GPUä¸­æ‹·è´
 	if (if_start_copying_gpu && now_res_load_state == PancyResourceLoadState::RESOURCE_LOAD_GPU_LOADING)
 	{
-		//µÈ´ı×ÊÔ´¿½±´½áÊø
+		//ç­‰å¾…èµ„æºæ‹·è´ç»“æŸ
 		auto check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->WaitGpuBrokenFence(wait_fence);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//ĞŞ¸Ä×ÊÔ´×´Ì¬
+		//ä¿®æ”¹èµ„æºçŠ¶æ€
 		now_res_load_state = PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH;
 		if_start_copying_gpu = false;
 	}
@@ -88,7 +88,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::ResourceBarrier(
 			now_state
 		)
 	);
-	//ĞŞ¸Ä×ÊÔ´µÄ·ÃÎÊ¸ñÊ½
+	//ä¿®æ”¹èµ„æºçš„è®¿é—®æ ¼å¼
 	now_subresource_state = now_state;
 	return PancystarEngine::succeed;
 }
@@ -259,9 +259,9 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::WriteFromCpuToBuffer(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
 		return error_message;
 	}
-	//»ñÈ¡´ı¿½±´Ö¸Õë
+	//è·å–å¾…æ‹·è´æŒ‡é’ˆ
 	UINT8* pData = map_pointer + pointer_offset;
-	//»ñÈ¡subresource
+	//è·å–subresource
 	D3D12_SUBRESOURCE_DATA *pSrcData = &subresources[0];
 	UINT subres_size = static_cast<UINT>(subresources.size());
 	for (UINT i = 0; i < subres_size; ++i)
@@ -285,7 +285,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::ReadFromBufferToCpu(
 		return error_message;
 	}
 	return PancystarEngine::succeed;
-	//todo: »Ø¶ÁGPUÊı¾İ
+	//todo: å›è¯»GPUæ•°æ®
 }
 PancystarEngine::EngineFailReason ResourceBlockGpu::BuildCommonDescriptorView(
 	const BasicDescriptorDesc &descriptor_desc,
@@ -367,7 +367,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildVertexBufferView(
 	PancyResourceLoadState now_load_state = GetResourceLoadingState();
 	if (now_load_state == PancyResourceLoadState::RESOURCE_LOAD_CPU_FINISH || now_load_state == PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH)
 	{
-		//´´½¨ÃèÊö·û
+		//åˆ›å»ºæè¿°ç¬¦
 		VBV_out.BufferLocation = resource_data->GetGPUVirtualAddress() + offset;
 		VBV_out.StrideInBytes = StrideInBytes;
 		VBV_out.SizeInBytes = static_cast<UINT>(buffer_size);
@@ -399,7 +399,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildIndexBufferView(
 	PancyResourceLoadState now_load_state = GetResourceLoadingState();
 	if (now_load_state == PancyResourceLoadState::RESOURCE_LOAD_CPU_FINISH || now_load_state == PancyResourceLoadState::RESOURCE_LOAD_GPU_FINISH)
 	{
-		//´´½¨ÃèÊö·û
+		//åˆ›å»ºæè¿°ç¬¦
 		IBV_out.BufferLocation = resource_data->GetGPUVirtualAddress() + offset;
 		IBV_out.Format = StrideInBytes;
 		IBV_out.SizeInBytes = static_cast<UINT>(buffer_size);
@@ -419,11 +419,11 @@ void ResourceBlockGpu::BuildConstantBufferView(
 	const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor
 )
 {
-	//¸ù¾İ×ÊÔ´Êı¾İ´´½¨ÃèÊö·û
+	//æ ¹æ®èµ„æºæ•°æ®åˆ›å»ºæè¿°ç¬¦
 	D3D12_CONSTANT_BUFFER_VIEW_DESC  CBV_desc;
 	CBV_desc.BufferLocation = resource_data->GetGPUVirtualAddress() + offset;
 	CBV_desc.SizeInBytes = static_cast<UINT>(block_size);
-	//´´½¨ÃèÊö·û
+	//åˆ›å»ºæè¿°ç¬¦
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateConstantBufferView(&CBV_desc, DestDescriptor);
 }
 void ResourceBlockGpu::BuildShaderResourceView(
@@ -431,7 +431,7 @@ void ResourceBlockGpu::BuildShaderResourceView(
 	const D3D12_SHADER_RESOURCE_VIEW_DESC  &SRV_desc
 )
 {
-	//´´½¨ÃèÊö·û
+	//åˆ›å»ºæè¿°ç¬¦
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateShaderResourceView(resource_data.Get(), &SRV_desc, DestDescriptor);
 }
 void ResourceBlockGpu::BuildRenderTargetView(
@@ -439,7 +439,7 @@ void ResourceBlockGpu::BuildRenderTargetView(
 	const D3D12_RENDER_TARGET_VIEW_DESC  &RTV_desc
 )
 {
-	//´´½¨ÃèÊö·û
+	//åˆ›å»ºæè¿°ç¬¦
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRenderTargetView(resource_data.Get(), &RTV_desc, DestDescriptor);
 }
 void ResourceBlockGpu::BuildUnorderedAccessView(
@@ -447,7 +447,7 @@ void ResourceBlockGpu::BuildUnorderedAccessView(
 	const D3D12_UNORDERED_ACCESS_VIEW_DESC  &UAV_desc
 )
 {
-	//´´½¨ÃèÊö·û
+	//åˆ›å»ºæè¿°ç¬¦
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateUnorderedAccessView(
 		resource_data.Get(),
 		NULL,
@@ -460,7 +460,7 @@ void ResourceBlockGpu::BuildDepthStencilView(
 	const D3D12_DEPTH_STENCIL_VIEW_DESC  &DSV_desc
 )
 {
-	//´´½¨ÃèÊö·û
+	//åˆ›å»ºæè¿°ç¬¦
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateDepthStencilView(resource_data.Get(), &DSV_desc, DestDescriptor);
 }
 ResourceBlockGpu::~ResourceBlockGpu()

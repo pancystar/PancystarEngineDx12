@@ -1,7 +1,7 @@
 #include"TestScene.h"
 
 
-//windowsº¯ÊýµÄÈë¿Ú
+//windowsï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	PSTR szCmdLine, int iCmdShow)
 {

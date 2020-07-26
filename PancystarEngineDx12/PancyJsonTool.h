@@ -53,7 +53,7 @@ PancyEnumValueParser<T>::PancyEnumValueParser()
 template<class T>
 PancystarEngine::EngineFailReason PancyEnumValueParser<T>::SetEnumValue(void*data_pointer, const int32_t enum_data)
 {
-	//½«int32ÀàĞÍ×ª»»ÎªÃ¶¾ÙÀàĞÍ
+	//å°†int32ç±»å‹è½¬æ¢ä¸ºæšä¸¾ç±»å‹
 	T* real_data_pointer = reinterpret_cast<T*>(data_pointer);
 	*real_data_pointer = static_cast<T>(enum_data);
 	return PancystarEngine::succeed;
@@ -61,7 +61,7 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::SetEnumValue(void*dat
 template<class T>
 PancystarEngine::EngineFailReason PancyEnumValueParser<T>::SetEnumArrayValue(void*data_pointer, const int32_t &enum_offset, const int32_t &enum_data)
 {
-	//½«int32ÀàĞÍ×ª»»ÎªÃ¶¾ÙÀàĞÍ
+	//å°†int32ç±»å‹è½¬æ¢ä¸ºæšä¸¾ç±»å‹
 	T* real_data_pointer = reinterpret_cast<T*>(data_pointer);
 	real_data_pointer[enum_offset] = static_cast<T>(enum_data);
 	return PancystarEngine::succeed;
@@ -72,7 +72,7 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::SetEnumVectorValue(vo
 	std::vector<T> *vec_pointer = reinterpret_cast<std::vector<T>*>(data_pointer);
 	if (vec_pointer->size() != enum_offsetdata) 
 	{
-		//Æ«ÒÆÁ¿²»ÕıÈ·£¬²åÈëµÚi¸öÔªËØÒª±£Ö¤ÒÑ¾­ÓĞÁËi¸ö³ÉÔ±
+		//åç§»é‡ä¸æ­£ç¡®ï¼Œæ’å…¥ç¬¬iä¸ªå…ƒç´ è¦ä¿è¯å·²ç»æœ‰äº†iä¸ªæˆå‘˜
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "reflect vector have wrong offset: ");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetEnumVectorValue", error_message);
 		return error_message;
@@ -84,7 +84,7 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::SetEnumVectorValue(vo
 template<class T>
 PancystarEngine::EngineFailReason PancyEnumValueParser<T>::GetEnumValue(void*data_pointer, int32_t &enum_data_out)
 {
-	//½«int32ÀàĞÍ×ª»»ÎªÃ¶¾ÙÀàĞÍ
+	//å°†int32ç±»å‹è½¬æ¢ä¸ºæšä¸¾ç±»å‹
 	T* real_data_pointer = reinterpret_cast<T*>(data_pointer);
 	enum_data_out = static_cast<int32_t>(*real_data_pointer);
 	return PancystarEngine::succeed;
@@ -92,7 +92,7 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::GetEnumValue(void*dat
 template<class T>
 PancystarEngine::EngineFailReason PancyEnumValueParser<T>::GetEnumArrayValue(void*data_pointer, const int32_t &enum_offsetdata, int32_t &enum_data_out)
 {
-	//½«int32ÀàĞÍ×ª»»ÎªÃ¶¾ÙÀàĞÍ
+	//å°†int32ç±»å‹è½¬æ¢ä¸ºæšä¸¾ç±»å‹
 	T* real_data_pointer = reinterpret_cast<T*>(data_pointer);
 	enum_data_out = static_cast<int32_t>(real_data_pointer[enum_offsetdata]);
 	return PancystarEngine::succeed;
@@ -103,7 +103,7 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::GetEnumVectorValue(vo
 	std::vector<T> *vec_pointer = reinterpret_cast<std::vector<T>*>(data_pointer);
 	if (vec_pointer->size() <= enum_offsetdata)
 	{
-		//Æ«ÒÆÁ¿²»ÕıÈ·£¬³ÉÔ±ÊıÁ¿²»×ã
+		//åç§»é‡ä¸æ­£ç¡®ï¼Œæˆå‘˜æ•°é‡ä¸è¶³
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "reflect vector have wrong offset: ");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::GetEnumVectorValue", error_message);
 		return error_message;
@@ -118,7 +118,7 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::GetEnumVectorSize(voi
 	vector_size = static_cast<pancy_object_id>(vec_pointer->size());
 	return PancystarEngine::succeed;
 }
-//×¢²áÃ¶¾Ù±äÁ¿µ½json¹¤¾ß
+//æ³¨å†Œæšä¸¾å˜é‡åˆ°jsonå·¥å…·
 #define JSON_REFLECT_INIT_ENUM(enum_variable) auto new_enum_variable_##enum_variable = enum_variable;\
 											  PancyJsonTool::GetInstance()->SetGlobelVraiable(#enum_variable,\
 																							  static_cast<pancy_object_id>(enum_variable), \
@@ -127,7 +127,7 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::GetEnumVectorSize(voi
 																							  typeid(&new_enum_variable_##enum_variable),\
 																							  typeid(std::vector<decltype(enum_variable)>));\
                                               PancyJsonTool::GetInstance()->AddEnumParseClass<decltype(enum_variable)>(typeid(enum_variable).name())\
-//»ñÈ¡Ã¶¾Ù±äÁ¿µÄÃû×Ö
+//è·å–æšä¸¾å˜é‡çš„åå­—
 #define JSON_GET_ENUM_NAME(enum_variable) PancyJsonTool::GetInstance()->GetEnumName(typeid(enum_variable).name(),static_cast<int32_t>(enum_num))
 struct pancy_json_value
 {
@@ -139,9 +139,9 @@ struct pancy_json_value
 };
 enum PancyJsonMemberType
 {
-	//Î´Ê¶±ğµÄÀàĞÍ
+	//æœªè¯†åˆ«çš„ç±»å‹
 	json_member_unknown = 0,
-	//ÆÕÍ¨±äÁ¿
+	//æ™®é€šå˜é‡
 	json_member_int8,
 	json_member_int16,
 	json_member_int32,
@@ -155,7 +155,7 @@ enum PancyJsonMemberType
 	json_member_enum,
 	json_member_string,
 	json_member_bool,
-	//Á´±í±äÁ¿
+	//é“¾è¡¨å˜é‡
 	json_member_int8_list,
 	json_member_int16_list,
 	json_member_int32_list,
@@ -169,7 +169,7 @@ enum PancyJsonMemberType
 	json_member_enum_list,
 	json_member_string_list,
 	json_member_bool_list,
-	//Êı×é±äÁ¿
+	//æ•°ç»„å˜é‡
 	json_member_int8_array,
 	json_member_int16_array,
 	json_member_int32_array,
@@ -183,7 +183,7 @@ enum PancyJsonMemberType
 	json_member_enum_array,
 	json_member_string_array,
 	json_member_bool_array,
-	//½Úµã±äÁ¿
+	//èŠ‚ç‚¹å˜é‡
 	json_member_node,
 	json_member_node_list,
 	json_member_node_array
@@ -194,17 +194,17 @@ class PancyJsonTool
 	Json::CharReaderBuilder builder;
 	ifstream FileOpen;
 	ofstream FileWrite;
-	//Í¨¹ıÃ¶¾ÙÃûµÃµ½Ã¶¾Ù±äÁ¿
+	//é€šè¿‡æšä¸¾åå¾—åˆ°æšä¸¾å˜é‡
 	std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> enum_variable_list;
-	//Í¨¹ıÃ¶¾Ù±äÁ¿µÃµ½Ã¶¾ÙÃû
+	//é€šè¿‡æšä¸¾å˜é‡å¾—åˆ°æšä¸¾å
 	std::unordered_map<std::string, std::unordered_map<int32_t, std::string>> enum_name_list;
-	//Í¨¹ıÃ¶¾ÙÃûÉèÖÃÃ¶¾Ù±äÁ¿
+	//é€šè¿‡æšä¸¾åè®¾ç½®æšä¸¾å˜é‡
 	std::unordered_map<std::string, CommonEnumValueParser*> enum_parse_list;
-	//todo:É¾µô¹ØÓÚshaderµÄÌØÊâ·´Éä
+	//todo:åˆ æ‰å…³äºshaderçš„ç‰¹æ®Šåå°„
 	std::string name_value_type[7];
-	//json·´ÉäÏà¹Ø......
-	std::unordered_map<size_t, PancyJsonMemberType> json_type_map;//ËùÓĞÒÑ¾­±»Ê¶±ğµÄjsonÀàĞÍ
-	std::unordered_map<std::string, std::string> enum_pointer_value_map;//Ã¶¾ÙÖ¸Õë¶ÔÓ¦µÄ»ù±¾ÀàĞÍ
+	//jsonåå°„ç›¸å…³......
+	std::unordered_map<size_t, PancyJsonMemberType> json_type_map;//æ‰€æœ‰å·²ç»è¢«è¯†åˆ«çš„jsonç±»å‹
+	std::unordered_map<std::string, std::string> enum_pointer_value_map;//æšä¸¾æŒ‡é’ˆå¯¹åº”çš„åŸºæœ¬ç±»å‹
 private:
 	PancyJsonTool();
 public:
@@ -218,7 +218,7 @@ public:
 		}
 		return this_instance;
 	}
-	//¶ÁÈ¡jsonÊı¾İ
+	//è¯»å–jsonæ•°æ®
 	PancystarEngine::EngineFailReason LoadJsonFile(const std::string &file_name, Json::Value &root_value);
 	PancystarEngine::EngineFailReason SetGlobelVraiable(
 		const std::string &variable_name,
@@ -253,7 +253,7 @@ public:
 		const pancy_json_data_type &json_type,
 		pancy_json_value &variable_value
 	);
-	//¸ü¸Ä¼°Êä³öjsonÊı¾İ
+	//æ›´æ”¹åŠè¾“å‡ºjsonæ•°æ®
 	template<class T>
 	void SetJsonValue(
 		Json::Value &insert_value,

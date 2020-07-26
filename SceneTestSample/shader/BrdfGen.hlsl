@@ -82,13 +82,13 @@ float2 IntegrateBRDF(float Roughness, float NoV)
 
 struct VertexIn
 {
-	float4	pos 	: POSITION;     //¶¥µãÎ»ÖÃ
-	float4  tex1    : TEXCOORD;     //¶¥µãÎÆÀí×ø±ê
+	float4	pos 	: POSITION;     //ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
+	float4  tex1    : TEXCOORD;     //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 };
 struct VertexOut
 {
-	float4 PosH       : SV_POSITION; //äÖÈ¾¹ÜÏß±ØÒª¶¥µã
-	float2 Tex        : TEXCOORD1;   //ÎÆÀí×ø±ê
+	float4 PosH       : SV_POSITION; //ï¿½ï¿½È¾ï¿½ï¿½ï¿½ß±ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	float2 Tex        : TEXCOORD1;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 };
 VertexOut VSMain(VertexIn vin)
 {

@@ -5,7 +5,7 @@
 #include<LoaderHelpers.h>
 #include<DDSTextureLoader.h>
 #include<WICTextureLoader.h>
-//ÃèÊö·ûÀàĞÍ
+//æè¿°ç¬¦ç±»å‹
 enum PancyDescriptorType
 {
 	DescriptorTypeShaderResourceView = 0,
@@ -16,9 +16,9 @@ enum PancyDescriptorType
 };
 struct BasicDescriptorDesc
 {
-	//ÃèÊö·ûµÄÀàĞÍ
+	//æè¿°ç¬¦çš„ç±»å‹
 	PancyDescriptorType basic_descriptor_type;
-	//´æ´¢ËùÓĞµÄÃèÊö·û¸ñÊ½
+	//å­˜å‚¨æ‰€æœ‰çš„æè¿°ç¬¦æ ¼å¼
 	pancy_resource_size offset = 0;
 	pancy_resource_size block_size = 0;
 	D3D12_SHADER_RESOURCE_VIEW_DESC shader_resource_view_desc = {};
@@ -26,7 +26,7 @@ struct BasicDescriptorDesc
 	D3D12_RENDER_TARGET_VIEW_DESC render_target_view_desc = {};
 	D3D12_DEPTH_STENCIL_VIEW_DESC depth_stencil_view_desc = {};
 };
-//×ÊÔ´¼ÓÔØ×´Ì¬
+//èµ„æºåŠ è½½çŠ¶æ€
 enum PancyResourceLoadState
 {
 	RESOURCE_LOAD_FAILED = 0,
@@ -34,17 +34,17 @@ enum PancyResourceLoadState
 	RESOURCE_LOAD_GPU_LOADING,
 	RESOURCE_LOAD_GPU_FINISH
 };
-//GPU×ÊÔ´¿é
+//GPUèµ„æºå—
 class ResourceBlockGpu
 {
 	bool if_start_copying_gpu;
-	PancyFenceIdGPU  wait_fence;               //µ±Ç°×ÊÔ´µÄ¼ÓÔØµÈ´ıĞÅºÅÁ¿(½öÓÃÓÚÏÔ´æ×ÊÔ´)
-	PancyResourceLoadState now_res_load_state; //µ±Ç°×ÊÔ´µÄ¼ÓÔØ×´Ì¬
-	pancy_resource_size memory_size;           //´æ´¢¿éµÄ´óĞ¡
-	ComPtr<ID3D12Resource> resource_data;      //´æ´¢¿éµÄÊı¾İ
+	PancyFenceIdGPU  wait_fence;               //å½“å‰èµ„æºçš„åŠ è½½ç­‰å¾…ä¿¡å·é‡(ä»…ç”¨äºæ˜¾å­˜èµ„æº)
+	PancyResourceLoadState now_res_load_state; //å½“å‰èµ„æºçš„åŠ è½½çŠ¶æ€
+	pancy_resource_size memory_size;           //å­˜å‚¨å—çš„å¤§å°
+	ComPtr<ID3D12Resource> resource_data;      //å­˜å‚¨å—çš„æ•°æ®
 	D3D12_HEAP_TYPE resource_usage;
 	UINT8* map_pointer;
-	D3D12_RESOURCE_STATES now_subresource_state;//µ±Ç°×ÊÔ´µÄÊ¹ÓÃ¸ñÊ½
+	D3D12_RESOURCE_STATES now_subresource_state;//å½“å‰èµ„æºçš„ä½¿ç”¨æ ¼å¼
 public:
 	ResourceBlockGpu(
 		const uint64_t &memory_size_in,
@@ -61,7 +61,7 @@ public:
 	{
 		return memory_size;
 	}
-	//´´½¨×ÊÔ´·ÃÎÊ¸ñÊ½
+	//åˆ›å»ºèµ„æºè®¿é—®æ ¼å¼
 	PancystarEngine::EngineFailReason BuildCommonDescriptorView(
 		const BasicDescriptorDesc &descriptor_desc,
 		const D3D12_CPU_DESCRIPTOR_HANDLE &DestDescriptor,
@@ -81,11 +81,11 @@ public:
 		D3D12_INDEX_BUFFER_VIEW &IBV_out,
 		bool if_wait_for_gpu = true
 	);
-	//²é¿´µ±Ç°×ÊÔ´µÄ¼ÓÔØ×´Ì¬
+	//æŸ¥çœ‹å½“å‰èµ„æºçš„åŠ è½½çŠ¶æ€
 	PancyResourceLoadState GetResourceLoadingState();
-	//µÈ´ıGPU¼ÓÔØ×ÊÔ´½áÊø
+	//ç­‰å¾…GPUåŠ è½½èµ„æºç»“æŸ
 	PancystarEngine::EngineFailReason WaitForResourceLoading();
-	//²é¿´µ±Ç°×ÊÔ´µÄÊ¹ÓÃ¸ñÊ½
+	//æŸ¥çœ‹å½“å‰èµ„æºçš„ä½¿ç”¨æ ¼å¼
 	D3D12_RESOURCE_STATES GetResourceState()
 	{
 		return now_subresource_state;
@@ -139,6 +139,7 @@ public:
 		void* copy_data,
 		const pancy_resource_size data_size
 	);
+	//todo:ä¸è¦æ‰‹åŠ¨è°ƒç”¨ï¼Œèµ„æºä½¿ç”¨å‰è¿›è¡Œæ£€æµ‹ï¼Œå¦‚æœä¸ä¸€è‡´ï¼Œè‡ªåŠ¨è°ƒç”¨ï¼Œä¸è¦ä¼ å…¥ä¸¤ä¸ªå‚æ•°
 	PancystarEngine::EngineFailReason ResourceBarrier(
 		PancyRenderCommandList *commandlist,
 		const D3D12_RESOURCE_STATES &last_state,

@@ -1,11 +1,11 @@
 #include"PancyDescriptor.h"
 using namespace PancystarEngine;
 
-//½â°ó¶¨ÃèÊö·û¶Î£¬ÓÃÓÚÃèÊö·û¶ÎÀïµÄËùÓĞÃèÊö·ûÒ³µÄ·ÖÅäºÍ¹ÜÀí
+//è§£ç»‘å®šæè¿°ç¬¦æ®µï¼Œç”¨äºæè¿°ç¬¦æ®µé‡Œçš„æ‰€æœ‰æè¿°ç¬¦é¡µçš„åˆ†é…å’Œç®¡ç†
 BindlessResourceViewSegmental::BindlessResourceViewSegmental(
-	const pancy_object_id &max_descriptor_num_in,
-	const pancy_object_id &segmental_offset_position_in,
-	const pancy_object_id &per_descriptor_size_in,
+	const pancy_object_id& max_descriptor_num_in,
+	const pancy_object_id& segmental_offset_position_in,
+	const pancy_object_id& per_descriptor_size_in,
 	const ComPtr<ID3D12DescriptorHeap> descriptor_heap_data_in
 )
 {
@@ -18,40 +18,40 @@ BindlessResourceViewSegmental::BindlessResourceViewSegmental(
 	now_pointer_refresh = max_descriptor_num_in;
 	descriptor_heap_data = descriptor_heap_data_in.Get();
 }
-//¸ù¾İÃèÊö·ûÒ³µÄÖ¸ÕëĞÅÏ¢£¬ÔÚÃèÊö·û¶Ñ¿ª±ÙÃèÊö·û
-PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildShaderResourceView(BindlessResourceViewPointer &resource_view_pointer)
+//æ ¹æ®æè¿°ç¬¦é¡µçš„æŒ‡é’ˆä¿¡æ¯ï¼Œåœ¨æè¿°ç¬¦å †å¼€è¾Ÿæè¿°ç¬¦
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildShaderResourceView(BindlessResourceViewPointer& resource_view_pointer)
 {
 	for (pancy_object_id i = 0; i < resource_view_pointer.resource_view_num; ++i)
 	{
-		//¼ÆËãµ±Ç°µÄÃèÊö·ûÔÚÕû¸öÃèÊö·û¶ÑµÄÆ«ÒÆÁ¿(¶ÎÊ×µØÖ·Æ«ÒÆ+Ò³Ê×µØÖ·Æ«ÒÆ+×ÔÆ«ÒÆ)
+		//è®¡ç®—å½“å‰çš„æè¿°ç¬¦åœ¨æ•´ä¸ªæè¿°ç¬¦å †çš„åç§»é‡(æ®µé¦–åœ°å€åç§»+é¡µé¦–åœ°å€åç§»+è‡ªåç§»)
 		pancy_object_id resource_view_heap_offset = segmental_offset_position + resource_view_pointer.resource_view_offset + i;
-		//¼ÆËãĞéÄâÆ«ÒÆÁ¿¶ÔÓ¦µÄÕæÊµµØÖ·Æ«ÒÆÁ¿
+		//è®¡ç®—è™šæ‹Ÿåç§»é‡å¯¹åº”çš„çœŸå®åœ°å€åç§»é‡
 		pancy_resource_size real_offset = static_cast<pancy_resource_size>(resource_view_heap_offset) * static_cast<pancy_resource_size>(per_descriptor_size);
-		//¸ù¾İÕæÊµµØÖ·Æ«ÒÆÁ¿£¬´´½¨SRVÃèÊö·û
+		//æ ¹æ®çœŸå®åœ°å€åç§»é‡ï¼Œåˆ›å»ºSRVæè¿°ç¬¦
 		PancystarEngine::EngineFailReason check_error;
-		//´´½¨ÃèÊö·û
+		//åˆ›å»ºæè¿°ç¬¦
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
 		cpuHandle.Offset(static_cast<INT>(real_offset));
-		//¼ì²â×ÊÔ´¸ñÊ½
+		//æ£€æµ‹èµ„æºæ ¼å¼
 		auto real_resource = resource_view_pointer.describe_memory_data[i].GetResourceData();
 		ResourceBlockGpu* now_gpu_resource = NULL;
-		if (real_resource->GetResourceTypeName() == typeid(PancyBasicBuffer).name()) 
+		if (real_resource->GetResourceTypeName() == typeid(PancyBasicBuffer).name())
 		{
-			const PancyBasicBuffer *buffer_resource_data = dynamic_cast<const PancyBasicBuffer*>(real_resource);
+			const PancyBasicBuffer* buffer_resource_data = dynamic_cast<const PancyBasicBuffer*>(real_resource);
 			now_gpu_resource = buffer_resource_data->GetGpuResourceData();
 		}
-		else if(real_resource->GetResourceTypeName() == typeid(PancyBasicTexture).name())
+		else if (real_resource->GetResourceTypeName() == typeid(PancyBasicTexture).name())
 		{
-			const PancyBasicTexture *texture_resource_data = dynamic_cast<const PancyBasicTexture*>(real_resource);
+			const PancyBasicTexture* texture_resource_data = dynamic_cast<const PancyBasicTexture*>(real_resource);
 			now_gpu_resource = texture_resource_data->GetGpuResourceData();
 		}
-		else 
+		else
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "The Resource is not a buffer/texture, could not build Descriptor for it");
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindlessResourceViewSegmental::BuildShaderResourceView", error_message);
 			return error_message;
 		}
-		if (now_gpu_resource == NULL) 
+		if (now_gpu_resource == NULL)
 		{
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "The GPU data of Resource is empty, could not build Descriptor for it");
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindlessResourceViewSegmental::BuildShaderResourceView", error_message);
@@ -68,16 +68,16 @@ PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildShaderReso
 	}
 	return PancystarEngine::succeed;
 }
-//´ÓÃèÊö·û¶ÎÀï¿ª±ÙÒ»×ébindlessÃèÊö·ûÒ³
+//ä»æè¿°ç¬¦æ®µé‡Œå¼€è¾Ÿä¸€ç»„bindlessæè¿°ç¬¦é¡µ
 PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildBindlessShaderResourceViewPack(
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
-	const std::vector<VirtualResourcePointer> &describe_memory_data,
-	const pancy_object_id &SRV_pack_size,
-	pancy_object_id &SRV_pack_id
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>& SRV_desc,
+	const std::vector<VirtualResourcePointer>& describe_memory_data,
+	const pancy_object_id& SRV_pack_size,
+	pancy_object_id& SRV_pack_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//¼ì²éµ±Ç°¿ÕÏĞµÄÃèÊö·ûÊıÁ¿ÊÇ·ñ×ãÒÔ¿ª±Ù³öµ±Ç°ÇëÇóµÄÃèÊö·ûÒ³
+	//æ£€æŸ¥å½“å‰ç©ºé—²çš„æè¿°ç¬¦æ•°é‡æ˜¯å¦è¶³ä»¥å¼€è¾Ÿå‡ºå½“å‰è¯·æ±‚çš„æè¿°ç¬¦é¡µ
 	pancy_object_id now_empty_descriptor = max_descriptor_num - now_pointer_offset;
 	if (now_empty_descriptor < SRV_pack_size)
 	{
@@ -85,29 +85,29 @@ PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildBindlessSh
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Descriptor pack from Segmental", error_message);
 		return error_message;
 	}
-	//¸ù¾İµ±Ç°µÄÃèÊö·û¶ÎµÄÆ«ÒÆÇé¿ö£¬´´½¨Ò»¸öĞÂµÄÃèÊö·û×é
+	//æ ¹æ®å½“å‰çš„æè¿°ç¬¦æ®µçš„åç§»æƒ…å†µï¼Œåˆ›å»ºä¸€ä¸ªæ–°çš„æè¿°ç¬¦ç»„
 	BindlessResourceViewPointer new_resource_view_pack;
 	new_resource_view_pack.resource_view_num = SRV_pack_size;
 	new_resource_view_pack.resource_view_offset = now_pointer_offset;
 	for (auto SRV_desc_data = SRV_desc.begin(); SRV_desc_data != SRV_desc.end(); ++SRV_desc_data)
 	{
-		//¸´ÖÆËùÓĞµÄÃèÊö·û¸ñÊ½
+		//å¤åˆ¶æ‰€æœ‰çš„æè¿°ç¬¦æ ¼å¼
 		new_resource_view_pack.SRV_desc.push_back(*SRV_desc_data);
 	}
 	for (auto resource_data = describe_memory_data.begin(); resource_data != describe_memory_data.end(); ++resource_data)
 	{
-		//¸´ÖÆËùÓĞµÄ×ÊÔ´¶ş¼¶µØÖ·
+		//å¤åˆ¶æ‰€æœ‰çš„èµ„æºäºŒçº§åœ°å€
 		new_resource_view_pack.describe_memory_data.push_back(*resource_data);
 	}
-	//¿ªÊ¼´´½¨SRV
+	//å¼€å§‹åˆ›å»ºSRV
 	check_error = BuildShaderResourceView(new_resource_view_pack);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//¸ù¾İĞÂµÄÃèÊö·ûÒ³Ëù°üº¬µÄÃèÊö·ûÊıÁ¿À´Æ«ÒÆÃèÊö·û¶ÎµÄÖ¸Õë
+	//æ ¹æ®æ–°çš„æè¿°ç¬¦é¡µæ‰€åŒ…å«çš„æè¿°ç¬¦æ•°é‡æ¥åç§»æè¿°ç¬¦æ®µçš„æŒ‡é’ˆ
 	now_pointer_offset += SRV_pack_size;
-	//ÎªĞÂµÄÃèÊö·ûÀ´Éú³ÉÒ»¸öĞÂµÄID
+	//ä¸ºæ–°çš„æè¿°ç¬¦æ¥ç”Ÿæˆä¸€ä¸ªæ–°çš„ID
 	if (!now_descriptor_pack_id_reuse.empty())
 	{
 		SRV_pack_id = now_descriptor_pack_id_reuse.front();
@@ -118,14 +118,55 @@ PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildBindlessSh
 		SRV_pack_id = now_descriptor_pack_id_self_add;
 		now_descriptor_pack_id_self_add += 1;
 	}
-	//½«ĞÂÉú³ÉµÄÊı¾İÌí¼Óµ½±íµ¥½øĞĞ¼ÇÂ¼
+	//å°†æ–°ç”Ÿæˆçš„æ•°æ®æ·»åŠ åˆ°è¡¨å•è¿›è¡Œè®°å½•
 	descriptor_data.insert(std::pair<pancy_resource_id, BindlessResourceViewPointer>(SRV_pack_id, new_resource_view_pack));
 	return PancystarEngine::succeed;
 }
-//´ÓÃèÊö·û¶ÎÀïÉ¾³ıÒ»×ébindlessÃèÊö·ûÒ³
-PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessShaderResourceViewPack(const pancy_object_id &SRV_pack_id)
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::BuildBindlessShaderResourceViewFromBegin(pancy_object_id& SRV_pack_id)
 {
-	//ÕÒµ½µ±Ç°ÃèÊö·ûÒ³µÄËùÔÚÇøÓò
+	SRV_pack_id = now_descriptor_pack_id_self_add;
+	now_descriptor_pack_id_self_add += 1;
+	BindlessResourceViewPointer new_resource_view_pack;
+	new_resource_view_pack.resource_view_num = 2;
+	new_resource_view_pack.resource_view_offset = 0;
+	new_resource_view_pack.if_dynamic = true;
+	//å°†æ–°ç”Ÿæˆçš„æ•°æ®æ·»åŠ åˆ°è¡¨å•è¿›è¡Œè®°å½•
+	descriptor_data.insert(std::pair<pancy_resource_id, BindlessResourceViewPointer>(SRV_pack_id, new_resource_view_pack));
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::RebindBindlessShaderResourceViewFromBegin(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>& SRV_desc,
+	const std::vector<VirtualResourcePointer>& describe_memory_data
+) 
+{
+	pancy_object_id SRV_pack_size = static_cast<pancy_object_id>(SRV_desc.size());
+	PancystarEngine::EngineFailReason check_error;
+	//æ ¹æ®å½“å‰çš„æè¿°ç¬¦æ®µçš„åç§»æƒ…å†µï¼Œåˆ›å»ºä¸€ä¸ªæ–°çš„æè¿°ç¬¦ç»„
+	BindlessResourceViewPointer new_resource_view_pack;
+	new_resource_view_pack.resource_view_num = SRV_pack_size;
+	new_resource_view_pack.resource_view_offset = 0;
+	for (auto SRV_desc_data = SRV_desc.begin(); SRV_desc_data != SRV_desc.end(); ++SRV_desc_data)
+	{
+		//å¤åˆ¶æ‰€æœ‰çš„æè¿°ç¬¦æ ¼å¼
+		new_resource_view_pack.SRV_desc.push_back(*SRV_desc_data);
+	}
+	for (auto resource_data = describe_memory_data.begin(); resource_data != describe_memory_data.end(); ++resource_data)
+	{
+		//å¤åˆ¶æ‰€æœ‰çš„èµ„æºäºŒçº§åœ°å€
+		new_resource_view_pack.describe_memory_data.push_back(*resource_data);
+	}
+	//å¼€å§‹åˆ›å»ºSRV
+	check_error = BuildShaderResourceView(new_resource_view_pack);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+//ä»æè¿°ç¬¦æ®µé‡Œåˆ é™¤ä¸€ç»„bindlessæè¿°ç¬¦é¡µ
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessShaderResourceViewPack(const pancy_object_id& SRV_pack_id)
+{
+	//æ‰¾åˆ°å½“å‰æè¿°ç¬¦é¡µçš„æ‰€åœ¨åŒºåŸŸ
 	auto descriptor_page = descriptor_data.find(SRV_pack_id);
 	if (descriptor_page == descriptor_data.end())
 	{
@@ -135,53 +176,53 @@ PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessS
 	}
 	if (descriptor_page->second.resource_view_offset < now_pointer_refresh)
 	{
-		//Èç¹ûµ±Ç°É¾³ıµÄÃèÊö·ûÒ³´¦ÓÚÃèÊö·û¶ÎµÄ¿¿Ç°Î»ÖÃ£¬Ôò±ê¼ÇÏÂÒ»´ÎÕûÀíÃèÊö·ûËéÆ¬µÄÊ±ºò´Óµ±Ç°Î»ÖÃ¿ªÊ¼ÕûÀí
+		//å¦‚æœå½“å‰åˆ é™¤çš„æè¿°ç¬¦é¡µå¤„äºæè¿°ç¬¦æ®µçš„é å‰ä½ç½®ï¼Œåˆ™æ ‡è®°ä¸‹ä¸€æ¬¡æ•´ç†æè¿°ç¬¦ç¢ç‰‡çš„æ—¶å€™ä»å½“å‰ä½ç½®å¼€å§‹æ•´ç†
 		now_pointer_refresh = descriptor_page->second.resource_view_offset;
 	}
-	//Ïú»Ùµ±Ç°ÃèÊö·ûÒ³
+	//é”€æ¯å½“å‰æè¿°ç¬¦é¡µ
 	descriptor_data.erase(SRV_pack_id);
 	return PancystarEngine::succeed;
 }
-//ÎªÃèÊö·û¶ÎÖ´ĞĞÒ»´ÎËéÆ¬ÕûÀí²Ù×÷
+//ä¸ºæè¿°ç¬¦æ®µæ‰§è¡Œä¸€æ¬¡ç¢ç‰‡æ•´ç†æ“ä½œ
 PancystarEngine::EngineFailReason BindlessResourceViewSegmental::RefreshBindlessShaderResourceViewPack()
 {
 	PancystarEngine::EngineFailReason check_error;
 	if (now_pointer_refresh >= max_descriptor_num)
 	{
-		//ÔÚ´ËÖ®Ç°ÃèÊö·û¶ÎÃ»ÓĞ¾­¹ıÈÎºÎÉ¾³ı²Ù×÷£¬²»ĞèÒª½øĞĞËéÆ¬ÕûÀí
+		//åœ¨æ­¤ä¹‹å‰æè¿°ç¬¦æ®µæ²¡æœ‰ç»è¿‡ä»»ä½•åˆ é™¤æ“ä½œï¼Œä¸éœ€è¦è¿›è¡Œç¢ç‰‡æ•´ç†
 		return PancystarEngine::succeed;
 	}
 	now_pointer_offset = now_pointer_refresh;
-	//±éÀúÃèÊö·û¶ÎÄÚµÄËùÓĞÃèÊö·ûÒ³½øĞĞÃèÊö·ûËéÆ¬µÄÕûÀí
+	//éå†æè¿°ç¬¦æ®µå†…çš„æ‰€æœ‰æè¿°ç¬¦é¡µè¿›è¡Œæè¿°ç¬¦ç¢ç‰‡çš„æ•´ç†
 	for (auto descriptor_page_check = descriptor_data.begin(); descriptor_page_check != descriptor_data.end(); ++descriptor_page_check)
 	{
 		if (descriptor_page_check->second.resource_view_offset > now_pointer_refresh)
 		{
-			//Èç¹û¸ÃÃèÊö·ûÒ³´¦ÓÚĞèÒªµ÷ÕûµÄÎ»ÖÃÔò¶ÔÕâÒ»Ò³µÄËùÓĞÃèÊö·û½øĞĞµ÷Õû
+			//å¦‚æœè¯¥æè¿°ç¬¦é¡µå¤„äºéœ€è¦è°ƒæ•´çš„ä½ç½®åˆ™å¯¹è¿™ä¸€é¡µçš„æ‰€æœ‰æè¿°ç¬¦è¿›è¡Œè°ƒæ•´
 			descriptor_page_check->second.resource_view_offset = now_pointer_offset;
-			//Éú³ÉĞÂµÄSRV
+			//ç”Ÿæˆæ–°çš„SRV
 			check_error = BuildShaderResourceView(descriptor_page_check->second);
 			if (!check_error.CheckIfSucceed())
 			{
 				return check_error;
 			}
-			//±ê¼Çµ±Ç°±»Õ¼ÓÃµÄÃèÊö·ûÎ»ÖÃ
+			//æ ‡è®°å½“å‰è¢«å ç”¨çš„æè¿°ç¬¦ä½ç½®
 			now_pointer_offset += descriptor_page_check->second.resource_view_num;
 			if (now_pointer_offset > max_descriptor_num)
 			{
-				//µ÷Õû¹ı³ÌÖĞ³öÏÖµ÷ÕûºóÃèÊö·ûÊıÁ¿·´¶ø¸ßÓÚµ÷ÕûÇ°µÄÒì³£Çé¿ö
+				//è°ƒæ•´è¿‡ç¨‹ä¸­å‡ºç°è°ƒæ•´åæè¿°ç¬¦æ•°é‡åè€Œé«˜äºè°ƒæ•´å‰çš„å¼‚å¸¸æƒ…å†µ
 				PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor Segmental could not build desciptor more than : " + std::to_string(max_descriptor_num));
 				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh descriptor page from Segmental", error_message);
 				return error_message;
 			}
 		}
 	}
-	//»¹Ô­Ë¢ĞÂµ÷Õû
+	//è¿˜åŸåˆ·æ–°è°ƒæ•´
 	now_pointer_refresh = max_descriptor_num;
 	return PancystarEngine::succeed;
 }
-//ÎªÃèÊö·û¶ÎÉ¾³ıÒ»×ébindlessÃèÊö·ûÒ³£¬Í¬Ê±ÕûÀíÒ»´ÎÃèÊö·ûËéÆ¬
-PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessShaderResourceViewPackAndRefresh(const pancy_object_id &SRV_pack_id)
+//ä¸ºæè¿°ç¬¦æ®µåˆ é™¤ä¸€ç»„bindlessæè¿°ç¬¦é¡µï¼ŒåŒæ—¶æ•´ç†ä¸€æ¬¡æè¿°ç¬¦ç¢ç‰‡
+PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessShaderResourceViewPackAndRefresh(const pancy_object_id& SRV_pack_id)
 {
 	auto check_error = DeleteBindlessShaderResourceViewPack(SRV_pack_id);
 	if (!check_error.CheckIfSucceed())
@@ -195,7 +236,7 @@ PancystarEngine::EngineFailReason BindlessResourceViewSegmental::DeleteBindlessS
 	}
 	return PancystarEngine::succeed;
 }
-const BindlessResourceViewPointer &BindlessResourceViewSegmental::GetDescriptorPageOffset(const pancy_object_id &descriptor_page_id)
+const BindlessResourceViewPointer& BindlessResourceViewSegmental::GetDescriptorPageOffset(const pancy_object_id& descriptor_page_id)
 {
 	auto check_descriptor_page = descriptor_data.find(descriptor_page_id);
 	if (check_descriptor_page == descriptor_data.end())
@@ -209,7 +250,7 @@ const BindlessResourceViewPointer &BindlessResourceViewSegmental::GetDescriptorP
 	}
 	return check_descriptor_page->second;
 }
-//ÓÃÓÚÃèÊö·û¶Ñ×ÊÔ´µÄÈİÁ¿ÅÅĞò
+//ç”¨äºæè¿°ç¬¦å †èµ„æºçš„å®¹é‡æ’åº
 bool BindlessDescriptorID::operator<(const BindlessDescriptorID& other)  const
 {
 	if (empty_resource_size != other.empty_resource_size)
@@ -218,18 +259,18 @@ bool BindlessDescriptorID::operator<(const BindlessDescriptorID& other)  const
 	}
 	return (bindless_id < other.bindless_id);
 }
-//ÃèÊö·û¶Ñ£¬ÓÃÓÚ´ÓÃèÊö·ûÉÏ·ÖÅäÃèÊö·û
+//æè¿°ç¬¦å †ï¼Œç”¨äºä»æè¿°ç¬¦ä¸Šåˆ†é…æè¿°ç¬¦
 PancyDescriptorHeap::PancyDescriptorHeap()
 {
 
 
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeap::Create(
-	const D3D12_DESCRIPTOR_HEAP_DESC &descriptor_heap_desc,
-	const std::string &descriptor_heap_name_in,
-	const pancy_object_id &bind_descriptor_num_in,
-	const pancy_object_id &bindless_descriptor_num_in,
-	const pancy_object_id &per_segmental_size_in
+	const D3D12_DESCRIPTOR_HEAP_DESC& descriptor_heap_desc,
+	const std::string& descriptor_heap_name_in,
+	const pancy_object_id& bind_descriptor_num_in,
+	const pancy_object_id& bindless_descriptor_num_in,
+	const pancy_object_id& per_segmental_size_in
 )
 {
 	descriptor_desc = descriptor_heap_desc;
@@ -237,9 +278,9 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::Create(
 	bind_descriptor_num = bind_descriptor_num_in;
 	bindless_descriptor_num = bindless_descriptor_num_in;
 	per_segmental_size = per_segmental_size_in;
-	//¼ÆËãÃ¿Ò»¸öÃèÊö·ûµÄ´óĞ¡
+	//è®¡ç®—æ¯ä¸€ä¸ªæè¿°ç¬¦çš„å¤§å°
 	per_descriptor_size = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetDescriptorHandleIncrementSize(descriptor_desc.Type);
-	//¸ù¾İÃèÊö·û¶Ñ¸ñÊ½´´½¨ÃèÊö·û¶Ñ
+	//æ ¹æ®æè¿°ç¬¦å †æ ¼å¼åˆ›å»ºæè¿°ç¬¦å †
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateDescriptorHeap(&descriptor_heap_desc, IID_PPV_ARGS(&descriptor_heap_data));
 	if (FAILED(hr))
 	{
@@ -247,32 +288,32 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::Create(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build descriptor heap", error_message);
 		return error_message;
 	}
-	//³õÊ¼»¯ËùÓĞµÄÈ«¾ÖÃèÊö·ûID
+	//åˆå§‹åŒ–æ‰€æœ‰çš„å…¨å±€æè¿°ç¬¦ID
 	for (pancy_object_id i = 0; i < bind_descriptor_num; ++i)
 	{
 		bind_descriptor_offset_reuse.push(i);
 	}
-	//ÎªbindlessÃèÊö·ûÇøÓò³õÊ¼»¯Ã¿¸öÃèÊö·û¶Î
+	//ä¸ºbindlessæè¿°ç¬¦åŒºåŸŸåˆå§‹åŒ–æ¯ä¸ªæè¿°ç¬¦æ®µ
 	pancy_object_id globel_offset = bind_descriptor_num;
 	pancy_object_id segmantal_id_self_add = 0;
 	for (pancy_object_id i = 0; i < bindless_descriptor_num; i += per_segmental_size)
 	{
-		BindlessResourceViewSegmental *new_segmental = new BindlessResourceViewSegmental(per_segmental_size, globel_offset + i, per_descriptor_size, descriptor_heap_data);
+		BindlessResourceViewSegmental* new_segmental = new BindlessResourceViewSegmental(per_segmental_size, globel_offset + i, per_descriptor_size, descriptor_heap_data);
 		if (new_segmental == NULL)
 		{
-			//¿ª±ÙÃèÊö·û¶ÎÊ§°Ü
+			//å¼€è¾Ÿæè¿°ç¬¦æ®µå¤±è´¥
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "Build bindless texture segmental failed with NULL return");
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bindless texture segmental", error_message);
 			return error_message;
 		}
 		if (new_segmental->GetEmptyDescriptorNum() != per_segmental_size)
 		{
-			//¿ª±ÙÃèÊö·û¶ÎµÃµ½µÄÃèÊö·ûÊıÁ¿²»µÈÓÚÔ¤ÆÚµÄÃèÊö·ûÊıÁ¿
+			//å¼€è¾Ÿæè¿°ç¬¦æ®µå¾—åˆ°çš„æè¿°ç¬¦æ•°é‡ä¸ç­‰äºé¢„æœŸçš„æè¿°ç¬¦æ•°é‡
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "Build bindless texture segmental failed with Wrong dscriptor num,ask: " + std::to_string(per_segmental_size) + " but find: " + std::to_string(new_segmental->GetEmptyDescriptorNum()));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bindless texture segmental", error_message);
 			return error_message;
 		}
-		//½«ĞÂµÄÃèÊö·û¶Î±£Áôµ½´æ´¢ÃèÊö·û¶ÎµÄ±íÖĞ
+		//å°†æ–°çš„æè¿°ç¬¦æ®µä¿ç•™åˆ°å­˜å‚¨æè¿°ç¬¦æ®µçš„è¡¨ä¸­
 		BindlessDescriptorID new_descriptor_segmental_id;
 		new_descriptor_segmental_id.bindless_id = segmantal_id_self_add;
 		new_descriptor_segmental_id.empty_resource_size = per_segmental_size;
@@ -289,98 +330,86 @@ PancyDescriptorHeap::~PancyDescriptorHeap()
 		delete release_data->second;
 	}
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindlessShaderResourceViewPage(
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
-	const std::vector<VirtualResourcePointer> &describe_memory_data,
-	const pancy_object_id &SRV_pack_size,
-	BindlessResourceViewID &descriptor_id
+PancystarEngine::EngineFailReason PancyDescriptorHeap::LockDescriptorSegmental(
+	const pancy_object_id& lock_size,
+	std::vector<BindlessDescriptorID>& descriptor_segmental_list,
+	BindlessResourceViewID& descriptor_id
 )
 {
-	PancystarEngine::EngineFailReason check_error;
-	if (SRV_pack_size <= 0)
+	int32_t now_need_size = (lock_size / per_segmental_size);
+	if (lock_size % per_segmental_size != 0)
 	{
-		//ĞèÒª´´½¨µÄSRVÊıÁ¿Ğ¡ÓÚµÈÓÚ0
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture with size:" + std::to_string(SRV_pack_size));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV for bindless texture", error_message);
+		now_need_size += 1;
+	}
+	bool if_have_empty_segment = false;
+	std::vector<BindlessDescriptorID> all_empty_segment;
+	for (auto now_check_segmental : descriptor_segmental_map)
+	{
+		//å¯»æ‰¾ä¸€ä¸ªç©ºç™½çš„æè¿°ç¬¦æ®µï¼Œå¹¶æŸ¥çœ‹ä»–ç›¸é‚»çš„æè¿°ç¬¦æ®µæ˜¯å¦ä¹Ÿæ˜¯ç©ºé—²çš„
+		if (now_check_segmental.second->GetEmptyDescriptorNum() != per_segmental_size)
+		{
+			continue;
+		}
+		bool if_all_succeed = true;
+		for (int32_t check_next = 1; check_next < now_need_size; ++check_next)
+		{
+			auto check_segment_id = bindless_descriptor_id_map.find(now_check_segmental.first.bindless_id + check_next);
+			if (check_segment_id != bindless_descriptor_id_map.end())
+			{
+				auto check_next = descriptor_segmental_map.find(check_segment_id->second);
+				if (check_next != descriptor_segmental_map.end() && check_next->second->GetEmptyDescriptorNum() != per_segmental_size)
+				{
+					if_all_succeed = false;
+					break;
+				}
+			}
+		}
+		//æŸ¥æ‰¾æˆåŠŸï¼ŒæŠŠè¿™äº›æ®µæ ‡è®°ä¸ºå·²ä½¿ç”¨
+		if (if_all_succeed)
+		{
+			auto now_dealed_value_id = now_check_segmental.first.bindless_id;
+			//todo:æ¯”è¾ƒå±é™©çš„bugï¼Œè¿™é‡Œåˆ·æ–°ä¼šå¯¼è‡´åŸå§‹mapä¸­çš„æ•°æ®è¢«åˆ é™¤ï¼Œä¸‹é¢è¯¯ç”¨å°±ä¼šå´©æºƒ,æœ€å¥½è¿›è¡Œé‡æ„
+			descriptor_segmental_map[now_check_segmental.first]->FullSetAllDescriptor();
+			RefreshBindlessResourcesegmentalSize(now_dealed_value_id);
+			//é‡æ–°è·å–
+			auto now_refresh_segmental_id = bindless_descriptor_id_map[now_dealed_value_id];
+			auto now_refresh_segmental_data = descriptor_segmental_map[now_refresh_segmental_id];
+			now_refresh_segmental_data->BuildBindlessShaderResourceViewFromBegin(descriptor_id.page_id);
+			descriptor_id.segmental_id = now_refresh_segmental_id.bindless_id;
+			descriptor_segmental_list.push_back(now_refresh_segmental_id);
+			for (int32_t check_next = 1; check_next < now_need_size; ++check_next)
+			{
+				auto now_dealed_extra_value_id = now_check_segmental.first.bindless_id;
+				auto check_extra_segment_id = bindless_descriptor_id_map[now_refresh_segmental_id.bindless_id + check_next];
+				descriptor_segmental_map[check_extra_segment_id]->FullSetAllDescriptor();
+				RefreshBindlessResourcesegmentalSize(check_extra_segment_id.bindless_id);
+				check_extra_segment_id = bindless_descriptor_id_map[now_refresh_segmental_id.bindless_id + check_next];
+				descriptor_segmental_list.push_back(check_extra_segment_id);
+			}
+			if_have_empty_segment = true;
+			break;
+		}
+	}
+	if (!if_have_empty_segment) 
+	{
+		//æè¿°ç¬¦å †å·²æ»¡
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Get empty bindless descriptor segmental,the heap is fullï¼Œask number: " + std::to_string(lock_size));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::LockDescriptorSegmental", error_message);
 		return error_message;
-	}
-	//ÏÈÌôÑ¡Ò»¸öºÏÊÊµÄbindlessÃèÊö·û¶Î(ÒªÇóÊ£ÓàÃèÊö·û×ã¹»£¬ÇÒ¾¡Á¿ÔÚÆäËûÃèÊö·ûÖĞµÄ¿ÕÓàÖµ×îĞ¡)
-	BindlessResourceViewSegmental* RSV_segmental = NULL;
-	BindlessDescriptorID check_min_size_id;
-	check_min_size_id.bindless_id = 0;
-	check_min_size_id.empty_resource_size = SRV_pack_size;
-	auto min_resource_data = descriptor_segmental_map.lower_bound(check_min_size_id);
-	if (min_resource_data != descriptor_segmental_map.end())
-	{
-		//ÃèÊö·û¶ÑÖĞ´æÔÚ·ûºÏÒªÇóµÄÃèÊö·û¶Î£¬Ö±½ÓÔÚ¸ÃÃèÊö·û¶ÎÉÏ¿ª±ÙÃèÊö·ûÒ³
-		descriptor_id.segmental_id = min_resource_data->first.bindless_id;
-		RSV_segmental = min_resource_data->second;
-	}
-	else
-	{
-		//ÃèÊö·û¶ÑÒÑÂú
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture,the heap is full£¬ask number: " + std::to_string(SRV_pack_size));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV for bindless texture", error_message);
-		return error_message;
-	}
-	//ÔÚÃèÊö·û¶ÎÉÏ¿ª±ÙÒ»¸öÃèÊö·ûÒ³
-	check_error = RSV_segmental->BuildBindlessShaderResourceViewPack(SRV_desc, describe_memory_data, SRV_pack_size, descriptor_id.page_id);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//ĞŞ¸ÄÃèÊö·ûÒ³µÄ´óĞ¡(ÏÈ´ÓmapÖĞÉ¾³ıÀÏµÄÃèÊö·ûÒ³£¬ÔÙ½«ĞÂµÄÃèÊö·ûÒ³²åÈëµ½mapÖĞ,ÊµÏÖÍ¨¹ıMapÎ¬»¤ÃèÊö·ûÒ³´óĞ¡µÄ¹¦ÄÜ)
-	check_error = RefreshBindlessResourcesegmentalSize(min_resource_data->first.bindless_id);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
 	}
 	return PancystarEngine::succeed;
-}
-PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessResourcesegmentalSize(const pancy_object_id &resourc_id)
-{
 
-	auto now_resource_data = bindless_descriptor_id_map.find(resourc_id);
-	if (now_resource_data == bindless_descriptor_id_map.end())
-	{
-		//ĞèÒªË¢ĞÂµÄ×ÊÔ´id²»´æÔÚ
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless resource segmental id" + std::to_string(resourc_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV size", error_message);
-		return error_message;
-	}
-	auto RSV_segmental = descriptor_segmental_map.find(now_resource_data->second);
-	if (RSV_segmental == descriptor_segmental_map.end())
-	{
-		//ĞèÒªË¢ĞÂµÄ×ÊÔ´²»´æÔÚ
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless resource segmental resource" + std::to_string(resourc_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV size", error_message);
-		return error_message;
-	}
-	//¼ÇÂ¼µ±Ç°ĞèÒª¸üÌæµÄ×ÊÔ´µÄĞÂµØÖ·Óë¾ÉµØÖ·
-	BindlessDescriptorID old_size_id;
-	BindlessDescriptorID new_size_id;
-	BindlessResourceViewSegmental *segmental_resource;
-	new_size_id.bindless_id = resourc_id;
-	new_size_id.empty_resource_size = RSV_segmental->second->GetEmptyDescriptorNum();
-	old_size_id = now_resource_data->second;
-	segmental_resource = RSV_segmental->second;
-	//Ë¢ĞÂID
-	bindless_descriptor_id_map.erase(old_size_id.bindless_id);
-	bindless_descriptor_id_map.insert(std::pair<pancy_object_id, BindlessDescriptorID>(new_size_id.bindless_id, new_size_id));
-	//Ë¢ĞÂÄÚÈİ
-	descriptor_segmental_map.erase(old_size_id);
-	descriptor_segmental_map.insert(std::pair<BindlessDescriptorID, BindlessResourceViewSegmental*>(new_size_id, segmental_resource));
-	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindlessShaderResourceViewPage(
-	const BindlessResourceViewID &descriptor_id,
-	bool is_refresh_segmental
-)
+PancystarEngine::EngineFailReason PancyDescriptorHeap::RebindSahderResourceViewDynamic(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>& SRV_desc,
+	const std::vector<VirtualResourcePointer>& describe_memory_data,
+	const BindlessResourceViewID& descriptor_id
+) 
 {
 	auto resource_id = bindless_descriptor_id_map.find(descriptor_id.segmental_id);
 	if (resource_id == bindless_descriptor_id_map.end())
 	{
-		//Î´ÕÒµ½ÇëÇóµÄ×ÊÔ´
+		//æœªæ‰¾åˆ°è¯·æ±‚çš„èµ„æº
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bindless SRV from segmental", error_message);
 		return error_message;
@@ -388,7 +417,112 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindlessShaderResou
 	auto descriptor_resource = descriptor_segmental_map.find(resource_id->second);
 	if (descriptor_resource == descriptor_segmental_map.end())
 	{
-		//Î´ÕÒµ½ÇëÇóµÄ×ÊÔ´
+		//æœªæ‰¾åˆ°è¯·æ±‚çš„èµ„æº
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bindless SRV from segmental", error_message);
+		return error_message;
+	}
+	return descriptor_resource->second->RebindBindlessShaderResourceViewFromBegin(SRV_desc, describe_memory_data);
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindlessShaderResourceViewPage(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>& SRV_desc,
+	const std::vector<VirtualResourcePointer>& describe_memory_data,
+	const pancy_object_id& SRV_pack_size,
+	BindlessResourceViewID& descriptor_id
+)
+{
+	PancystarEngine::EngineFailReason check_error;
+	if (SRV_pack_size <= 0)
+	{
+		//éœ€è¦åˆ›å»ºçš„SRVæ•°é‡å°äºç­‰äº0
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture with size:" + std::to_string(SRV_pack_size));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV for bindless texture", error_message);
+		return error_message;
+	}
+	//å…ˆæŒ‘é€‰ä¸€ä¸ªåˆé€‚çš„bindlessæè¿°ç¬¦æ®µ(è¦æ±‚å‰©ä½™æè¿°ç¬¦è¶³å¤Ÿï¼Œä¸”å°½é‡åœ¨å…¶ä»–æè¿°ç¬¦ä¸­çš„ç©ºä½™å€¼æœ€å°)
+	BindlessResourceViewSegmental* RSV_segmental = NULL;
+	BindlessDescriptorID check_min_size_id;
+	check_min_size_id.bindless_id = 0;
+	check_min_size_id.empty_resource_size = SRV_pack_size;
+	auto min_resource_data = descriptor_segmental_map.lower_bound(check_min_size_id);
+	if (min_resource_data != descriptor_segmental_map.end())
+	{
+		//æè¿°ç¬¦å †ä¸­å­˜åœ¨ç¬¦åˆè¦æ±‚çš„æè¿°ç¬¦æ®µï¼Œç›´æ¥åœ¨è¯¥æè¿°ç¬¦æ®µä¸Šå¼€è¾Ÿæè¿°ç¬¦é¡µ
+		descriptor_id.segmental_id = min_resource_data->first.bindless_id;
+		RSV_segmental = min_resource_data->second;
+	}
+	else
+	{
+		//æè¿°ç¬¦å †å·²æ»¡
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build bindless texture,the heap is fullï¼Œask number: " + std::to_string(SRV_pack_size));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV for bindless texture", error_message);
+		return error_message;
+	}
+	//åœ¨æè¿°ç¬¦æ®µä¸Šå¼€è¾Ÿä¸€ä¸ªæè¿°ç¬¦é¡µ
+	check_error = RSV_segmental->BuildBindlessShaderResourceViewPack(SRV_desc, describe_memory_data, SRV_pack_size, descriptor_id.page_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//ä¿®æ”¹æè¿°ç¬¦é¡µçš„å¤§å°(å…ˆä»mapä¸­åˆ é™¤è€çš„æè¿°ç¬¦é¡µï¼Œå†å°†æ–°çš„æè¿°ç¬¦é¡µæ’å…¥åˆ°mapä¸­,å®ç°é€šè¿‡Mapç»´æŠ¤æè¿°ç¬¦é¡µå¤§å°çš„åŠŸèƒ½)
+	check_error = RefreshBindlessResourcesegmentalSize(min_resource_data->first.bindless_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessResourcesegmentalSize(const pancy_object_id& resourc_id)
+{
+	auto now_resource_data = bindless_descriptor_id_map.find(resourc_id);
+	if (now_resource_data == bindless_descriptor_id_map.end())
+	{
+		//éœ€è¦åˆ·æ–°çš„èµ„æºidä¸å­˜åœ¨
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless resource segmental id" + std::to_string(resourc_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV size", error_message);
+		return error_message;
+	}
+	auto RSV_segmental = descriptor_segmental_map.find(now_resource_data->second);
+	if (RSV_segmental == descriptor_segmental_map.end())
+	{
+		//éœ€è¦åˆ·æ–°çš„èµ„æºä¸å­˜åœ¨
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless resource segmental resource" + std::to_string(resourc_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV size", error_message);
+		return error_message;
+	}
+	//è®°å½•å½“å‰éœ€è¦æ›´æ›¿çš„èµ„æºçš„æ–°åœ°å€ä¸æ—§åœ°å€
+	BindlessDescriptorID old_size_id;
+	BindlessDescriptorID new_size_id;
+	BindlessResourceViewSegmental* segmental_resource;
+	new_size_id.bindless_id = resourc_id;
+	new_size_id.empty_resource_size = RSV_segmental->second->GetEmptyDescriptorNum();
+	old_size_id = now_resource_data->second;
+	segmental_resource = RSV_segmental->second;
+	//åˆ·æ–°ID
+	bindless_descriptor_id_map.erase(old_size_id.bindless_id);
+	bindless_descriptor_id_map.insert(std::pair<pancy_object_id, BindlessDescriptorID>(new_size_id.bindless_id, new_size_id));
+	//åˆ·æ–°å†…å®¹
+	descriptor_segmental_map.erase(old_size_id);
+	descriptor_segmental_map.insert(std::pair<BindlessDescriptorID, BindlessResourceViewSegmental*>(new_size_id, segmental_resource));
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindlessShaderResourceViewPage(
+	const BindlessResourceViewID& descriptor_id,
+	bool is_refresh_segmental
+)
+{
+	auto resource_id = bindless_descriptor_id_map.find(descriptor_id.segmental_id);
+	if (resource_id == bindless_descriptor_id_map.end())
+	{
+		//æœªæ‰¾åˆ°è¯·æ±‚çš„èµ„æº
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bindless SRV from segmental", error_message);
+		return error_message;
+	}
+	auto descriptor_resource = descriptor_segmental_map.find(resource_id->second);
+	if (descriptor_resource == descriptor_segmental_map.end())
+	{
+		//æœªæ‰¾åˆ°è¯·æ±‚çš„èµ„æº
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bindless SRV from segmental", error_message);
 		return error_message;
@@ -396,19 +530,19 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindlessShaderResou
 	PancystarEngine::EngineFailReason check_error;
 	if (is_refresh_segmental)
 	{
-		//ÒªÇóÉ¾³ıÒ³ĞÅÏ¢ºóÁ¢¼´Ë¢ĞÂ¶ÎĞÅÏ¢
+		//è¦æ±‚åˆ é™¤é¡µä¿¡æ¯åç«‹å³åˆ·æ–°æ®µä¿¡æ¯
 		check_error = descriptor_resource->second->DeleteBindlessShaderResourceViewPackAndRefresh(descriptor_id.page_id);
 	}
 	else
 	{
-		//É¾³ıÒ³ĞÅÏ¢ºó²»Á¢¼´Ë¢ĞÂ¶ÎĞÅÏ¢
+		//åˆ é™¤é¡µä¿¡æ¯åä¸ç«‹å³åˆ·æ–°æ®µä¿¡æ¯
 		check_error = descriptor_resource->second->DeleteBindlessShaderResourceViewPack(descriptor_id.page_id);
 	}
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//ÖØĞÂ¼ÆËãÒ³µÄ´óĞ¡²¢Ë¢ĞÂÒ³±í
+	//é‡æ–°è®¡ç®—é¡µçš„å¤§å°å¹¶åˆ·æ–°é¡µè¡¨
 	check_error = RefreshBindlessResourcesegmentalSize(descriptor_id.segmental_id);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -426,7 +560,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessShaderReso
 		auto bindlessresource = descriptor_segmental_map.find(new_id);
 		if (bindlessresource == descriptor_segmental_map.end())
 		{
-			//Î´ÕÒµ½ÇëÇóµÄ×ÊÔ´
+			//æœªæ‰¾åˆ°è¯·æ±‚çš„èµ„æº
 			PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(i));
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Refresh bindless SRV segmental", error_message);
 			return error_message;
@@ -444,23 +578,23 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::RefreshBindlessShaderReso
 	}
 	return PancystarEngine::succeed;
 }
-//´´½¨È«¾ÖÃèÊö·û
+//åˆ›å»ºå…¨å±€æè¿°ç¬¦
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelDescriptor(
-	const std::string &globel_name,
-	const std::vector<BasicDescriptorDesc> &SRV_desc,
+	const std::string& globel_name,
+	const std::vector<BasicDescriptorDesc>& SRV_desc,
 	std::vector <VirtualResourcePointer>& memory_data,
 	const bool if_build_multi_buffer
 )
 {
 	auto check_if_has_data = descriptor_globel_map.find(globel_name);
-	//ÏÈ¼ì²éÊÇ·ñÒÑ¾­´´½¨ÁËÍ¬ÃûµÄÈ«¾ÖÃèÊö·û
+	//å…ˆæ£€æŸ¥æ˜¯å¦å·²ç»åˆ›å»ºäº†åŒåçš„å…¨å±€æè¿°ç¬¦
 	if (check_if_has_data != descriptor_globel_map.end())
 	{
 		PancystarEngine::EngineFailReason error_message(S_OK, "repeat build globel descriptor: " + globel_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
 		return error_message;
 	}
-	//´´½¨Ò»¸öÆÕÍ¨µÄ°ó¶¨ÃèÊö·û
+	//åˆ›å»ºä¸€ä¸ªæ™®é€šçš„ç»‘å®šæè¿°ç¬¦
 	pancy_object_id bind_resource_id;
 	PancystarEngine::EngineFailReason check_error;
 	check_error = BuildBindDescriptor(SRV_desc, memory_data, if_build_multi_buffer, bind_resource_id);
@@ -468,36 +602,36 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildGlobelDescriptor(
 	{
 		return check_error;
 	}
-	//½«°ó¶¨ÃèÊö·ûÓëÈ«¾Ö±äÁ¿½øĞĞ°ó¶¨
+	//å°†ç»‘å®šæè¿°ç¬¦ä¸å…¨å±€å˜é‡è¿›è¡Œç»‘å®š
 	descriptor_globel_map[globel_name] = bind_resource_id;
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteGlobelDescriptor(const std::string &globel_name)
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteGlobelDescriptor(const std::string& globel_name)
 {
 	PancystarEngine::EngineFailReason check_error;
 	auto check_if_has_data = descriptor_globel_map.find(globel_name);
-	//ÏÈ¼ì²éÊÇ·ñÒÑ¾­´´½¨ÁËÈ«¾ÖÃèÊö·û
+	//å…ˆæ£€æŸ¥æ˜¯å¦å·²ç»åˆ›å»ºäº†å…¨å±€æè¿°ç¬¦
 	if (check_if_has_data == descriptor_globel_map.end())
 	{
 		PancystarEngine::EngineFailReason error_message(S_OK, "could not find globel descriptor: " + globel_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete globel descriptor from heap", error_message);
 		return error_message;
 	}
-	//ÏÈÉ¾³ıÃèÊö·û×ÊÔ´
+	//å…ˆåˆ é™¤æè¿°ç¬¦èµ„æº
 	check_error = DeleteBindDescriptor(check_if_has_data->second);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//ÔÙÉ¾³ıÃèÊö·û×ÊÔ´µÄÃüÃû¹ØÁª
+	//å†åˆ é™¤æè¿°ç¬¦èµ„æºçš„å‘½åå…³è”
 	descriptor_globel_map.erase(globel_name);
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeap::GetGlobelDesciptorID(const std::string &globel_name, pancy_object_id &descriptor_id)
+PancystarEngine::EngineFailReason PancyDescriptorHeap::GetGlobelDesciptorID(const std::string& globel_name, pancy_object_id& descriptor_id)
 {
 	PancystarEngine::EngineFailReason check_error;
 	auto check_if_has_data = descriptor_globel_map.find(globel_name);
-	//ÏÈ¼ì²éÊÇ·ñÒÑ¾­´´½¨ÁËÈ«¾ÖÃèÊö·û
+	//å…ˆæ£€æŸ¥æ˜¯å¦å·²ç»åˆ›å»ºäº†å…¨å±€æè¿°ç¬¦
 	if (check_if_has_data == descriptor_globel_map.end())
 	{
 		PancystarEngine::EngineFailReason error_message(S_OK, "could not find globel descriptor: " + globel_name);
@@ -509,16 +643,16 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::GetGlobelDesciptorID(cons
 }
 
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindDescriptor(
-	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+	const std::vector<BasicDescriptorDesc>& now_descriptor_desc_in,
 	std::vector<VirtualResourcePointer>& memory_data,
 	const bool if_build_multi_buffer,
-	pancy_object_id &descriptor_id
+	pancy_object_id& descriptor_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
 	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> cpuHandle;
 	CommonDescriptorPointer new_descriptor_data;
-	//¼ì²âµ±Ç°µÄÃèÊö·û¶Ñ¸ñÊ½ÊÇ·ñÓëÆÚÍûµÄÃèÊö·ûÒ»ÖÂ
+	//æ£€æµ‹å½“å‰çš„æè¿°ç¬¦å †æ ¼å¼æ˜¯å¦ä¸æœŸæœ›çš„æè¿°ç¬¦ä¸€è‡´
 	D3D12_DESCRIPTOR_HEAP_TYPE now_descriptor_heap = GetDescriptorHeapTypeOfDescriptor(now_descriptor_desc_in[0]);
 	if (descriptor_desc.Type != now_descriptor_heap)
 	{
@@ -526,7 +660,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindDescriptor(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build bind descriptor from heap", error_message);
 		return error_message;
 	}
-	//Ô¤´¦ÀíÃèÊö·ûÔÚÃèÊö·û¶ÑÖĞµÄÎ»ÖÃ
+	//é¢„å¤„ç†æè¿°ç¬¦åœ¨æè¿°ç¬¦å †ä¸­çš„ä½ç½®
 	check_error = PreBuildBindDescriptor(
 		now_descriptor_heap,
 		if_build_multi_buffer,
@@ -543,21 +677,21 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindDescriptor(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BuildBindDescriptor", error_message);
 		return error_message;
 	}
-	//´´½¨ÃèÊö·û
+	//åˆ›å»ºæè¿°ç¬¦
 	for (int i = 0; i < memory_data.size(); ++i)
 	{
-		//´æ´¢×ÊÔ´Êı¾İ£¬²¢¸ù¾İ×ÊÔ´Êı¾İ´´½¨ÃèÊö·û
+		//å­˜å‚¨èµ„æºæ•°æ®ï¼Œå¹¶æ ¹æ®èµ„æºæ•°æ®åˆ›å»ºæè¿°ç¬¦
 		new_descriptor_data.resource_data.push_back(memory_data[i]);
 		auto real_resource = memory_data[i].GetResourceData();
 		ResourceBlockGpu* now_gpu_resource = NULL;
 		if (real_resource->GetResourceTypeName() == typeid(PancyBasicBuffer).name())
 		{
-			const PancyBasicBuffer *buffer_resource_data = dynamic_cast<const PancyBasicBuffer*>(real_resource);
+			const PancyBasicBuffer* buffer_resource_data = dynamic_cast<const PancyBasicBuffer*>(real_resource);
 			now_gpu_resource = buffer_resource_data->GetGpuResourceData();
 		}
 		else if (real_resource->GetResourceTypeName() == typeid(PancyBasicTexture).name())
 		{
-			const PancyBasicTexture *texture_resource_data = dynamic_cast<const PancyBasicTexture*>(real_resource);
+			const PancyBasicTexture* texture_resource_data = dynamic_cast<const PancyBasicTexture*>(real_resource);
 			now_gpu_resource = texture_resource_data->GetGpuResourceData();
 		}
 		else
@@ -578,51 +712,51 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BuildBindDescriptor(
 			return check_error;
 		}
 	}
-	//½«ĞÂ´´½¨µÄÃèÊö·û¼ÓÈëµ½mapÖĞ
+	//å°†æ–°åˆ›å»ºçš„æè¿°ç¬¦åŠ å…¥åˆ°mapä¸­
 	descriptor_id = new_descriptor_data.descriptor_offset[0];
 	descriptor_bind_map[descriptor_id] = new_descriptor_data;
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeap::PreBuildBindDescriptor(
-	const D3D12_DESCRIPTOR_HEAP_TYPE &descriptor_type,
+	const D3D12_DESCRIPTOR_HEAP_TYPE& descriptor_type,
 	const bool if_build_multi_buffer,
-	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> &descriptor_cpu_handle,
-	CommonDescriptorPointer &new_descriptor_data
+	std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE>& descriptor_cpu_handle,
+	CommonDescriptorPointer& new_descriptor_data
 )
 {
 	pancy_object_id multibuffer_num = static_cast<pancy_object_id>(PancyDx12DeviceBasic::GetInstance()->GetFrameNum());
 	PancystarEngine::EngineFailReason check_error;
-	//¼ì²âÊÇ·ñ»¹ÓĞ¿ÕÓàµÄÃèÊö·ûÎ»ÖÃ
+	//æ£€æµ‹æ˜¯å¦è¿˜æœ‰ç©ºä½™çš„æè¿°ç¬¦ä½ç½®
 	if (bind_descriptor_offset_reuse.size() == 0 || (if_build_multi_buffer && bind_descriptor_offset_reuse.size() < multibuffer_num))
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor heap is full, could not build new bind descriptor: ");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build globel descriptor from heap", error_message);
 		return error_message;
 	}
-	//¼ì²âĞèÒª´´½¨µÄÃèÊö·ûÊıÁ¿(ÔÊĞí´´½¨¶à¸ö»º³åÇøÔòÖÃ1£¬·ñÔò¸ù¾İµ±Ç°³ÌĞòäÖÈ¾Ö¡µÄÊıÁ¿´´½¨¶à×é×ÊÔ´)
+	//æ£€æµ‹éœ€è¦åˆ›å»ºçš„æè¿°ç¬¦æ•°é‡(å…è®¸åˆ›å»ºå¤šä¸ªç¼“å†²åŒºåˆ™ç½®1ï¼Œå¦åˆ™æ ¹æ®å½“å‰ç¨‹åºæ¸²æŸ“å¸§çš„æ•°é‡åˆ›å»ºå¤šç»„èµ„æº)
 	pancy_object_id build_descriptor_num = 1;
 	if (if_build_multi_buffer)
 	{
 		build_descriptor_num = multibuffer_num;
 		new_descriptor_data.if_multi_buffer = true;
 	}
-	//¸ù¾İĞèÒª´´½¨µÄÃèÊö·ûµÄÊıÁ¿À´¼ÆËãÃ¿¸öÃèÊö·ûÔÚÃèÊö·û¶ÑÄÚµÄÕæÕıÆ«ÒÆÁ¿
+	//æ ¹æ®éœ€è¦åˆ›å»ºçš„æè¿°ç¬¦çš„æ•°é‡æ¥è®¡ç®—æ¯ä¸ªæè¿°ç¬¦åœ¨æè¿°ç¬¦å †å†…çš„çœŸæ­£åç§»é‡
 	descriptor_cpu_handle.clear();
 	for (pancy_object_id i = 0; i < build_descriptor_num; ++i)
 	{
 		new_descriptor_data.descriptor_offset.push_back(bind_descriptor_offset_reuse.front());
 		new_descriptor_data.descriptor_type = descriptor_type;
-		//¼ÆËãÃèÊö·ûÕæÕıµÄÎ»ÖÃ
+		//è®¡ç®—æè¿°ç¬¦çœŸæ­£çš„ä½ç½®
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
 		pancy_resource_size real_descriptor_offset = static_cast<pancy_resource_size>(bind_descriptor_offset_reuse.front()) * static_cast<pancy_resource_size>(per_descriptor_size);
 		cpuHandle.Offset(static_cast<INT>(real_descriptor_offset));
 		descriptor_cpu_handle.push_back(cpuHandle);
-		//É¾³ıµ±Ç°¿ÉÓÃµÄÒ»¸öIDºÅ
+		//åˆ é™¤å½“å‰å¯ç”¨çš„ä¸€ä¸ªIDå·
 		bind_descriptor_offset_reuse.pop();
 	}
 	return PancystarEngine::succeed;
 }
-D3D12_DESCRIPTOR_HEAP_TYPE PancyDescriptorHeap::GetDescriptorHeapTypeOfDescriptor(const BasicDescriptorDesc &descriptor_desc)
+D3D12_DESCRIPTOR_HEAP_TYPE PancyDescriptorHeap::GetDescriptorHeapTypeOfDescriptor(const BasicDescriptorDesc& descriptor_desc)
 {
 	switch (descriptor_desc.basic_descriptor_type)
 	{
@@ -646,38 +780,38 @@ D3D12_DESCRIPTOR_HEAP_TYPE PancyDescriptorHeap::GetDescriptorHeapTypeOfDescripto
 	}
 	return D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindDescriptor(const pancy_object_id &descriptor_id)
+PancystarEngine::EngineFailReason PancyDescriptorHeap::DeleteBindDescriptor(const pancy_object_id& descriptor_id)
 {
 	auto check_if_has_data = descriptor_bind_map.find(descriptor_id);
-	//ÏÈ¼ì²é´ıÉ¾³ıµÄÃèÊö·ûÊÇ·ñ´æÔÚ
+	//å…ˆæ£€æŸ¥å¾…åˆ é™¤çš„æè¿°ç¬¦æ˜¯å¦å­˜åœ¨
 	if (check_if_has_data == descriptor_bind_map.end())
 	{
 		PancystarEngine::EngineFailReason error_message(S_OK, "could not find bind descriptor: " + std::to_string(descriptor_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete bind descriptor from heap", error_message);
 		return error_message;
 	}
-	//É¾³ıµ±Ç°µÄÃèÊö·ûÊı¾İ
+	//åˆ é™¤å½“å‰çš„æè¿°ç¬¦æ•°æ®
 	descriptor_bind_map.erase(descriptor_id);
-	//½«É¾³ıÍê±ÏµÄÃèÊö·ûID»¹¸øÃèÊö·ûID³ØÔÙÀûÓÃ
+	//å°†åˆ é™¤å®Œæ¯•çš„æè¿°ç¬¦IDè¿˜ç»™æè¿°ç¬¦IDæ± å†åˆ©ç”¨
 	bind_descriptor_offset_reuse.push(descriptor_id);
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BindGlobelDescriptor(
-	const std::string &globel_name,
-	const D3D12_COMMAND_LIST_TYPE &render_param_type,
-	PancyRenderCommandList *m_commandList,
-	const pancy_object_id &root_signature_offset
+	const std::string& globel_name,
+	const D3D12_COMMAND_LIST_TYPE& render_param_type,
+	PancyRenderCommandList* m_commandList,
+	const pancy_object_id& root_signature_offset
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//ÏÈ»ñÈ¡ÃèÊö·û¶ÑµÄCPUÖ¸Õë
+	//å…ˆè·å–æè¿°ç¬¦å †çš„CPUæŒ‡é’ˆ
 	pancy_object_id bind_id_descriptor;
 	check_error = GetGlobelDesciptorID(globel_name, bind_id_descriptor);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//»ñÈ¡È«¾ÖÃèÊö·ûµÄÆ«ÒÆÁ¿
+	//è·å–å…¨å±€æè¿°ç¬¦çš„åç§»é‡
 	check_error = BindCommonDescriptor(bind_id_descriptor, render_param_type, m_commandList, root_signature_offset);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -686,31 +820,31 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BindGlobelDescriptor(
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BindCommonDescriptor(
-	const pancy_object_id &descriptor_id,
-	const D3D12_COMMAND_LIST_TYPE &render_param_type,
-	PancyRenderCommandList *m_commandList,
-	const pancy_object_id &root_signature_offset
+	const pancy_object_id& descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE& render_param_type,
+	PancyRenderCommandList* m_commandList,
+	const pancy_object_id& root_signature_offset
 )
 {
-	//¼ì²âÊäÈëµÄIDºÅÊÇ·ñºÏ·¨
+	//æ£€æµ‹è¾“å…¥çš„IDå·æ˜¯å¦åˆæ³•
 	if (descriptor_id >= bind_descriptor_num)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor id: " + std::to_string(descriptor_id) + " is bigger than the max id of descriptor heap: " + std::to_string(bind_descriptor_num));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindCommonDescriptor", error_message);
 		return error_message;
 	}
-	//ÏÈ»ñÈ¡ÃèÊö·û¶ÑµÄCPUÖ¸Õë
+	//å…ˆè·å–æè¿°ç¬¦å †çš„CPUæŒ‡é’ˆ
 	CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(descriptor_heap_data->GetGPUDescriptorHandleForHeapStart());
-	//»ñÈ¡È«¾ÖÃèÊö·ûµÄĞÅÏ¢
+	//è·å–å…¨å±€æè¿°ç¬¦çš„ä¿¡æ¯
 	auto resource_id = descriptor_bind_map.find(descriptor_id);
 	if (resource_id == descriptor_bind_map.end())
 	{
-		//Î´ÕÒµ½ÇëÇóµÄ×ÊÔ´
+		//æœªæ‰¾åˆ°è¯·æ±‚çš„èµ„æº
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bind descriptor :" + std::to_string(descriptor_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeap::BindCommonDescriptor", error_message);
 		return error_message;
 	}
-	//¸ù¾İÃèÊö·ûÊÇ·ñÊÇ½»»»Ö¡ÀàĞÍÀ´¾ö¶¨ÊÇ·ñÇĞÖ¡£¨¼´ÀÏ°æ±¾µÄrename²Ù×÷£©
+	//æ ¹æ®æè¿°ç¬¦æ˜¯å¦æ˜¯äº¤æ¢å¸§ç±»å‹æ¥å†³å®šæ˜¯å¦åˆ‡å¸§ï¼ˆå³è€ç‰ˆæœ¬çš„renameæ“ä½œï¼‰
 	pancy_object_id real_offset_descriptor;
 	if (resource_id->second.if_multi_buffer)
 	{
@@ -721,10 +855,10 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BindCommonDescriptor(
 	{
 		real_offset_descriptor = resource_id->second.descriptor_offset[0];
 	}
-	//»ñÈ¡È«¾ÖÃèÊö·ûµÄÆ«ÒÆÁ¿
+	//è·å–å…¨å±€æè¿°ç¬¦çš„åç§»é‡
 	pancy_object_id id_offset = real_offset_descriptor * per_descriptor_size;
 	srvHandle.Offset(id_offset);
-	//¿ªÊ¼°ó¶¨ÃèÊö·ûÓëcommandlist
+	//å¼€å§‹ç»‘å®šæè¿°ç¬¦ä¸commandlist
 	switch (render_param_type)
 	{
 	case D3D12_COMMAND_LIST_TYPE_DIRECT:
@@ -741,27 +875,27 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BindCommonDescriptor(
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeap::GetCommonDescriptorCpuOffset(const pancy_object_id &descriptor_id, CD3DX12_CPU_DESCRIPTOR_HANDLE &Cpu_Handle)
+PancystarEngine::EngineFailReason PancyDescriptorHeap::GetCommonDescriptorCpuOffset(const pancy_object_id& descriptor_id, CD3DX12_CPU_DESCRIPTOR_HANDLE& Cpu_Handle)
 {
-	//¼ì²âÊäÈëµÄIDºÅÊÇ·ñºÏ·¨
+	//æ£€æµ‹è¾“å…¥çš„IDå·æ˜¯å¦åˆæ³•
 	if (descriptor_id >= bind_descriptor_num)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the descriptor id: " + std::to_string(descriptor_id) + " is bigger than the max id of descriptor heap: " + std::to_string(bind_descriptor_num));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindCommonDescriptor", error_message);
 		return error_message;
 	}
-	//ÏÈ»ñÈ¡ÃèÊö·û¶ÑµÄCPUÖ¸Õë
+	//å…ˆè·å–æè¿°ç¬¦å †çš„CPUæŒ‡é’ˆ
 	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(descriptor_heap_data->GetCPUDescriptorHandleForHeapStart());
-	//»ñÈ¡È«¾ÖÃèÊö·ûµÄĞÅÏ¢
+	//è·å–å…¨å±€æè¿°ç¬¦çš„ä¿¡æ¯
 	auto resource_id = descriptor_bind_map.find(descriptor_id);
 	if (resource_id == descriptor_bind_map.end())
 	{
-		//Î´ÕÒµ½ÇëÇóµÄ×ÊÔ´
+		//æœªæ‰¾åˆ°è¯·æ±‚çš„èµ„æº
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bind descriptor :" + std::to_string(descriptor_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Bind bind descriptor from segmental", error_message);
 		return error_message;
 	}
-	//¸ù¾İÃèÊö·ûÊÇ·ñÊÇ½»»»Ö¡ÀàĞÍÀ´¾ö¶¨ÊÇ·ñÇĞÖ¡£¨¼´ÀÏ°æ±¾µÄrename²Ù×÷£©
+	//æ ¹æ®æè¿°ç¬¦æ˜¯å¦æ˜¯äº¤æ¢å¸§ç±»å‹æ¥å†³å®šæ˜¯å¦åˆ‡å¸§ï¼ˆå³è€ç‰ˆæœ¬çš„renameæ“ä½œï¼‰
 	pancy_object_id real_offset_descriptor;
 	if (resource_id->second.if_multi_buffer)
 	{
@@ -772,41 +906,41 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::GetCommonDescriptorCpuOff
 	{
 		real_offset_descriptor = resource_id->second.descriptor_offset[0];
 	}
-	//»ñÈ¡È«¾ÖÃèÊö·ûµÄÆ«ÒÆÁ¿
+	//è·å–å…¨å±€æè¿°ç¬¦çš„åç§»é‡
 	pancy_object_id id_offset = real_offset_descriptor * per_descriptor_size;
 	srvHandle.Offset(id_offset);
 	Cpu_Handle = srvHandle;
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeap::BindBindlessDescriptor(
-	const BindlessResourceViewID &descriptor_id,
-	const D3D12_COMMAND_LIST_TYPE &render_param_type,
-	PancyRenderCommandList *m_commandList,
-	const pancy_object_id &root_signature_offset
+	const BindlessResourceViewID& descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE& render_param_type,
+	PancyRenderCommandList* m_commandList,
+	const pancy_object_id& root_signature_offset
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//ÏÈ»ñÈ¡ÃèÊö·û¶ÑµÄCPUÖ¸Õë
+	//å…ˆè·å–æè¿°ç¬¦å †çš„CPUæŒ‡é’ˆ
 	if (descriptor_id.segmental_id >= bindless_descriptor_num)
 	{
-		//ÇëÇóµÄÃèÊö·û¶ÎÎ»ÖÃ³¬¹ıÁË¶ÎµØÖ·µÄ×î´óÖµ
+		//è¯·æ±‚çš„æè¿°ç¬¦æ®µä½ç½®è¶…è¿‡äº†æ®µåœ°å€çš„æœ€å¤§å€¼
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the bindless descriptor segmental id: " + std::to_string(descriptor_id.segmental_id) + " is bigger than the max bindless segmental id of descriptor heap: " + std::to_string(bindless_descriptor_num));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindBindlessDescriptor", error_message);
 		return error_message;
 	}
 	else if (descriptor_id.page_id > per_segmental_size)
 	{
-		//ÇëÇóµÄÃèÊö·ûÒ³Î»ÖÃ³¬¹ıÁËÃ¿¶ÎµØÖ·µÄ×î´óÈİÁ¿
+		//è¯·æ±‚çš„æè¿°ç¬¦é¡µä½ç½®è¶…è¿‡äº†æ¯æ®µåœ°å€çš„æœ€å¤§å®¹é‡
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "the bindless descriptor page id: " + std::to_string(descriptor_id.page_id) + " is bigger than the max bindless per_segmental_size id of descriptor heap: " + std::to_string(per_segmental_size));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BindBindlessDescriptor", error_message);
 		return error_message;
 	}
 	pancy_object_id bind_id_descriptor;
-	//²éÕÒµ±Ç°ÃèÊö·ûÒ³¶ÔÓ¦µÄÊı¾İ
+	//æŸ¥æ‰¾å½“å‰æè¿°ç¬¦é¡µå¯¹åº”çš„æ•°æ®
 	auto resource_id = bindless_descriptor_id_map.find(descriptor_id.segmental_id);
 	if (resource_id == bindless_descriptor_id_map.end())
 	{
-		//Î´ÕÒµ½ÇëÇóµÄ×ÊÔ´
+		//æœªæ‰¾åˆ°è¯·æ±‚çš„èµ„æº
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Bind bindless SRV from segmental", error_message);
 		return error_message;
@@ -814,21 +948,21 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BindBindlessDescriptor(
 	auto descriptor_resource = descriptor_segmental_map.find(resource_id->second);
 	if (descriptor_resource == descriptor_segmental_map.end())
 	{
-		//Î´ÕÒµ½ÇëÇóµÄ×ÊÔ´
+		//æœªæ‰¾åˆ°è¯·æ±‚çš„èµ„æº
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find bindless texture segmental:" + std::to_string(descriptor_id.segmental_id));
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Bind bindless SRV from segmental", error_message);
 		return error_message;
 	}
-	//»ñÈ¡ÃèÊö·ûÒ³µÄÕæÊµÆ«ÒÆ
-	const BindlessResourceViewPointer &descriptor_page_real_pos = descriptor_resource->second->GetDescriptorPageOffset(descriptor_id.page_id);
-	//¼ÆËã½â°ó¶¥ÃèÊö·ûµÄÆğÊ¼Î»ÖÃÔÚÃèÊö·û¶ÑÖĞµÄÆ«ÒÆ£¨³õÊ¼Æ«ÒÆ+ËùÓĞ¶Î¼äµÄÆ«ÒÆ+¶ÎÄÚÆ«ÒÆ£©
+	//è·å–æè¿°ç¬¦é¡µçš„çœŸå®åç§»
+	const BindlessResourceViewPointer& descriptor_page_real_pos = descriptor_resource->second->GetDescriptorPageOffset(descriptor_id.page_id);
+	//è®¡ç®—è§£ç»‘é¡¶æè¿°ç¬¦çš„èµ·å§‹ä½ç½®åœ¨æè¿°ç¬¦å †ä¸­çš„åç§»ï¼ˆåˆå§‹åç§»+æ‰€æœ‰æ®µé—´çš„åç§»+æ®µå†…åç§»ï¼‰
 	bind_id_descriptor = bind_descriptor_num + descriptor_id.segmental_id * per_segmental_size + descriptor_page_real_pos.resource_view_offset;
-	//ÏÈ»ñÈ¡ÃèÊö·û¶ÑµÄCPUÖ¸Õë
+	//å…ˆè·å–æè¿°ç¬¦å †çš„CPUæŒ‡é’ˆ
 	CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle(descriptor_heap_data->GetGPUDescriptorHandleForHeapStart());
-	//»ñÈ¡È«¾ÖÃèÊö·ûµÄÆ«ÒÆÁ¿
+	//è·å–å…¨å±€æè¿°ç¬¦çš„åç§»é‡
 	pancy_object_id id_offset = bind_id_descriptor * per_descriptor_size;
 	srvHandle.Offset(id_offset);
-	//¿ªÊ¼°ó¶¨ÃèÊö·ûÓëcommandlist
+	//å¼€å§‹ç»‘å®šæè¿°ç¬¦ä¸commandlist
 	switch (render_param_type)
 	{
 	case D3D12_COMMAND_LIST_TYPE_DIRECT:
@@ -845,7 +979,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeap::BindBindlessDescriptor(
 	}
 	return PancystarEngine::succeed;
 }
-//ÃèÊö·û¶Ñ·´Éä
+//æè¿°ç¬¦å †åå°„
 CommonDescriptorHeapJsonReflect::CommonDescriptorHeapJsonReflect()
 {
 }
@@ -858,7 +992,28 @@ void CommonDescriptorHeapJsonReflect::InitBasicVariable()
 	Init_Json_Data_Vatriable(reflect_data.per_segmental_num);
 	Init_Json_Data_Vatriable(reflect_data.directx_descriptor.Type);
 }
-//ÃèÊö·û¶Ñ¹ÜÀíÆ÷
+//åŠ¨æ€æè¿°ç¬¦å †(ä¸´æ—¶)
+PancyDescriptorHeapDynamic::PancyDescriptorHeapDynamic()
+{
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapDynamic::Create(const int32_t& max_descriptor_num)
+{
+	auto check_error = PancyDescriptorHeapControl::GetInstance()->LockDescriptorSegmental(max_descriptor_num, descriptor_segmental_list, descriptor_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapDynamic::BuildShaderResourceViewFromHead(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>& SRV_desc,
+	const std::vector<VirtualResourcePointer>& describe_memory_data
+)
+{
+	PancyDescriptorHeapControl::GetInstance()->RebindSahderResourceViewDynamicCommon(SRV_desc, describe_memory_data, descriptor_id);
+	return PancystarEngine::succeed;
+}
+//æè¿°ç¬¦å †ç®¡ç†å™¨
 PancyDescriptorHeapControl::PancyDescriptorHeapControl()
 {
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -869,7 +1024,7 @@ PancyDescriptorHeapControl::PancyDescriptorHeapControl()
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 	JSON_REFLECT_INIT_ENUM(D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	descriptor_heap_desc_reflect.Create();
-	//´´½¨Èı¸ö»ù´¡µÄÃèÊö·û¶Ñ
+	//åˆ›å»ºä¸‰ä¸ªåŸºç¡€çš„æè¿°ç¬¦å †
 	PancystarEngine::EngineFailReason check_error;
 	check_error = BuildNewDescriptorHeapFromJson("EngineResource\\BasicDescriptorHeap\\DesciptorHeapShaderResource.json", common_descriptor_heap_shader_resource);
 	if (!check_error.CheckIfSucceed())
@@ -894,24 +1049,24 @@ PancyDescriptorHeapControl::~PancyDescriptorHeapControl()
 		delete release_heap->second;
 	}
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptorHeapFromJson(const std::string &json_name, const Json::Value &root_value, pancy_resource_id &descriptor_heap_id)
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptorHeapFromJson(const std::string& json_name, const Json::Value& root_value, pancy_resource_id& descriptor_heap_id)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//½«¸ñÊ½Êı¾İ´ÓjsonÖĞ·´Éä³öÀ´
-	check_error = descriptor_heap_desc_reflect.LoadFromJsonMemory(json_name,root_value);
+	//å°†æ ¼å¼æ•°æ®ä»jsonä¸­åå°„å‡ºæ¥
+	check_error = descriptor_heap_desc_reflect.LoadFromJsonMemory(json_name, root_value);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	PancyDescriptorHeapDesc now_descriptor_heap_desc;
-	check_error = descriptor_heap_desc_reflect.CopyMemberData(&now_descriptor_heap_desc,typeid(&now_descriptor_heap_desc).name(),sizeof(now_descriptor_heap_desc));
+	check_error = descriptor_heap_desc_reflect.CopyMemberData(&now_descriptor_heap_desc, typeid(&now_descriptor_heap_desc).name(), sizeof(now_descriptor_heap_desc));
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	now_descriptor_heap_desc.directx_descriptor.NumDescriptors = now_descriptor_heap_desc.bind_descriptor_num + now_descriptor_heap_desc.bindless_descriptor_num;
-	//´´½¨ÃèÊö·û¶Ñ
-	PancyDescriptorHeap *descriptor_SRV = new PancyDescriptorHeap();
+	//åˆ›å»ºæè¿°ç¬¦å †
+	PancyDescriptorHeap* descriptor_SRV = new PancyDescriptorHeap();
 	check_error = descriptor_SRV->Create(now_descriptor_heap_desc.directx_descriptor, json_name, now_descriptor_heap_desc.bind_descriptor_num, now_descriptor_heap_desc.bindless_descriptor_num, now_descriptor_heap_desc.per_segmental_num);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -930,7 +1085,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptor
 	descriptor_heap_map[descriptor_heap_id] = descriptor_SRV;
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptorHeapFromJson(const std::string &json_file_name, pancy_resource_id &descriptor_heap_id)
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptorHeapFromJson(const std::string& json_file_name, pancy_resource_id& descriptor_heap_id)
 {
 	PancystarEngine::EngineFailReason check_error;
 	Json::Value root_value;
@@ -946,7 +1101,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildNewDescriptor
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::DeleteDescriptorHeap(const pancy_resource_id &descriptor_heap_id)
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::DeleteDescriptorHeap(const pancy_resource_id& descriptor_heap_id)
 {
 	auto descriptor_data = descriptor_heap_map.find(descriptor_heap_id);
 	if (descriptor_data == descriptor_heap_map.end())
@@ -955,17 +1110,17 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::DeleteDescriptorHe
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Delete descriptor heap from heap", error_message);
 		return error_message;
 	}
-	//É¾³ıÃèÊö·û¶Ñ×ÊÔ´£¬²¢½«IDºÅ»¹¸øÃèÊö·û¶Ñ¹ÜÀíÆ÷
+	//åˆ é™¤æè¿°ç¬¦å †èµ„æºï¼Œå¹¶å°†IDå·è¿˜ç»™æè¿°ç¬¦å †ç®¡ç†å™¨
 	delete descriptor_heap_map[descriptor_heap_id];
 	descriptor_heap_map.erase(descriptor_heap_id);
 	descriptor_heap_id_reuse.push(descriptor_heap_id);
 	return PancystarEngine::succeed;
 }
-pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const BasicDescriptorDesc &descriptor_desc)
+pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const BasicDescriptorDesc& descriptor_desc)
 {
 	return GetCommonDescriptorHeapID(descriptor_desc.basic_descriptor_type);
 }
-pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const PancyDescriptorType &descriptor_type)
+pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const PancyDescriptorType& descriptor_type)
 {
 	switch (descriptor_type)
 	{
@@ -990,10 +1145,10 @@ pancy_resource_id PancyDescriptorHeapControl::GetCommonDescriptorHeapID(const Pa
 	return common_descriptor_heap_shader_resource;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonDescriptor(
-	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+	const std::vector<BasicDescriptorDesc>& now_descriptor_desc_in,
 	std::vector<VirtualResourcePointer>& memory_data,
 	const bool if_build_multi_buffer,
-	BindDescriptorPointer &descriptor_id
+	BindDescriptorPointer& descriptor_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1014,10 +1169,10 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonDescrip
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonBindlessShaderResourceView(
-	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> &SRV_desc,
-	const std::vector<VirtualResourcePointer> &describe_memory_data,
-	const pancy_object_id &SRV_pack_size,
-	BindlessDescriptorPointer &descriptor_id
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>& SRV_desc,
+	const std::vector<VirtualResourcePointer>& describe_memory_data,
+	const pancy_object_id& SRV_pack_size,
+	BindlessDescriptorPointer& descriptor_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1036,9 +1191,40 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonBindles
 	}
 	return PancystarEngine::succeed;
 }
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::LockDescriptorSegmental(
+	const pancy_object_id& lock_size,
+	std::vector<BindlessDescriptorID>& descriptor_segmental_list,
+	BindlessDescriptorPointer& descriptor_id
+) 
+{
+	auto common_srv_heap = descriptor_heap_map.find(common_descriptor_heap_shader_resource);
+	if (common_srv_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic SRV descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV descriptor heap from heap", error_message);
+		return error_message;
+	}
+	descriptor_id.descriptor_heap_id = common_descriptor_heap_shader_resource;
+	return common_srv_heap->second->LockDescriptorSegmental(lock_size, descriptor_segmental_list, descriptor_id.descriptor_pack_id);
+}
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::RebindSahderResourceViewDynamicCommon(
+	const std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC>& SRV_desc,
+	const std::vector<VirtualResourcePointer>& describe_memory_data,
+	const BindlessDescriptorPointer& descriptor_id
+) 
+{
+	auto common_srv_heap = descriptor_heap_map.find(descriptor_id.descriptor_heap_id);
+	if (common_srv_heap == descriptor_heap_map.end())
+	{
+		PancystarEngine::EngineFailReason error_message(S_OK, "engine haven't init Basic SRV descriptor heap: ");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build SRV descriptor heap from heap", error_message);
+		return error_message;
+	}
+	return common_srv_heap->second->RebindSahderResourceViewDynamic(SRV_desc, describe_memory_data, descriptor_id.descriptor_pack_id);
+}
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonGlobelDescriptor(
-	const std::string &globel_srv_name,
-	const std::vector<BasicDescriptorDesc> &now_descriptor_desc_in,
+	const std::string& globel_srv_name,
+	const std::vector<BasicDescriptorDesc>& now_descriptor_desc_in,
 	std::vector<VirtualResourcePointer>& memory_data,
 	const bool if_build_multi_buffer
 )
@@ -1061,8 +1247,8 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BuildCommonGlobelD
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetCommonGlobelDescriptorID(
 	PancyDescriptorType basic_descriptor_type,
-	const std::string &globel_srv_name,
-	BindDescriptorPointer &descriptor_id
+	const std::string& globel_srv_name,
+	BindDescriptorPointer& descriptor_id
 )
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1082,7 +1268,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetCommonGlobelDes
 	}
 	return PancystarEngine::succeed;
 }
-PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetBasicDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_TYPE &descriptor_heap_type, ID3D12DescriptorHeap **descriptor_heap_out)
+PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetBasicDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_TYPE& descriptor_heap_type, ID3D12DescriptorHeap** descriptor_heap_out)
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_object_id common_descriptor_heap_id = 999999999;
@@ -1119,10 +1305,10 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetBasicDescriptor
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonGlobelDescriptor(
 	PancyDescriptorType basic_descriptor_type,
-	const std::string &globel_name,
-	const D3D12_COMMAND_LIST_TYPE &render_param_type,
-	PancyRenderCommandList *m_commandList,
-	const pancy_object_id &root_signature_offset
+	const std::string& globel_name,
+	const D3D12_COMMAND_LIST_TYPE& render_param_type,
+	PancyRenderCommandList* m_commandList,
+	const pancy_object_id& root_signature_offset
 )
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1142,10 +1328,10 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonGlobelDe
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonDescriptor(
-	const BindDescriptorPointer &descriptor_id,
-	const D3D12_COMMAND_LIST_TYPE &render_param_type,
-	PancyRenderCommandList *m_commandList,
-	const pancy_object_id &root_signature_offset
+	const BindDescriptorPointer& descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE& render_param_type,
+	PancyRenderCommandList* m_commandList,
+	const pancy_object_id& root_signature_offset
 )
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1164,10 +1350,10 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonDescript
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindBindlessDescriptor(
-	const BindlessDescriptorPointer &descriptor_id,
-	const D3D12_COMMAND_LIST_TYPE &render_param_type,
-	PancyRenderCommandList *m_commandList,
-	const pancy_object_id &root_signature_offset
+	const BindlessDescriptorPointer& descriptor_id,
+	const D3D12_COMMAND_LIST_TYPE& render_param_type,
+	PancyRenderCommandList* m_commandList,
+	const pancy_object_id& root_signature_offset
 )
 {
 	PancystarEngine::EngineFailReason check_error;
@@ -1188,14 +1374,14 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindBindlessDescri
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonRenderTargetUncontiguous(
 	const std::vector<pancy_object_id> rendertarget_list,
 	const pancy_object_id depthstencil_descriptor,
-	PancyRenderCommandList *m_commandList,
-	const bool &if_have_rendertarget,
-	const bool &if_have_depthstencil
+	PancyRenderCommandList* m_commandList,
+	const bool& if_have_rendertarget,
+	const bool& if_have_depthstencil
 )
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_object_id rtv_number = 0;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE *rtvHandle;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE* rtvHandle;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	auto render_target_heap = descriptor_heap_map.find(common_descriptor_heap_render_target);
 	auto depth_stencil_heap = descriptor_heap_map.find(common_descriptor_heap_depth_stencil);
@@ -1205,7 +1391,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonRenderTa
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDescriptorHeapControl::BindCommonRenderTargetUncontiguous", error_message);
 		return error_message;
 	}
-	//»ñÈ¡ËùÓĞäÖÈ¾Ä¿±êµÄÆ«ÒÆÁ¿
+	//è·å–æ‰€æœ‰æ¸²æŸ“ç›®æ ‡çš„åç§»é‡
 	if (!if_have_rendertarget)
 	{
 		rtvHandle = NULL;
@@ -1223,7 +1409,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonRenderTa
 		}
 		rtv_number = static_cast<pancy_object_id>(rendertarget_list.size());
 	}
-	//»ñÈ¡Éî¶È»º³åÇøÆ«ÒÆÁ¿
+	//è·å–æ·±åº¦ç¼“å†²åŒºåç§»é‡
 	if (!if_have_depthstencil)
 	{
 		m_commandList->GetCommandList()->OMSetRenderTargets(rtv_number, rtvHandle, FALSE, NULL);
@@ -1242,7 +1428,7 @@ PancystarEngine::EngineFailReason PancyDescriptorHeapControl::BindCommonRenderTa
 }
 PancystarEngine::EngineFailReason PancyDescriptorHeapControl::GetCommonDepthStencilBufferOffset(
 	const pancy_object_id depthstencil_descriptor,
-	CD3DX12_CPU_DESCRIPTOR_HANDLE &dsvHandle
+	CD3DX12_CPU_DESCRIPTOR_HANDLE& dsvHandle
 )
 {
 	PancystarEngine::EngineFailReason check_error;

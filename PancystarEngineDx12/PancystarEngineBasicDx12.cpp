@@ -1,6 +1,6 @@
 #include"PancystarEngineBasicDx12.h"
 using namespace PancystarEngine;
-//»ù±¾×Ö·û´®´¦Àí
+//åŸºæœ¬å­—ç¬¦ä¸²å¤„ç†
 PancyString::PancyString()
 {
 	ascii_string = "";
@@ -52,7 +52,7 @@ void PancyString::WstringToString()
 	ascii_string.resize(nLen, ' ');
 	int nResult = WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)unicode_string.c_str(), nLen, (LPSTR)ascii_string.c_str(), nLen, NULL, NULL);
 }
-//´íÎóĞÅÏ¢
+//é”™è¯¯ä¿¡æ¯
 EngineFailReason::EngineFailReason()
 {
 	std::string a;
@@ -80,7 +80,7 @@ void EngineFailReason::ShowFailedReason()
 {
 	MessageBox(0, failed_reason.GetUnicodeString().c_str(), L"error", MB_OK);
 }
-//log¼ÇÂ¼
+//logè®°å½•
 EngineFailLog* EngineFailLog::this_instance = NULL;
 void EngineFailLog::AddLog(std::string log_source, EngineFailReason engine_error_message)
 {
@@ -136,7 +136,7 @@ void EngineFailLog::PrintLogToconsole()
 }
 void PancystarEngine::DivideFilePath(const std::string &full_file_name_in, std::string &file_path_out, std::string &file_name_out, std::string &file_tail_out)
 {
-	//»ñÈ¡ÎÄ¼şºó×ºÃû
+	//è·å–æ–‡ä»¶åç¼€å
 	size_t length_name = full_file_name_in.size();
 	while (full_file_name_in[length_name - 1] != '.') 
 	{
@@ -147,7 +147,7 @@ void PancystarEngine::DivideFilePath(const std::string &full_file_name_in, std::
 		file_tail_out += full_file_name_in[i];
 	}
 	length_name -= 1;
-	//´¦Àí´æ´¢ÎÄ¼şµÄÎÄ¼şÃû
+	//å¤„ç†å­˜å‚¨æ–‡ä»¶çš„æ–‡ä»¶å
 	std::string file_root_name = full_file_name_in.substr(0, length_name);
 	int32_t st_pos = 0;
 	for (int32_t i = 0; i < file_root_name.size(); ++i)
@@ -165,7 +165,7 @@ void PancystarEngine::DivideFilePath(const std::string &full_file_name_in, std::
 	{
 		file_name_out = "";
 	}
-	//»ñÈ¡ÎÄ¼şµÄÂ·¾¶Ãû
+	//è·å–æ–‡ä»¶çš„è·¯å¾„å
 	file_path_out = file_root_name.substr(0, st_pos);
 }
 pancy_resource_size PancystarEngine::SizeAligned(const pancy_resource_size &size_in, const pancy_resource_size &size_aligned_in)
@@ -178,5 +178,5 @@ pancy_resource_size PancystarEngine::SizeAligned(const pancy_resource_size &size
 	}
 	return out_size;
 }
-//ÎÄ¼ş¼ÓÔØÅĞÖØ
+//æ–‡ä»¶åŠ è½½åˆ¤é‡
 static FileBuildRepeatCheck* this_instance = NULL;

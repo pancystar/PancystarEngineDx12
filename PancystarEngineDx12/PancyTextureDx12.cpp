@@ -241,19 +241,19 @@ std::string PancyBasicTexture::GetFileTile(const std::string &data_input)
 	}
 	return out_final;
 }
-//»ù´¡ÎÆÀí
+//åŸºç¡€çº¹ç†
 PancyBasicTexture::PancyBasicTexture(const bool &if_could_reload) :PancyCommonVirtualResource<PancyCommonTextureDesc>(if_could_reload)
 {
 }
 PancystarEngine::EngineFailReason PancyBasicTexture::LoadResoureDataByDesc(const PancyCommonTextureDesc &resource_desc)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//Èç¹ûÊÇ´ÓÎÄ¼şÖĞ¶ÁÈ¡µÄÎÆÀíÎÄ¼şÔò½øÈë¼ÓÔØÁ÷³Ì
+	//å¦‚æœæ˜¯ä»æ–‡ä»¶ä¸­è¯»å–çš„çº¹ç†æ–‡ä»¶åˆ™è¿›å…¥åŠ è½½æµç¨‹
 	if (resource_desc.texture_type == PancyTextureType::Texture_Static_Load)
 	{
-		//const×ª·Çconst
+		//constè½¬éconst
 		PancyCommonTextureDesc *desc_pointer = const_cast<PancyCommonTextureDesc *>(&resource_desc);
-		//Æô¶¯´ÓÍ¼Æ¬ÖĞ¼ÓÔØÎÆÀíÊı¾İµÄÁ÷³Ì
+		//å¯åŠ¨ä»å›¾ç‰‡ä¸­åŠ è½½çº¹ç†æ•°æ®çš„æµç¨‹
 		check_error = LoadPictureFromFile(*desc_pointer);
 		if (!check_error.CheckIfSucceed())
 		{
@@ -304,7 +304,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 {
 	PancystarEngine::EngineFailReason check_error;
 	std::string picture_path_file = new_texture_desc.texture_data_file;
-	//¸ù¾İÂ·¾¶¸ñÊ½¾ö¶¨ÊÇ·ñĞŞ¸ÄÎª¾ø¶ÔÂ·¾¶
+	//æ ¹æ®è·¯å¾„æ ¼å¼å†³å®šæ˜¯å¦ä¿®æ”¹ä¸ºç»å¯¹è·¯å¾„
 	//RebuildTextureDataPath(texture_desc.texture_data_file, picture_path_file);
 
 	PancystarEngine::PancyString file_name = picture_path_file;
@@ -315,7 +315,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 		const uint8_t* bitData = nullptr;
 		size_t bitSize = 0;
 		std::unique_ptr<uint8_t[]> ddsData;
-		//¼ÓÔØddsÎÆÀíÊı¾İ
+		//åŠ è½½ddsçº¹ç†æ•°æ®
 		HRESULT hr = DirectX::LoaderHelpers::LoadTextureDataFromFile(
 			file_name.GetUnicodeString().c_str(),
 			ddsData,
@@ -329,7 +329,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
 			return error_message;
 		}
-		//¼ìÑéÎÆÀí¸ñÊ½
+		//æ£€éªŒçº¹ç†æ ¼å¼
 		UINT width = header->width;
 		UINT height = header->height;
 		UINT depth = header->depth;
@@ -535,7 +535,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 			return error_message;
 		}
 		if_cube_map = isCubeMap;
-		//Ìî³äÎÆÀíÊı¾İ
+		//å¡«å……çº¹ç†æ•°æ®
 		size_t numberOfResources = (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
 			? 1 : arraySize;
 		numberOfResources *= mipCount;
@@ -556,7 +556,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 			numberOfPlanes, format,
 			new_texture_desc.max_size, bitSize, bitData,
 			twidth, theight, tdepth, skipMip, subresources);
-		//»ñÈ¡´´½¨¸ñÊ½
+		//è·å–åˆ›å»ºæ ¼å¼
 		DirectX::DDS_LOADER_FLAGS loadFlags;
 		if (new_texture_desc.if_gen_mipmap)
 		{
@@ -577,10 +577,10 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 			{
 				reservedMips = std::min<size_t>(D3D12_REQ_MIP_LEVELS, MyCountMips(width, height));
 			}
-			//¸ù¾İ¶ÁÈ¡µ½µÄÎÆÀíĞÅÏ¢£¬ÖØ½¨ÎÆÀí¸ñÊ½Êı¾İ
+			//æ ¹æ®è¯»å–åˆ°çš„çº¹ç†ä¿¡æ¯ï¼Œé‡å»ºçº¹ç†æ ¼å¼æ•°æ®
 			check_error = BuildTextureResource(resDim, twidth, theight, tdepth, reservedMips - skipMip, static_cast<size_t>(arraySize),
 				format, D3D12_RESOURCE_FLAG_NONE, loadFlags, static_cast<int32_t>(subresources.size()), new_texture_desc);
-			//ĞŞ¸ÄÎÆÀí´óĞ¡ÏŞÖÆÖØĞÂ¼ÓÔØ
+			//ä¿®æ”¹çº¹ç†å¤§å°é™åˆ¶é‡æ–°åŠ è½½
 			if (!check_error.CheckIfSucceed())
 			{
 				if (!new_texture_desc.max_size && (mipCount > 1))
@@ -642,10 +642,10 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::vector<D3D12_SUBRESOURCE_DATA> &subresources, const PancyCommonTextureDesc &texture_desc)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//ÏÈ¶Ô´ı¿½±´µÄ×ÊÔ´½øĞĞ×éÖ¯
+	//å…ˆå¯¹å¾…æ‹·è´çš„èµ„æºè¿›è¡Œç»„ç»‡
 	D3D12_SUBRESOURCE_DATA *subres = &subresources[0];
 	UINT subres_size = static_cast<UINT>(subresources.size());
-	//»ñÈ¡ÓÃÓÚ¿½±´µÄcommond list
+	//è·å–ç”¨äºæ‹·è´çš„commond list
 	PancyRenderCommandList *copy_render_list;
 	PancyThreadIdGPU copy_render_list_ID;
 	check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
@@ -653,7 +653,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 	{
 		return check_error;
 	}
-	//ÏÈ½«Êı¾İ´ÓÄÚ´æ¿½±´µ½ÉÏ´«»º³åÇø
+	//å…ˆå°†æ•°æ®ä»å†…å­˜æ‹·è´åˆ°ä¸Šä¼ ç¼“å†²åŒº
 	UINT64 RequiredSize = 0;
 	UINT64 MemToAlloc = static_cast<UINT64>(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64)) * subres_size;
 	if (MemToAlloc > SIZE_MAX)
@@ -673,16 +673,16 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 	UINT64* pRowSizesInBytes = reinterpret_cast<UINT64*>(pLayouts + subres_size);
 	UINT* pNumRows = reinterpret_cast<UINT*>(pRowSizesInBytes + subres_size);
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&texture_desc.texture_res_desc, 0, subres_size, 0, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
-	//¿½±´×ÊÔ´Êı¾İ
+	//æ‹·è´èµ„æºæ•°æ®
 	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, subresources, pLayouts, pRowSizesInBytes, pNumRows, RequiredSize, *texture_data);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	copy_render_list->UnlockPrepare();
-	//Ìá½»äÖÈ¾ÃüÁî
+	//æäº¤æ¸²æŸ“å‘½ä»¤
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
-	//·ÖÅäµÈ´ıÑÛÎ»
+	//åˆ†é…ç­‰å¾…çœ¼ä½
 	PancyFenceIdGPU WaitFence;
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
 	check_error = texture_data->SetResourceCopyBrokenFence(WaitFence);
@@ -738,10 +738,10 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::InitResource", error_message);
 		return error_message;
 	}
-	//¼ÆËã»º³åÇøµÄ´óĞ¡£¬´´½¨×ÊÔ´¿é
+	//è®¡ç®—ç¼“å†²åŒºçš„å¤§å°ï¼Œåˆ›å»ºèµ„æºå—
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&new_texture_desc.texture_res_desc, 0, subresources_num, 0, nullptr, nullptr, nullptr, &subresources_size);
 	texture_data = new ResourceBlockGpu(subresources_size, resource_data, new_texture_desc.heap_type, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
-	//È·¶¨¼ÓÔØÎÆÀíµÄSRV¸ñÊ½
+	//ç¡®å®šåŠ è½½çº¹ç†çš„SRVæ ¼å¼
 	tex_srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	tex_srv_desc.Format = new_texture_desc.texture_res_desc.Format;
 	if (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE1D)
@@ -792,7 +792,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Pan
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::BuildEmptyPicture", error_message);
 		return error_message;
 	}
-	//¼ÆËã»º³åÇøµÄ´óĞ¡
+	//è®¡ç®—ç¼“å†²åŒºçš„å¤§å°
 	UINT numberOfPlanes = D3D12GetFormatPlaneCount(PancyDx12DeviceBasic::GetInstance()->GetD3dDevice(), texture_desc.texture_res_desc.Format);
 	if (!numberOfPlanes)
 	{
@@ -811,7 +811,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Pan
 		return error_message;
 	}
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&texture_desc.texture_res_desc, 0, static_cast<UINT>(numberOfResources), 0, nullptr, nullptr, nullptr, &subresources_size);
-	//´´½¨×ÊÔ´¿é½á¹¹
+	//åˆ›å»ºèµ„æºå—ç»“æ„
 	texture_data = new ResourceBlockGpu(subresources_size, resource_data, texture_desc.heap_type, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
 	tex_srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	tex_srv_desc.Format = texture_desc.texture_res_desc.Format;
@@ -828,7 +828,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Pan
 	{
 		tex_srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
 	}
-	//¿ÕÎÆÀí²»ĞèÒª¿½±´²Ù×÷
+	//ç©ºçº¹ç†ä¸éœ€è¦æ‹·è´æ“ä½œ
 	return PancystarEngine::succeed;
 }
 void PancyBasicTexture::GetJsonFilePath(const std::string &json_file_name, std::string &file_path_out)
@@ -851,19 +851,19 @@ void PancyBasicTexture::GetJsonFilePath(const std::string &json_file_name, std::
 void PancyBasicTexture::RebuildTextureDataPath(const std::string &json_file_name, std::string &tex_data_file_name)
 {
 	bool if_change_path = true;
-	//ÏÈ¼ì²éÎÆÀíÊı¾İÂ·¾¶ÊÇ·ñÎªÏà¶ÔÂ·¾¶
+	//å…ˆæ£€æŸ¥çº¹ç†æ•°æ®è·¯å¾„æ˜¯å¦ä¸ºç›¸å¯¹è·¯å¾„
 	for (int i = 0; i < tex_data_file_name.size(); ++i)
 	{
 		if (tex_data_file_name[i] == '\\')
 		{
-			//Â·¾¶ÊÇ¾ø¶ÔÂ·¾¶£¬²»×öĞŞ¸Ä
+			//è·¯å¾„æ˜¯ç»å¯¹è·¯å¾„ï¼Œä¸åšä¿®æ”¹
 			if_change_path = false;
 			break;
 		}
 	}
 	if (if_change_path)
 	{
-		//Â·¾¶ÊÇÏà¶ÔÂ·¾¶£¬ĞèÒªÊÖ¶¯Ìí¼Ó¾ø¶ÔÂ·¾¶Î»ÖÃ
+		//è·¯å¾„æ˜¯ç›¸å¯¹è·¯å¾„ï¼Œéœ€è¦æ‰‹åŠ¨æ·»åŠ ç»å¯¹è·¯å¾„ä½ç½®
 		string path_file;
 		GetJsonFilePath(json_file_name, path_file);
 		tex_data_file_name = path_file + tex_data_file_name;
@@ -907,7 +907,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 	DirectX::ScratchImage *new_image = NULL, *mipmap_image = NULL, *compress_image = NULL;
 	bool if_mip_gen = false, if_compress_gen = false;
 	new_image = new DirectX::ScratchImage();
-	//½«ÎÆÀíÊı¾İÅÄÉãµ½Í¼Æ¬ÖĞ
+	//å°†çº¹ç†æ•°æ®æ‹æ‘„åˆ°å›¾ç‰‡ä¸­
 	check_error = CaptureTextureDataToWindows(new_image);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -916,7 +916,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 
 	PancyCommonTextureDesc &resource_desc = GetResourceDesc();
 	D3D12_RESOURCE_DESC texture_desc = resource_desc.texture_res_desc;
-	//ÎªÎÆÀí´´½¨mipmap
+	//ä¸ºçº¹ç†åˆ›å»ºmipmap
 	if (if_automip && texture_desc.MipLevels == 1)
 	{
 		auto mipmap_level = MyCountMips(static_cast<uint32_t>(texture_desc.Width), texture_desc.Height);
@@ -928,7 +928,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 	{
 		mipmap_image = new_image;
 	}
-	//ÎªÎÆÀí´´½¨Ñ¹Ëõ¸ñÊ½(µÈmicrosoft¸üĞÂ/ÊÖ¶¯Ê¹ÓÃdx11°æ±¾)
+	//ä¸ºçº¹ç†åˆ›å»ºå‹ç¼©æ ¼å¼(ç­‰microsoftæ›´æ–°/æ‰‹åŠ¨ä½¿ç”¨dx11ç‰ˆæœ¬)
 	if (if_compress)
 	{
 		compress_image = new DirectX::ScratchImage();

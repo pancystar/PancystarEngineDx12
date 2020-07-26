@@ -2,12 +2,13 @@
 #include"PancyTextureDx12.h"
 #include"PancyGeometryDx12.h"
 #include"PancyShaderDx12.h"
+#include"PancyAnimationBasic.h"
 namespace PancystarEngine
 {
 #define MaxBoneNum 100
 #define NouseBoneStruct -12138
 #define VertexAnimationID uint32_t
-//GPU¹Ç÷À¼ÆËã×î´óµÄµü´ú´ÎÊı
+//GPUéª¨éª¼è®¡ç®—æœ€å¤§çš„è¿­ä»£æ¬¡æ•°
 #define MaxSkinDeSampleTime 8
 	enum TexType
 	{
@@ -46,30 +47,30 @@ namespace PancystarEngine
 		PbrType_MetallicRoughness = 0,
 		PbrType_SpecularSmoothness
 	};
-	//±ä»»ÏòÁ¿
+	//å˜æ¢å‘é‡
 	struct vector_animation
 	{
-		float time;               //Ö¡Ê±¼ä
-		float main_key[3];        //Ö¡Êı¾İ
+		float time;               //å¸§æ—¶é—´
+		float main_key[3];        //å¸§æ•°æ®
 	};
-	//±ä»»ËÄÔªÊı
+	//å˜æ¢å››å…ƒæ•°
 	struct quaternion_animation
 	{
-		float time;               //Ö¡Ê±¼ä
-		float main_key[4];        //Ö¡Êı¾İ
+		float time;               //å¸§æ—¶é—´
+		float main_key[4];        //å¸§æ•°æ®
 	};
 	struct animation_data
 	{
-		std::string bone_name;                              //±¾´Î±ä»»Êı¾İ¶ÔÓ¦µÄ¹Ç÷ÀÃû³Æ
-		int32_t bone_ID;                                    //±¾´Î±ä»»Êı¾İ¶ÔÓ¦µÄ¹Ç÷À±àºÅ
-		std::vector<vector_animation> translation_key;      //¸÷¸öÆ½ÒÆ±ä»»Êı¾İ
-		std::vector<vector_animation> scaling_key;          //¸÷¸ö·ÅËõ±ä»»Êı¾İ
-		std::vector<quaternion_animation> rotation_key;     //¸÷¸öĞı×ª±ä»»µÄÊı¾İ
+		std::string bone_name;                              //æœ¬æ¬¡å˜æ¢æ•°æ®å¯¹åº”çš„éª¨éª¼åç§°
+		int32_t bone_ID;                                    //æœ¬æ¬¡å˜æ¢æ•°æ®å¯¹åº”çš„éª¨éª¼ç¼–å·
+		std::vector<vector_animation> translation_key;      //å„ä¸ªå¹³ç§»å˜æ¢æ•°æ®
+		std::vector<vector_animation> scaling_key;          //å„ä¸ªæ”¾ç¼©å˜æ¢æ•°æ®
+		std::vector<quaternion_animation> rotation_key;     //å„ä¸ªæ—‹è½¬å˜æ¢çš„æ•°æ®
 	};
 	struct animation_set
 	{
-		float animation_length;                             //¶¯»­µÄ³¤¶È
-		std::vector<animation_data> data_animition;         //¸Ã¶¯»­µÄÊı¾İ
+		float animation_length;                             //åŠ¨ç”»çš„é•¿åº¦
+		std::vector<animation_data> data_animition;         //è¯¥åŠ¨ç”»çš„æ•°æ®
 	};
 	
 	enum PancyRenderMeshVertexType
@@ -86,11 +87,11 @@ namespace PancystarEngine
 	};
 	class PancyRenderMesh
 	{
-		//¶¥µãµÄ¸ñÊ½Êı¾İ
+		//é¡¶ç‚¹çš„æ ¼å¼æ•°æ®
 		PancyRenderMeshVertexType RenderType;
-		//Ä£ĞÍÍø¸ñÊı¾İ
+		//æ¨¡å‹ç½‘æ ¼æ•°æ®
 		PancystarEngine::GeometryBasic *model_mesh;
-		//todo:°üÎ§ºĞĞÅÏ¢
+		//todo:åŒ…å›´ç›’ä¿¡æ¯
 		BoundingData mesh_bound;
 	public:
 		PancyRenderMesh();
@@ -140,40 +141,45 @@ namespace PancystarEngine
 			return model_mesh->GetVertexBufferResource();
 		};
 	};
-	//»ù´¡Ä£ĞÍ
+	//åŸºç¡€æ¨¡å‹
 	class PancyBasicModel
 	{
-		//Ä£ĞÍµÄÊı¾İĞÅÏ¢
-		std::vector<PancyRenderMesh*> model_resource_list;     //Ä£ĞÍµÄÃ¿¸ö×Ó²¿¼ş
-		//Ä£ĞÍµÄ¶¯»­ĞÅÏ¢
+		//æ¨¡å‹çš„æ•°æ®ä¿¡æ¯
+		std::vector<PancyRenderMesh*> model_resource_list;     //æ¨¡å‹çš„æ¯ä¸ªå­éƒ¨ä»¶
+		//æ¨¡å‹çš„åŠ¨ç”»ä¿¡æ¯
 		bool if_skinmesh;
 		bool if_pointmesh;
-		//Ä£ĞÍµÄ°üÎ§ÒÔ¼°ĞÎ±äĞÅÏ¢
+		//æ¨¡å‹çš„åŒ…å›´ä»¥åŠå½¢å˜ä¿¡æ¯
 		BoundingData model_size;
 		DirectX::XMFLOAT4X4 model_translation;
 		PancystarEngine::GeometryBasic *model_boundbox;
-		//¹Ç÷À¶¯»­ĞÅÏ¢
+		//éª¨éª¼åŠ¨ç”»ä¿¡æ¯
 		int32_t root_id;
-		std::unordered_map<std::string,pancy_object_id> bone_name_index;//¸ù¾İ¹Ç÷ÀÃû³ÆË÷Òı¹Ç÷ÀID
-		std::unordered_map<pancy_object_id, bone_struct> bone_tree_data;//¹Ç÷ÀÊı¾İ
+		std::unordered_map<std::string,pancy_object_id> bone_name_index;//æ ¹æ®éª¨éª¼åç§°ç´¢å¼•éª¨éª¼ID
+		std::unordered_map<pancy_object_id, bone_struct> bone_tree_data;//éª¨éª¼æ•°æ®
 		std::unordered_map<pancy_object_id, pancy_object_id> bone_parent_data;
-		int bone_num;//ÓÃÓÚÃÉÆ¤µÄ¹Ç÷ÀÊıÁ¿
-		int bone_object_num;//ËùÓĞµÄ¹Ç÷ÀÊıÁ¿(°üÀ¨²»ÓÃÓÚÃÉÆ¤µÄ²¿·Ö)
+		int bone_num;//ç”¨äºè’™çš®çš„éª¨éª¼æ•°é‡
+		int bone_object_num;//æ‰€æœ‰çš„éª¨éª¼æ•°é‡(åŒ…æ‹¬ä¸ç”¨äºè’™çš®çš„éƒ¨åˆ†)
 		DirectX::XMFLOAT4X4 offset_matrix_array[MaxBoneNum];
 		std::unordered_map<std::string, pancy_resource_id> skin_animation_name;
 		std::unordered_map<pancy_resource_id, animation_set> skin_animation_map;
-		float now_animation_play_station;//µ±Ç°ÕıÔÚ²¥·ÅµÄ¶¯»­
 		bool if_animation_choose;
-		//ÎÄ¼ş¶ÁÈ¡Æ÷
+		//æ–‡ä»¶è¯»å–å™¨
 		ifstream instream;
-		//¶¯»­Êı¾İbuffer
+		//åŠ¨ç”»æ•°æ®buffer
 		VirtualResourcePointer model_animation_buffer;
+		pancy_resource_size animation_buffer_size = 0;
+		std::vector<pancy_object_id> animation_resample_size;
+		std::vector<pancy_object_id> animation_start_offset;
+
 		VirtualResourcePointer model_bonetree_buffer;
+		pancy_resource_size bonetree_buffer_size = 0;
 		VirtualResourcePointer model_boneoffset_buffer;
+		pancy_resource_size boneoffset_buffer_size = 0;
 	public:
 		PancyBasicModel();
 		PancystarEngine::EngineFailReason Create(const std::string &resource_name);
-		//»ñÈ¡äÖÈ¾Íø¸ñ
+		//è·å–æ¸²æŸ“ç½‘æ ¼
 		inline pancy_object_id GetSubModelNum()
 		{
 			return static_cast<pancy_object_id>(model_resource_list.size());
@@ -189,7 +195,7 @@ namespace PancystarEngine
 			*render_mesh = model_resource_list[submesh_id];
 			return PancystarEngine::succeed;
 		}
-		//¼ìÑé¶¯»­ĞÅÏ¢
+		//æ£€éªŒåŠ¨ç”»ä¿¡æ¯
 		inline bool CheckIfSkinMesh()
 		{
 			return if_skinmesh;
@@ -198,39 +204,44 @@ namespace PancystarEngine
 		{
 			return if_pointmesh;
 		}
-		//»ñÈ¡°üÎ§ºĞĞÅÏ¢
+		//è·å–åŒ…å›´ç›’ä¿¡æ¯
 		inline PancystarEngine::GeometryBasic *GetBoundBox()
 		{
 			return model_boundbox;
 		}
-		//»ñÈ¡Ö¸¶¨¶¯»­µÄÖ¸¶¨Ê±¼äµÄ¹Ç÷ÀÊı¾İÒÔ¼°¶¯»­µÄÊÀ½çÆ«ÒÆ¾ØÕóÊı¾İ
+		//è·å–æŒ‡å®šåŠ¨ç”»çš„æŒ‡å®šæ—¶é—´çš„éª¨éª¼æ•°æ®ä»¥åŠåŠ¨ç”»çš„ä¸–ç•Œåç§»çŸ©é˜µæ•°æ®
 		PancystarEngine::EngineFailReason GetBoneByAnimation(
 			const pancy_resource_id &animation_ID,
 			const float &animation_time, 
 			std::vector<DirectX::XMFLOAT4X4> &matrix_out
 		);
 		virtual ~PancyBasicModel();
+		PancystarEngine::EngineFailReason BuildBoneDataPerFrame(pancy_object_id &bone_block_id,PancystarEngine::SkinAnimationBlock &new_animation_block);
 		bool CheckIfLoadSucceed();
+		inline pancy_object_id GetBoneNum() 
+		{
+			return bone_object_num;
+		};
 	private:
 		PancystarEngine::EngineFailReason InitResource(const Json::Value &root_value, const std::string &resource_name);
-		//¶ÁÈ¡¹Ç÷ÀÊ÷
+		//è¯»å–éª¨éª¼æ ‘
 		PancystarEngine::EngineFailReason LoadSkinTree(const string &filename);
 		PancystarEngine::EngineFailReason ReadBoneTree(int32_t &now_build_id);
-		//¸üĞÂ¹Ç÷ÀµÄ¶¯»­Êı¾İ
+		//æ›´æ–°éª¨éª¼çš„åŠ¨ç”»æ•°æ®
 		PancystarEngine::EngineFailReason UpdateAnimData(
 			const pancy_resource_id &animation_ID,
 			const float &time_in,
 			std::vector<DirectX::XMFLOAT4X4> &matrix_out
 		);
-		//Ö¡¼ä²åÖµ(ËÄÔªÊı)
+		//å¸§é—´æ’å€¼(å››å…ƒæ•°)
 		void Interpolate(quaternion_animation& pOut, const quaternion_animation &pStart, const quaternion_animation &pEnd, const float &pFactor);
-		//Ö¡¼ä²åÖµ(ÏòÁ¿)
+		//å¸§é—´æ’å€¼(å‘é‡)
 		void Interpolate(vector_animation& pOut, const vector_animation &pStart, const vector_animation &pEnd, const float &pFactor);
-		//¸ù¾İÖ¸¶¨µÄÊ±¼ä£¬»ñÈ¡ÆäÇ°ºóÁ½¸ö¹Ø¼üÖ¡Êı¾İ(ËÄÔªÊı)
+		//æ ¹æ®æŒ‡å®šçš„æ—¶é—´ï¼Œè·å–å…¶å‰åä¸¤ä¸ªå…³é”®å¸§æ•°æ®(å››å…ƒæ•°)
 		void FindAnimStEd(const float &input_time, int &st, int &ed, const std::vector<quaternion_animation> &input);
-		//¸ù¾İÖ¸¶¨µÄÊ±¼ä£¬»ñÈ¡ÆäÇ°ºóÁ½¸ö¹Ø¼üÖ¡Êı¾İ(ÏòÁ¿)
+		//æ ¹æ®æŒ‡å®šçš„æ—¶é—´ï¼Œè·å–å…¶å‰åä¸¤ä¸ªå…³é”®å¸§æ•°æ®(å‘é‡)
 		void FindAnimStEd(const float &input_time, int &st, int &ed, const std::vector<vector_animation> &input);
-		//¸ù¾İËÄÔªÊı»ñÈ¡±ä»»¾ØÕó
+		//æ ¹æ®å››å…ƒæ•°è·å–å˜æ¢çŸ©é˜µ
 		void GetQuatMatrix(DirectX::XMFLOAT4X4 &resMatrix, const quaternion_animation& pOut);
 		PancystarEngine::EngineFailReason UpdateRoot(
 			int32_t root_id,
@@ -239,7 +250,7 @@ namespace PancystarEngine
 			std::vector<DirectX::XMFLOAT4X4> &matrix_combine_save,
 			std::vector<DirectX::XMFLOAT4X4> &matrix_out
 		);
-		//¶ÁÈ¡Íø¸ñÊı¾İ
+		//è¯»å–ç½‘æ ¼æ•°æ®
 		template<typename T>
 		PancystarEngine::EngineFailReason LoadMeshData(const std::string &file_name_vertex, const std::string &file_name_index)
 		{
@@ -274,7 +285,7 @@ namespace PancystarEngine
 			delete[] index_data;
 			return PancystarEngine::succeed;
 		}
-		//¸ù¾İ²ã¼¶»ñÈ¡¸¸½Úµã
+		//æ ¹æ®å±‚çº§è·å–çˆ¶èŠ‚ç‚¹
 		pancy_object_id FindParentByLayer(
 			const pancy_object_id& bone_id,
 			const pancy_object_id& layer,

@@ -5,14 +5,14 @@ PancyInput::PancyInput()
 }
 PancystarEngine::EngineFailReason PancyInput::Init(HWND hwnd, HINSTANCE hinst)
 {
-	HRESULT hr = DirectInput8Create(hinst, DIRECTINPUT_HEADER_VERSION, IID_IDirectInput8, (void**)&pancy_dinput, NULL);//»ñÈ¡DirectInputÉè±¸
+	HRESULT hr = DirectInput8Create(hinst, DIRECTINPUT_HEADER_VERSION, IID_IDirectInput8, (void**)&pancy_dinput, NULL);//è·å–DirectInputè®¾å¤‡
 	if (FAILED(hr)) 
 	{
 		PancystarEngine::EngineFailReason error_message(hr, "init directinput error");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create directx input object", error_message);
 		return error_message;
 	}
-	PancystarEngine::EngineFailReason check_error = DinputClear(hwnd, (DISCL_FOREGROUND | DISCL_NONEXCLUSIVE), (DISCL_FOREGROUND | DISCL_NONEXCLUSIVE));//´´½¨¼üÅÌ¼°Êó±ê
+	PancystarEngine::EngineFailReason check_error = DinputClear(hwnd, (DISCL_FOREGROUND | DISCL_NONEXCLUSIVE), (DISCL_FOREGROUND | DISCL_NONEXCLUSIVE));//åˆ›å»ºé”®ç›˜åŠé¼ æ ‡
 	if (!check_error.CheckIfSucceed()) 
 	{
 		return check_error;
@@ -27,7 +27,7 @@ PancyInput::~PancyInput()
 }
 PancystarEngine::EngineFailReason PancyInput::DinputClear(HWND hwnd,DWORD keyboardCoopFlags, DWORD mouseCoopFlags)
 {
-	//´´½¨¼üÅÌÉè±¸
+	//åˆ›å»ºé”®ç›˜è®¾å¤‡
 	HRESULT hr = pancy_dinput->CreateDevice(GUID_SysKeyboard,&dinput_keyboard,NULL);
 	if (FAILED(hr)) 
 	{
@@ -35,21 +35,21 @@ PancystarEngine::EngineFailReason PancyInput::DinputClear(HWND hwnd,DWORD keyboa
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create directx input object", error_message);
 		return error_message;
 	}
-	dinput_keyboard->SetDataFormat(&c_dfDIKeyboard);//ÉèÖÃÉè±¸µÄÊı¾İ¸ñÊ½
-	dinput_keyboard->SetCooperativeLevel(hwnd,keyboardCoopFlags);//ÉèÖÃÉè±¸µÄ¶ÀÕ¼µÈ¼¶
-	dinput_keyboard->Acquire();//»ñÈ¡Éè±¸µÄ¿ØÖÆÈ¨
-	dinput_keyboard->Poll();//ÉèÖÃÂÖÑ¯
-	//´´½¨Êó±êÉè±¸
+	dinput_keyboard->SetDataFormat(&c_dfDIKeyboard);//è®¾ç½®è®¾å¤‡çš„æ•°æ®æ ¼å¼
+	dinput_keyboard->SetCooperativeLevel(hwnd,keyboardCoopFlags);//è®¾ç½®è®¾å¤‡çš„ç‹¬å ç­‰çº§
+	dinput_keyboard->Acquire();//è·å–è®¾å¤‡çš„æ§åˆ¶æƒ
+	dinput_keyboard->Poll();//è®¾ç½®è½®è¯¢
+	//åˆ›å»ºé¼ æ ‡è®¾å¤‡
 	pancy_dinput->CreateDevice(GUID_SysMouse,&dinput_mouse,NULL);
-	dinput_mouse->SetDataFormat(&c_dfDIMouse);//ÉèÖÃÉè±¸µÄÊı¾İ¸ñÊ½
-	dinput_mouse->SetCooperativeLevel(hwnd,mouseCoopFlags);//ÉèÖÃÉè±¸µÄ¶ÀÕ¼µÈ¼¶
-	dinput_mouse->Acquire();//»ñÈ¡Éè±¸µÄ¿ØÖÆÈ¨
-	dinput_mouse->Poll();//ÉèÖÃÂÖÑ¯
+	dinput_mouse->SetDataFormat(&c_dfDIMouse);//è®¾ç½®è®¾å¤‡çš„æ•°æ®æ ¼å¼
+	dinput_mouse->SetCooperativeLevel(hwnd,mouseCoopFlags);//è®¾ç½®è®¾å¤‡çš„ç‹¬å ç­‰çº§
+	dinput_mouse->Acquire();//è·å–è®¾å¤‡çš„æ§åˆ¶æƒ
+	dinput_mouse->Poll();//è®¾ç½®è½®è¯¢
 	return PancystarEngine::succeed;
 }
 void PancyInput::GetInput()
 {
-	//»ñÈ¡Êó±êÏûÏ¢
+	//è·å–é¼ æ ‡æ¶ˆæ¯
 	ZeroMemory(&mouse_buffer,sizeof(mouse_buffer));
 	while(true)
 	{
@@ -73,7 +73,7 @@ void PancyInput::GetInput()
 			break;
 		};
 	}
-	//»ñÈ¡¼üÅÌÏûÏ¢
+	//è·å–é”®ç›˜æ¶ˆæ¯
 	ZeroMemory(&key_buffer,sizeof(key_buffer));
 	while(true)
 	{

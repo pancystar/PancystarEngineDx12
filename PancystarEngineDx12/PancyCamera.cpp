@@ -1,4 +1,4 @@
-﻿#include"PancyCamera.h"
+#include"PancyCamera.h"
 using namespace DirectX;
 PancyCamera::PancyCamera()
 {

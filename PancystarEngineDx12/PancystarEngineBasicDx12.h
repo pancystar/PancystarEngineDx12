@@ -1,7 +1,7 @@
 #pragma once
-//ÁÙÊ±µÄdx11Í·ÎÄ¼ş(ÎÆÀíÑ¹Ëõ)
+//ä¸´æ—¶çš„dx11å¤´æ–‡ä»¶(çº¹ç†å‹ç¼©)
 #include<d3d11.h>
-//windowsÍ·ÎÄ¼ş
+//windowså¤´æ–‡ä»¶
 #include<Windows.h>
 #include<d3d12.h>
 #include<DirectXMath.h>
@@ -16,13 +16,13 @@
 #pragma comment(lib, "Shcore.lib")
 #pragma comment(lib, "Dinput8.lib") 
 using Microsoft::WRL::ComPtr;
-// C ÔËĞĞÊ±Í·ÎÄ¼ş
+// C è¿è¡Œæ—¶å¤´æ–‡ä»¶
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
 #include<time.h>
-//STLÈİÆ÷
+//STLå®¹å™¨
 #include <iostream>
 #include <algorithm>
 #include <list>
@@ -32,12 +32,12 @@ using Microsoft::WRL::ComPtr;
 #include <unordered_set>
 #include <vector>
 #include <queue>
-//c++ÔËĞĞÊ±
+//c++è¿è¡Œæ—¶
 #include <string>
 #include <fstream>
 #include <typeinfo>
 #include <atomic>
-//ÄÚ´æĞ¹Â©¼ì²â
+//å†…å­˜æ³„æ¼æ£€æµ‹
 #define CheckWindowMemory
 #ifdef CheckWindowMemory
    #include <crtdbg.h>
@@ -56,13 +56,13 @@ namespace PancystarEngine
 		LOG_MESSAGE_WARNING = 1,
 		LOG_MESSAGE_ERROR = 2
 	};
-	//¹Û²ìÕß
+	//è§‚å¯Ÿè€…
 	class window_size_observer
 	{
 	public:
 		virtual void update_windowsize(int wind_width_need, int wind_height_need) = 0;
 	};
-	//±»¹Û²ì¶ÔÏó
+	//è¢«è§‚å¯Ÿå¯¹è±¡
 	class window_size_subject
 	{
 	protected:
@@ -72,7 +72,7 @@ namespace PancystarEngine
 		virtual void detach(window_size_observer*) = 0;
 		virtual void notify(int wind_width_need, int wind_height_need) = 0;
 	};
-	//¸÷ÖÖÀà×Ö·û´®´¦ÀíÀà
+	//å„ç§ç±»å­—ç¬¦ä¸²å¤„ç†ç±»
 	class PancyString 
 	{
 		std::string ascii_string;
@@ -98,7 +98,7 @@ namespace PancystarEngine
 		void WstringToString();
 	};
 	
-	//´íÎó·µ»ØĞÅÏ¢
+	//é”™è¯¯è¿”å›ä¿¡æ¯
 	class EngineFailReason
 	{
 		bool if_succeed;
@@ -155,12 +155,12 @@ namespace PancystarEngine
 				delete this_instance;
 			}
 		}
-		//logĞÅÏ¢(logÀ´Ô´£¬log´íÎó¼ÇÂ¼)
+		//logä¿¡æ¯(logæ¥æºï¼Œlogé”™è¯¯è®°å½•)
 		void AddLog(std::string log_source, EngineFailReason engine_error_message);
 		void SaveLogToFile(std::string log_file_name);
 		void PrintLogToconsole();
 	};
-	//´´½¨ÎÄ¼şµÄÖØ¸´²éÑ¯
+	//åˆ›å»ºæ–‡ä»¶çš„é‡å¤æŸ¥è¯¢
 	class FileBuildRepeatCheck
 	{
 		std::unordered_set<std::string> name_list;

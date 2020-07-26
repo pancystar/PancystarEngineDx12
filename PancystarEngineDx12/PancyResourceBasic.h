@@ -3,10 +3,10 @@
 #include"PancyResourceJsonReflect.h"
 namespace PancystarEngine
 {
-	//upload»º³åÇø×ÊÔ´¿é
+	//uploadç¼“å†²åŒºèµ„æºå—
 	struct UploadResourceBlock
 	{
-		//´æ´¢¿ª±Ù¿Õ¼äÇ°ºóµÄÖ¸ÕëÎ»ÖÃ£¬ÓÉÓÚ²¢·ÇÃ¿´Î¿ª±Ù¶¼ÊÇÊ×Î²ÏàÁ¬£¬ËùÒÔ¿ª±ÙÇ°µÄÎ»ÖÃ+´æ´¢ÇøµÄ´óĞ¡²¢²»Ò»¶¨µÈÓÚ¿ª±ÙºóµÄÎ»ÖÃ
+		//å­˜å‚¨å¼€è¾Ÿç©ºé—´å‰åçš„æŒ‡é’ˆä½ç½®ï¼Œç”±äºå¹¶éæ¯æ¬¡å¼€è¾Ÿéƒ½æ˜¯é¦–å°¾ç›¸è¿ï¼Œæ‰€ä»¥å¼€è¾Ÿå‰çš„ä½ç½®+å­˜å‚¨åŒºçš„å¤§å°å¹¶ä¸ä¸€å®šç­‰äºå¼€è¾Ÿåçš„ä½ç½®
 		pancy_resource_size pointer_before_alloc;
 		pancy_resource_size pointer_after_alloc;
 		ResourceBlockGpu dynamic_buffer_resource;
@@ -50,7 +50,7 @@ namespace PancystarEngine
 			return this_instance;
 		}
 		~PancyDynamicRingBuffer();
-		//¿½±´Êı¾İµ½ÏÔ´æ
+		//æ‹·è´æ•°æ®åˆ°æ˜¾å­˜
 		PancystarEngine::EngineFailReason CopyDataToGpu(
 			PancyRenderCommandList *commandlist,
 			void* data_pointer,
@@ -72,16 +72,16 @@ namespace PancystarEngine
 			ResourceBlockGpu &gpu_resource_pointer,
 			UploadResourceBlock **new_block
 		);
-		//¼ÓÔØ³õÊ¼»¯ĞÅÏ¢
+		//åŠ è½½åˆå§‹åŒ–ä¿¡æ¯
 		PancystarEngine::EngineFailReason LoadInitData();
-		//Ë¢ĞÂÀÏµÄ»º³åÇø£¬ÊÍ·Å²»ĞèÒªµÄ×ÊÔ´ËùÕ¼µÄ¿Õ¼ä
+		//åˆ·æ–°è€çš„ç¼“å†²åŒºï¼Œé‡Šæ”¾ä¸éœ€è¦çš„èµ„æºæ‰€å çš„ç©ºé—´
 		PancystarEngine::EngineFailReason RefreshOldDynamicData();
 	};
-	//ĞéÄâ×ÊÔ´
+	//è™šæ‹Ÿèµ„æº
 	class PancyBasicVirtualResource
 	{
 	protected:
-		bool if_could_reload;//×ÊÔ´ÊÇ·ñÔÊĞíÖØ¸´¼ÓÔØ
+		bool if_could_reload;//èµ„æºæ˜¯å¦å…è®¸é‡å¤åŠ è½½
 		std::string resource_type_name;
 	protected:
 		std::string resource_name;
@@ -89,17 +89,17 @@ namespace PancystarEngine
 	public:
 		PancyBasicVirtualResource(const bool &if_could_reload_in);
 		virtual ~PancyBasicVirtualResource();
-		//´ÓjsonÎÄ¼şÖĞ¼ÓÔØ×ÊÔ´
+		//ä»jsonæ–‡ä»¶ä¸­åŠ è½½èµ„æº
 		PancystarEngine::EngineFailReason Create(const std::string &resource_name_in);
-		//´ÓjsonÄÚ´æÖĞ¼ÓÔØ×ÊÔ´
+		//ä»jsonå†…å­˜ä¸­åŠ è½½èµ„æº
 		PancystarEngine::EngineFailReason Create(const std::string &resource_name_in, const Json::Value &root_value_in);
-		//Ö±½Ó´Ó½á¹¹Ìå¼ÓÔØ×ÊÔ´
+		//ç›´æ¥ä»ç»“æ„ä½“åŠ è½½èµ„æº
 		PancystarEngine::EngineFailReason Create(const std::string &resource_name_in, void *resource_data, const std::string &resource_type, const pancy_resource_size &resource_size);
 		inline const std::string &GetResourceTypeName() const
 		{
 			return resource_type_name;
 		}
-		//ĞŞ¸ÄÒıÓÃ¼ÆÊı
+		//ä¿®æ”¹å¼•ç”¨è®¡æ•°
 		void AddReference();
 		void DeleteReference();
 		inline int32_t GetReferenceCount()
@@ -110,14 +110,14 @@ namespace PancystarEngine
 		{
 			return resource_name;
 		}
-		//¼ì²âµ±Ç°µÄ×ÊÔ´ÊÇ·ñÒÑ¾­±»ÔØÈëGPU
+		//æ£€æµ‹å½“å‰çš„èµ„æºæ˜¯å¦å·²ç»è¢«è½½å…¥GPU
 		virtual bool CheckIfResourceLoadFinish() = 0;
 	private:
-		//×¢²á²¢¼ÓÔØ×ÊÔ´
+		//æ³¨å†Œå¹¶åŠ è½½èµ„æº
 		virtual PancystarEngine::EngineFailReason InitResourceJson(const std::string &resource_name_in, const Json::Value &root_value_in) = 0;
-		//´ÓÄÚ´æÖĞ¼ÓÔØ×ÊÔ´
+		//ä»å†…å­˜ä¸­åŠ è½½èµ„æº
 		virtual PancystarEngine::EngineFailReason InitResourceMemory(void *resource_data, const std::string &resource_type, const pancy_resource_size &resource_size) = 0;
-		//Ö±½Ó´ÓÎÄ¼şÖĞ¼ÓÔØ×ÊÔ´£¨·ÇjsonÎÄ¼ş£©
+		//ç›´æ¥ä»æ–‡ä»¶ä¸­åŠ è½½èµ„æºï¼ˆéjsonæ–‡ä»¶ï¼‰
 		virtual PancystarEngine::EngineFailReason InitResourceDirect(const std::string &file_name) = 0;
 	};
 	template<typename ResourceDescStruct>
@@ -132,15 +132,15 @@ namespace PancystarEngine
 		};
 		virtual ~PancyCommonVirtualResource();
 	private:
-		//´ÓjsonÀàÖĞ¼ÓÔØ×ÊÔ´
+		//ä»jsonç±»ä¸­åŠ è½½èµ„æº
 		PancystarEngine::EngineFailReason InitResourceJson(const std::string &resource_name_in, const Json::Value &root_value_in) override;
-		//´ÓÄÚ´æÖĞ¼ÓÔØ×ÊÔ´
+		//ä»å†…å­˜ä¸­åŠ è½½èµ„æº
 		PancystarEngine::EngineFailReason InitResourceMemory(void *resource_data, const std::string &resource_type, const pancy_resource_size &resource_size) override;
-		//Ö±½Ó´ÓÎÄ¼şÖĞ¼ÓÔØ×ÊÔ´£¨·ÇjsonÎÄ¼ş£©
+		//ç›´æ¥ä»æ–‡ä»¶ä¸­åŠ è½½èµ„æºï¼ˆéjsonæ–‡ä»¶ï¼‰
 		PancystarEngine::EngineFailReason InitResourceDirect(const std::string &file_name) override;
-		//¸ù¾İ×ÊÔ´¸ñÊ½´´½¨×ÊÔ´Êı¾İ
+		//æ ¹æ®èµ„æºæ ¼å¼åˆ›å»ºèµ„æºæ•°æ®
 		virtual PancystarEngine::EngineFailReason LoadResoureDataByDesc(const ResourceDescStruct &ResourceDescStruct) = 0;
-		//¸ù¾İÆäËûÎÄ¼ş¶ÁÈ¡×ÊÔ´£¬²¢»ñÈ¡×ÊÔ´¸ñÊ½
+		//æ ¹æ®å…¶ä»–æ–‡ä»¶è¯»å–èµ„æºï¼Œå¹¶è·å–èµ„æºæ ¼å¼
 		virtual PancystarEngine::EngineFailReason LoadResoureDataByOtherFile(const std::string &file_name, ResourceDescStruct &resource_desc);
 	};
 	template<typename ResourceDescStruct>
@@ -182,7 +182,7 @@ namespace PancystarEngine
 	template<typename ResourceDescStruct>
 	PancystarEngine::EngineFailReason PancyCommonVirtualResource<ResourceDescStruct>::InitResourceMemory(void *resource_data, const std::string &resource_type, const pancy_resource_size &resource_size)
 	{
-		//½øĞĞÊı¾İÀàĞÍ¼ì²é£¬¼ì²â³É¹¦ºó¿½±´Êı¾İ
+		//è¿›è¡Œæ•°æ®ç±»å‹æ£€æŸ¥ï¼Œæ£€æµ‹æˆåŠŸåæ‹·è´æ•°æ®
 		if ((typeid(ResourceDescStruct*).name() != resource_type) || (resource_size != sizeof(ResourceDescStruct)))
 		{
 			PancystarEngine::EngineFailReason error_message(0, "class type dismatch: " + resource_type + " haven't init to reflect class");
@@ -210,12 +210,12 @@ namespace PancystarEngine
 	template<typename ResourceDescStruct>
 	PancystarEngine::EngineFailReason PancyCommonVirtualResource<ResourceDescStruct>::LoadResoureDataByOtherFile(const std::string &file_name, ResourceDescStruct &resource_desc)
 	{
-		//Ä¬ÈÏÇé¿öÏÂ£¬²»´¦ÀíÈÎºÎ·ÇjsonÎÄ¼şµÄ¼ÓÔØ
+		//é»˜è®¤æƒ…å†µä¸‹ï¼Œä¸å¤„ç†ä»»ä½•éjsonæ–‡ä»¶çš„åŠ è½½
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not parse file: " + file_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::LoadResourceDirect", error_message);
 		return error_message;
 	}
-	//ĞéÄâ×ÊÔ´µÄÄ£ÄâÖÇÄÜÖ¸Õë
+	//è™šæ‹Ÿèµ„æºçš„æ¨¡æ‹Ÿæ™ºèƒ½æŒ‡é’ˆ
 	class VirtualResourcePointer
 	{
 		bool if_NULL;
@@ -244,7 +244,7 @@ namespace PancystarEngine
 			}
 		}
 	};
-	//todo£ºweak_ptr´¦ÀíÁÙÊ±Ê¹ÓÃ×ÊÔ´µÄÇé¿ö
+	//todoï¼šweak_ptrå¤„ç†ä¸´æ—¶ä½¿ç”¨èµ„æºçš„æƒ…å†µ
 	class VirtualWeakResourcePointer 
 	{
 
@@ -311,7 +311,7 @@ namespace PancystarEngine
 	)
 	{
 		PancystarEngine::EngineFailReason check_error;
-		//×ÊÔ´¼ÓÔØÅĞ¶ÏÖØ¸´
+		//èµ„æºåŠ è½½åˆ¤æ–­é‡å¤
 		if (!if_allow_repeat)
 		{
 			auto check_data = resource_name_list.find(name_resource_in);
@@ -323,7 +323,7 @@ namespace PancystarEngine
 				return error_message;
 			}
 		}
-		//´´½¨Ò»¸öĞÂµÄ×ÊÔ´
+		//åˆ›å»ºä¸€ä¸ªæ–°çš„èµ„æº
 		PancyBasicVirtualResource *new_data = new ResourceType(if_allow_repeat);
 		check_error = new_data->Create(name_resource_in, root_value);
 		if (!check_error.CheckIfSucceed())
@@ -345,7 +345,7 @@ namespace PancystarEngine
 	)
 	{
 		PancystarEngine::EngineFailReason check_error;
-		//×ÊÔ´¼ÓÔØÅĞ¶ÏÖØ¸´
+		//èµ„æºåŠ è½½åˆ¤æ–­é‡å¤
 		if (!if_allow_repeat)
 		{
 			auto check_data = resource_name_list.find(desc_file_in);
@@ -356,7 +356,7 @@ namespace PancystarEngine
 				return error_message;
 			}
 		}
-		//´´½¨Ò»¸öĞÂµÄ×ÊÔ´
+		//åˆ›å»ºä¸€ä¸ªæ–°çš„èµ„æº
 		PancyBasicVirtualResource *new_data = new ResourceType(if_allow_repeat);
 		check_error = new_data->Create(desc_file_in);
 		if (!check_error.CheckIfSucceed())
@@ -381,7 +381,7 @@ namespace PancystarEngine
 	)
 	{
 		PancystarEngine::EngineFailReason check_error;
-		//×ÊÔ´¼ÓÔØÅĞ¶ÏÖØ¸´
+		//èµ„æºåŠ è½½åˆ¤æ–­é‡å¤
 		if (!if_allow_repeat)
 		{
 			auto check_data = resource_name_list.find(name_resource_in);
@@ -392,7 +392,7 @@ namespace PancystarEngine
 				return error_message;
 			}
 		}
-		//´´½¨Ò»¸öĞÂµÄ×ÊÔ´
+		//åˆ›å»ºä¸€ä¸ªæ–°çš„èµ„æº
 		PancyBasicVirtualResource *new_data = new ResourceType(if_allow_repeat);
 		check_error = new_data->Create(name_resource_in, resource_data, resource_type, resource_size);
 		if (!check_error.CheckIfSucceed())

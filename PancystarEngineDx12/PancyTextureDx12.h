@@ -5,8 +5,8 @@
 //#define TextureHeapAliaze 16777216
 //#define BufferHeapAliaze 4194304
 /*
-todo:ÎÆÀíË«»º³å
-todo:ÎÆÀícopy queue
+todo:çº¹ç†åŒç¼“å†²
+todo:çº¹ç†copy queue
 */
 enum TextureCompressType 
 {
@@ -43,7 +43,7 @@ namespace PancystarEngine
 		_Out_ size_t& tdepth,
 		_Out_ size_t& skipMip,
 		std::vector<D3D12_SUBRESOURCE_DATA>& initData);
-	//ÎÆÀíµ¼Èë²ÎÊı½á¹¹
+	//çº¹ç†å¯¼å…¥å‚æ•°ç»“æ„
 	enum PancyTextureType 
 	{
 		Texture_Static_Load = 0,
@@ -56,9 +56,9 @@ namespace PancystarEngine
 		PancyTextureType texture_type;
 		D3D12_RESOURCE_DESC texture_res_desc = {};
 		std::string texture_data_file;
-		bool if_gen_mipmap; //ÊÇ·ñÎªÎŞmipmapµÄÎÆÀí´´½¨mipmap
-		bool if_force_srgb; //ÊÇ·ñÇ¿ÖÆ×ª»»ÎªÏßĞÔ¿Õ¼äÎÆÀí
-		int  max_size;      //ÎÆÀí×î´ó´óĞ¡
+		bool if_gen_mipmap; //æ˜¯å¦ä¸ºæ— mipmapçš„çº¹ç†åˆ›å»ºmipmap
+		bool if_force_srgb; //æ˜¯å¦å¼ºåˆ¶è½¬æ¢ä¸ºçº¿æ€§ç©ºé—´çº¹ç†
+		int  max_size;      //çº¹ç†æœ€å¤§å¤§å°
 	};
 	class CommonTextureJsonReflect :public PancyJsonReflectTemplate<PancyCommonTextureDesc>
 	{
@@ -67,13 +67,13 @@ namespace PancystarEngine
 	private:
 		void InitBasicVariable() override;
 	};
-	//ÎÆÀí×ÊÔ´
+	//çº¹ç†èµ„æº
 	class PancyBasicTexture : public PancyCommonVirtualResource<PancyCommonTextureDesc>
 	{
-		D3D12_SHADER_RESOURCE_VIEW_DESC  tex_srv_desc = {};  //ÎÆÀí·ÃÎÊ¸ñÊ½
-		bool if_cube_map;   //ÊÇ·ñÊÇcubemap(½öddsÓĞĞ§)
+		D3D12_SHADER_RESOURCE_VIEW_DESC  tex_srv_desc = {};  //çº¹ç†è®¿é—®æ ¼å¼
+		bool if_cube_map;   //æ˜¯å¦æ˜¯cubemap(ä»…ddsæœ‰æ•ˆ)
 		pancy_resource_size subresources_size = 0;
-		ResourceBlockGpu *texture_data = nullptr;     //bufferÊı¾İÖ¸Õë
+		ResourceBlockGpu *texture_data = nullptr;     //bufferæ•°æ®æŒ‡é’ˆ
 	public:
 		PancyBasicTexture(const bool &if_could_reload);
 		PancystarEngine::EngineFailReason SaveTextureToFile(
@@ -82,7 +82,7 @@ namespace PancystarEngine
 			bool if_automip = false,
 			bool if_compress = false
 		);
-		//¼ì²âµ±Ç°µÄ×ÊÔ´ÊÇ·ñÒÑ¾­±»ÔØÈëGPU
+		//æ£€æµ‹å½“å‰çš„èµ„æºæ˜¯å¦å·²ç»è¢«è½½å…¥GPU
 		bool CheckIfResourceLoadFinish() override;;
 		inline ResourceBlockGpu *GetGpuResourceData() const
 		{
@@ -99,7 +99,7 @@ namespace PancystarEngine
 	private:
 		PancystarEngine::EngineFailReason LoadPictureFromFile(PancyCommonTextureDesc &texture_desc);
 		PancystarEngine::EngineFailReason BuildEmptyPicture(const PancyCommonTextureDesc &texture_desc);
-		//½«ÎÆÀíÍ¼Æ¬²ÉÑùÖÁwindowsÍ¼Æ¬ÖĞ
+		//å°†çº¹ç†å›¾ç‰‡é‡‡æ ·è‡³windowså›¾ç‰‡ä¸­
 		PancystarEngine::EngineFailReason CaptureTextureDataToWindows(DirectX::ScratchImage *new_image);
 		std::string GetFileTile(const std::string &data_input);
 		PancystarEngine::EngineFailReason BuildTextureResource(

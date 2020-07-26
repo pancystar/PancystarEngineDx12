@@ -1,10 +1,10 @@
 #include"PancyAnimationBasic.h"
 using namespace PancystarEngine;
 PancySkinAnimationControl *PancySkinAnimationControl::this_instance = NULL;
-//¹Ç÷À¶¯»­»º³åÇø
+//éª¨éª¼åŠ¨ç”»ç¼“å†²åŒº
 PancySkinAnimationBuffer::PancySkinAnimationBuffer(const pancy_resource_size &animation_buffer_size_in, const pancy_resource_size &bone_buffer_size_in)
 {
-	//»ñÈ¡¶¯»­½á¹û»º³åÇøÒÔ¼°¹Ç÷À¾ØÕó»º³åÇøµÄ´óĞ¡£¬ÇåÁãµ±Ç°Ö¸ÕëµÄÎ»ÖÃ
+	//è·å–åŠ¨ç”»ç»“æœç¼“å†²åŒºä»¥åŠéª¨éª¼çŸ©é˜µç¼“å†²åŒºçš„å¤§å°ï¼Œæ¸…é›¶å½“å‰æŒ‡é’ˆçš„ä½ç½®
 	now_used_position_animation = 0;
 	animation_buffer_size = animation_buffer_size_in;
 	now_used_position_bone = 0;
@@ -19,7 +19,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 	std::string file_name = "pancy_skin_mesh_buffer";
 	Json::Value root_value;
 	std::string buffer_subresource_name;
-	//´´½¨´æ´¢ÃÉÆ¤½á¹ûµÄ»º³åÇø×ÊÔ´(¾²Ì¬»º³åÇø)
+	//åˆ›å»ºå­˜å‚¨è’™çš®ç»“æœçš„ç¼“å†²åŒºèµ„æº(é™æ€ç¼“å†²åŒº)
 	PancyCommonBufferDesc animation_buffer_resource_desc;
 	animation_buffer_resource_desc.buffer_type = Buffer_UnorderedAccess_static;
 	animation_buffer_resource_desc.buffer_res_desc.Alignment = 0;
@@ -42,7 +42,8 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 	{
 		return check_error;
 	}
-	//´´½¨´æ´¢¹Ç÷À¾ØÕóµÄ»º³åÇø×ÊÔ´(UAVÓÃÓÚping-pong²Ù×÷)
+
+	//åˆ›å»ºå­˜å‚¨éª¨éª¼çŸ©é˜µçš„ç¼“å†²åŒºèµ„æº(UAVç”¨äºping-pongæ“ä½œ)
 	buffer_bone.resize(2);
 	for (int buffer_index = 0; buffer_index < 2; ++buffer_index)
 	{
@@ -70,25 +71,30 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 			return check_error;
 		}
 	}
-	//´´½¨È«¾Öid¼ÇÂ¼µÄ»º³åÇø×ÊÔ´
-	PancyCommonBufferDesc bone_parent_resource_desc;
-	bone_parent_resource_desc.buffer_type = Buffer_UnorderedAccess_static;
-	bone_parent_resource_desc.buffer_res_desc.Alignment = 0;
-	bone_parent_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
-	bone_parent_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	bone_parent_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-	bone_parent_resource_desc.buffer_res_desc.Height = 1;
-	bone_parent_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	bone_parent_resource_desc.buffer_res_desc.MipLevels = 1;
-	bone_parent_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
-	bone_parent_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
-	bone_parent_resource_desc.buffer_res_desc.Width = bone_buffer_size;
-	check_error = BuildBufferResource(
-		file_name,
-		bone_parent_resource_desc,
-		buffer_globel_index,
-		true
-	);
+	//åˆ›å»ºå…¨å±€idè®°å½•çš„ç¼“å†²åŒºèµ„æº
+	buffer_globel_index.resize(2);
+	for (int buffer_index = 0; buffer_index < 2; ++buffer_index) 
+	{
+		PancyCommonBufferDesc bone_parent_resource_desc;
+		bone_parent_resource_desc.buffer_type = Buffer_UnorderedAccess_static;
+		bone_parent_resource_desc.buffer_res_desc.Alignment = 0;
+		bone_parent_resource_desc.buffer_res_desc.DepthOrArraySize = 1;
+		bone_parent_resource_desc.buffer_res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		bone_parent_resource_desc.buffer_res_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+		bone_parent_resource_desc.buffer_res_desc.Height = 1;
+		bone_parent_resource_desc.buffer_res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		bone_parent_resource_desc.buffer_res_desc.MipLevels = 1;
+		bone_parent_resource_desc.buffer_res_desc.SampleDesc.Count = 1;
+		bone_parent_resource_desc.buffer_res_desc.SampleDesc.Quality = 0;
+		bone_parent_resource_desc.buffer_res_desc.Width = bone_buffer_size;
+		check_error = BuildBufferResource(
+			file_name,
+			bone_parent_resource_desc,
+			buffer_globel_index[buffer_index],
+			true
+		);
+	}
+	
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
@@ -103,7 +109,7 @@ void PancySkinAnimationBuffer::ClearUsedBuffer()
 	now_used_position_bone = 0;
 	bone_block_map.clear();
 }
-//´Óµ±Ç°»º³åÇøÖĞÇëÇóÒ»¿é¹Ç÷À¶¯»­Êı¾İ
+//ä»å½“å‰ç¼“å†²åŒºä¸­è¯·æ±‚ä¸€å—éª¨éª¼åŠ¨ç”»æ•°æ®
 PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildAnimationBlock(
 	const pancy_resource_size &vertex_num,
 	pancy_object_id &block_id,
@@ -112,52 +118,48 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildAnimationBlock(
 	pancy_resource_size now_ask_size = vertex_num * sizeof(mesh_animation_data);
 	new_animation_block.start_pos = now_used_position_animation;
 	new_animation_block.block_size = now_ask_size;
-	//ÅĞ¶Ïµ±Ç°µÄ¶¯»­»º³åÇøÊÇ·ñÄÜ¹»¿ª³öÇëÇóµÄ¶¥µã´æ´¢¿é
+	//åˆ¤æ–­å½“å‰çš„åŠ¨ç”»ç¼“å†²åŒºæ˜¯å¦èƒ½å¤Ÿå¼€å‡ºè¯·æ±‚çš„é¡¶ç‚¹å­˜å‚¨å—
 	if ((now_used_position_animation + now_ask_size) >= animation_buffer_size)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "The skin mesh animation buffer is full");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Animation Block", error_message);
 		return error_message;
 	}
-	//¸üĞÂµ±Ç°µÄ»º³åÇøÖ¸ÕëÎ»ÖÃ
+	//æ›´æ–°å½“å‰çš„ç¼“å†²åŒºæŒ‡é’ˆä½ç½®
 	now_used_position_animation = now_used_position_animation + now_ask_size;
-	//½«ÄÚ´æ¿éµ¼Èëµ½mapÖĞ
+	//å°†å†…å­˜å—å¯¼å…¥åˆ°mapä¸­
 	pancy_object_id now_ID = static_cast<pancy_object_id>(animation_block_map.size());
 	animation_block_map.insert(std::pair<pancy_object_id, SkinAnimationBlock>(now_ID, new_animation_block));
 	block_id = now_ID;
 	return PancystarEngine::succeed;
 }
-//´Óµ±Ç°¹Ç÷À¾ØÕó»º³åÇøÖĞÇëÇóÒ»¿éÊı¾İÇø
+//ä»å½“å‰éª¨éª¼çŸ©é˜µç¼“å†²åŒºä¸­è¯·æ±‚ä¸€å—æ•°æ®åŒº
 PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildBoneBlock(
 	const pancy_resource_size &matrix_num,
-	const DirectX::XMFLOAT4X4 *matrix_data,
 	pancy_object_id &block_id,
 	SkinAnimationBlock &new_bone_block
 )
 {
-	/*
 	pancy_resource_size now_ask_size = matrix_num * sizeof(DirectX::XMFLOAT4X4);
 	new_bone_block.start_pos = now_used_position_bone;
 	new_bone_block.block_size = now_ask_size;
-	//ÅĞ¶Ïµ±Ç°µÄ¶¯»­»º³åÇøÊÇ·ñÄÜ¹»¿ª³öÇëÇóµÄ¶¥µã´æ´¢¿é
+	//åˆ¤æ–­å½“å‰çš„åŠ¨ç”»ç¼“å†²åŒºæ˜¯å¦èƒ½å¤Ÿå¼€å‡ºè¯·æ±‚çš„é¡¶ç‚¹å­˜å‚¨å—
 	if ((now_used_position_bone + now_ask_size) >= bone_buffer_size)
 	{
 		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Bone Matrix buffer is full");
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Bone Matrix Block", error_message);
 		return error_message;
 	}
-	//½«Êı¾İ¿½±´µ½µ±Ç°µÄ»º³åÇøÎ»ÖÃ
-	memcpy(bone_data_pointer + (new_bone_block.start_pos / sizeof(UINT8)), matrix_data, new_bone_block.block_size);
-	//¸üĞÂµ±Ç°µÄ»º³åÇøÖ¸ÕëÎ»ÖÃ
+	//æ›´æ–°å½“å‰çš„ç¼“å†²åŒºæŒ‡é’ˆä½ç½®
 	now_used_position_bone = now_used_position_bone + now_ask_size;
-	//½«ÄÚ´æ¿éµ¼Èëµ½mapÖĞ
+	//å°†å†…å­˜å—å¯¼å…¥åˆ°mapä¸­
 	pancy_object_id now_ID = static_cast<pancy_object_id>(bone_block_map.size());
 	bone_block_map.insert(std::pair<pancy_object_id, SkinAnimationBlock>(now_ID, new_bone_block));
 	block_id = now_ID;
-	*/
+	
 	return PancystarEngine::succeed;
 }
-//¹Ç÷À¶¯»­¹ÜÀíÆ÷
+//éª¨éª¼åŠ¨ç”»ç®¡ç†å™¨
 PancySkinAnimationControl::PancySkinAnimationControl(
 	const pancy_resource_size &animation_buffer_size_in,
 	const pancy_resource_size &bone_buffer_size_in
@@ -177,18 +179,171 @@ PancySkinAnimationControl::~PancySkinAnimationControl()
 	}
 	skin_naimation_buffer.clear();
 }
+PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildGlobelBufferDescriptorUAV(
+	const std::string& descriptor_name,
+	std::vector<VirtualResourcePointer>& buffer_data,
+	const pancy_resource_size& buffer_size,
+	const pancy_resource_size& per_element_size
+) 
+{
+	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	std::vector<BasicDescriptorDesc> skin_animation_descriptor_desc;
+	BasicDescriptorDesc skin_animation_UAV_desc;
+	skin_animation_UAV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeUnorderedAccessView;
+	skin_animation_UAV_desc.unordered_access_view_desc = {};
+	skin_animation_UAV_desc.unordered_access_view_desc.ViewDimension = D3D12_UAV_DIMENSION::D3D12_UAV_DIMENSION_BUFFER;
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.StructureByteStride = static_cast<UINT>(per_element_size);
+	pancy_resource_size element_num = buffer_size / per_element_size;
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.NumElements = static_cast<UINT>(element_num);
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.FirstElement = 0;
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.CounterOffsetInBytes = 0;
+	for (pancy_object_id i = 0; i < Frame_num; ++i)
+	{
+		skin_animation_descriptor_desc.push_back(skin_animation_UAV_desc);
+	}
+	auto check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(descriptor_name, skin_animation_descriptor_desc, buffer_data, true);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancySkinAnimationControl::PancySkinAnimationControl::BuildGlobelBufferDescriptorSRV(
+	const std::string& descriptor_name,
+	std::vector<VirtualResourcePointer>& buffer_data,
+	const pancy_resource_size& buffer_size,
+	const pancy_resource_size& per_element_size
+) 
+{
+	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	std::vector<BasicDescriptorDesc> skin_animation_descriptor_desc;
+	BasicDescriptorDesc skin_animation_SRV_desc;
+	skin_animation_SRV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
+	pancy_object_id element_num = static_cast<pancy_object_id>(buffer_size / per_element_size);
+	skin_animation_SRV_desc.shader_resource_view_desc = {};
+	skin_animation_SRV_desc.shader_resource_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	skin_animation_SRV_desc.shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.StructureByteStride = static_cast<UINT>(per_element_size);
+	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.NumElements = static_cast<UINT>(element_num);;
+	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.FirstElement = 0;
+	for (pancy_object_id i = 0; i < Frame_num; ++i)
+	{
+		skin_animation_descriptor_desc.push_back(skin_animation_SRV_desc);
+	}
+	auto check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(descriptor_name, skin_animation_descriptor_desc, buffer_data, true);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildPrivateBufferDescriptorUAV(
+	std::vector<VirtualResourcePointer>& buffer_data,
+	const pancy_resource_size& buffer_size,
+	const pancy_resource_size& per_element_size,
+	BindDescriptorPointer& descriptor_id
+) 
+{
+	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	std::vector<BasicDescriptorDesc> skin_animation_descriptor_desc;
+	BasicDescriptorDesc skin_animation_UAV_desc;
+	skin_animation_UAV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeUnorderedAccessView;
+	skin_animation_UAV_desc.unordered_access_view_desc = {};
+	skin_animation_UAV_desc.unordered_access_view_desc.ViewDimension = D3D12_UAV_DIMENSION::D3D12_UAV_DIMENSION_BUFFER;
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.StructureByteStride = static_cast<UINT>(per_element_size);
+	pancy_resource_size element_num = buffer_size / per_element_size;
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.NumElements = static_cast<UINT>(element_num);
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.FirstElement = 0;
+	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.CounterOffsetInBytes = 0;
+	for (pancy_object_id i = 0; i < Frame_num; ++i)
+	{
+		skin_animation_descriptor_desc.push_back(skin_animation_UAV_desc);
+	}
+	auto check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(skin_animation_descriptor_desc, buffer_data, true, descriptor_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildPrivateBufferDescriptorSRV(
+	std::vector<VirtualResourcePointer>& buffer_data,
+	const pancy_resource_size& buffer_size,
+	const pancy_resource_size& per_element_size,
+	BindDescriptorPointer& descriptor_id
+) 
+{
+	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
+	std::vector<BasicDescriptorDesc> skin_animation_descriptor_desc;
+	BasicDescriptorDesc skin_animation_SRV_desc;
+	skin_animation_SRV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
+	pancy_object_id element_num = static_cast<pancy_object_id>(buffer_size / per_element_size);
+	skin_animation_SRV_desc.shader_resource_view_desc = {};
+	skin_animation_SRV_desc.shader_resource_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	skin_animation_SRV_desc.shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.StructureByteStride = static_cast<UINT>(per_element_size);
+	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.NumElements = static_cast<UINT>(element_num);;
+	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.FirstElement = 0;
+	for (pancy_object_id i = 0; i < Frame_num; ++i)
+	{
+		skin_animation_descriptor_desc.push_back(skin_animation_SRV_desc);
+	}
+	auto check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(skin_animation_descriptor_desc, buffer_data, true, descriptor_id);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	return PancystarEngine::succeed;
+}
+
 PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 {
 	PancystarEngine::EngineFailReason check_error;
-	//¼ÓÔØPSO
+	check_error = skin_mesh_animation_buffer_descriptor.Create(MaxSkinAnimationComputeNum);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = skin_mesh_offset_matrix_descriptor.Create(MaxSkinAnimationComputeNum);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = skin_mesh_parent_id_descriptor.Create(MaxSkinAnimationComputeNum);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//åŠ è½½PSO
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_skinmesh.json", PSO_skinmesh);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//´´½¨¹Ç÷À¶¯»­»º³åÇø
+	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_skin_bonetree.json", PSO_skinmesh_skintree_desample);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_skin_matrix_combine.json", PSO_skinmesh_cluster_combine);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_skin_sample_aniamation.json", PSO_skinmesh_animation_interpolation);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//åˆ›å»ºéª¨éª¼åŠ¨ç”»ç¼“å†²åŒº
 	std::vector<VirtualResourcePointer> skin_animation_buffer_data;
-	std::vector<VirtualResourcePointer> bone_buffer_data;
+	std::vector<VirtualResourcePointer> bone_buffer_data1;
+	std::vector<VirtualResourcePointer> bone_buffer_data2;
+	std::vector<VirtualResourcePointer> bone_id_data;
 	pancy_object_id Frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
 	for (pancy_object_id i = 0; i < Frame_num; ++i)
 	{
@@ -199,79 +354,138 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 			return check_error;
 		}
 		VirtualResourcePointer &skin_vertex_resource = skin_naimation_buffer[i]->GetSkinVertexResource();
-		VirtualResourcePointer &bone_matrix_resource = skin_naimation_buffer[i]->GetBoneMatrixResource();
+		VirtualResourcePointer &bone_matrix_resource1 = skin_naimation_buffer[i]->GetBoneMatrixResource(0);
+		VirtualResourcePointer &bone_matrix_resource2 = skin_naimation_buffer[i]->GetBoneMatrixResource(1);
+		VirtualResourcePointer& bone_id_resource = skin_naimation_buffer[i]->GetBoneIDResource();
 		skin_animation_buffer_data.push_back(skin_vertex_resource);
-		bone_buffer_data.push_back(bone_matrix_resource);
+		bone_buffer_data1.push_back(bone_matrix_resource1);
+		bone_buffer_data2.push_back(bone_matrix_resource2);
+		bone_id_data.push_back(bone_id_resource);
 	}
-	//´´½¨¹Ç÷À¶¯»­»º³åÇøµÄÃèÊö·û
-	std::vector<BasicDescriptorDesc> skin_animation_descriptor_desc;
-	BasicDescriptorDesc skin_animation_SRV_desc;
-	skin_animation_SRV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
-	pancy_object_id number_vertex_num = static_cast<pancy_object_id>(animation_buffer_size / sizeof(PancystarEngine::mesh_animation_data));
-	skin_animation_SRV_desc.shader_resource_view_desc = {};
-	skin_animation_SRV_desc.shader_resource_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	skin_animation_SRV_desc.shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
-	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.StructureByteStride = sizeof(PancystarEngine::mesh_animation_data);
-	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.NumElements = number_vertex_num;
-	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-	skin_animation_SRV_desc.shader_resource_view_desc.Buffer.FirstElement = 0;
-	for (pancy_object_id i = 0; i < Frame_num; ++i)
-	{
-		skin_animation_descriptor_desc.push_back(skin_animation_SRV_desc);
-	}
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor("input_point", skin_animation_descriptor_desc, skin_animation_buffer_data, true);
+	//åˆ›å»ºéª¨éª¼åŠ¨ç”»ç¼“å†²åŒºçš„æè¿°ç¬¦
+	check_error = BuildGlobelBufferDescriptorSRV("input_point", skin_animation_buffer_data, animation_buffer_size, sizeof(PancystarEngine::mesh_animation_data));
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//´´½¨¹Ç÷À¶¯»­»º³åÇøµÄuav
-	skin_animation_descriptor_desc.clear();
-	BasicDescriptorDesc skin_animation_UAV_desc;
-	skin_animation_UAV_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeUnorderedAccessView;
-	skin_animation_UAV_desc.unordered_access_view_desc = {};
-	skin_animation_UAV_desc.unordered_access_view_desc.ViewDimension = D3D12_UAV_DIMENSION::D3D12_UAV_DIMENSION_BUFFER;
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.StructureByteStride = sizeof(mesh_animation_data);
-	pancy_resource_size vertex_num = animation_buffer_size / sizeof(mesh_animation_data);
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.NumElements = static_cast<UINT>(vertex_num);
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.FirstElement = 0;
-	skin_animation_UAV_desc.unordered_access_view_desc.Buffer.CounterOffsetInBytes = 0;
-	for (pancy_object_id i = 0; i < Frame_num; ++i)
-	{
-		skin_animation_descriptor_desc.push_back(skin_animation_UAV_desc);
-	}
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor("mesh_anim_data", skin_animation_descriptor_desc, skin_animation_buffer_data, true);
-	if (!check_error.CheckIfSucceed())
-	{
-		return check_error;
-	}
-	//´´½¨¹Ç÷À¾ØÕó»º³åÇøSRV
-	skin_animation_descriptor_desc.clear();
-	BasicDescriptorDesc skin_bone_srv_desc;
-	skin_bone_srv_desc.basic_descriptor_type = PancyDescriptorType::DescriptorTypeShaderResourceView;
-	skin_bone_srv_desc.shader_resource_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	skin_bone_srv_desc.shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
-	skin_bone_srv_desc.shader_resource_view_desc.Buffer.StructureByteStride = sizeof(DirectX::XMFLOAT4X4);
-	pancy_resource_size matrix_num = bone_buffer_size / sizeof(DirectX::XMFLOAT4X4);
-	skin_bone_srv_desc.shader_resource_view_desc.Buffer.NumElements = static_cast<UINT>(matrix_num);
-	skin_bone_srv_desc.shader_resource_view_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-	skin_bone_srv_desc.shader_resource_view_desc.Buffer.FirstElement = 0;
-	for (pancy_object_id i = 0; i < Frame_num; ++i)
-	{
-		skin_animation_descriptor_desc.push_back(skin_bone_srv_desc);
-	}
-	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor("bone_matrix_buffer", skin_animation_descriptor_desc, bone_buffer_data, true);
+	check_error = BuildGlobelBufferDescriptorUAV("mesh_anim_data", skin_animation_buffer_data, animation_buffer_size, sizeof(PancystarEngine::mesh_animation_data));
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 
+	check_error = BuildPrivateBufferDescriptorSRV(bone_buffer_data1, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4), buffer_descriptor_srv_id1);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = BuildPrivateBufferDescriptorSRV(bone_buffer_data2, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4), buffer_descriptor_srv_id2);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = BuildPrivateBufferDescriptorUAV(bone_buffer_data1, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4), buffer_descriptor_uav_id1);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = BuildPrivateBufferDescriptorUAV(bone_buffer_data2, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4), buffer_descriptor_uav_id2);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+
+
+	check_error = BuildGlobelBufferDescriptorSRV("bone_matrix_buffer", bone_buffer_data1, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4));
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = BuildGlobelBufferDescriptorUAV("bone_matrix_output", bone_buffer_data1, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4));
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+
+	check_error = BuildGlobelBufferDescriptorSRV("compute_globel_id", bone_id_data, bone_buffer_size, sizeof(DirectX::XMUINT4));
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = BuildGlobelBufferDescriptorUAV("compute_globel_id_input", bone_id_data, bone_buffer_size, sizeof(DirectX::XMUINT4));
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	
+
+	std::unordered_map<std::string, BindDescriptorPointer> bind_shader_resource_animation_sample;
+	std::unordered_map<std::string, BindlessDescriptorPointer> bindless_shader_animation_sample;
+	bindless_shader_animation_sample.insert(std::pair<std::string, BindlessDescriptorPointer>("animation_data", skin_mesh_animation_buffer_descriptor.GetDescriptorID()));
+	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetCommonRenderParam(
+		"json\\pipline_state_object\\pso_skin_sample_aniamation.json",
+		bind_shader_resource_animation_sample,
+		bindless_shader_animation_sample,
+		render_param_id_animation_sample
+	);
+
+	std::unordered_map<std::string, BindDescriptorPointer> bind_shader_resource_bone;
+	std::unordered_map<std::string, BindlessDescriptorPointer> bindless_shader_resource_bone;
+	for (int32_t bone_compute_index = 0; bone_compute_index < 10; ++bone_compute_index)
+	{
+		bind_shader_resource_bone.clear();
+		bindless_shader_resource_bone.clear();
+		if (bone_compute_index % 2 == 0) 
+		{
+			bind_shader_resource_bone.insert(std::pair<std::string, BindDescriptorPointer>("bone_matrix_input", buffer_descriptor_srv_id1));
+			bind_shader_resource_bone.insert(std::pair<std::string, BindDescriptorPointer>("bone_matrix_output", buffer_descriptor_uav_id2));
+		}
+		else 
+		{
+			bind_shader_resource_bone.insert(std::pair<std::string, BindDescriptorPointer>("bone_matrix_input", buffer_descriptor_srv_id2));
+			bind_shader_resource_bone.insert(std::pair<std::string, BindDescriptorPointer>("bone_matrix_output", buffer_descriptor_uav_id1));
+		}
+		bindless_shader_resource_bone.insert(std::pair<std::string, BindlessDescriptorPointer>("parent_globel_id", skin_mesh_parent_id_descriptor.GetDescriptorID()));
+		check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetCommonRenderParam(
+			"json\\pipline_state_object\\pso_skin_bonetree.json",
+			bind_shader_resource_bone,
+			bindless_shader_resource_bone,
+			render_param_id_bone_compute[bone_compute_index]
+		);
+	}
+	
+
+	std::unordered_map<std::string, BindDescriptorPointer> bind_shader_resource_combine_mat;
+	std::unordered_map<std::string, BindlessDescriptorPointer> bindless_shader_resource_combine_mat;
+	bind_shader_resource_combine_mat.insert(std::pair<std::string, BindDescriptorPointer>("bone_matrix_input", buffer_descriptor_srv_id1));
+	bindless_shader_resource_combine_mat.insert(std::pair<std::string, BindlessDescriptorPointer>("offset_matrix", skin_mesh_offset_matrix_descriptor.GetDescriptorID()));
+	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetCommonRenderParam(
+		"json\\pipline_state_object\\pso_skin_matrix_combine.json",
+		bind_shader_resource_combine_mat,
+		bindless_shader_resource_combine_mat,
+		render_param_id_combine_matrix
+	);
+
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	return PancystarEngine::succeed;
 }
 void PancySkinAnimationControl::ClearUsedBuffer()
 {
 	pancy_object_id now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	skin_naimation_buffer[now_frame_use]->ClearUsedBuffer();
+	skin_animation_matrix_buffer.clear();
+	skin_offset_matrix_buffer.clear();
+	skin_parent_id_buffer.clear();
+	skin_animation_matrix_descriptor.clear();
+	skin_offset_matrix_descriptor.clear();
+	skin_parent_id_descriptor.clear();
+	skin_animation_message.clear();
+	globel_bone_matrix_size = 0;
+	globel_offset_matrix_size = 0;
+	globel_parent_id_size = 0;
 }
 PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildAnimationBlock(
 	const pancy_resource_size &vertex_num,
@@ -289,58 +503,346 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildAnimationBlock
 	return PancystarEngine::succeed;
 }
 PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildBoneBlock(
-	const pancy_resource_size &matrix_num,
-	const DirectX::XMFLOAT4X4 *matrix_data,
+	VirtualResourcePointer& animation_matrix_buffer,
+	VirtualResourcePointer& offset_matrix_buffer,
+	VirtualResourcePointer& parent_id_buffer,
+	const D3D12_SHADER_RESOURCE_VIEW_DESC& animation_buffer_descriptor,
+	const D3D12_SHADER_RESOURCE_VIEW_DESC& offset_matrix_descriptor,
+	const D3D12_SHADER_RESOURCE_VIEW_DESC& parent_id_descriptor,
+	const pancy_resource_size& animation_resample_num,
+	const pancy_resource_size& animation_start_pos,
+	const pancy_resource_size& offset_matrix_num,
+	const pancy_resource_size& bone_parent_id_num,
+	const pancy_resource_size& bone_matrix_num,
 	pancy_object_id &block_id,
 	SkinAnimationBlock &new_bone_block
 )
 {
 	PancystarEngine::EngineFailReason check_error;
+	
+	//æ ¹æ®å½“å‰çš„å¸§å·ç”³è¯·ä¸€ç‰‡ç¼“å†²åŒº
 	pancy_object_id now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	check_error = skin_naimation_buffer[now_frame_use]->BuildBoneBlock(matrix_num, matrix_data, block_id, new_bone_block);
+	check_error = skin_naimation_buffer[now_frame_use]->BuildBoneBlock(bone_matrix_num, block_id, new_bone_block);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+
+
+	//å­˜å‚¨åŠ¨ç”»æ•°æ®ç¼“å†²åŒºä¸åç§»çŸ©é˜µç¼“å†²åŒº
+	skin_animation_matrix_buffer.push_back(animation_matrix_buffer);
+	skin_offset_matrix_buffer.push_back(offset_matrix_buffer);
+	skin_parent_id_buffer.push_back(parent_id_buffer);
+
+	skin_animation_matrix_descriptor.push_back(animation_buffer_descriptor);
+	skin_offset_matrix_descriptor.push_back(offset_matrix_descriptor);
+	skin_parent_id_descriptor.push_back(parent_id_descriptor);
+
+	AnimationStartMessage new_animation_message;
+	new_animation_message.drawcall_id = static_cast<pancy_object_id>(skin_animation_message.size());
+	new_animation_message.animation_resample_num = static_cast<pancy_object_id>(animation_resample_num);
+	new_animation_message.animation_start_pos = static_cast<pancy_object_id>(animation_start_pos);
+
+	new_animation_message.offset_matrix_offset_from_begin = globel_offset_matrix_size;
+	new_animation_message.offset_matrix_num = static_cast<pancy_object_id>(offset_matrix_num);
+
+	new_animation_message.bone_matrix_offset_from_begin = globel_bone_matrix_size;
+	new_animation_message.bone_matrix_num = static_cast<pancy_object_id>(bone_matrix_num);
+	new_animation_message.bone_buffer_block_id = block_id;
+
+	new_animation_message.bone_parent_id_offset_from_begin = globel_parent_id_size;
+	new_animation_message.bone_parent_id_num = static_cast<pancy_object_id>(bone_parent_id_num);
+
+	globel_offset_matrix_size += new_animation_message.offset_matrix_num;
+	globel_bone_matrix_size += new_animation_message.bone_matrix_num;
+	globel_parent_id_size += static_cast<pancy_object_id>(bone_parent_id_num);
+
+	skin_animation_message.push_back(new_animation_message);
+
+	return PancystarEngine::succeed;
+}
+PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(const float &play_time)
+{
+	PancystarEngine::EngineFailReason check_error;
+	//é‡æ–°ç»‘å®šä¸‰ç»„bindlessæè¿°ç¬¦
+	skin_mesh_animation_buffer_descriptor.BuildShaderResourceViewFromHead(skin_animation_matrix_descriptor, skin_animation_matrix_buffer);
+	skin_mesh_parent_id_descriptor.BuildShaderResourceViewFromHead(skin_parent_id_descriptor, skin_parent_id_buffer);
+	skin_mesh_offset_matrix_descriptor.BuildShaderResourceViewFromHead(skin_offset_matrix_descriptor, skin_offset_matrix_buffer);
+	//åˆ›å»ºç¬¬ä¸€ä¸ªshader
+	PancyRenderCommandList* m_commandList_animation_sample;
+	PancyThreadIdGPU commdlist_id_animation_sample;
+	ID3D12PipelineState* pso_data;
+	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetPsoData(render_param_id_animation_sample, &pso_data);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data, &m_commandList_animation_sample, commdlist_id_animation_sample);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//å¼€å¯UAVçŠ¶æ€
+	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
+	auto bone_matrix_res = GetBufferResourceData(skin_naimation_buffer[now_render_num]->GetBoneMatrixResource(0), check_error);
+	check_error = bone_matrix_res->ResourceBarrier(m_commandList_animation_sample, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	auto compute_globel_id_res = GetBufferResourceData(skin_naimation_buffer[now_render_num]->GetBoneIDResource(), check_error);
+	check_error = compute_globel_id_res->ResourceBarrier(m_commandList_animation_sample, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	for (int32_t drawcall = 0; drawcall < skin_animation_message.size(); ++drawcall)
+	{
+		DirectX::XMUINT4 animation_id_param;
+		animation_id_param.x = drawcall;
+		animation_id_param.y = skin_animation_message[drawcall].bone_matrix_num;
+		animation_id_param.z = skin_animation_message[drawcall].animation_resample_num;
+		DirectX::XMUINT4 animation_begin_param;
+		animation_begin_param.x = skin_animation_message[drawcall].bone_matrix_offset_from_begin;
+		animation_begin_param.y = skin_animation_message[drawcall].animation_start_pos;
+		DirectX::XMFLOAT4 animation_play_param;
+		animation_play_param.x = play_time;
+		PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id_animation_sample, "animation_sample_param","animation_id_param",animation_id_param,0);
+		PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id_animation_sample, "animation_sample_param", "animation_begin_param", animation_begin_param, 0);
+		PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferFloat4(render_param_id_animation_sample, "animation_sample_param", "animation_play_param", animation_play_param, 0);
+		check_error = PancystarEngine::RenderParamSystem::GetInstance()->AddRenderParamToCommandList(render_param_id_animation_sample, m_commandList_animation_sample, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//åˆ¶ä½œè®¡ç®—å‘½ä»¤
+		pancy_object_id thread_group_size;
+		thread_group_size = skin_animation_message[drawcall].bone_matrix_num / 64;
+		if (skin_animation_message[drawcall].bone_matrix_num % 64 != 0)
+		{
+			thread_group_size += 1;
+		}
+		m_commandList_animation_sample->GetCommandList()->Dispatch(thread_group_size, 1, 1);
+		
+	}
+	//å…³é—­UAVçŠ¶æ€
+	check_error = bone_matrix_res->ResourceBarrier(m_commandList_animation_sample, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = compute_globel_id_res->ResourceBarrier(m_commandList_animation_sample, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	m_commandList_animation_sample->UnlockPrepare();
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_animation_sample);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//åˆ›å»ºç¬¬äºŒä¸ªshader
+	PancyRenderCommandList* m_commandList_bone_tree;
+	PancyThreadIdGPU commdlist_id_bone_tree;
+	ID3D12PipelineState* pso_data_bone_tree;
+	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetPsoData(render_param_id_bone_compute[0], &pso_data_bone_tree);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data_bone_tree, &m_commandList_bone_tree, commdlist_id_bone_tree);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = bone_matrix_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = compute_globel_id_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+
+	auto bone_matrix2_res = GetBufferResourceData(skin_naimation_buffer[now_render_num]->GetBoneMatrixResource(1), check_error);
+	check_error = bone_matrix2_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	for (int32_t drawcall = 0; drawcall < 6; ++drawcall)
+	{
+		DirectX::XMUINT4 draw_pass_id_param;
+		draw_pass_id_param.x = drawcall;
+		draw_pass_id_param.y = globel_bone_matrix_size;
+		DirectX::XMUINT4 bone_id_param;
+		bone_id_param.x = 8;
+
+		PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id_bone_compute[drawcall], "animation_sample_param", "draw_pass_id_param", draw_pass_id_param, 0);
+		PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id_bone_compute[drawcall], "animation_sample_param", "bone_id_param", bone_id_param, 0);
+		check_error = PancystarEngine::RenderParamSystem::GetInstance()->AddRenderParamToCommandList(render_param_id_bone_compute[drawcall], m_commandList_bone_tree, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE);
+		if (!check_error.CheckIfSucceed())
+		{
+			return check_error;
+		}
+		//åˆ¶ä½œè®¡ç®—å‘½ä»¤
+		pancy_object_id thread_group_size;
+		thread_group_size = globel_bone_matrix_size / 64;
+		if (globel_bone_matrix_size % 64 != 0)
+		{
+			thread_group_size += 1;
+		}
+		m_commandList_bone_tree->GetCommandList()->Dispatch(thread_group_size, 1, 1);
+		if (drawcall % 2 == 0) 
+		{
+			check_error = bone_matrix_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			check_error = bone_matrix2_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+		}
+		else 
+		{
+			check_error = bone_matrix_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+			check_error = bone_matrix2_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			if (!check_error.CheckIfSucceed())
+			{
+				return check_error;
+			}
+		}
+	}
+
+	
+	check_error = bone_matrix2_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = compute_globel_id_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = bone_matrix_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+
+	m_commandList_bone_tree->UnlockPrepare();
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_bone_tree);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//åˆ›å»ºç¬¬ä¸‰ä¸ªshader
+	PancyRenderCommandList* m_commandList_combine;
+	PancyThreadIdGPU commdlist_id_combine;
+	ID3D12PipelineState* pso_data_combine;
+	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetPsoData(render_param_id_combine_matrix, &pso_data_combine);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data_combine, &m_commandList_combine, commdlist_id_combine);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = bone_matrix_res->ResourceBarrier(m_commandList_combine, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = bone_matrix2_res->ResourceBarrier(m_commandList_combine, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	DirectX::XMUINT4 bone_size_param;
+	bone_size_param.x = globel_bone_matrix_size;
+	PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id_combine_matrix, "animation_sample_param", "bone_size_param", bone_size_param, 0);
+	check_error = PancystarEngine::RenderParamSystem::GetInstance()->AddRenderParamToCommandList(render_param_id_combine_matrix, m_commandList_combine, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	//åˆ¶ä½œè®¡ç®—å‘½ä»¤
+	pancy_object_id thread_group_size;
+	thread_group_size = globel_bone_matrix_size / 64;
+	if (globel_bone_matrix_size % 64 != 0)
+	{
+		thread_group_size += 1;
+	}
+	m_commandList_combine->GetCommandList()->Dispatch(thread_group_size, 1, 1);
+	check_error = bone_matrix_res->ResourceBarrier(m_commandList_combine, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	check_error = bone_matrix2_res->ResourceBarrier(m_commandList_combine, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
+	m_commandList_combine->UnlockPrepare();
+	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_combine);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	return PancystarEngine::succeed;
 }
-//Ìî³ääÖÈ¾commandlist
+//å¡«å……æ¸²æŸ“commandlist
 PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
+	const pancy_object_id& bone_block_ID,
 	VirtualResourcePointer &mesh_buffer,
 	const pancy_object_id &vertex_num,
 	const PancyRenderParamID &render_param_id,
 	const pancy_resource_size &matrix_num,
-	const DirectX::XMFLOAT4X4 *matrix_data,
 	SkinAnimationBlock &animation_block_pos,
 	PancyRenderCommandList *m_commandList_skin
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	pancy_object_id bone_block_ID;
 	pancy_object_id skin_animation_block_ID;
-	PancystarEngine::SkinAnimationBlock bone_block_pos;
-	//¸ù¾İäÖÈ¾Ä£ĞÍµÄ¶¥µãÊı¾İÇëÇóÒ»¿é¶¯»­´æ´¢ÏÔ´æ
+	PancystarEngine::AnimationStartMessage bone_block_pos;
+	//æ ¹æ®æ¸²æŸ“æ¨¡å‹çš„é¡¶ç‚¹æ•°æ®è¯·æ±‚ä¸€å—åŠ¨ç”»å­˜å‚¨æ˜¾å­˜
 	check_error = BuildAnimationBlock(vertex_num, skin_animation_block_ID, animation_block_pos);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//¸ù¾İäÖÈ¾Ä£ĞÍµÄ¹Ç÷ÀÊı¾İÇëÇóÒ»¿é¹Ç÷À¾ØÕóÏÔ´æ
-	check_error = BuildBoneBlock(matrix_num, matrix_data, bone_block_ID, bone_block_pos);
-	if (!check_error.CheckIfSucceed())
+	//è·å–å½“å‰drawcallä¹‹å‰ç”³è¯·çš„éª¨éª¼æ•°æ®
+	if (skin_animation_message[bone_block_ID].bone_matrix_num != matrix_num+2)
 	{
-		return check_error;
+		PancystarEngine::EngineFailReason error_message(E_FAIL, "build skin mesh commondlist error: matrix num dismatch");
+		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancySkinAnimationControl::BuildCommandList", error_message);
+		return error_message;
 	}
-	//»ñÈ¡äÖÈ¾ÃèÊö·û
+	bone_block_pos = skin_animation_message[bone_block_ID];
+	//è·å–æ¸²æŸ“æè¿°ç¬¦
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->AddRenderParamToCommandList(render_param_id, m_commandList_skin, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//Ìî³ä³£Á¿»º³åÇø
+	//å¡«å……å¸¸é‡ç¼“å†²åŒº
 	DirectX::XMUINT4 data_offset;
 	DirectX::XMUINT4 data_num;
-	data_offset.x = static_cast<uint32_t>(bone_block_pos.start_pos);
+	data_offset.x = static_cast<uint32_t>(bone_block_pos.bone_matrix_offset_from_begin);
 	data_offset.y = static_cast<uint32_t>(animation_block_pos.start_pos);
 	data_num.x = vertex_num;
 	data_num.y = static_cast<uint32_t>(matrix_num);
@@ -354,7 +856,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
 	{
 		return check_error;
 	}
-	//ĞŞ¸Äµ±Ç°ÊäÈë¶¥µã×ÊÔ´µÄÊ¹ÓÃ¸ñÊ½
+	//ä¿®æ”¹å½“å‰è¾“å…¥é¡¶ç‚¹èµ„æºçš„ä½¿ç”¨æ ¼å¼
 	auto now_resource_data = mesh_buffer.GetResourceData();
 	auto vertex_input_gpu_buffer = GetBufferResourceData(mesh_buffer, check_error);
 	if (!check_error.CheckIfSucceed())
@@ -366,17 +868,23 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
 	{
 		return check_error;
 	}
-	//ĞŞ¸Äµ±Ç°Êä³ö¶¥µã×ÊÔ´µÄÊ¹ÓÃ¸ñÊ½
+	//ä¿®æ”¹å½“å‰è¾“å‡ºé¡¶ç‚¹èµ„æºçš„ä½¿ç”¨æ ¼å¼
 	pancy_object_id now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
-	VirtualResourcePointer &bone_matrix_resource = skin_naimation_buffer[now_frame]->GetBoneMatrixResource();
+	VirtualResourcePointer &bone_matrix_resource = skin_naimation_buffer[now_frame]->GetBoneMatrixResource(1);
 	VirtualResourcePointer &skin_vertex_resource = skin_naimation_buffer[now_frame]->GetSkinVertexResource();
+	auto bone_input_buffer = GetBufferResourceData(bone_matrix_resource, check_error);
+	check_error = bone_input_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	auto vertex_output_gpu_buffer = GetBufferResourceData(skin_vertex_resource, check_error);
 	check_error = vertex_output_gpu_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//Ìá½»¼ÆËãÃüÁî
+	//æäº¤è®¡ç®—å‘½ä»¤
 	pancy_object_id thread_group_size;
 	thread_group_size = vertex_num / threadBlockSize;
 	if (vertex_num % threadBlockSize != 0)
@@ -384,7 +892,12 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
 		thread_group_size += 1;
 	}
 	m_commandList_skin->GetCommandList()->Dispatch(thread_group_size, 1, 1);
-	//»¹Ô­×ÊÔ´×´Ì¬
+	//è¿˜åŸèµ„æºçŠ¶æ€
+	check_error = bone_input_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
+	if (!check_error.CheckIfSucceed())
+	{
+		return check_error;
+	}
 	check_error = vertex_input_gpu_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
 	if (!check_error.CheckIfSucceed())
 	{

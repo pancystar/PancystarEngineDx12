@@ -3,13 +3,14 @@
 #include"PancyRenderParam.h"
 namespace PancystarEngine 
 {
-	//¹Ç÷À¶¯»­»º³åÇø¿é
+#define MaxSkinAnimationComputeNum 4096
+	//éª¨éª¼åŠ¨ç”»ç¼“å†²åŒºå—
 	struct SkinAnimationBlock
 	{
 		pancy_resource_size start_pos;
 		pancy_resource_size block_size;
 	};
-	//¶¥µã¶¯»­Êı¾İ
+	//é¡¶ç‚¹åŠ¨ç”»æ•°æ®
 	struct mesh_animation_data
 	{
 		DirectX::XMFLOAT3 position;
@@ -23,67 +24,129 @@ namespace PancystarEngine
 			tangent = DirectX::XMFLOAT3(0, 0, 0);
 		}
 	};
-	//¹Ç÷À¶¯»­»º³åÇø
+	//éª¨éª¼åŠ¨ç”»ç¼“å†²åŒº
 	class PancySkinAnimationBuffer
 	{
-		//»º³åÇøµÄ´óĞ¡
-		pancy_resource_size animation_buffer_size;//´æ´¢ÃÉÆ¤½á¹ûµÄ»º³åÇøµÄ´óĞ¡
-		pancy_resource_size bone_buffer_size;//´æ´¢¹Ç÷À¾ØÕóµÄ»º³åÇøµÄ´óĞ¡
+		//ç¼“å†²åŒºçš„å¤§å°
+		pancy_resource_size animation_buffer_size;//å­˜å‚¨è’™çš®ç»“æœçš„ç¼“å†²åŒºçš„å¤§å°
+		pancy_resource_size bone_buffer_size;//å­˜å‚¨éª¨éª¼çŸ©é˜µçš„ç¼“å†²åŒºçš„å¤§å°
 
-		//µ±Ç°ÒÑ¾­±»Õ¼ÓÃµÄÖ¸ÕëÎ»ÖÃ
-		pancy_resource_size now_used_position_animation;//µ±Ç°¶¯»­½á¹û»º³åÇøµÄÊ¹ÓÃÇé¿öÖ¸Õë
-		pancy_resource_size now_used_position_bone;//µ±Ç°¹Ç÷À¾ØÕó»º³åÇøµÄÊ¹ÓÃÇé¿öÖ¸Õë
+		//å½“å‰å·²ç»è¢«å ç”¨çš„æŒ‡é’ˆä½ç½®
+		pancy_resource_size now_used_position_animation;//å½“å‰åŠ¨ç”»ç»“æœç¼“å†²åŒºçš„ä½¿ç”¨æƒ…å†µæŒ‡é’ˆ
+		pancy_resource_size now_used_position_bone;//å½“å‰éª¨éª¼çŸ©é˜µç¼“å†²åŒºçš„ä½¿ç”¨æƒ…å†µæŒ‡é’ˆ
 
-		//´æ´¢Ã¿Ò»¸ö¹Ç÷À¶¯»­µÄCompute Shader¼ÆËãÎ»ÖÃ
+		//å­˜å‚¨æ¯ä¸€ä¸ªéª¨éª¼åŠ¨ç”»çš„Compute Shaderè®¡ç®—ä½ç½®
 		std::unordered_map<pancy_object_id, SkinAnimationBlock> animation_block_map;
-		//´æ´¢Ã¿Ò»¸ö¹Ç÷À¾ØÕóÇøÓòµÄÆğÊ¼Î»ÖÃ
+		//å­˜å‚¨æ¯ä¸€ä¸ªéª¨éª¼çŸ©é˜µåŒºåŸŸçš„èµ·å§‹ä½ç½®
 		std::unordered_map<pancy_object_id, SkinAnimationBlock> bone_block_map;
-		//¹Ç÷À¶¯»­»º³åÇøµÄÊı¾İ
-		VirtualResourcePointer buffer_animation;         //¶¯»­½á¹û»º³åÇø
-		std::vector<VirtualResourcePointer> buffer_bone; //¹Ç÷À¾ØÕó»º³åÇø
-		VirtualResourcePointer buffer_globel_index;      //½ÚµãÈ«¾ÖĞòºÅ»º³åÇø
+		//éª¨éª¼åŠ¨ç”»ç¼“å†²åŒºçš„æ•°æ®
+		VirtualResourcePointer buffer_animation;         //åŠ¨ç”»ç»“æœç¼“å†²åŒº
+		std::vector<VirtualResourcePointer> buffer_bone; //éª¨éª¼çŸ©é˜µç¼“å†²åŒº
+		std::vector<VirtualResourcePointer> buffer_globel_index;      //èŠ‚ç‚¹å…¨å±€åºå·ç¼“å†²åŒº
+
+		PancystarEngine::BindDescriptorPointer bone_matrix_descriptor_uav;
+		PancystarEngine::BindDescriptorPointer globel_id_descriptor_uav;
+
+		PancystarEngine::BindDescriptorPointer bone_matrix_descriptor_srv;
+		PancystarEngine::BindDescriptorPointer globel_id_descriptor_srv;
 	public:
 		PancySkinAnimationBuffer(const pancy_resource_size &animation_buffer_size_in, const pancy_resource_size &bone_buffer_size_in);
 		~PancySkinAnimationBuffer();
 		PancystarEngine::EngineFailReason Create();
-		//Çå¿Õµ±Ç°ËùÓĞÊ¹ÓÃµÄ¹Ç÷À¶¯»­Êı¾İ(ÓÉÓÚ¶¯»­Êı¾İÖğÖ¡ÖØÖÃ£¬²»ĞèÒª¿¼ÂÇËæ»úÑ°Ö·ÀàĞÍµÄÔöÉ¾²é¸Ä)
+		//æ¸…ç©ºå½“å‰æ‰€æœ‰ä½¿ç”¨çš„éª¨éª¼åŠ¨ç”»æ•°æ®(ç”±äºåŠ¨ç”»æ•°æ®é€å¸§é‡ç½®ï¼Œä¸éœ€è¦è€ƒè™‘éšæœºå¯»å€ç±»å‹çš„å¢åˆ æŸ¥æ”¹)
 		void ClearUsedBuffer();
-		//´Óµ±Ç°ÃÉÆ¤½á¹û»º³åÇøÖĞÇëÇóÒ»¿éÊı¾İÇø(ÃÉÆ¤½á¹ûÊı¾İÇøÓÉGPUÌî³äÊı¾İ£¬Òò¶øÖ»ĞèÒª¿ª±Ù)
+		//ä»å½“å‰è’™çš®ç»“æœç¼“å†²åŒºä¸­è¯·æ±‚ä¸€å—æ•°æ®åŒº(è’™çš®ç»“æœæ•°æ®åŒºç”±GPUå¡«å……æ•°æ®ï¼Œå› è€Œåªéœ€è¦å¼€è¾Ÿ)
 		PancystarEngine::EngineFailReason BuildAnimationBlock(
 			const pancy_resource_size &vertex_num,
 			pancy_object_id &block_id,
 			SkinAnimationBlock &new_animation_block
 		);
-		//´Óµ±Ç°¹Ç÷À¾ØÕó»º³åÇøÖĞÇëÇóÒ»¿éÊı¾İÇø(¹Ç÷À¾ØÕóÊı¾İÇøÓÉCPUÌî³äÊı¾İ£¬Òò¶øĞèÒª½«Ìî³äÊı¾İÒ»²¢´«Èë)
+		//ä»å½“å‰éª¨éª¼çŸ©é˜µç¼“å†²åŒºä¸­è¯·æ±‚ä¸€å—æ•°æ®åŒº(éª¨éª¼çŸ©é˜µæ•°æ®åŒºç”±CPUå¡«å……æ•°æ®ï¼Œå› è€Œéœ€è¦å°†å¡«å……æ•°æ®ä¸€å¹¶ä¼ å…¥)
 		PancystarEngine::EngineFailReason BuildBoneBlock(
 			const pancy_resource_size &matrix_num,
-			const DirectX::XMFLOAT4X4 *matrix_data,
 			pancy_object_id &block_id,
 			SkinAnimationBlock &new_bone_block
 		);
-		//»ñÈ¡¾ØÕó´æ´¢»º³åÇø
-		inline VirtualResourcePointer& GetBoneMatrixResource()
+		//è·å–çŸ©é˜µå­˜å‚¨ç¼“å†²åŒº
+		inline VirtualResourcePointer& GetBoneMatrixResource(const pancy_object_id &frame_id)
 		{
-			return buffer_bone[0];
+			return buffer_bone[frame_id];
 		}
-		//»ñÈ¡ÃÉÆ¤½á¹û»º³åÇø
+		//è·å–è’™çš®ç»“æœç¼“å†²åŒº
 		inline VirtualResourcePointer& GetSkinVertexResource()
 		{
 			return buffer_animation;
 		}
+		//è·å–éª¨éª¼idå·ç¼“å†²åŒº
+		inline VirtualResourcePointer& GetBoneIDResource()
+		{
+			return buffer_globel_index[0];
+		}
 	};
-	//È«¾Ö¹Ç÷À¶¯»­¿ØÖÆÆ÷
+	struct AnimationStartMessage
+	{
+		//å½“å‰çš„éª¨éª¼ä¿¡æ¯
+		pancy_object_id bone_matrix_offset_from_begin;
+		pancy_object_id bone_matrix_num;
+		//å½“å‰çš„çˆ¶éª¨éª¼idä¿¡æ¯
+		pancy_object_id bone_parent_id_offset_from_begin;
+		pancy_object_id bone_parent_id_num;
+		//å½“å‰çš„åŠ¨ç”»ä¿¡æ¯
+		pancy_object_id drawcall_id;
+		pancy_object_id animation_resample_num;
+		pancy_object_id animation_start_pos;//åŠ¨ç”»æ•°æ®çš„èµ·å§‹ç‚¹(å³é€‰æ‹©æ’­æ”¾çš„æ˜¯å“ªä¸ªåŠ¨ç”»)
+		//å½“å‰çš„éª¨éª¼åç§»ä¿¡æ¯
+		pancy_object_id offset_matrix_offset_from_begin;
+		pancy_object_id offset_matrix_num;
+		//å½“å‰çš„éª¨éª¼çŸ©é˜µç”³è¯·æƒ…å†µ
+		pancy_object_id bone_buffer_block_id;
+
+	};
+	//å…¨å±€éª¨éª¼åŠ¨ç”»æ§åˆ¶å™¨
 	class PancySkinAnimationControl
 	{
-		pancy_resource_size animation_buffer_size;                    //´æ´¢¶¯»­½á¹ûµÄ»º³åÇø´óĞ¡
-		pancy_resource_size bone_buffer_size;                         //´æ´¢¹Ç÷À¾ØÕóµÄ»º³åÇø´óĞ¡
-		pancy_object_id PSO_skinmesh;                                 //¹Ç÷À¶¯»­µÄäÖÈ¾×´Ì¬±í
-		std::vector<PancySkinAnimationBuffer*> skin_naimation_buffer; //¹Ç÷À¶¯»­µÄ»º³åÇøĞÅÏ¢
+		PancyDescriptorHeapDynamic skin_mesh_animation_buffer_descriptor;
+		PancyDescriptorHeapDynamic skin_mesh_offset_matrix_descriptor;
+		PancyDescriptorHeapDynamic skin_mesh_parent_id_descriptor;
+
+		pancy_resource_size animation_buffer_size;                    //å­˜å‚¨åŠ¨ç”»ç»“æœçš„ç¼“å†²åŒºå¤§å°
+		pancy_resource_size bone_buffer_size;                         //å­˜å‚¨éª¨éª¼çŸ©é˜µçš„ç¼“å†²åŒºå¤§å°
+
+		pancy_object_id PSO_skinmesh_animation_interpolation;         //éª¨éª¼åŠ¨ç”»çš„æ’å€¼é˜¶æ®µ
+		pancy_object_id PSO_skinmesh_skintree_desample;               //éª¨éª¼åŠ¨ç”»çš„éª¨éª¼æ ‘ä¸‹é‡‡æ ·é˜¶æ®µ
+		pancy_object_id PSO_skinmesh_cluster_combine;                 //éª¨éª¼åŠ¨ç”»çš„çŸ©é˜µåˆå¹¶é˜¶æ®µ
+		//è®¡ç®—ç€è‰²å™¨çš„æ¸²æŸ“å•å…ƒidå·
+		PancystarEngine::PancyRenderParamID render_param_id_animation_sample;
+		PancystarEngine::PancyRenderParamID render_param_id_bone_compute[10];
+		PancystarEngine::PancyRenderParamID render_param_id_combine_matrix;
+
+		pancy_object_id PSO_skinmesh;                                 //éª¨éª¼åŠ¨ç”»çš„æ¸²æŸ“çŠ¶æ€è¡¨
+		std::vector<PancySkinAnimationBuffer*> skin_naimation_buffer; //éª¨éª¼åŠ¨ç”»çš„ç¼“å†²åŒºä¿¡æ¯
+		//todo:è¿™é‡Œæš‚æ—¶å…ˆä½¿ç”¨shared_pträ¹‹åéœ€è¦æ”¹æˆweak
+		pancy_object_id bone_count_time_num = 0;
+		std::vector<VirtualResourcePointer> skin_animation_matrix_buffer; //éª¨éª¼çš„åŠ¨ç”»çŸ©é˜µç¼“å†²åŒºä¿¡æ¯
+		std::vector<VirtualResourcePointer> skin_offset_matrix_buffer;    //éª¨éª¼çš„åç§»çŸ©é˜µç¼“å†²åŒºä¿¡æ¯
+		std::vector<VirtualResourcePointer> skin_parent_id_buffer;        //éª¨éª¼çš„çˆ¶éª¨éª¼ç¼“å†²åŒºä¿¡æ¯
+
+		std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> skin_animation_matrix_descriptor;     //éª¨éª¼åŠ¨ç”»çš„éª¨éª¼çŸ©é˜µç¼“å†²åŒºä¿¡æ¯
+		std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> skin_offset_matrix_descriptor;   //éª¨éª¼åŠ¨ç”»çš„åç§»çŸ©é˜µç¼“å†²åŒºä¿¡æ¯
+		std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> skin_parent_id_descriptor;       //éª¨éª¼åŠ¨ç”»çš„çˆ¶éª¨éª¼idç¼“å†²åŒºä¿¡æ¯
+
+		std::vector<AnimationStartMessage> skin_animation_message;              //éª¨éª¼åŠ¨ç”»çš„ä½ç½®ä¿¡æ¯
+		pancy_object_id globel_bone_matrix_size = 0;
+		pancy_object_id globel_offset_matrix_size = 0;
+		pancy_object_id globel_parent_id_size = 0;
+		//åˆå§‹åŒ–
 		PancySkinAnimationControl(
 			const pancy_resource_size &animation_buffer_size_in,
 			const pancy_resource_size &bone_buffer_size_in
 		);
 		PancystarEngine::EngineFailReason Create();
+		//ä¸´æ—¶å­˜å‚¨äº¤æ¢ç¼“å†²åŒºæè¿°ç¬¦
+		BindDescriptorPointer buffer_descriptor_srv_id1;
+		BindDescriptorPointer buffer_descriptor_srv_id2;
+		BindDescriptorPointer buffer_descriptor_uav_id1;
+		BindDescriptorPointer buffer_descriptor_uav_id2;
 	public:
 		static PancySkinAnimationControl *this_instance;
 		static PancystarEngine::EngineFailReason SingleCreate(
@@ -109,32 +172,69 @@ namespace PancystarEngine
 		{
 			return this_instance;
 		}
-		//Çå¿Õµ±Ç°Ö¡µÄ»º³åÇøÊ¹ÓÃĞÅÏ¢
+		//æ¸…ç©ºå½“å‰å¸§çš„ç¼“å†²åŒºä½¿ç”¨ä¿¡æ¯
 		void ClearUsedBuffer();
-		//Ìî³ääÖÈ¾commandlist
+		//è®¡ç®—éª¨éª¼çŸ©é˜µ
+		PancystarEngine::EngineFailReason ComputeBoneMatrix(const float &play_time);
+		//å¡«å……æ¸²æŸ“commandlist
 		PancystarEngine::EngineFailReason BuildCommandList(
+			const pancy_object_id& bone_block_id,
 			VirtualResourcePointer &mesh_buffer,
 			const pancy_object_id &vertex_num,
 			const PancyRenderParamID &render_param_id,
 			const pancy_resource_size &matrix_num,
-			const DirectX::XMFLOAT4X4 *matrix_data,
 			SkinAnimationBlock &new_animation_block,
 			PancyRenderCommandList *m_commandList_skin
 		);
+		//ä»å½“å‰éª¨éª¼çŸ©é˜µç¼“å†²åŒºä¸­è¯·æ±‚ä¸€å—æ•°æ®åŒº(éª¨éª¼çŸ©é˜µæ•°æ®åŒºç”±CPUå¡«å……æ•°æ®ï¼Œå› è€Œéœ€è¦å°†å¡«å……æ•°æ®ä¸€å¹¶ä¼ å…¥)
+		PancystarEngine::EngineFailReason BuildBoneBlock(
+			VirtualResourcePointer& animation_matrix_buffer,
+			VirtualResourcePointer& offset_matrix_buffer,
+			VirtualResourcePointer& parent_id_buffer,
+			const D3D12_SHADER_RESOURCE_VIEW_DESC& animation_buffer_descriptor,
+			const D3D12_SHADER_RESOURCE_VIEW_DESC& offset_matrix_descriptor,
+			const D3D12_SHADER_RESOURCE_VIEW_DESC& parent_id_descriptor,
+			const pancy_resource_size& animation_resample_num,
+			const pancy_resource_size& animation_start_pos,
+			const pancy_resource_size& offset_matrix_num,
+			const pancy_resource_size& bone_parent_id_num,
+			const pancy_resource_size& bone_matrix_num,
+			pancy_object_id& block_id,
+			SkinAnimationBlock& new_bone_block
+		);
 		~PancySkinAnimationControl();
 	private:
-		//´Óµ±Ç°ÃÉÆ¤½á¹û»º³åÇøÖĞÇëÇóÒ»¿éÊı¾İÇø(ÃÉÆ¤½á¹ûÊı¾İÇøÓÉGPUÌî³äÊı¾İ£¬Òò¶øÖ»ĞèÒª¿ª±Ù)
+		//ä»å½“å‰è’™çš®ç»“æœç¼“å†²åŒºä¸­è¯·æ±‚ä¸€å—æ•°æ®åŒº(è’™çš®ç»“æœæ•°æ®åŒºç”±GPUå¡«å……æ•°æ®ï¼Œå› è€Œåªéœ€è¦å¼€è¾Ÿ)
 		PancystarEngine::EngineFailReason BuildAnimationBlock(
 			const pancy_resource_size &vertex_num,
 			pancy_object_id &block_id,
 			SkinAnimationBlock &animation_block_pos
 		);
-		//´Óµ±Ç°¹Ç÷À¾ØÕó»º³åÇøÖĞÇëÇóÒ»¿éÊı¾İÇø(¹Ç÷À¾ØÕóÊı¾İÇøÓÉCPUÌî³äÊı¾İ£¬Òò¶øĞèÒª½«Ìî³äÊı¾İÒ»²¢´«Èë)
-		PancystarEngine::EngineFailReason BuildBoneBlock(
-			const pancy_resource_size &matrix_num,
-			const DirectX::XMFLOAT4X4 *matrix_data,
-			pancy_object_id &block_id,
-			SkinAnimationBlock &new_bone_block
+		//todo:ç§»æ¤åˆ°æè¿°ç¬¦ç®¡ç†
+		PancystarEngine::EngineFailReason BuildGlobelBufferDescriptorUAV(
+			const std::string& descriptor_name,
+			std::vector<VirtualResourcePointer>& buffer_data,
+			const pancy_resource_size &buffer_size,
+			const pancy_resource_size& per_element_size
 		);
+		PancystarEngine::EngineFailReason BuildGlobelBufferDescriptorSRV(
+			const std::string& descriptor_name,
+			std::vector<VirtualResourcePointer>& buffer_data,
+			const pancy_resource_size& buffer_size,
+			const pancy_resource_size& per_element_size
+			);
+		PancystarEngine::EngineFailReason BuildPrivateBufferDescriptorUAV(
+			std::vector<VirtualResourcePointer>& buffer_data,
+			const pancy_resource_size& buffer_size,
+			const pancy_resource_size& per_element_size,
+			BindDescriptorPointer& descriptor_id
+		);
+		PancystarEngine::EngineFailReason BuildPrivateBufferDescriptorSRV(
+			std::vector<VirtualResourcePointer>& buffer_data,
+			const pancy_resource_size& buffer_size,
+			const pancy_resource_size& per_element_size,
+			BindDescriptorPointer& descriptor_id
+		);
+
 	};
 }

@@ -45,7 +45,7 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
 		return error_message;
 	}
-	//´´½¨Ö±½ÓäÖÈ¾¶ÓÁĞ
+	//åˆ›å»ºç›´æ¥æ¸²æŸ“é˜Ÿåˆ—
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -57,7 +57,7 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		return error_message;
 	}
 	command_queue_direct->SetName(PancystarEngine::PancyString("direct queue").GetUnicodeString().c_str());
-	//´´½¨¿½±´äÖÈ¾¶ÓÁĞ
+	//åˆ›å»ºæ‹·è´æ¸²æŸ“é˜Ÿåˆ—
 	D3D12_COMMAND_QUEUE_DESC queueDesc_copy = {};
 	queueDesc_copy.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc_copy.Type = D3D12_COMMAND_LIST_TYPE_COPY;
@@ -69,7 +69,7 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		return error_message;
 	}
 	command_queue_direct->SetName(PancystarEngine::PancyString("copy queue").GetUnicodeString().c_str());
-	//´´½¨¼ÆËãäÖÈ¾¶ÓÁĞ
+	//åˆ›å»ºè®¡ç®—æ¸²æŸ“é˜Ÿåˆ—
 	D3D12_COMMAND_QUEUE_DESC queueDesc_compute = {};
 	queueDesc_compute.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc_compute.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
@@ -81,8 +81,8 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		return error_message;
 	}
 	command_queue_direct->SetName(PancystarEngine::PancyString("Compute queue").GetUnicodeString().c_str());
-	//´´½¨ÓÃÓÚ×îÖÕÏú»Ù¶ÓÁĞÊ±£¬¼ì²équeue×´Ì¬µÄfence
-	//´´½¨ÓÃÓÚ½ÓÊÕgpuÍ¬²½ĞÅÏ¢µÄfence
+	//åˆ›å»ºç”¨äºæœ€ç»ˆé”€æ¯é˜Ÿåˆ—æ—¶ï¼Œæ£€æŸ¥queueçŠ¶æ€çš„fence
+	//åˆ›å»ºç”¨äºæ¥æ”¶gpuåŒæ­¥ä¿¡æ¯çš„fence
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&queue_fence_direct));
 	if (FAILED(hr))
 	{
@@ -104,13 +104,13 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDx12DeviceBasic::Init", error_message);
 		return error_message;
 	}
-	//´´½¨ÆÁÄ»
+	//åˆ›å»ºå±å¹•
 	check_error = ResetScreen(width, height);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
-	//´´½¨Ò»¸ö×ÊÔ´¶Ñ
+	//åˆ›å»ºä¸€ä¸ªèµ„æºå †
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 	rtvHeapDesc.NumDescriptors = FrameCount;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
@@ -122,9 +122,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		return error_message;
 
 	}
-	//»ñÈ¡×ÊÔ´¶ÑµÄÆ«ÒÆ´óĞ¡
+	//è·å–èµ„æºå †çš„åç§»å¤§å°
 	auto rtv_offset = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	//ÔÚ×ÊÔ´¶ÑÉÏ´´½¨RTV
+	//åœ¨èµ„æºå †ä¸Šåˆ›å»ºRTV
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
 	for (UINT n = 0; n < FrameCount; n++)
 	{
@@ -135,9 +135,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 		m_device->CreateRenderTargetView(m_renderTargets[n].Get(), &rtv_desc, rtvHandle);
 		rtvHandle.Offset(1, rtv_offset);
 	}
-	//½ûÖ¹alt+»Ø³µÈ«ÆÁ
+	//ç¦æ­¢alt+å›è½¦å…¨å±
 	dxgi_factory->MakeWindowAssociation(hwnd_window, DXGI_MWA_NO_ALT_ENTER);
-	//¼ì²éÖ§³ÖµÄ¸ñÊ½
+	//æ£€æŸ¥æ”¯æŒçš„æ ¼å¼
 	D3D12_FEATURE_DATA_D3D12_OPTIONS formatInfo = { };
 	m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &formatInfo, sizeof(formatInfo));
 	return PancystarEngine::succeed;
@@ -145,7 +145,7 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 PancystarEngine::EngineFailReason PancyDx12DeviceBasic::ResetScreen(uint32_t window_width_in, uint32_t window_height_in)
 {
 	HRESULT hr;
-	//ÖØĞÂ´´½¨½»»»Á´
+	//é‡æ–°åˆ›å»ºäº¤æ¢é“¾
 	if (dx12_swapchain != NULL)
 	{
 		dx12_swapchain.Reset();
@@ -181,7 +181,7 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::ResetScreen(uint32_t win
 void PancyDx12DeviceBasic::FlushGpu()
 {
 	uint64_t fenceValueForSignal = 1;
-	//µÈ´ıäÖÈ¾¶ÓÁĞ½áÊø
+	//ç­‰å¾…æ¸²æŸ“é˜Ÿåˆ—ç»“æŸ
 	HANDLE wait_thread_ID_direct;
 	wait_thread_ID_direct = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (wait_thread_ID_direct == nullptr)
@@ -196,7 +196,7 @@ void PancyDx12DeviceBasic::FlushGpu()
 		WaitForSingleObject(wait_thread_ID_direct, INFINITE);
 	}
 	CloseHandle(wait_thread_ID_direct);
-	//µÈ´ı¼ÆËã¶ÓÁĞ½áÊø
+	//ç­‰å¾…è®¡ç®—é˜Ÿåˆ—ç»“æŸ
 	HANDLE wait_thread_ID_compute;
 	wait_thread_ID_compute = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (wait_thread_ID_compute == nullptr)
@@ -211,7 +211,7 @@ void PancyDx12DeviceBasic::FlushGpu()
 		WaitForSingleObject(wait_thread_ID_compute, INFINITE);
 	}
 	CloseHandle(wait_thread_ID_compute);
-	//µÈ´ı¿½±´¶ÓÁĞ½áÊø
+	//ç­‰å¾…æ‹·è´é˜Ÿåˆ—ç»“æŸ
 	HANDLE wait_thread_ID_copy;
 	wait_thread_ID_copy = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (wait_thread_ID_copy == nullptr)
@@ -237,10 +237,10 @@ void PancyDx12DeviceBasic::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdap
 		adapter->GetDesc1(&desc);
 		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
 		{
-			//Ìø¹ıCPUäÖÈ¾¹ı³Ì
+			//è·³è¿‡CPUæ¸²æŸ“è¿‡ç¨‹
 			continue;
 		}
-		//¼ìÑéÊÇ·ñÖ§³Ödx12
+		//æ£€éªŒæ˜¯å¦æ”¯æŒdx12
 		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, _uuidof(ID3D12Device), nullptr)))
 		{
 			break;

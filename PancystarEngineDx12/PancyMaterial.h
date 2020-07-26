@@ -9,13 +9,13 @@ namespace PancystarEngine
 		MaterialShaderResourceBufferBindLess,
 		MaterialShaderResourceTextureBindLess
 	};
-	//buffer×ÊÔ´µÄÃèÊö·û¸ñÊ½
+	//bufferèµ„æºçš„æè¿°ç¬¦æ ¼å¼
 	struct PancyBufferDescriptorDesc 
 	{
-		//»ù´¡ÊôĞÔ
+		//åŸºç¡€å±æ€§
 		DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN;
 		UINT Shader4ComponentMapping = 0;
-		//bufferÊôĞÔ
+		//bufferå±æ€§
 		UINT64 FirstElement = 0;
 		UINT NumElements = 0;
 		UINT StructureByteStride = 0;
@@ -28,13 +28,13 @@ namespace PancystarEngine
 	private:
 		void InitBasicVariable() override;
 	};
-	//buffer×ÊÔ´µÄshader°ó¶¨¸ñÊ½
+	//bufferèµ„æºçš„shaderç»‘å®šæ ¼å¼
 	struct PancyMaterialShaderResourceDataBuffer
 	{
 		MaterialShaderResourceType shader_resource_type = MaterialShaderResourceBufferBind;
 		std::string shader_resource_slot_name;
 		std::vector<std::string> shader_resource_path;
-		std::vector<PancyBufferDescriptorDesc> buffer_descriptor_desc;//bufferµÄÃ¿¸öbufferµÄ¸ñÊ½(·ÇbindlessÔòÖ»ÓĞÒ»¸ö)
+		std::vector<PancyBufferDescriptorDesc> buffer_descriptor_desc;//bufferçš„æ¯ä¸ªbufferçš„æ ¼å¼(ébindlessåˆ™åªæœ‰ä¸€ä¸ª)
 	};
 	class PancyJsonMaterialBufferShaderResource:public PancyJsonReflectTemplate<PancyMaterialShaderResourceDataBuffer>
 	{
@@ -43,14 +43,14 @@ namespace PancystarEngine
 	private:
 		void InitBasicVariable() override;
 	};
-	//texture×ÊÔ´µÄÃèÊö·û¸ñÊ½
+	//textureèµ„æºçš„æè¿°ç¬¦æ ¼å¼
 	struct PancyTextureDescriptorDesc
 	{
-		//»ù´¡ÊôĞÔ
+		//åŸºç¡€å±æ€§
 		DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN;
 		D3D12_SRV_DIMENSION ViewDimension = D3D12_SRV_DIMENSION_UNKNOWN;
 		UINT Shader4ComponentMapping = 0;
-		//ÎÆÀíÊôĞÔ
+		//çº¹ç†å±æ€§
 		UINT MostDetailedMip = 0;
 		UINT MipLevels = 0;
 		UINT PlaneSlice = 0;
@@ -68,13 +68,13 @@ namespace PancystarEngine
 	private:
 		void InitBasicVariable() override;
 	};
-	//texture×ÊÔ´µÄshader°ó¶¨¸ñÊ½
+	//textureèµ„æºçš„shaderç»‘å®šæ ¼å¼
 	struct PancyMaterialShaderResourceDataTexture
 	{
 		MaterialShaderResourceType shader_resource_type = MaterialShaderResourceBufferBind;
 		std::string shader_resource_slot_name;
 		std::vector<std::string> shader_resource_path;
-		std::vector<PancyTextureDescriptorDesc> texture_descriptor_desc;//ÎÆÀíµÄÃ¿¸öbufferµÄ¸ñÊ½(·ÇbindlessÔòÖ»ÓĞÒ»¸ö)
+		std::vector<PancyTextureDescriptorDesc> texture_descriptor_desc;//çº¹ç†çš„æ¯ä¸ªbufferçš„æ ¼å¼(ébindlessåˆ™åªæœ‰ä¸€ä¸ª)
 	};
 	class PancyJsonMaterialTexureShaderResource :public PancyJsonReflectTemplate<PancyMaterialShaderResourceDataTexture>
 	{
@@ -83,13 +83,13 @@ namespace PancystarEngine
 	private:
 		void InitBasicVariable() override;
 	};
-	//ÆÕÍ¨²ÄÖÊµÄÊäÈë¸ñÊ½
+	//æ™®é€šæè´¨çš„è¾“å…¥æ ¼å¼
 	struct PancyCommonMaterialDesc
 	{
 		std::string pipeline_state_name;
-		//ËùÓĞÓÃµ½µÄ»º³åÇø
+		//æ‰€æœ‰ç”¨åˆ°çš„ç¼“å†²åŒº
 		std::vector<PancyMaterialShaderResourceDataBuffer> marterial_buffer_slot_data;
-		//ËùÓĞÓÃµ½µÄÎÆÀí
+		//æ‰€æœ‰ç”¨åˆ°çš„çº¹ç†
 		std::vector<PancyMaterialShaderResourceDataTexture> marterial_texture_slot_data;
 	};
 	class CommonMaterialDescJsonReflect :public PancyJsonReflectTemplate<PancyCommonMaterialDesc>
@@ -102,14 +102,14 @@ namespace PancystarEngine
 	class PancyMaterialBasic : public PancyCommonVirtualResource<PancyCommonMaterialDesc>
 	{
 		std::vector<VirtualResourcePointer> ShaderResourceData;
-		//äÖÈ¾ËùĞèµÄÃèÊö·ûÊı¾İ
-		std::unordered_map<std::string, BindDescriptorPointer> bind_shader_resource;         //Ë½ÓĞÃèÊö·û(²ÄÖÊ×¨ÓÃµÄ°ó¶¨×ÊÔ´£¬ĞèÒª´«Èë»ò´´½¨)
-		std::unordered_map<std::string, BindlessDescriptorPointer> bindless_shader_resource; //½â°ó¶¨ÃèÊö·û(²ÄÖÊ×¨ÓÃµÄ½â°ó¶¨×ÊÔ´£¬ĞèÒª´«Èë»ò´´½¨)
+		//æ¸²æŸ“æ‰€éœ€çš„æè¿°ç¬¦æ•°æ®
+		std::unordered_map<std::string, BindDescriptorPointer> bind_shader_resource;         //ç§æœ‰æè¿°ç¬¦(æè´¨ä¸“ç”¨çš„ç»‘å®šèµ„æºï¼Œéœ€è¦ä¼ å…¥æˆ–åˆ›å»º)
+		std::unordered_map<std::string, BindlessDescriptorPointer> bindless_shader_resource; //è§£ç»‘å®šæè¿°ç¬¦(æè´¨ä¸“ç”¨çš„è§£ç»‘å®šèµ„æºï¼Œéœ€è¦ä¼ å…¥æˆ–åˆ›å»º)
 	public:
 		PancyMaterialBasic(const bool &if_could_reload_in);
-		//¸ù¾İ×ÊÔ´¸ñÊ½´´½¨×ÊÔ´Êı¾İ
+		//æ ¹æ®èµ„æºæ ¼å¼åˆ›å»ºèµ„æºæ•°æ®
 		PancystarEngine::EngineFailReason LoadResoureDataByDesc(const PancyCommonMaterialDesc &ResourceDescStruct) override;
-		//´´½¨Ò»¸öäÖÈ¾param
+		//åˆ›å»ºä¸€ä¸ªæ¸²æŸ“param
 		PancystarEngine::EngineFailReason BuildRenderParam(PancyRenderParamID &render_param_id);
 		bool CheckIfResourceLoadFinish() override;;
 	private:

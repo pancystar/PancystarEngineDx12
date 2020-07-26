@@ -20,7 +20,7 @@ void CommonBufferJsonReflect::InitBasicVariable()
 	Init_Json_Data_Vatriable(reflect_data.buffer_res_desc.Flags);
 	Init_Json_Data_Vatriable(reflect_data.buffer_data_file);
 }
-//»ù´¡»º³åÇø
+//åŸºç¡€ç¼“å†²åŒº
 PancyBasicBuffer::PancyBasicBuffer(const bool &if_could_reload) :PancyCommonVirtualResource<PancyCommonBufferDesc>(if_could_reload)
 {
 }
@@ -41,7 +41,7 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::CopyCpuDataToBufferGpu(void*
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicBuffer::CopyCpuDataToBufferGpu", error_message);
 		return error_message;
 	}
-	//»ñÈ¡ÓÃÓÚ¿½±´µÄcommond list
+	//èŽ·å–ç”¨äºŽæ‹·è´çš„commond list
 	PancyRenderCommandList *copy_render_list;
 	PancyThreadIdGPU copy_render_list_ID;
 	auto check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
@@ -49,16 +49,16 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::CopyCpuDataToBufferGpu(void*
 	{
 		return check_error;
 	}
-	//¿½±´×ÊÔ´Êý¾Ý
+	//æ‹·è´èµ„æºæ•°æ®
 	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, cpu_data_pointer, data_size, *buffer_data);
 	if (!check_error.CheckIfSucceed())
 	{
 		return check_error;
 	}
 	copy_render_list->UnlockPrepare();
-	//Ìá½»äÖÈ¾ÃüÁî
+	//æäº¤æ¸²æŸ“å‘½ä»¤
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
-	//·ÖÅäµÈ´ýÑÛÎ»
+	//åˆ†é…ç­‰å¾…çœ¼ä½
 	PancyFenceIdGPU WaitFence;
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
 	check_error = buffer_data->SetResourceCopyBrokenFence(WaitFence);
@@ -72,7 +72,7 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::LoadResoureDataByDesc(const 
 {
 	PancystarEngine::EngineFailReason check_error;
 	ComPtr<ID3D12Resource> resource_data;
-	//ÔÚd3d²ã¼¶ÉÏ´´½¨Ò»¸öµ¥¶À¶ÑµÄbuffer×ÊÔ´
+	//åœ¨d3då±‚çº§ä¸Šåˆ›å»ºä¸€ä¸ªå•ç‹¬å †çš„bufferèµ„æº
 	D3D12_HEAP_TYPE heap_type = D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
 	D3D12_RESOURCE_STATES resource_build_state = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON;
 	switch (resource_desc.buffer_type)
@@ -126,7 +126,7 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::LoadResoureDataByDesc(const 
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicBuffer::InitResource", error_message);
 		return error_message;
 	}
-	//¼ÆËã»º³åÇøµÄ´óÐ¡£¬´´½¨×ÊÔ´¿é
+	//è®¡ç®—ç¼“å†²åŒºçš„å¤§å°ï¼Œåˆ›å»ºèµ„æºå—
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&resource_desc.buffer_res_desc, 0, 1, 0, nullptr, nullptr, nullptr, &subresources_size);
 	if (resource_desc.buffer_res_desc.Width != subresources_size)
 	{
@@ -144,11 +144,11 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::LoadResoureDataByDesc(const 
 		}
 	}
 
-	//Èç¹ûÐèÒª¿½±´Êý¾Ý£¬½«Êý¾Ý¿½±´µ½bufferÖÐ
+	//å¦‚æžœéœ€è¦æ‹·è´æ•°æ®ï¼Œå°†æ•°æ®æ‹·è´åˆ°bufferä¸­
 	if (resource_desc.buffer_type == Buffer_Index || resource_desc.buffer_type == Buffer_Vertex || resource_desc.buffer_type == Buffer_ShaderResource_static)
 	{
 		char* buffer_memory = NULL;
-		//todo:´ÓÎÄ¼þÖÐ¶ÁÈ¡buffer
+		//todo:ä»Žæ–‡ä»¶ä¸­è¯»å–buffer
 		if (resource_desc.buffer_data_file != "")
 		{
 			/*
@@ -227,7 +227,7 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResourceFromMemory
 	D3D12_RESOURCE_FLAGS flag
 )
 {
-	//´´½¨´æ´¢¶¯»­Êý¾ÝµÄ»º³åÇø×ÊÔ´(¾²Ì¬»º³åÇø)
+	//åˆ›å»ºå­˜å‚¨åŠ¨ç”»æ•°æ®çš„ç¼“å†²åŒºèµ„æº(é™æ€ç¼“å†²åŒº)
 	PancyCommonBufferDesc buffer_desc;
 	buffer_desc.buffer_type = Buffer_ShaderResource_static;
 	buffer_desc.buffer_res_desc.Alignment = 0;
@@ -250,7 +250,7 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResourceFromMemory
 	{
 		return check_error;
 	}
-	//»ñÈ¡Êý¾Ý¿½±´commondlist
+	//èŽ·å–æ•°æ®æ‹·è´commondlist
 	PancyRenderCommandList* copy_render_list;
 	PancyThreadIdGPU copy_render_list_ID;
 	check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
@@ -258,7 +258,7 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResourceFromMemory
 	{
 		return check_error;
 	}
-	//¿½±´×ÊÔ´Êý¾Ý
+	//æ‹·è´èµ„æºæ•°æ®
 	ResourceBlockGpu* buffer_gpu_resource = GetBufferResourceData(id_need, check_error);
 	if (!check_error.CheckIfSucceed())
 	{
@@ -270,9 +270,9 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResourceFromMemory
 		return check_error;
 	}
 	copy_render_list->UnlockPrepare();
-	//Ìá½»äÖÈ¾ÃüÁî
+	//æäº¤æ¸²æŸ“å‘½ä»¤
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SubmitRenderlist(1, &copy_render_list_ID);
-	//·ÖÅäµÈ´ýÑÛÎ»
+	//åˆ†é…ç­‰å¾…çœ¼ä½
 	PancyFenceIdGPU WaitFence;
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
 	check_error = buffer_gpu_resource->SetResourceCopyBrokenFence(WaitFence);

@@ -58,7 +58,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(
 	const type_info &enmu_list_type
 )
 {
-	//ÏÈ¼ìÑéÊÇ·ñ´æÔÚ¶ÔÓ¦ÀàĞÍµÄÃ¶¾Ù
+	//å…ˆæ£€éªŒæ˜¯å¦å­˜åœ¨å¯¹åº”ç±»å‹çš„æšä¸¾
 	auto enum_variable_type = enum_variable_list.find(enum_type);
 	if (enum_variable_type == enum_variable_list.end())
 	{
@@ -66,7 +66,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(
 		enum_variable_list.insert(std::pair<std::string, std::unordered_map<std::string,int32_t>>(enum_type, new_map));
 		enum_variable_type = enum_variable_list.find(enum_type);
 	}
-	//ÔÚ¶ÔÓ¦ÀàĞÍµÄÃ¶¾ÙÖĞÌí¼Ó±äÁ¿
+	//åœ¨å¯¹åº”ç±»å‹çš„æšä¸¾ä¸­æ·»åŠ å˜é‡
 	auto check_if_have_enum_name = enum_variable_type->second.find(variable_name);
 	if (check_if_have_enum_name != enum_variable_type->second.end())
 	{
@@ -75,7 +75,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(
 		return PancystarEngine::succeed;
 	}
 	enum_variable_type->second.insert(std::pair<std::string, int32_t>(variable_name, variable_value));
-	//Ìí¼Ó¶ÔÓ¦ÀàĞÍµÄÃ¶¾ÙÃû³Æ
+	//æ·»åŠ å¯¹åº”ç±»å‹çš„æšä¸¾åç§°
 	auto enum_list_type = enum_name_list.find(enum_type);
 	if (enum_list_type == enum_name_list.end())
 	{
@@ -91,7 +91,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(
 		return PancystarEngine::succeed;
 	}
 	enum_list_type->second.insert(std::pair<int32_t, std::string>(variable_value, variable_name));
-	//Ìí¼Óµ±Ç°Ã¶¾Ù±äÁ¿µÄÀàĞÍµ½ÀàĞÍ±í
+	//æ·»åŠ å½“å‰æšä¸¾å˜é‡çš„ç±»å‹åˆ°ç±»å‹è¡¨
 	json_type_map[enmu_self_type.hash_code()] = json_member_enum;
 	json_type_map[enmu_array_type.hash_code()] = json_member_enum_array;
 	json_type_map[enmu_list_type.hash_code()] = json_member_enum_list;
@@ -134,18 +134,18 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 {
 	if (enum_type_value == Json::Value::null)
 	{
-		//Î´ÄÜ»ñµÃjsonÊı¾İ
+		//æœªèƒ½è·å¾—jsonæ•°æ®
 		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value of variable " + member_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 		return error_mesage;
 	}
-	//ÕûÊıÊı¾İ
+	//æ•´æ•°æ•°æ®
 	else if (json_type == pancy_json_data_type::json_data_int)
 	{
 		if (enum_type_value.type() != Json::ValueType::intValue && enum_type_value.type() != Json::ValueType::uintValue)
 		{
 			int now_type_name = static_cast<int32_t>(enum_type_value.type());
-			//jsonÊı¾İ¶ÔÓ¦µÄÀàĞÍ²»ÊÇÕûÊıÀàĞÍ
+			//jsonæ•°æ®å¯¹åº”çš„ç±»å‹ä¸æ˜¯æ•´æ•°ç±»å‹
 			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable " + member_name + " need int but find " + name_value_type[now_type_name]);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 			return error_mesage;
@@ -159,39 +159,39 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 			variable_value.int_value = static_cast<int32_t>(enum_type_value.asUInt());
 		}
 	}
-	//¸¡µãÊıÊı¾İ
+	//æµ®ç‚¹æ•°æ•°æ®
 	else if (json_type == pancy_json_data_type::json_data_float)
 	{
 		if (enum_type_value.type() != Json::ValueType::realValue)
 		{
 			int now_type_name = static_cast<int32_t>(enum_type_value.type());
-			//jsonÊı¾İ¶ÔÓ¦µÄÀàĞÍ²»ÊÇ¸¡µãÀàĞÍ
+			//jsonæ•°æ®å¯¹åº”çš„ç±»å‹ä¸æ˜¯æµ®ç‚¹ç±»å‹
 			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable " + member_name + " need float but find " + name_value_type[now_type_name]);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 			return error_mesage;
 		}
 		variable_value.float_value = enum_type_value.asFloat();
 	}
-	//×Ö·û´®Êı¾İ
+	//å­—ç¬¦ä¸²æ•°æ®
 	else if (json_type == pancy_json_data_type::json_data_string)
 	{
 		if (enum_type_value.type() != Json::ValueType::stringValue)
 		{
 			int now_type_name = static_cast<int32_t>(enum_type_value.type());
-			//jsonÊı¾İ¶ÔÓ¦µÄÀàĞÍ²»ÊÇ¸¡µãÀàĞÍ
+			//jsonæ•°æ®å¯¹åº”çš„ç±»å‹ä¸æ˜¯æµ®ç‚¹ç±»å‹
 			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable " + member_name + " need string but find " + name_value_type[now_type_name]);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 			return error_mesage;
 		}
 		variable_value.string_value = enum_type_value.asCString();
 	}
-	//boolÊı¾İ
+	//boolæ•°æ®
 	else if (json_type == pancy_json_data_type::json_data_bool)
 	{
 		if (enum_type_value.type() != Json::ValueType::booleanValue)
 		{
 			int now_type_name = static_cast<int32_t>(enum_type_value.type());
-			//jsonÊı¾İ¶ÔÓ¦µÄÀàĞÍ²»ÊÇ¸¡µãÀàĞÍ
+			//jsonæ•°æ®å¯¹åº”çš„ç±»å‹ä¸æ˜¯æµ®ç‚¹ç±»å‹
 			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable " + member_name + " need bool but find " + name_value_type[now_type_name]);
 			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 			return error_mesage;
@@ -200,7 +200,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 	}
 	else 
 	{
-		//Î´ÄÜ»ñµÃjsonÊı¾İ
+		//æœªèƒ½è·å¾—jsonæ•°æ®
 		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not parse value of variable " + member_name);
 		PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
 		return error_mesage;
@@ -210,7 +210,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 void PancyJsonTool::SplitString(std::string str, const std::string &pattern, std::vector<std::string> &result)
 {
 	string::size_type pos;
-	str += pattern;//À©Õ¹×Ö·û´®ÒÔ·½±ã²Ù×÷
+	str += pattern;//æ‰©å±•å­—ç¬¦ä¸²ä»¥æ–¹ä¾¿æ“ä½œ
 	size_t size = str.size();
 	for (size_t i = 0; i < size; i++) {
 		pos = str.find(pattern, i);
@@ -223,7 +223,7 @@ void PancyJsonTool::SplitString(std::string str, const std::string &pattern, std
 }
 int32_t PancyJsonTool::GetEnumValue(const std::string &enum_type, const std::string &enum_name)
 {
-	//½â¾ö»òÔËËã
+	//è§£å†³æˆ–è¿ç®—
 	std::string now_string_deal = enum_name;
 	std::vector<std::string> all_string_list;
 	SplitString(now_string_deal,"|", all_string_list);
@@ -267,7 +267,7 @@ std::string PancyJsonTool::GetEnumName(const std::string &enum_type, int32_t enu
 	auto enum_value = enum_type_namepack->second.find(enum_num);
 	if (enum_value == enum_type_namepack->second.end()) 
 	{
-		//ÕÒ²»µ½¶ÔÓ¦µÄÃ¶¾ÙÀàĞÍ£¬³¢ÊÔ²ğ½â´¦ÀíÃ¶¾Ù»òÀàĞÍ
+		//æ‰¾ä¸åˆ°å¯¹åº”çš„æšä¸¾ç±»å‹ï¼Œå°è¯•æ‹†è§£å¤„ç†æšä¸¾æˆ–ç±»å‹
 		return DevideEnumValue(enum_num, enum_type_namepack->second);
 	}
 	return enum_value->second;
@@ -278,7 +278,7 @@ std::string PancyJsonTool::DevideEnumValue(const int32_t &enum_number, const std
 	int check_if_or_same = 0;
 	for (auto check_member : all_enum_member) 
 	{
-		//¼ì²éÃ¿Ò»¸öÃ¶¾Ù±äÁ¿ÊÇ·ñÊÇ¿É²ğ·ÖµÄ
+		//æ£€æŸ¥æ¯ä¸€ä¸ªæšä¸¾å˜é‡æ˜¯å¦æ˜¯å¯æ‹†åˆ†çš„
 		if (enum_number & check_member.first) 
 		{
 			check_if_or_same |= check_member.first;
@@ -337,7 +337,7 @@ PancystarEngine::EngineFailReason PancyJsonTool::WriteValueToJson(
 }
 void PancyJsonTool::InitBasicType()
 {
-	//×¢²áÊı×éÀàĞÍµÄÊı¾İ
+	//æ³¨å†Œæ•°ç»„ç±»å‹çš„æ•°æ®
 	json_type_map[typeid(int64_t*).hash_code()] = json_member_int64_array;
 	json_type_map[typeid(uint64_t*).hash_code()] = json_member_uint64_array;
 	json_type_map[typeid(int32_t*).hash_code()] = json_member_int32_array;
@@ -350,7 +350,7 @@ void PancyJsonTool::InitBasicType()
 	json_type_map[typeid(double*).hash_code()] = json_member_double_array;
 	json_type_map[typeid(bool*).hash_code()] = json_member_bool_array;
 	json_type_map[typeid(std::string*).hash_code()] = json_member_string_array;
-	//×¢²áÆÕÍ¨ÀàĞÍµÄÊı¾İ
+	//æ³¨å†Œæ™®é€šç±»å‹çš„æ•°æ®
 	json_type_map[typeid(int64_t).hash_code()] = json_member_int64;
 	json_type_map[typeid(uint64_t).hash_code()] = json_member_uint64;
 	json_type_map[typeid(int32_t).hash_code()] = json_member_int32;
@@ -363,7 +363,7 @@ void PancyJsonTool::InitBasicType()
 	json_type_map[typeid(double).hash_code()] = json_member_double;
 	json_type_map[typeid(bool).hash_code()] = json_member_bool;
 	json_type_map[typeid(std::string).hash_code()] = json_member_string;
-	//×¢²ávectorÀàĞÍµÄÊı¾İ
+	//æ³¨å†Œvectorç±»å‹çš„æ•°æ®
 	json_type_map[typeid(std::vector<int64_t>).hash_code()] = json_member_int64_list;
 	json_type_map[typeid(std::vector<uint64_t>).hash_code()] = json_member_uint64_list;
 	json_type_map[typeid(std::vector<int32_t>).hash_code()] = json_member_int32_list;

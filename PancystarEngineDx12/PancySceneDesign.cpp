@@ -33,7 +33,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	Scene_width = width_in;
 	Scene_height = height_in;
 	std::vector<D3D12_HEAP_FLAGS> heap_flags;
-	//´´½¨ĞÂµÄÆÁÄ»¿Õ¼äÎÆÀí¸ñÊ½
+	//åˆ›å»ºæ–°çš„å±å¹•ç©ºé—´çº¹ç†æ ¼å¼
 	D3D12_RESOURCE_DESC default_tex_RGB_dxdesc;
 	default_tex_RGB_dxdesc.Alignment = 0;
 	default_tex_RGB_dxdesc.DepthOrArraySize = 1;
@@ -46,7 +46,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	default_tex_RGB_dxdesc.MipLevels = 1;
 	default_tex_RGB_dxdesc.SampleDesc.Count = 1;
 	default_tex_RGB_dxdesc.SampleDesc.Quality = 0;
-	//´´½¨rgb8ÀàĞÍµÄ´°¿Ú´óĞ¡ÎÆÀí¸ñÊ½
+	//åˆ›å»ºrgb8ç±»å‹çš„çª—å£å¤§å°çº¹ç†æ ¼å¼
 	default_tex_desc_RGB.heap_flag_in = D3D12_HEAP_FLAG_NONE;
 	default_tex_desc_RGB.heap_type = D3D12_HEAP_TYPE_DEFAULT;
 	default_tex_desc_RGB.if_force_srgb = false;
@@ -55,20 +55,20 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	default_tex_desc_RGB.texture_data_file = "";
 	default_tex_desc_RGB.texture_res_desc = default_tex_RGB_dxdesc;
 	default_tex_desc_RGB.texture_type = PancystarEngine::Texture_Render_Target;
-	//´´½¨srgb8ÀàĞÍµÄ´°¿Ú´óĞ¡ÎÆÀí¸ñÊ½
+	//åˆ›å»ºsrgb8ç±»å‹çš„çª—å£å¤§å°çº¹ç†æ ¼å¼
 	default_tex_desc_SRGB = default_tex_desc_RGB;
 	default_tex_desc_SRGB.texture_res_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-	//´´½¨rgb16ÀàĞÍµÄ´°¿Ú´óĞ¡ÎÆÀí¸ñÊ½
+	//åˆ›å»ºrgb16ç±»å‹çš„çª—å£å¤§å°çº¹ç†æ ¼å¼
 	default_tex_desc_float = default_tex_desc_RGB;
 	default_tex_desc_float.texture_res_desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	//´´½¨Éî¶ÈÄ£°å»º³åÇø
+	//åˆ›å»ºæ·±åº¦æ¨¡æ¿ç¼“å†²åŒº
 	default_tex_desc_depthstencil = default_tex_desc_RGB;
 	default_tex_desc_depthstencil.texture_res_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	default_tex_desc_depthstencil.texture_res_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	default_tex_desc_depthstencil.heap_flag_in = D3D12_HEAP_FLAG_NONE;
 	if (If_dsv_loaded)
 	{
-		//todo:É¾³ı¾ÉµÄÉî¶ÈÄ£°å»º³åÇø
+		//todo:åˆ é™¤æ—§çš„æ·±åº¦æ¨¡æ¿ç¼“å†²åŒº
 		/*
 		for (int i = 0; i < back_buffer_num; ++i)
 		{
@@ -80,7 +80,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 	std::vector<BasicDescriptorDesc> back_buffer_desc;
 	for (int i = 0; i < back_buffer_num; ++i)
 	{
-		//¼ÓÔØÉî¶ÈÄ£°å»º³åÇø
+		//åŠ è½½æ·±åº¦æ¨¡æ¿ç¼“å†²åŒº
 		VirtualResourcePointer default_dsv_resource;
 		auto check_error = BuildTextureResource("ScreenSpaceDepthstencil", default_tex_desc_depthstencil, default_dsv_resource,true);
 		if (!check_error.CheckIfSucceed())
@@ -88,7 +88,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 			return check_error;
 		}
 		Default_depthstencil_buffer.push_back(default_dsv_resource);
-		//´´½¨Éî¶ÈÄ£°å»º³åÇøÃèÊö·û
+		//åˆ›å»ºæ·±åº¦æ¨¡æ¿ç¼“å†²åŒºæè¿°ç¬¦
 		D3D12_DEPTH_STENCIL_VIEW_DESC DSV_desc;
 		DSV_desc.Flags = D3D12_DSV_FLAG_NONE;
 		DSV_desc.Format = default_tex_desc_depthstencil.texture_res_desc.Format;
@@ -122,29 +122,29 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbufferByFrame(
 )
 {
 	PancystarEngine::EngineFailReason check_error;
-	//¸ù¾İpsoµÄidºÅ²éÕÒ¶ÔÓ¦µÄCbufferÁ´±í
+	//æ ¹æ®psoçš„idå·æŸ¥æ‰¾å¯¹åº”çš„Cbufferé“¾è¡¨
 	auto PSO_cbuffer_list = frame_constant_buffer[frame_id].find(PSO_id);
 	if (PSO_cbuffer_list == frame_constant_buffer[frame_id].end())
 	{
 		if_create = true;
-		//Ö¸¶¨µÄpsoÉĞÎ´´´½¨cbuffer
+		//æŒ‡å®šçš„psoå°šæœªåˆ›å»ºcbuffer
 		std::string pso_name_pre;
-		//ÏÈ¼ì²épsoÊÇ·ñ´æÔÚ
+		//å…ˆæ£€æŸ¥psoæ˜¯å¦å­˜åœ¨
 		check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name_pre);
 		if (!check_error.CheckIfSucceed())
 		{
 			return check_error;
 		}
-		//Ìí¼ÓÒ»¸öPSOµÄcbuffer±í
+		//æ·»åŠ ä¸€ä¸ªPSOçš„cbufferè¡¨
 		std::unordered_map<std::string, PancyConstantBuffer *> new_pso_cbuffer_list;
 		frame_constant_buffer[frame_id].insert(std::pair<pancy_object_id, std::unordered_map<std::string, PancyConstantBuffer *>>(PSO_id, new_pso_cbuffer_list));
 		PSO_cbuffer_list = frame_constant_buffer[frame_id].find(PSO_id);
 	}
-	//¸ù¾İcbufferµÄÃû³ÆÑ°ÕÒ³£Á¿»º³åÇø
+	//æ ¹æ®cbufferçš„åç§°å¯»æ‰¾å¸¸é‡ç¼“å†²åŒº
 	auto cbuffer_out = PSO_cbuffer_list->second.find(cbuffer_name);
 	if (cbuffer_out == PSO_cbuffer_list->second.end())
 	{
-		//cbufferÎ´´´½¨£¬¼ÓÔØÒ»¸ö³£Á¿»º³åÇø
+		//cbufferæœªåˆ›å»ºï¼ŒåŠ è½½ä¸€ä¸ªå¸¸é‡ç¼“å†²åŒº
 		PancyConstantBuffer *new_cbuffer = new PancyConstantBuffer();
 		check_error = PancyEffectGraphic::GetInstance()->BuildCbufferByName(PSO_id, cbuffer_name, *new_cbuffer);
 		if (!check_error.CheckIfSucceed())
@@ -181,7 +181,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 {
 	PancystarEngine::EngineFailReason check_error;
 	pancy_object_id frame_num = PancyDx12DeviceBasic::GetInstance()->GetFrameNum();
-	//todo£ºÄ¿Ç°ÏÈÔÚ¼ÓÔØµÄÊ±ºòË³±ãÍê³ÉÈ«¾ÖcbufferµÄ´¦Àí£¬ÒÔºóÈ«¾ÖcbufferĞèÒªÌáÇ°´´½¨
+	//todoï¼šç›®å‰å…ˆåœ¨åŠ è½½çš„æ—¶å€™é¡ºä¾¿å®Œæˆå…¨å±€cbufferçš„å¤„ç†ï¼Œä»¥åå…¨å±€cbufferéœ€è¦æå‰åˆ›å»º
 	std::vector<VirtualResourcePointer> back_buffer_data;
 	std::vector<BasicDescriptorDesc> back_buffer_desc;
 	bool if_create = false;
@@ -207,7 +207,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	{
 		return check_error;
 	}
-	//´´½¨ÃèÊö·û
+	//åˆ›å»ºæè¿°ç¬¦
 	if (if_create) 
 	{
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(cbuffer_name, back_buffer_desc, back_buffer_data, true);
@@ -222,8 +222,8 @@ LRESULT CALLBACK engine_windows_main::WndProc(HWND hwnd, UINT message, WPARAM wP
 {
 	switch (message)
 	{
-	case WM_KEYDOWN:                // ¼üÅÌ°´ÏÂÏûÏ¢
-		if (wParam == VK_ESCAPE)    // ESC¼ü
+	case WM_KEYDOWN:                // é”®ç›˜æŒ‰ä¸‹æ¶ˆæ¯
+		if (wParam == VK_ESCAPE)    // ESCé”®
 			PostQuitMessage(0);
 		break;
 	case WM_DESTROY:
@@ -246,7 +246,7 @@ engine_windows_main::engine_windows_main(HINSTANCE hInstance_need, HINSTANCE hPr
 }
 HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 {
-	//Ìî³ä´°¿ÚÀàĞÍ
+	//å¡«å……çª—å£ç±»å‹
 	wndclass.style = CS_HREDRAW | CS_VREDRAW;
 	wndclass.lpfnWndProc = WndProc;
 	wndclass.cbClsExtra = 0;
@@ -258,7 +258,7 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	wndclass.lpszMenuName = NULL;
 	wndclass.lpszClassName = TEXT("pancystar_engine");
 
-	//È¡Ïûdpi¶ÔÓÎÏ·µÄËõ·Å
+	//å–æ¶ˆdpiå¯¹æ¸¸æˆçš„ç¼©æ”¾
 	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	if (!RegisterClass(&wndclass))
 	{
@@ -266,12 +266,12 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 			TEXT("pancystar_engine"), MB_ICONERROR);
 		return E_FAIL;
 	}
-	//»ñÈ¡äÖÈ¾´°¿ÚÕæÕıµÄ´óĞ¡
+	//è·å–æ¸²æŸ“çª—å£çœŸæ­£çš„å¤§å°
 	RECT R = { 0, 0, window_width, window_height };
 	AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
 	int width = R.right - R.left;
 	int height = R.bottom - R.top;
-	//´´½¨´°¿Ú
+	//åˆ›å»ºçª—å£
 	hwnd = CreateWindow(TEXT("pancystar_engine"),
 		TEXT("pancystar_engine"),
 		WS_DLGFRAME | WS_SYSMENU,
@@ -290,18 +290,18 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	RECT new_info;
 	GetWindowRect(hwnd, &new_info);
 
-	//´´½¨directxÉè±¸
+	//åˆ›å»ºdirectxè®¾å¤‡
 	PancystarEngine::EngineFailReason check_error;
 	check_error = PancyDx12DeviceBasic::SingleCreate(hwnd, window_width, window_height);
 	if (!check_error.CheckIfSucceed())
 	{
 		return E_FAIL;
 	}
-	//×¢²á·´ÉäĞÅÏ¢
+	//æ³¨å†Œåå°„ä¿¡æ¯
 	InitBufferJsonReflect();
 	InitTextureJsonReflect();
 	InitMaterialJsonReflect();
-	//×¢²áµ¥Àı
+	//æ³¨å†Œå•ä¾‹
 	PancyShaderControl::GetInstance();
 	PancyRootSignatureControl::GetInstance();
 	PancyEffectGraphic::GetInstance();
@@ -314,13 +314,13 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	{
 		return E_FAIL;
 	}
-	//´´½¨Ïß³Ì³Ø¹ÜÀí
+	//åˆ›å»ºçº¿ç¨‹æ± ç®¡ç†
 	check_error = ThreadPoolGPUControl::SingleCreate();
 	if (!check_error.CheckIfSucceed())
 	{
 		return E_FAIL;
 	}
-	//´´½¨³¡¾°
+	//åˆ›å»ºåœºæ™¯
 	new_scene = new_scene_in;
 	//new_scene = new scene_test_simple();
 
@@ -329,13 +329,13 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	{
 		return E_FAIL;
 	}
-	ShowWindow(hwnd, SW_SHOW);                    // ½«´°¿ÚÏÔÊ¾µ½×ÀÃæÉÏ¡£
-	UpdateWindow(hwnd);                           // Ë¢ĞÂÒ»±é´°¿Ú£¨Ö±½ÓË¢ĞÂ£¬²»ÏòwindowsÏûÏ¢Ñ­»·¶ÓÁĞ×öÇëÊ¾£©¡£
+	ShowWindow(hwnd, SW_SHOW);                    // å°†çª—å£æ˜¾ç¤ºåˆ°æ¡Œé¢ä¸Šã€‚
+	UpdateWindow(hwnd);                           // åˆ·æ–°ä¸€éçª—å£ï¼ˆç›´æ¥åˆ·æ–°ï¼Œä¸å‘windowsæ¶ˆæ¯å¾ªç¯é˜Ÿåˆ—åšè¯·ç¤ºï¼‰ã€‚
 	return S_OK;
 }
 HRESULT engine_windows_main::game_loop()
 {
-	//ÓÎÏ·Ñ­»·
+	//æ¸¸æˆå¾ªç¯
 	ZeroMemory(&msg, sizeof(msg));
 	while (msg.message != WM_QUIT)
 	{
@@ -344,8 +344,8 @@ HRESULT engine_windows_main::game_loop()
 			//new_scene->Render();
 			new_scene->Update(0);
 			new_scene->Display();
-			TranslateMessage(&msg);//ÏûÏ¢×ª»»
-			DispatchMessage(&msg);//ÏûÏ¢´«µİ¸ø´°¿Ú¹ı³Ìº¯Êı
+			TranslateMessage(&msg);//æ¶ˆæ¯è½¬æ¢
+			DispatchMessage(&msg);//æ¶ˆæ¯ä¼ é€’ç»™çª—å£è¿‡ç¨‹å‡½æ•°
 		}
 		else
 		{
@@ -368,16 +368,16 @@ WPARAM engine_windows_main::game_end()
 	delete PancystarEngine::FileBuildRepeatCheck::GetInstance();
 	delete PancyInput::GetInstance();
 	delete PancyCamera::GetInstance();
-	//Ïú»ÙÓÃÓÚ¶¯Ì¬ÉÏ´«±¾µØ×ÊÔ´µÄring-buffer¶Ñ
+	//é”€æ¯ç”¨äºåŠ¨æ€ä¸Šä¼ æœ¬åœ°èµ„æºçš„ring-bufferå †
 	delete PancyDynamicRingBuffer::GetInstance();
-	//Ïú»ÙdxÉè±¸Óë»ù´¡¿â
+	//é”€æ¯dxè®¾å¤‡ä¸åŸºç¡€åº“
 	delete PancyDx12DeviceBasic::GetInstance();
 	PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 	delete PancystarEngine::EngineFailLog::GetInstance();
-	//Ïú»Ùjson·´Éä¹¤¾ßÀà
+	//é”€æ¯jsonåå°„å·¥å…·ç±»
 	delete PancyJsonTool::GetInstance();
 	delete PancyJsonReflectControl::GetInstance();
-	//todo::ÕâÀïÊÍ·ÅÃèÊö·ûÓë×ÊÔ´¶ÑµÄÊ±ºòĞèÒª¼ì²éÊÇ·ñÒÑ¾­ÊÇ¿ÕµÄÁË£¬¿ÉÒÔÓÃÓÚ¼ì²é×ÊÔ´µÄĞ¹Â¶Çé¿ö
+	//todo::è¿™é‡Œé‡Šæ”¾æè¿°ç¬¦ä¸èµ„æºå †çš„æ—¶å€™éœ€è¦æ£€æŸ¥æ˜¯å¦å·²ç»æ˜¯ç©ºçš„äº†ï¼Œå¯ä»¥ç”¨äºæ£€æŸ¥èµ„æºçš„æ³„éœ²æƒ…å†µ
 	delete PancystarEngine::PancyDescriptorHeapControl::GetInstance();
 	delete PancystarEngine::PancyGlobelResourceControl::GetInstance();
 	return msg.wParam;
