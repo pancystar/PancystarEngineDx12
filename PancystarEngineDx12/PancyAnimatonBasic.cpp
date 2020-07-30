@@ -38,7 +38,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 		buffer_animation,
 		true
 	);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -66,7 +66,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 			buffer_bone[buffer_index],
 			true
 		);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -95,7 +95,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::Create()
 		);
 	}
 	
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -121,8 +121,9 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildAnimationBlock(
 	//判断当前的动画缓冲区是否能够开出请求的顶点存储块
 	if ((now_used_position_animation + now_ask_size) >= animation_buffer_size)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The skin mesh animation buffer is full");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Animation Block", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "The skin mesh animation buffer is full",error_message);
+		
 		return error_message;
 	}
 	//更新当前的缓冲区指针位置
@@ -146,8 +147,9 @@ PancystarEngine::EngineFailReason PancySkinAnimationBuffer::BuildBoneBlock(
 	//判断当前的动画缓冲区是否能够开出请求的顶点存储块
 	if ((now_used_position_bone + now_ask_size) >= bone_buffer_size)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "The Bone Matrix buffer is full");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build Bone Matrix Block", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "The Bone Matrix buffer is full",error_message);
+		
 		return error_message;
 	}
 	//更新当前的缓冲区指针位置
@@ -203,7 +205,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildGlobelBufferDe
 		skin_animation_descriptor_desc.push_back(skin_animation_UAV_desc);
 	}
 	auto check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(descriptor_name, skin_animation_descriptor_desc, buffer_data, true);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -233,7 +235,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::PancySkinAnimationC
 		skin_animation_descriptor_desc.push_back(skin_animation_SRV_desc);
 	}
 	auto check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(descriptor_name, skin_animation_descriptor_desc, buffer_data, true);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -263,7 +265,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildPrivateBufferD
 		skin_animation_descriptor_desc.push_back(skin_animation_UAV_desc);
 	}
 	auto check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(skin_animation_descriptor_desc, buffer_data, true, descriptor_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -293,7 +295,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildPrivateBufferD
 		skin_animation_descriptor_desc.push_back(skin_animation_SRV_desc);
 	}
 	auto check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(skin_animation_descriptor_desc, buffer_data, true, descriptor_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -304,38 +306,38 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 {
 	PancystarEngine::EngineFailReason check_error;
 	check_error = skin_mesh_animation_buffer_descriptor.Create(MaxSkinAnimationComputeNum);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = skin_mesh_offset_matrix_descriptor.Create(MaxSkinAnimationComputeNum);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = skin_mesh_parent_id_descriptor.Create(MaxSkinAnimationComputeNum);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//加载PSO
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_skinmesh.json", PSO_skinmesh);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_skin_bonetree.json", PSO_skinmesh_skintree_desample);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_skin_matrix_combine.json", PSO_skinmesh_cluster_combine);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_skin_sample_aniamation.json", PSO_skinmesh_animation_interpolation);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -349,7 +351,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 	{
 		skin_naimation_buffer[i] = new PancySkinAnimationBuffer(animation_buffer_size, bone_buffer_size);
 		check_error = skin_naimation_buffer[i]->Create();
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -364,56 +366,56 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 	}
 	//创建骨骼动画缓冲区的描述符
 	check_error = BuildGlobelBufferDescriptorSRV("input_point", skin_animation_buffer_data, animation_buffer_size, sizeof(PancystarEngine::mesh_animation_data));
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = BuildGlobelBufferDescriptorUAV("mesh_anim_data", skin_animation_buffer_data, animation_buffer_size, sizeof(PancystarEngine::mesh_animation_data));
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 
 	check_error = BuildPrivateBufferDescriptorSRV(bone_buffer_data1, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4), buffer_descriptor_srv_id1);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = BuildPrivateBufferDescriptorSRV(bone_buffer_data2, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4), buffer_descriptor_srv_id2);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = BuildPrivateBufferDescriptorUAV(bone_buffer_data1, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4), buffer_descriptor_uav_id1);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = BuildPrivateBufferDescriptorUAV(bone_buffer_data2, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4), buffer_descriptor_uav_id2);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 
 
 	check_error = BuildGlobelBufferDescriptorSRV("bone_matrix_buffer", bone_buffer_data1, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4));
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = BuildGlobelBufferDescriptorUAV("bone_matrix_output", bone_buffer_data1, bone_buffer_size, sizeof(DirectX::XMFLOAT4X4));
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 
 	check_error = BuildGlobelBufferDescriptorSRV("compute_globel_id", bone_id_data, bone_buffer_size, sizeof(DirectX::XMUINT4));
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = BuildGlobelBufferDescriptorUAV("compute_globel_id_input", bone_id_data, bone_buffer_size, sizeof(DirectX::XMUINT4));
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -466,7 +468,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::Create()
 		render_param_id_combine_matrix
 	);
 
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -496,7 +498,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildAnimationBlock
 	PancystarEngine::EngineFailReason check_error;
 	pancy_object_id now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	check_error = skin_naimation_buffer[now_frame_use]->BuildAnimationBlock(vertex_num, block_id, new_animation_block);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -523,7 +525,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildBoneBlock(
 	//根据当前的帧号申请一片缓冲区
 	pancy_object_id now_frame_use = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	check_error = skin_naimation_buffer[now_frame_use]->BuildBoneBlock(bone_matrix_num, block_id, new_bone_block);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -573,12 +575,12 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 	PancyThreadIdGPU commdlist_id_animation_sample;
 	ID3D12PipelineState* pso_data;
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetPsoData(render_param_id_animation_sample, &pso_data);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data, &m_commandList_animation_sample, commdlist_id_animation_sample);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -586,13 +588,13 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	auto bone_matrix_res = GetBufferResourceData(skin_naimation_buffer[now_render_num]->GetBoneMatrixResource(0), check_error);
 	check_error = bone_matrix_res->ResourceBarrier(m_commandList_animation_sample, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	auto compute_globel_id_res = GetBufferResourceData(skin_naimation_buffer[now_render_num]->GetBoneIDResource(), check_error);
 	check_error = compute_globel_id_res->ResourceBarrier(m_commandList_animation_sample, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -611,7 +613,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 		PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id_animation_sample, "animation_sample_param", "animation_begin_param", animation_begin_param, 0);
 		PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferFloat4(render_param_id_animation_sample, "animation_sample_param", "animation_play_param", animation_play_param, 0);
 		check_error = PancystarEngine::RenderParamSystem::GetInstance()->AddRenderParamToCommandList(render_param_id_animation_sample, m_commandList_animation_sample, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -627,18 +629,18 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 	}
 	//关闭UAV状态
 	check_error = bone_matrix_res->ResourceBarrier(m_commandList_animation_sample, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = compute_globel_id_res->ResourceBarrier(m_commandList_animation_sample, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	m_commandList_animation_sample->UnlockPrepare();
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_animation_sample);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -647,29 +649,29 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 	PancyThreadIdGPU commdlist_id_bone_tree;
 	ID3D12PipelineState* pso_data_bone_tree;
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetPsoData(render_param_id_bone_compute[0], &pso_data_bone_tree);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data_bone_tree, &m_commandList_bone_tree, commdlist_id_bone_tree);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = bone_matrix_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = compute_globel_id_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 
 	auto bone_matrix2_res = GetBufferResourceData(skin_naimation_buffer[now_render_num]->GetBoneMatrixResource(1), check_error);
 	check_error = bone_matrix2_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -684,7 +686,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 		PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id_bone_compute[drawcall], "animation_sample_param", "draw_pass_id_param", draw_pass_id_param, 0);
 		PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id_bone_compute[drawcall], "animation_sample_param", "bone_id_param", bone_id_param, 0);
 		check_error = PancystarEngine::RenderParamSystem::GetInstance()->AddRenderParamToCommandList(render_param_id_bone_compute[drawcall], m_commandList_bone_tree, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -699,12 +701,12 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 		if (drawcall % 2 == 0) 
 		{
 			check_error = bone_matrix_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			check_error = bone_matrix2_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -712,12 +714,12 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 		else 
 		{
 			check_error = bone_matrix_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			check_error = bone_matrix2_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -726,24 +728,24 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 
 	
 	check_error = bone_matrix2_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = compute_globel_id_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = bone_matrix_res->ResourceBarrier(m_commandList_bone_tree, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 
 	m_commandList_bone_tree->UnlockPrepare();
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_bone_tree);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -752,22 +754,22 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 	PancyThreadIdGPU commdlist_id_combine;
 	ID3D12PipelineState* pso_data_combine;
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->GetPsoData(render_param_id_combine_matrix, &pso_data_combine);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(pso_data_combine, &m_commandList_combine, commdlist_id_combine);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = bone_matrix_res->ResourceBarrier(m_commandList_combine, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = bone_matrix2_res->ResourceBarrier(m_commandList_combine, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -775,7 +777,7 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 	bone_size_param.x = globel_bone_matrix_size;
 	PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id_combine_matrix, "animation_sample_param", "bone_size_param", bone_size_param, 0);
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->AddRenderParamToCommandList(render_param_id_combine_matrix, m_commandList_combine, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -788,18 +790,18 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::ComputeBoneMatrix(c
 	}
 	m_commandList_combine->GetCommandList()->Dispatch(thread_group_size, 1, 1);
 	check_error = bone_matrix_res->ResourceBarrier(m_commandList_combine, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = bone_matrix2_res->ResourceBarrier(m_commandList_combine, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	m_commandList_combine->UnlockPrepare();
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_combine);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -821,21 +823,22 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
 	PancystarEngine::AnimationStartMessage bone_block_pos;
 	//根据渲染模型的顶点数据请求一块动画存储显存
 	check_error = BuildAnimationBlock(vertex_num, skin_animation_block_ID, animation_block_pos);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//获取当前drawcall之前申请的骨骼数据
 	if (skin_animation_message[bone_block_ID].bone_matrix_num != matrix_num+2)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "build skin mesh commondlist error: matrix num dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancySkinAnimationControl::BuildCommandList", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "build skin mesh commondlist error: matrix num dismatch",error_message);
+		
 		return error_message;
 	}
 	bone_block_pos = skin_animation_message[bone_block_ID];
 	//获取渲染描述符
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->AddRenderParamToCommandList(render_param_id, m_commandList_skin, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -847,24 +850,24 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
 	data_num.x = vertex_num;
 	data_num.y = static_cast<uint32_t>(matrix_num);
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id, "per_object", "data_offset", data_offset, 0);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancystarEngine::RenderParamSystem::GetInstance()->SetCbufferUint4(render_param_id, "per_object", "data_num", data_num, 0);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//修改当前输入顶点资源的使用格式
 	auto now_resource_data = mesh_buffer.GetResourceData();
 	auto vertex_input_gpu_buffer = GetBufferResourceData(mesh_buffer, check_error);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = vertex_input_gpu_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -874,13 +877,13 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
 	VirtualResourcePointer &skin_vertex_resource = skin_naimation_buffer[now_frame]->GetSkinVertexResource();
 	auto bone_input_buffer = GetBufferResourceData(bone_matrix_resource, check_error);
 	check_error = bone_input_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	auto vertex_output_gpu_buffer = GetBufferResourceData(skin_vertex_resource, check_error);
 	check_error = vertex_output_gpu_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -894,17 +897,17 @@ PancystarEngine::EngineFailReason PancySkinAnimationControl::BuildCommandList(
 	m_commandList_skin->GetCommandList()->Dispatch(thread_group_size, 1, 1);
 	//还原资源状态
 	check_error = bone_input_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = vertex_input_gpu_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = vertex_output_gpu_buffer->ResourceBarrier(m_commandList_skin, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}

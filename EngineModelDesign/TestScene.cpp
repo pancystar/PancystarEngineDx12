@@ -42,7 +42,7 @@ PancystarEngine::EngineFailReason PancyModelBasic::InitResource(const std::strin
 {
 	PancystarEngine::EngineFailReason check_error;
 	check_error = LoadModel(resource_desc_file, model_resource_list, material_list, texture_list);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -61,7 +61,7 @@ PancyModelBasic::~PancyModelBasic()
 		PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(*id_tex);
 	}
 }
-//FBXÍø¸ñ¶¯»­
+//FBXï¿½ï¿½ñ¶¯»ï¿½
 mesh_animation_FBX::mesh_animation_FBX(std::string file_name_in)
 {
 	vertex_pack_num = 0;
@@ -85,14 +85,16 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 {
 	if (!if_fbx_file)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "isn't a fbx file");
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "isn't a fbx file",error_message);
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error;
 	InitializeSdkObjects(lSdkManager, lScene);
 	if (lFilePath->IsEmpty())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "need a file name");
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "need a file name",error_message);
 		return error_message;
 	}
 	else
@@ -100,28 +102,32 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 		bool if_succeed = LoadScene(lSdkManager, lScene, lFilePath->Buffer());
 		if (if_succeed == false)
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "An error occurred while loading the scene" + std::string(lFilePath->Buffer()));
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "An error occurred while loading the scene" + std::string(lFilePath->Buffer()),error_message);
 			return error_message;
 		}
 	}
 	auto pNode = lScene->GetRootNode();
-	//»ñÈ¡Íø¸ñÐÅÏ¢
+	//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 	if (pNode == NULL)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the root node of FBX file" + std::string(lFilePath->Buffer()));
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the root node of FBX file" + std::string(lFilePath->Buffer()),error_message);
 		return error_message;
 	}
 	find_tree_mesh(pNode);
 	if (lMesh_list.size() == 0)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh data in FBX file");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load fbx animation", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the mesh data in FBX file",error_message);
+		
 		return error_message;
 	}
 	if (lMesh_list.size() != index_buffer_num_list.size())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "FBX mesh have different mesh part number with assimp & fbxsdk");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load fbx animation", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "FBX mesh have different mesh part number with assimp & fbxsdk",error_message);
+		
 		return error_message;
 	}
 	anim_data_list.resize(lMesh_list.size());
@@ -131,11 +137,12 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 		int32_t lPolygonCount_check = index_buffer_num_list[i];
 		if (lPolygonCount != lPolygonCount_check)
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "FBX mesh have different triangle num with assimp & fbxsdk");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load fbx animation", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "FBX mesh have different triangle num with assimp & fbxsdk",error_message);
+			
 			return error_message;
 		}
-		//¼ìÑé¶¯»­ÐÅÏ¢
+		//ï¿½ï¿½ï¿½é¶¯ï¿½ï¿½ï¿½ï¿½Ï¢
 		int deformer_num = lMesh_list[i]->GetDeformerCount(FbxDeformer::eVertexCache);
 		if (deformer_num > 0)
 		{
@@ -147,10 +154,11 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 			(static_cast<FbxVertexCacheDeformer*>(lMesh_list[i]->GetDeformer(0, FbxDeformer::eVertexCache)))->Active.Get();
 		if (!lHasVertexCache)
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "the FBX file don't have animation message" + std::string(lFilePath->Buffer()));
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "the FBX file don't have animation message" + std::string(lFilePath->Buffer()),error_message);
 			//return error_message;
 		}
-		//»ñÈ¡Ê±¼äÐÅÏ¢
+		//ï¿½ï¿½È¡Ê±ï¿½ï¿½ï¿½ï¿½Ï¢
 		PreparePointCacheData(lScene, anim_start, anim_end);
 		auto FPS_rec = anim_end.GetFrameRate(fbxsdk::FbxTime::EMode::eDefaultMode);
 		auto framenum_rec = anim_end.GetFrameCount();
@@ -159,10 +167,11 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 		anim_frame.SetTime(0, 0, 0, 1, 0, lScene->GetGlobalSettings().GetTimeMode());
 		if (frame_num == 0)
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the mesh animation of FBX file" + std::string(lFilePath->Buffer()));
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find the mesh animation of FBX file" + std::string(lFilePath->Buffer()),error_message);
 			//return error_message;
 		}
-		//¿ªÆô¶¥µã¶¯»­»º³å
+		//ï¿½ï¿½ï¿½ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½ï¿½
 		auto time_now = anim_start;
 		int num_vertex_now = lMesh_list[i]->GetControlPointsCount();
 		FbxVector4* lVertexArray = NULL;
@@ -173,7 +182,7 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 			time_now += anim_frame;
 			int check = time_now.GetFrameCount();
 			check_error = ReadVertexCacheData(lMesh_list[i], time_now, lVertexArray);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -185,12 +194,12 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::create(
 	{
 		vertex_pack_num += vertex_buffer_num_list[i];
 	}
-	//¼ÆËã·¨Ïß
+	//ï¿½ï¿½ï¿½ã·¨ï¿½
 	//compute_normal();
 	bool lResult = true;
 	DestroySdkObjects(lSdkManager, lResult);
 	check_error = build_buffer();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -546,14 +555,16 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::ReadVertexCacheData(FbxMes
 	lCache->GetChannelInterpretation(lChannelIndex, lChnlInterp);
 	if (lDeformer->Type.Get() != FbxVertexCacheDeformer::ePositions)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "animation data type not support");
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "animation data type not support",error_message);
 		return error_message;
 	}
 	unsigned int Length = 0;
 	lCache->Read(NULL, Length, FBXSDK_TIME_ZERO, lChannelIndex);
 	if (Length != lVertexCount * 3)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the content of the cache is by vertex not by control points (we don't support it here)");
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "the content of the cache is by vertex not by control points (we don't support it here)",error_message);
 		return error_message;
 	}
 	lReadSucceed = lCache->Read(&lReadBuf, BufferSize, pTime, lChannelIndex);
@@ -570,11 +581,12 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::ReadVertexCacheData(FbxMes
 	}
 	else
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "read animation data error");
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "read animation data error",error_message);
 		return error_message;
 	}
 	/*
-	//¼ìÑé¿ØÖÆµã±ä»»Ð§¹û
+	//ß¼ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ä»»Ð§ï¿½
 	FbxVector4 check_rec1 = pMesh->GetControlPointAt(500);
 	std::vector<XMFLOAT3> normle_need,normle_need2;
 	for (int i = 0; i < pMesh->GetPolygonCount() * 3; ++i)
@@ -587,10 +599,10 @@ PancystarEngine::EngineFailReason mesh_animation_FBX::ReadVertexCacheData(FbxMes
 		pMesh->SetControlPointAt(pVertices_now, i);
 	}
 	FbxVector4 check_rec2 = pMesh->GetControlPointAt(500);
-	//´´½¨ÐÂµÄ·¨Ïß¼°ÇÐÏß
+	//ï¿½ï¿½ÂµÄ·ï¿½ï¿½ß¼ï¿½ï¿½ï¿½ï¿½
 	bool check_tre = pMesh->GenerateNormals(true);
 	bool check_tre2 = pMesh->GenerateTangentsDataForAllUVSets(true);
-	//ÖØÐÂ¼ìÑé
+	//ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½
 	for (int i = 0; i < pMesh->GetPolygonCount() * 3; ++i)
 	{
 		normle_need2.push_back(get_normal_vert(pMesh, i));
@@ -609,10 +621,10 @@ void mesh_animation_FBX::UpdateVertexPosition(
 	const std::vector<DirectX::XMFLOAT2> &uv_assimp
 )
 {
-	//´´½¨»ùÓÚassimpµÄ¶¥µãÊý×é
+	//é´´ï¿½ï¿½ï¿½ï¿½ï¿½assimpÚµÄ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::vector<mesh_animation_data> now_frame_data;
 	now_frame_data.resize(vertex_num_assimp);
-	//¶ÁÈ¡fbx¶¯»­Êý¾Ý
+	//ï¿½ï¿½È¡fbxï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	int TRIANGLE_VERTEX_COUNT = 3;
 	int VERTEX_STRIDE = 4;
 	// Convert to the same sequence with data in GPU.
@@ -631,7 +643,7 @@ void mesh_animation_FBX::UpdateVertexPosition(
 	for (int lPolygonIndex = 0; lPolygonIndex < lPolygonCount; ++lPolygonIndex)
 	{
 
-		//»ñÈ¡µ±Ç°¶ÔÓ¦µÄassimp¶¥µã
+		//Ý»ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½Ó¦ï¿½assimpÄ¶ï¿½ï¿½
 		int traingle_point_0 = lPolygonIndex * TRIANGLE_VERTEX_COUNT + 0;
 		int traingle_point_1 = lPolygonIndex * TRIANGLE_VERTEX_COUNT + 1;
 		int traingle_point_2 = lPolygonIndex * TRIANGLE_VERTEX_COUNT + 2;
@@ -672,7 +684,7 @@ void mesh_animation_FBX::UpdateVertexPosition(
 		now_frame_data[i].tangent.y = tangent_buffer[i].y;
 		now_frame_data[i].tangent.z = tangent_buffer[i].z;
 		/*
-		//¼ÆËã·¨Ïß
+		//ï¿½ï¿½ï¿½ã·¨ï¿½
 		DirectX::XMFLOAT3 Tangent1, Tangent2;
 		Tangent1.x = now_frame_data[index_assimp[i]].position.x - now_frame_data[index_assimp[i + 1]].position.x;
 		Tangent1.y = now_frame_data[index_assimp[i]].position.y - now_frame_data[index_assimp[i + 1]].position.y;
@@ -684,7 +696,7 @@ void mesh_animation_FBX::UpdateVertexPosition(
 		DirectX::XMVECTOR new_normal = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&Tangent1)), DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&Tangent2))));
 		DirectX::XMFLOAT3 normal_data;
 		DirectX::XMStoreFloat3(&normal_data, DirectX::XMVector3Normalize(new_normal));
-		//½«·¨ÏßÐÅÏ¢¾ùÔÈÌîÈë¶¥µã
+		//ß½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë¶¥ï¿½
 		now_frame_data[index_assimp[i]].normal.x = (now_frame_data[index_assimp[i]].normal.x*vertex_normal_num[index_assimp[i]] + normal_data.x) / (vertex_normal_num[index_assimp[i]] + 1);
 		now_frame_data[index_assimp[i]].normal.y = (now_frame_data[index_assimp[i]].normal.y*vertex_normal_num[index_assimp[i]] + normal_data.y) / (vertex_normal_num[index_assimp[i]] + 1);
 		now_frame_data[index_assimp[i]].normal.z = (now_frame_data[index_assimp[i]].normal.z*vertex_normal_num[index_assimp[i]] + normal_data.z) / (vertex_normal_num[index_assimp[i]] + 1);
@@ -745,7 +757,7 @@ void mesh_animation_FBX::compute_normal()
 	}
 }
 */
-//ASSIMPÄ£ÐÍ½âÎö
+//ASSIMPï¿½Ä£ï¿½Í½ï¿½ï¿½
 PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in) :PancyModelBasic(desc_file_in)
 {
 	model_move_skin = NULL;
@@ -762,7 +774,7 @@ PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::s
 	model_size.min_box_pos.x = 999999999.0f;
 	model_size.min_box_pos.y = 999999999.0f;
 	model_size.min_box_pos.z = 999999999.0f;
-	//¹Ç÷ÀÊý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	root_skin = new skin_tree;
 	strcpy(root_skin->bone_ID, "root_node");
 	root_skin->son = new skin_tree;
@@ -780,9 +792,9 @@ PancyModelAssimp::PancyModelAssimp(const std::string &desc_file_in, const std::s
 			tree_node_num[i][j] = 0;
 		}
 	}
-	//FBXµã»º´æÊý¾Ý
+	//FBXÝµã»ºï¿½ï¿½ï¿½ï¿½
 	FBXanim_import = NULL;
-	//¶¯»­Êý¾Ý
+	//Ý¶ï¿½ï¿½ï¿½ï¿½ï¿½
 	now_animation_play_station = 0.0f;
 }
 PancyModelAssimp::~PancyModelAssimp()
@@ -791,7 +803,7 @@ PancyModelAssimp::~PancyModelAssimp()
 	{
 		SubresourceControl::GetInstance()->FreeSubResource(cbuffer[i]);
 	}
-	//todo:É¾³ýÃèÊö·û
+	//todo:ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	PancyDescriptorHeapControl::GetInstance()->FreeResourceView(table_offset[0].resource_view_pack_id);
 	delete model_boundbox;
 }
@@ -816,7 +828,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildTextureRes(std::string 
 	{
 		tex_real_name = "";
 	}
-	//Ç¿ÖÆ½«ÎÆÀíÐÞ¸ÄÎªdds
+	//ï¿½Ç¿ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¸ï¿½Îªdds
 	int32_t name_length = 0;
 	for (int i = 0; i < tex_real_name.size(); ++i)
 	{
@@ -829,13 +841,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildTextureRes(std::string 
 			break;
 		}
 	}
-	//´´½¨µ¼³öµÄjsonÎÄ¼þÊý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½jsonï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
 	string json_file_out = model_root_path + tex_real_name.substr(0, name_length) + ".json";
 	texture_file_name = tex_real_name.substr(0, name_length) + ".json";
 	tex_real_name = tex_real_name.substr(0, name_length) + ".dds";
 	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(json_file_out))
 	{
-		//Îª·ÇjsonÎÆÀí´´½¨Ò»¸öÎÆÀí¸ñÊ½·û
+		//ï¿½Îªï¿½jsonï¿½ï¿½ï¿½ï¿½í´´ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½
 		Json::Value json_data_out;
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "FileName", tex_real_name);
@@ -843,15 +855,15 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildTextureRes(std::string 
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfForceSrgb", if_force_srgb);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "MaxSize", 0);
 		check_error = PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, json_file_out);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
-		//½«ÎÄ¼þ±ê¼ÇÎªÒÑ¾­´´½¨
+		//ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Îªï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½
 		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(json_file_out);
 	}
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(model_root_path + texture_file_name, id_tex);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -895,62 +907,62 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	std::string model_name = resource_desc_file;
 	bool if_auto_material = false;
 	bool if_self_lod = false;
-	std::unordered_map<TexType, string> tex_tail_name;//¸÷ÖÖ²ÄÖÊµÄÎ²×º
-	std::unordered_map<TexType, pancy_object_id> tex_empty;//ÓÃÓÚ´úÌæ²»´æÔÚÎÆÀíµÄ¿Õ°×ÎÆÀí
-	std::vector<std::string> texture_not_find;//´æ´¢Î´ÕÒµ½µÄÎÆÀí
-	//»ñÈ¡Ä£ÐÍµÄ¸ñÊ½
+	std::unordered_map<TexType, string> tex_tail_name;//ï¿½ï¿½ï¿½Ö²ï¿½ï¿½Êµï¿½Î²×º
+	std::unordered_map<TexType, pancy_object_id> tex_empty;//ï¿½ï¿½ï¿½Ú´ï¿½ï¿½æ²»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Õ°ï¿½ï¿½ï¿½ï¿½
+	std::vector<std::string> texture_not_find;//ï¿½æ´¢Î´ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	//ï¿½ï¿½È¡Ä£ï¿½ÍµÄ¸ï¿½Ê½
 	if (CheckIFJson(resource_desc_file))
 	{
 		pancy_json_value rec_value;
 		Json::Value root_value;
 		check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_desc_file, root_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
-		//Ä£ÐÍÎÄ¼þÃû
+		//Ä£ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "ModelFileName", pancy_json_data_type::json_data_string, rec_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		model_name = model_root_path + rec_value.string_value;
-		//ÊÇ·ñÓÉjsonÎÄ¼þ×Ô¶¯´´½¨²ÄÖÊ
+		//ï¿½ï¿½Ç·ï¿½ï¿½jsonï¿½ï¿½Ä¼ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfBuildMaterial", pancy_json_data_type::json_data_bool, rec_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		if_auto_material = rec_value.bool_value;
-		//Ä£ÐÍÊÇ·ñÒÑ¾­×ö¹ýlod´¦Àí
+		//ï¿½Ä£ï¿½ï¿½ï¿½Ç·ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½lodï¿½ï¿½
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfSelfLod", pancy_json_data_type::json_data_bool, rec_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		if_self_lod = rec_value.bool_value;
-		//Ä£ÐÍÊÇ·ñ°üº¬¹Ç÷À¶¯»­ÐÅÏ¢
+		//ï¿½Ä£ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfHaveSkinAnimation", pancy_json_data_type::json_data_bool, rec_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		if_skinmesh = rec_value.bool_value;
-		//Ä£ÐÍÊÇ·ñ°üº¬¶¥µã¶¯»­ÐÅÏ¢
+		//Ä£ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½Ï¢
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "IfHavePoinAnimation", pancy_json_data_type::json_data_bool, rec_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		if_pointmesh = rec_value.bool_value;
-		//Ä£ÐÍPbr¸ñÊ½
+		//Ä£ï¿½PbrÍ¸ï¿½Ê½
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, root_value, "PbrType", pancy_json_data_type::json_data_enum, rec_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		model_pbr_type = static_cast<PbrMaterialType>(rec_value.int_value);
-		//Ô¤´¦Àí²ÄÖÊÊý¾Ý
+		//Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if (if_auto_material)
 		{
 			Json::Value material_value = root_value.get("MaterialPack", Json::Value::null);
@@ -958,97 +970,97 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			for (int i = 0; i < num_material; ++i)
 			{
 				std::unordered_map<TexType, pancy_object_id> mat_tex_list;
-				//²ÄÖÊÃû³Æ
+				//Ý²ï¿½ï¿½ï¿½ï¿½ï¿½
 				std::string material_name;
-				//»ù±¾µÄÌùÍ¼
+				//Æ»ï¿½ï¿½ï¿½ï¿½Í¼
 				std::string tex_albedo;
 				std::string tex_normal;
 				std::string tex_ambient;
-				//½ðÊô¶ÈÌùÍ¼
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼
 				std::string tex_metallic;
 				std::string tex_roughness;
-				//¾µÃæ¹â&Æ½»¬ÌùÍ¼
+				//ï¿½ï¿½ï¿½ï¿½&ï¿½Æ½ï¿½ï¿½ï¿½ï¿½Í¼
 				std::string tex_specsmooth;
 				pancy_object_id id_need;
-				//²ÄÖÊÃû³Æ
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "MaterialName", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				material_name = rec_value.string_value;
-				//Âþ·´Éä²ÄÖÊ
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "Albedotex", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				tex_albedo = rec_value.string_value;
 				check_error = BuildTextureRes(tex_albedo.c_str(), 0, id_need);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				pancy_object_id now_texture_id_diffuse = insert_new_texture(texture_use, id_need);
 				mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, now_texture_id_diffuse));
 				//texture_use.push_back(id_need);
-				//·¨ÏßÌùÍ¼²ÄÖÊ
+				//Ê·ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "Normaltex", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				tex_normal = rec_value.string_value;
 				check_error = BuildTextureRes(tex_normal.c_str(), 0, id_need);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				now_texture_id_diffuse = insert_new_texture(texture_use, id_need);
 				mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, now_texture_id_diffuse));
 				//texture_use.push_back(id_need);
-				//»·¾³¹âÕÚ±Î²ÄÖÊ
+				//Ê»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú±Î²ï¿½ï¿½
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "Ambienttex", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				tex_ambient = rec_value.string_value;
 				check_error = BuildTextureRes(tex_ambient.c_str(), 0, id_need);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				now_texture_id_diffuse = insert_new_texture(texture_use, id_need);
 				mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_ambient, now_texture_id_diffuse));
 				//texture_use.push_back(id_need);
-				//PbrÎÆÀí
+				//Pbrï¿½ï¿½ï¿½ï¿½
 				if (model_pbr_type == PbrMaterialType::PbrType_MetallicRoughness)
 				{
-					//½ðÊô¶È²ÄÖÊ
+					//ï¿½ï¿½ï¿½ï¿½È²ï¿½ï¿½
 					check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "MetallicTex", pancy_json_data_type::json_data_string, rec_value);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
 					tex_metallic = rec_value.string_value;
 					check_error = BuildTextureRes(tex_metallic.c_str(), 0, id_need);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
 					now_texture_id_diffuse = insert_new_texture(texture_use, id_need);
 					mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_metallic, now_texture_id_diffuse));
 					//texture_use.push_back(id_need);
-					//´Ö²Ú¶È²ÄÖÊ
+					//Ê´Ö²Ú¶È²ï¿½ï¿½
 					check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "RoughnessTex", pancy_json_data_type::json_data_string, rec_value);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
 					tex_roughness = rec_value.string_value;
 					check_error = BuildTextureRes(tex_roughness.c_str(), 0, id_need);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
@@ -1058,15 +1070,15 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				}
 				else if (model_pbr_type == PbrMaterialType::PbrType_SpecularSmoothness)
 				{
-					//¾µÃæ¹â&Æ½»¬¶ÈÎÆÀí
+					//Ê¾ï¿½ï¿½ï¿½&ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 					check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value[i], "SpecsmoothnessTex", pancy_json_data_type::json_data_string, rec_value);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
 					tex_specsmooth = rec_value.string_value;
 					check_error = BuildTextureRes(tex_specsmooth.c_str(), 0, id_need);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
@@ -1074,48 +1086,48 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 					mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_specular_smoothness, now_texture_id_diffuse));
 					//texture_use.push_back(id_need);
 				}
-				//½«²ÄÖÊ¼ÓÈë²ÄÖÊ±í
+				//í½«ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½Ê±
 				material_list.insert(std::pair<pancy_object_id, std::unordered_map<TexType, pancy_object_id>>(i, mat_tex_list));
 			}
 		}
 		else
 		{
-			//²ÄÖÊµÄºó×ºÃû³Æ
+			//ï¿½ï¿½ï¿½ÊµÄºï¿½×ºï¿½ï¿½
 			Json::Value material_value = root_value.get("MaterialTail", Json::Value::null);
 			std::string tex_tail;
-			//Âþ·´ÉäÎÆÀí
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value, "Albedotex", pancy_json_data_type::json_data_string, rec_value);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			tex_tail_name.insert(std::pair<TexType, string>(TexType::tex_diffuse, rec_value.string_value));
-			//·¨ÏßÌùÍ¼
+			//í·¨ï¿½ï¿½ï¿½ï¿½Í¼
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value, "Normaltex", pancy_json_data_type::json_data_string, rec_value);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			tex_tail_name.insert(std::pair<TexType, string>(TexType::tex_normal, rec_value.string_value));
-			//»·¾³¹âÕÚ±ÎÌùÍ¼
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú±ï¿½ï¿½ï¿½Í¼
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value, "Ambienttex", pancy_json_data_type::json_data_string, rec_value);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			tex_tail_name.insert(std::pair<TexType, string>(TexType::tex_ambient, rec_value.string_value));
 			if (model_pbr_type == PbrMaterialType::PbrType_MetallicRoughness)
 			{
-				//½ðÊô¶ÈÌùÍ¼
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value, "MetallicTex", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				tex_tail_name.insert(std::pair<TexType, string>(TexType::tex_metallic, rec_value.string_value));
-				//´Ö²Ú¶ÈÌùÍ¼
+				//ï¿½Ö²Ú¶ï¿½ï¿½ï¿½Í¼
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value, "RoughnessTex", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
@@ -1123,68 +1135,68 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 			else if (model_pbr_type == PbrMaterialType::PbrType_SpecularSmoothness)
 			{
-				//¾µÃæ¹â&¹â»¬¶ÈÌùÍ¼
+				//ï¿½ï¿½ï¿½ï¿½&ï¿½â»¬ï¿½ï¿½ï¿½ï¿½Í¼
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, material_value, "SpecsmoothnessTex", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				tex_tail_name.insert(std::pair<TexType, string>(TexType::tex_specular_smoothness, rec_value.string_value));
 			}
 
-			//¿Õ°×Ìî³äÎÆÀí
+			//ï¿½Õ°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			Json::Value empty_material_value = root_value.get("MaterialEmpty", Json::Value::null);
 			pancy_object_id id_empty_tex = 0;
-			//·¨ÏßÌî³äÎÆÀí
+			//í·¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, empty_material_value, "EmptyNormal", pancy_json_data_type::json_data_string, rec_value);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			string empty_tex_name = rec_value.string_value;
 			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(empty_tex_name, id_empty_tex);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			tex_empty.insert(std::pair<TexType, pancy_object_id>(TexType::tex_normal, id_empty_tex));
-			//aoÌî³äÎÆÀí
+			//aoï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, empty_material_value, "EmptyAmbient", pancy_json_data_type::json_data_string, rec_value);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			empty_tex_name = rec_value.string_value;
 			check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(empty_tex_name, id_empty_tex);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			tex_empty.insert(std::pair<TexType, pancy_object_id>(TexType::tex_ambient, id_empty_tex));
 			if (model_pbr_type == PbrMaterialType::PbrType_MetallicRoughness)
 			{
-				//½ðÊô¶ÈÎÆÀí
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, empty_material_value, "EmptyMetallic", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				empty_tex_name = rec_value.string_value;
 				check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(empty_tex_name, id_empty_tex);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				tex_empty.insert(std::pair<TexType, pancy_object_id>(TexType::tex_metallic, id_empty_tex));
-				//´Ö²Ú¶ÈÎÆÀí
+				//ï¿½Ö²Ú¶ï¿½ï¿½ï¿½ï¿½
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, empty_material_value, "EmptyRoughness", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				empty_tex_name = rec_value.string_value;
 				check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(empty_tex_name, id_empty_tex);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
@@ -1192,15 +1204,15 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 			else if (model_pbr_type == PbrMaterialType::PbrType_SpecularSmoothness)
 			{
-				//´Ö²Ú¶È&¾µÃæ¹âÎÆÀí
+				//ï¿½Ö²Ú¶&È¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, empty_material_value, "EmptySpecsmoothness", pancy_json_data_type::json_data_string, rec_value);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				empty_tex_name = rec_value.string_value;
 				check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(empty_tex_name, id_empty_tex);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
@@ -1208,7 +1220,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 
 		}
-		//Ô¤´¦ÀíLODÊý¾Ý
+		//ï¿½Ô¤ï¿½ï¿½ï¿½LODï¿½ï¿½ï¿½
 		if (if_self_lod)
 		{
 			Json::Value Lod_value = root_value.get("LodDivide", Json::Value::null);
@@ -1220,7 +1232,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				for (int j = 0; j < num_block_data; ++j)
 				{
 					check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, Lod_value[i], j, pancy_json_data_type::json_data_int, rec_value);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
@@ -1231,21 +1243,22 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		}
 	}
 
-	//¿ªÊ¼¼ÓÔØÄ£ÐÍ
-	const aiScene *model_need;//assimpÄ£ÐÍ±¸·Ý
+	//Ý¿ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ä£ï¿½
+	const aiScene *model_need;//assimpï¿½Ä£ï¿½Í±ï¿½ï¿½
 
 	model_need = importer.ReadFile(model_name,
 		aiProcess_MakeLeftHanded |
 		aiProcess_FlipWindingOrder |
 		aiProcess_CalcTangentSpace |
 		aiProcess_JoinIdenticalVertices
-	);//½«²»Í¬Í¼Ôª·ÅÖÃµ½²»Í¬µÄÄ£ÐÍÖÐÈ¥£¬Í¼Æ¬ÀàÐÍ¿ÉÄÜÊÇµã¡¢Ö±Ïß¡¢Èý½ÇÐÎµÈ
+	);//Ý½ï¿½ï¿½ï¿½Í¬Í¼Ôªï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½Í¬ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½Í¼Æ¬ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ï¿½Çµã¡¢Ö±ï¿½ß¡ï¿½ï¿½ï¿½ï¿½ï¿½Îµ
 	const char *error_str;
 	error_str = importer.GetErrorString();
 	if (model_need == NULL)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "read model" + resource_desc_file + "error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "read model" + resource_desc_file + "error",error_message);
+		
 		return error_message;
 	}
 
@@ -1270,8 +1283,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 			else
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "model" + resource_desc_file + "find no triangle face");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "model" + resource_desc_file + "find no triangle face",error_message);
+				
 				return error_message;
 
 			}
@@ -1295,7 +1309,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		UV_data.push_back(new_uv_list);
 		index_data.push_back(index_pack);
 	}
-	std::unordered_map<pancy_object_id, pancy_object_id> real_material_list;//ÉáÆú²»ºÏÀí²ÄÖÊºóµÄ²ÄÖÊ±àºÅÓëÖ®Ç°µÄ±àºÅ¶Ô±È
+	std::unordered_map<pancy_object_id, pancy_object_id> real_material_list;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êºï¿½Ä²ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Ö®Ç°ï¿½Ä±ï¿½Å¶Ô±
 	if (!if_auto_material)
 	{
 		int32_t real_material_num = 0;
@@ -1304,17 +1318,17 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			std::unordered_map<TexType, pancy_object_id> mat_tex_list;
 			const aiMaterial* pMaterial = model_need->mMaterials[i];
 			aiString Path;
-			//Âþ·´ÉäÎÆÀí
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0 && pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
 			{
 				pancy_object_id id_need;
 				check_error = BuildTextureRes(Path.C_Str(), 0, id_need);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				string common_file_name = Path.C_Str();
-				//ÐÞ¸ÄÎÆÀíÂ·¾¶²¢»ñÈ¡²ÄÖÊÃû³Æ
+				//ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				int32_t st_pos = 0;
 				std::string tex_real_name;
 				for (int32_t i = 0; i < common_file_name.size(); ++i)
@@ -1332,7 +1346,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				{
 					tex_real_name = "";
 				}
-				//»ñÈ¡ÎÆÀíµÄÖ÷ÒªÃû³Æ
+				//Æ»ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½
 				int32_t name_length = 0;
 				for (int i = 0; i < tex_real_name.size(); ++i)
 				{
@@ -1350,21 +1364,22 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				if (diffuse_mask_name != tex_tail_name.end())
 				{
 					std::string diffuse_tail = diffuse_mask_name->second;
-					//»ñÈ¡²ÄÖÊÃû³Æ
+					//Æ»ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 					string name_diffuse = tex_real_name.substr(0, name_length) + ".dds";
 					int start_compare = name_diffuse.size() - diffuse_tail.size();
 					for (int i = 0; i < diffuse_tail.size(); ++i)
 					{
 						if (diffuse_tail[i] != name_diffuse[start_compare + i])
 						{
-							PancystarEngine::EngineFailReason error_message(E_FAIL, "diffuse tail dismatch in model: " + resource_desc_file);
-							PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model material", error_message);
+							PancystarEngine::EngineFailReason error_message;
+							PancyDebugLogError(E_FAIL, "diffuse tail dismatch in model: " + resource_desc_file,error_message);
+							
 							return error_message;
 						}
 					}
 					string root_name = name_diffuse.substr(0, start_compare);
 					material_name_list.insert(std::pair<pancy_object_id, std::string>(real_material_num, root_name));
-					//½«ÎÆÀíÊý¾Ý¼ÓÔØµ½²ÄÖÊ±í
+					//Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¼ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½Ê±
 					auto now_texture_id_diffuse = insert_new_texture(texture_use, id_need);
 					mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, now_texture_id_diffuse));
 					//texture_use.push_back(id_need);
@@ -1376,7 +1391,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 							{
 								bool if_have_file = true;
 								std::string tex_name_combine = root_name + tex_deal->second;
-								//¼ìÑéÎÄ¼þÊÇ·ñ´æÔÚ
+								//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ç·ï¿½ï¿½ï¿½
 								fstream _file;
 								_file.open(model_root_path + tex_name_combine, ios::in);
 								if (!_file)
@@ -1387,14 +1402,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 								if (if_have_file)
 								{
 									check_error = BuildTextureRes(tex_name_combine, 0, id_need);
-									if (!check_error.CheckIfSucceed())
+									if (!check_error.if_succeed)
 									{
 										return check_error;
 									}
 								}
 								else
 								{
-									//ÎÆÀíÎÄ¼þ²»´æÔÚ£¬Ê¹ÓÃ¿Õ°×Í¼Æ¬´úÌæ
+									//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ú£ï¿½Ê¹ï¿½Ã¿Õ°ï¿½Í¼Æ¬ï¿½ï¿½ï¿½
 									texture_not_find.push_back(tex_name_combine);
 									auto empty_texture_now = tex_empty.find(tex_deal->first);
 									if (empty_texture_now != tex_empty.end())
@@ -1403,8 +1418,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 									}
 									else
 									{
-										PancystarEngine::EngineFailReason error_message(E_FAIL, "empty texture haven't load: " + resource_desc_file);
-										PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model material", error_message);
+										PancystarEngine::EngineFailReason error_message;
+										PancyDebugLogError(E_FAIL, "empty texture haven't load: " + resource_desc_file,error_message);
+										
 										return error_message;
 									}
 								}
@@ -1412,7 +1428,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 							}
 							else
 							{
-								//ÎÆÀíÎÄ¼þ²»´æÔÚ£¬Ê¹ÓÃ¿Õ°×Í¼Æ¬´úÌæ
+								//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ú£ï¿½Ê¹ï¿½Ã¿Õ°ï¿½Í¼Æ¬ï¿½ï¿½ï¿½
 								texture_not_find.push_back(root_name + "::empty");
 								auto empty_texture_now = tex_empty.find(tex_deal->first);
 								if (empty_texture_now != tex_empty.end())
@@ -1421,12 +1437,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 								}
 								else
 								{
-									PancystarEngine::EngineFailReason error_message(E_FAIL, "empty texture haven't load: " + resource_desc_file);
-									PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model material", error_message);
+									PancystarEngine::EngineFailReason error_message;
+									PancyDebugLogError(E_FAIL, "empty texture haven't load: " + resource_desc_file,error_message);
+									
 									return error_message;
 								}
 							}
-							//½«ÎÆÀíÊý¾Ý¼ÓÔØµ½²ÄÖÊ±í
+							//æ½«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¼ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½Ê±
 							auto now_texture_id_other = insert_new_texture(texture_use, id_need);
 							mat_tex_list.insert(std::pair<TexType, pancy_object_id>(tex_deal->first, now_texture_id_other));
 							//texture_use.push_back(id_need);
@@ -1436,7 +1453,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				else
 				{
 					material_name_list.insert(std::pair<pancy_object_id, std::string>(real_material_num, tex_real_name.substr(0, name_length)));
-					//½«ÎÆÀíÊý¾Ý¼ÓÔØµ½²ÄÖÊ±í
+					//í½«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¼ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½Ê±
 					auto now_texture_id_diffuse = insert_new_texture(texture_use, id_need);
 					mat_tex_list.insert(std::pair<TexType, pancy_object_id>(TexType::tex_diffuse, now_texture_id_diffuse));
 					//texture_use.push_back(id_need);
@@ -1450,7 +1467,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	}
 	else
 	{
-		//Ö»Ìî³ä²ÄÖÊ¶ÔÓ¦±í£¬²»¶ÁÈ¡²ÄÖÊÐÅÏ¢
+		//ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Ê¶ï¿½Ó¦ï¿½í£¬ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 		if (model_need->mNumMaterials == material_list.size())
 		{
 			for (int i = 0; i < material_list.size(); ++i)
@@ -1480,58 +1497,59 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		}
 		model_lod_divide.push_back(Lod_block_list);
 	}
-	//¼ÓÔØ¶¥µã¶¯»­ÐÅÏ¢
+	//ï¿½ï¿½ï¿½Ø¶ï¿½ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½Ï¢
 	if (if_pointmesh)
 	{
-		//³¢ÊÔ¶ÁÈ¡¶¥µã¶¯»­
+		//ï¿½ï¿½ï¿½Ô¶ï¿½È¡ï¿½ï¿½ï¿½ã¶¯ï¿½ï¿½
 		FBXanim_import = new mesh_animation_FBX(model_name);
 		check_error = FBXanim_import->create(vertex_num, index_num, index_data, UV_data);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		int point_number = FBXanim_import->GetMeshAnimNumber();
 		mesh_animation_data *new_data = new mesh_animation_data[point_number];
 		FBXanim_import->GetMeshAnimData(new_data);
-		//¿½±´¶¥µã¶¯»­Êý¾Ýµ½buffer
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½Ýµï¿½buffer
 		SubMemoryPointer vertex_buffer_upload;
 		PancyRenderCommandList *copy_render_list;
 		uint32_t copy_render_list_ID;
 		auto copy_contex = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
 		check_error = BuildDefaultBuffer(copy_render_list->GetCommandList().Get(), 4194304, 131072, vertex_anim_buffer, vertex_buffer_upload, new_data, point_number * sizeof(mesh_animation_data), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
-		//Íê³ÉäÖÈ¾¶ÓÁÐ²¢Ìá½»¿½±´
+		//ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½Ð²ï¿½ï¿½á½»ï¿½ï¿½ï¿½ï¿½
 		copy_render_list->UnlockPrepare();
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &copy_render_list_ID);
-		//ÔÚGPUÉÏ²åÒ»¸ö¼à¿ØÑÛÎ»
+		//ï¿½GPUï¿½ï¿½Ï²ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(upload_fence_value);
-		//µÈ´ý¿½±´½éÉÜ
+		//ï¿½È´ï¿½ï¿½ï¿½
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_DIRECT)->WaitGpuBrokenFence(upload_fence_value);
-		//É¾³ý¶¯Ì¬×ÊÔ´
+		//ï¿½É¾ï¿½ï¿½Ì¬ï¿½ï¿½Ô´
 		SubresourceControl::GetInstance()->FreeSubResource(vertex_buffer_upload);
 		delete[] new_data;
 	}
-	//Ô¤¼ÓÔØ¹Ç÷ÀÐÅÏ¢
+	//Ô¤ï¿½ï¿½ï¿½Ø¹ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 	if (if_skinmesh)
 	{
 		build_skintree(model_need->mRootNode, root_skin->son);
 	}
-	//Ìî³ä¼¸ºÎÌåÐÅÏ¢
+	//ï¿½ï¿½ä¼¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 	int now_used_bone_num = 0;
 
 	int mesh_vertex_offset = 0;
 	for (int i = 0; i < model_need->mNumMeshes; i++)
 	{
 		const aiMesh* paiMesh = model_need->mMeshes[i];
-		//»ñÈ¡Ä£ÐÍµÄ²ÄÖÊ±àºÅ
+		//ï¿½ï¿½È¡Ä£ï¿½ÍµÄ²ï¿½ï¿½Ê±ï¿½
 		auto real_material_find = real_material_list.find(paiMesh->mMaterialIndex);
 		if (real_material_find == real_material_list.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "the material id: " + std::to_string(paiMesh->mMaterialIndex) + " of model " + resource_desc_file + " have been delete(do not have diffuse map)");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "the material id: " + std::to_string(paiMesh->mMaterialIndex) + " of model " + resource_desc_file + " have been delete(do not have diffuse map)",error_message);
+			
 			return error_message;
 		}
 		pancy_object_id material_use = real_material_find->second;
@@ -1539,17 +1557,18 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		auto mat_list_now = material_list.find(material_use);
 		if (mat_list_now == material_list.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "havn't load the material id: " + std::to_string(material_use) + "in model:" + resource_desc_file);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "havn't load the material id: " + std::to_string(material_use) + "in model:" + resource_desc_file,error_message);
+			
 			return error_message;
 		}
-		//¼ÆËãÎÆÀíÆ«ÒÆÁ¿
+		//Å¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½ï¿½
 		int mat_stat_id = 0;
 		for (int j = 0; j < material_use; ++j)
 		{
 			mat_stat_id += material_list[j].size();
 		}
-		//´´½¨Ë÷Òý»º³åÇø
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		IndexType *index_need = new IndexType[paiMesh->mNumFaces * 3];
 		for (unsigned int j = 0; j < paiMesh->mNumFaces; j++)
 		{
@@ -1561,23 +1580,24 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 			else
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "model" + resource_desc_file + "find no triangle face");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "model" + resource_desc_file + "find no triangle face",error_message);
+				
 				return error_message;
 			}
 		}
-		//´´½¨»º³åÇø
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if (if_skinmesh)
 		{
 			PancystarEngine::PointSkinCommon8 *point_need = new PancystarEngine::PointSkinCommon8[paiMesh->mNumVertices];
 			check_error = BuildModelData(point_need, paiMesh, mat_stat_id);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
-			//Ìî³ä¶¯»­Êý¾Ý
+			//ï¿½ï¿½ï¿½ä¶¯ï¿½ï¿½ï¿½ï¿½
 			float *bone_removed_weight = new float[paiMesh->mNumVertices];
-			//Çå¿Õ¹Ç÷ÀÃÉÆ¤ÐÅÏ¢
+			//ï¿½ï¿½ï¿½Õ¹ï¿½ï¿½ï¿½ï¿½ï¿½Æ¤ï¿½ï¿½Ï¢
 			for (int j = 0; j < paiMesh->mNumVertices; ++j)
 			{
 				point_need[j].bone_id.x = (MaxBoneNum + 99) * (MaxBoneNum + 100) + (MaxBoneNum + 99);
@@ -1594,7 +1614,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				point_need[j].bone_weight1.w = 0.0f;
 				bone_removed_weight[j] = 0.0f;
 			}
-			//Ô¤Ìî³äÃÉÆ¤ÐÅÏ¢
+			//Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½Æ¤ï¿½ï¿½Ï¢
 			for (int j = 0; j < paiMesh->mNumBones; ++j)
 			{
 				skin_tree * now_node = find_tree(root_skin, paiMesh->mBones[j]->mName.data);
@@ -1606,7 +1626,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				tree_node_num[i][j] = now_node->bone_number;
 				for (int k = 0; k < paiMesh->mBones[j]->mNumWeights; ++k)
 				{
-					//ÏÈ½«8¸ö¹Ç÷ÀµÄidºÍÊý¾ÝÈ¡³öÒÔ±¸ºóÐøÊ¹ÓÃ
+					//ï¿½È½ï¿½8ï¿½ï¿½ï¿½ï¿½ï¿½idÄºï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½
 					uint32_t bone_id[8];
 					bone_id[0] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x / (MaxBoneNum + 100);
 					bone_id[1] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y / (MaxBoneNum + 100);
@@ -1625,7 +1645,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 					bone_weight[5] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.y;
 					bone_weight[6] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.z;
 					bone_weight[7] = point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_weight1.w;
-					//ÌôÑ¡Ò»¸öID¿ÕÏÐµÄ¹Ç÷ÀÊý¾Ý½øÐÐÐ´Èë
+					//ï¿½ï¿½ï¿½Ñ¡Ò»ï¿½IDï¿½ï¿½ï¿½ÐµÄ¹ï¿½ï¿½ï¿½ï¿½ï¿½Ý½ï¿½ï¿½ï¿½Ð´ï¿½
 					bool if_success_load = false;
 					for (int i = 0; i < 8; ++i)
 					{
@@ -1637,7 +1657,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 							break;
 						}
 					}
-					//Èç¹û8¸ö¹Ç÷À±»Õ¼Âú£¬ÔòÌôÑ¡Ò»¸öÈ¨ÖØ×îÇáµÄ¹Ç÷À£¬²¢±È½ÏÊÇ·ñÐèÒª¸üÐÂ
+					//ï¿½ï¿½ï¿½8ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡Ò»ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½
 					if (!if_success_load)
 					{
 						int min_id = 0;
@@ -1652,9 +1672,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 						}
 						if (bone_weight[min_id] < paiMesh->mBones[j]->mWeights[k].mWeight)
 						{
-							//½«±»ÒÆ³ýµÄ¹Ç÷ÀÈ¨ÖØ±£Áô£¬ÒÔ±¸Ö®ºó½øÐÐµ÷ºÍ¼ÓÈ¨
+							//Â½ï¿½ï¿½ï¿½ï¿½Æ³ï¿½Ä¹ï¿½ï¿½ï¿½È¨ï¿½Ø±ï¿½ï¿½ï¿½ï¿½Ô±ï¿½Ö®ï¿½ï¿½ï¿½ï¿½Ðµï¿½Í¼ï¿½È¨
 							bone_removed_weight[paiMesh->mBones[j]->mWeights[k].mVertexId] += bone_weight[min_id];
-							//Ê¹ÓÃÐÂµÄ¹Ç÷À´úÌæÖ®Ç°È¨ÖØ½ÏÐ¡µÄ¹Ç÷À
+							//Ê¹ï¿½ï¿½ï¿½ÂµÄ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®Ç°È¨ï¿½Ø½ï¿½Ð¡ï¿½Ä¹ï¿½ï¿½
 							bone_id[min_id] = now_node->bone_number;
 							bone_weight[min_id] = paiMesh->mBones[j]->mWeights[k].mWeight;
 						}
@@ -1663,7 +1683,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 							bone_removed_weight[paiMesh->mBones[j]->mWeights[k].mVertexId] += paiMesh->mBones[j]->mWeights[k].mWeight;
 						}
 					}
-					//½«´¦ÀíÍê±ÏµÄ¹Ç÷ÀÃÉÆ¤ÐÅÏ¢»¹Ô­µ½¶¥µã
+					//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏµÄ¹ï¿½ï¿½ï¿½ï¿½ï¿½Æ¤ï¿½ï¿½Ï¢ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½
 					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.x = bone_id[0] * (MaxBoneNum + 100) + bone_id[4];
 					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.y = bone_id[1] * (MaxBoneNum + 100) + bone_id[5];
 					point_need[paiMesh->mBones[j]->mWeights[k].mVertexId].bone_id.z = bone_id[2] * (MaxBoneNum + 100) + bone_id[6];
@@ -1682,11 +1702,11 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 
 				}
 			}
-			//½«±»ÉáÆúµÄÃÉÆ¤ÐÅÏ¢·ÖÅä¸øÒÑÊ¹ÓÃµÄ¹Ç÷À
+			//ã½«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¤ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ÃµÄ¹ï¿½ï¿½
 			for (int j = 0; j < paiMesh->mNumVertices; ++j)
 			{
 				float now_bone_weight[8];
-				//½«¹Ç÷ÀÈ¨ÖØÈ¡³ö
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½È¡ï¿½
 				now_bone_weight[0] = point_need[j].bone_weight0.x;
 				now_bone_weight[1] = point_need[j].bone_weight0.y;
 				now_bone_weight[2] = point_need[j].bone_weight0.z;
@@ -1705,7 +1725,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				{
 					now_bone_weight[k] += (now_bone_weight[k] / final_weight_use) * bone_removed_weight[j];
 				}
-				//½«´¦ÀíÍêµÄ¹Ç÷ÀÈ¨ÖØ»Ö¸´
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¹ï¿½ï¿½ï¿½È¨ï¿½Ø»Ö¸ï¿½
 				point_need[j].bone_weight0.x = now_bone_weight[0];
 				point_need[j].bone_weight0.y = now_bone_weight[1];
 				point_need[j].bone_weight0.z = now_bone_weight[2];
@@ -1717,7 +1737,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 			PancySubModel *new_submodel = new PancySubModel();
 			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -1729,11 +1749,11 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		{
 			PancystarEngine::PointCatchCommon *point_need = new PancystarEngine::PointCatchCommon[paiMesh->mNumVertices];
 			check_error = BuildModelData(point_need, paiMesh, mat_stat_id);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
-			//Ìî³ä¶¯»­Êý¾Ý
+			//ï¿½ï¿½ä¶¯ï¿½ï¿½ï¿½ï¿½
 			for (int j = 0; j < paiMesh->mNumVertices; ++j)
 			{
 				point_need[j].anim_id.x = 1;
@@ -1741,7 +1761,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			}
 			PancySubModel *new_submodel = new PancySubModel();
 			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -1752,13 +1772,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		{
 			PancystarEngine::PointCommon *point_need = new PancystarEngine::PointCommon[paiMesh->mNumVertices];;
 			check_error = BuildModelData(point_need, paiMesh, mat_stat_id);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			PancySubModel *new_submodel = new PancySubModel();
 			check_error = new_submodel->Create(point_need, index_need, paiMesh->mNumVertices, paiMesh->mNumFaces * 3, material_use);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -1770,21 +1790,21 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	}
 	if (if_skinmesh)
 	{
-		//²éÕÒÓÃÓÚÈ·¶¨¹Ç÷ÀÎ»ÖÃµÄ¸ù¹Ç÷À
+		//Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ÃµÄ¸ï¿½ï¿½ï¿½
 		FindRootBone(root_skin);
 		aiMatrix4x4 root_mat_identity;
 		GetRootSkinOffsetMatrix(model_need->mRootNode, root_mat_identity);
-		//¼ÆËãÆ«ÒÆ¾ØÕó
+		//ï¿½ï¿½ï¿½ï¿½Æ«ï¿½Æ¾ï¿½ï¿½
 		update_mesh_offset(model_need);
-		//¼ÓÔØ¶¯»­ÐÅÏ¢
+		//ï¿½ï¿½ï¿½Ø¶ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 		build_animation_list(model_need, "Pancystar_LocalModel");
-		//¼ÓÔØ¶îÍâµÄ¶¯»­ÐÅÏ¢
+		//ï¿½ï¿½ï¿½Ø¶ï¿½ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 		if (CheckIFJson(resource_desc_file))
 		{
 			pancy_json_value rec_value;
 			Json::Value root_value;
 			check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_desc_file, root_value);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -1796,30 +1816,30 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 				{
 					std::string animation_name;
 					std::string animation_file_name;
-					//¶¯»­Ãû³Æ
+					//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 					check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, extra_animation_list[i], "animation_name", pancy_json_data_type::json_data_string, rec_value);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
 					animation_name = rec_value.string_value;
-					//¶¯»­ÎÄ¼þÃû³Æ
+					//Æ¶ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
 					check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_desc_file, extra_animation_list[i], "animation_file", pancy_json_data_type::json_data_string, rec_value);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
 					animation_file_name = rec_value.string_value;
-					//¼ÓÔØ¶¯»­
+					//Æ¼ï¿½ï¿½Ø¶ï¿½ï¿½ï¿½
 					check_error = LoadAnimation(model_root_path + animation_file_name, animation_name);
-					if (!check_error.CheckIfSucceed())
+					if (!check_error.if_succeed)
 					{
 						return check_error;
 					}
 				}
 			}
 		}
-		//³õÊ¼»¯¶¯»­²¥·ÅÐÅÏ¢
+		//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 		if (skin_animation_map.size() > 0)
 		{
 			now_animation_use = skin_animation_map.begin()->second;
@@ -1827,11 +1847,11 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		}
 		now_animation_play_station = 0.0f;
 	}
-	//É¾³ýassimpÄÚ´æ
+	//É¾ï¿½assimpï¿½ï¿½Ú´
 	importer.FreeScene();
 	model_need = NULL;
 
-	//´´½¨°üÎ§ºÐ¶¥µã
+	//æ´´ï¿½ï¿½ï¿½ï¿½Î§ï¿½Ð¶ï¿½ï¿½
 	float center_pos_x = (model_size.max_box_pos.x + model_size.min_box_pos.x) / 2.0f;
 	float center_pos_y = (model_size.max_box_pos.y + model_size.min_box_pos.y) / 2.0f;
 	float center_pos_z = (model_size.max_box_pos.z + model_size.min_box_pos.z) / 2.0f;
@@ -1875,13 +1895,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	}
 	model_boundbox = new PancystarEngine::GeometryCommonModel<PancystarEngine::PointPositionSingle>(square_test, indices, 24, 36);
 	check_error = model_boundbox->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
-	//¼ÓÔØÁÙÊ±µÄäÖÈ¾¹æÔò
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½
 
-	//´´½¨cbuffer
+	//ò´´½ï¿½cbuffer
 
 	std::unordered_map<std::string, std::string> Cbuffer_Heap_desc;
 	PancyEffectGraphic::GetInstance()->GetPSO(pso_use)->GetCbufferHeapName(Cbuffer_Heap_desc);
@@ -1897,14 +1917,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	ResourceViewPack globel_var;
 	ResourceViewPointer new_res_view;
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[0].descriptor_heap_name, globel_var);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	new_res_view.resource_view_pack_id = globel_var;
 	new_res_view.resource_view_offset_id = descriptor_use_data[0].table_offset[0];
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_res_view, cbuffer[0]);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -1912,16 +1932,16 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	new_res_view.resource_view_pack_id = globel_var;
 	new_res_view.resource_view_offset_id = descriptor_use_data[0].table_offset[1];
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(new_res_view, cbuffer[1]);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	table_offset.push_back(new_res_view);
 
-	//´´½¨ÎÆÀí·ÃÎÊÆ÷
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	for (int i = 0; i < texture_use.size(); ++i)
 	{
-		//¼ÓÔØÒ»ÕÅÎÆÀí
+		//ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½
 		SubMemoryPointer texture_need;
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(texture_use[i], texture_need);
 		new_res_view.resource_view_pack_id = globel_var;
@@ -1929,7 +1949,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 		D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
 		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(texture_use[i], SRV_desc);
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_res_view, texture_need, SRV_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -1938,7 +1958,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 			table_offset.push_back(new_res_view);
 		}
 	}
-	//Ìî³äcbuffer
+	//ï¿½ï¿½ï¿½cbuffer
 	/*
 	int64_t per_memory_size;
 	auto data_submemory = SubresourceControl::GetInstance()->GetResourceData(cbuffer[0], per_memory_size);
@@ -1954,7 +1974,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::LoadModel(
 	DirectX::XMStoreFloat4x4(&world_mat[1],  DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&pos), DirectX::XMLoadFloat3(&look), DirectX::XMLoadFloat3(&up)) * DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, 1280.0f / 720.0f, 0.1f, 1000.0f));
 	//DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, DirectX::XM_PIDIV4, 0.1f, 1000.0f);
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, &world_mat, sizeof(world_mat));
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 	return check_error;
 	}*/
@@ -1967,7 +1987,7 @@ void PancyModelAssimp::update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT
 
 	DirectX::XMFLOAT4X4 view_mat;
 	PancyCamera::GetInstance()->CountViewMatrix(&view_mat);
-	//Ìî³äcbuffer
+	//ï¿½ï¿½ï¿½cbuffer
 	int64_t per_memory_size;
 	auto data_submemory = SubresourceControl::GetInstance()->GetResourceData(cbuffer[0], per_memory_size);
 	DirectX::XMFLOAT4X4 world_mat[3];
@@ -1981,7 +2001,7 @@ void PancyModelAssimp::update(DirectX::XMFLOAT4X4 world_matrix, DirectX::XMFLOAT
 PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device* device_pancy, const std::string &out_file_in)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//´¦Àí´æ´¢ÎÄ¼þµÄÎÄ¼þÃû
+	//ä´¦ï¿½ï¿½æ´¢ï¿½Ä¼ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½
 	std::string file_root_name = out_file_in.substr(0, out_file_in.size() - 5);
 	std::string file_root_real_name;
 	int32_t st_pos = 0;
@@ -2000,7 +2020,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 	{
 		file_root_real_name = "";
 	}
-	//´´½¨jsonÎÄ¼þ
+	//ï¿½jsonï¿½Ä¼
 	Json::Value json_data_outmodel;
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "IfHaveSkinAnimation", if_skinmesh);
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "IfHavePoinAnimation", if_pointmesh);
@@ -2010,49 +2030,49 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 	PancyJsonTool::GetInstance()->SetJsonValue(json_data_outmodel, "texture_num", texture_list.size());
 	for (int i = 0; i < texture_list.size(); ++i)
 	{
-		//´æ´¢Ã¿Ò»ÕÅÎÆÀíÊý¾Ý
+		//ï¿½æ´¢Ã¿Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		std::string now_tex_file_name = file_root_name + "_tex" + std::to_string(i) + ".dds";
 		std::string now_tex_file_real_name = file_root_real_name + "_tex" + std::to_string(i) + ".dds";
 		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "texture_file", now_tex_file_real_name);
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->SaveTextureToFile(device_pancy, texture_list[i], now_tex_file_name, true, true);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 	}
-	//Ìî³ä¶¯»­ÐÅÏ¢
+	//ï¿½ï¿½ï¿½ä¶¯ï¿½ï¿½ï¿½ï¿½Ï¢
 	if (if_skinmesh)
 	{
-		//´æ´¢¹Ç÷ÀÊý¾Ý
+		//ï¿½æ´¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		out_stream.open(file_root_name + ".bone", ios::binary);
 		SaveBoneTree(root_skin);
 		out_stream.close();
-		//´æ´¢¶¯»­Êý¾Ý
+		//Ý´æ´¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		for (auto animation_deal = skin_animation_map.begin(); animation_deal != skin_animation_map.end(); ++animation_deal)
 		{
-			//½«¶¯»­ÐÅÏ¢Ð´Èëjson
+			//Ý½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢Ð´ï¿½json
 			std::string animation_real_name_now = file_root_real_name + "_anim_" + animation_deal->first + ".skinanim";
 			PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "SkinAnimation", animation_real_name_now);
-			//½«¶¯»­Ï¸½Úµ¼Èëµ½ÎÄ¼þ
+			//ë½«ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½Úµï¿½ï¿½ëµ½ï¿½Ä¼
 			std::string animation_name_now = file_root_name + "_anim_" + animation_deal->first + ".skinanim";
 			out_stream.open(animation_name_now, ios::binary);
-			//½«Ò»¸ö¶¯»­µÄÃ¿¸ö¹Ç÷ÀµÄ±ä»»ÐÅÏ¢Ð´ÈëÎÄ¼þ
+			//ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ä»»ï¿½ï¿½Ï¢Ð´ï¿½ï¿½ï¿½Ä¼
 			for (int i = 0; i < animation_deal->second.data_animition.size(); ++i)
 			{
-				//µ±Ç°±ä»»µÄ¹Ç÷ÀÃû³ÆµÄ³¤¶È
+				//ï¿½Ç°ï¿½ä»»ï¿½Ä¹ï¿½ï¿½ï¿½ï¿½ï¿½ÆµÄ³ï¿½ï¿½
 				auto bone_name_size = animation_deal->second.data_animition[i].bone_name.size();
 				out_stream.write(reinterpret_cast<char*>(&bone_name_size), sizeof(bone_name_size));
-				//µ±Ç°±ä»»µÄ¹Ç÷ÀÃû³Æ
+				//Èµï¿½Ç°ï¿½ä»»ï¿½Ä¹ï¿½ï¿½ï¿½ï¿½ï¿½
 				out_stream.write(animation_deal->second.data_animition[i].bone_name.c_str(), animation_deal->second.data_animition[i].bone_name.size() * sizeof(char));
-				//ËùÓÐÐý×ªÊý¾Ý
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 				auto rottation_key_size = animation_deal->second.data_animition[i].rotation_key.size();
 				out_stream.write(reinterpret_cast<char*>(&rottation_key_size), sizeof(rottation_key_size));
 				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].rotation_key[0]), animation_deal->second.data_animition[i].rotation_key.size() * sizeof(animation_deal->second.data_animition[i].rotation_key[0]));
-				//ËùÓÐÆ½ÒÆÊý¾Ý
+				//ï¿½ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½
 				auto translation_key_size = animation_deal->second.data_animition[i].translation_key.size();
 				out_stream.write(reinterpret_cast<char*>(&translation_key_size), sizeof(translation_key_size));
 				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].translation_key[0]), animation_deal->second.data_animition[i].translation_key.size() * sizeof(animation_deal->second.data_animition[i].translation_key[0]));
-				//ËùÓÐËõ·ÅÊý¾Ý
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				auto scaling_key_size = animation_deal->second.data_animition[i].scaling_key.size();
 				out_stream.write(reinterpret_cast<char*>(&scaling_key_size), sizeof(scaling_key_size));
 				out_stream.write(reinterpret_cast<char*>(&animation_deal->second.data_animition[i].scaling_key[0]), animation_deal->second.data_animition[i].scaling_key.size() * sizeof(animation_deal->second.data_animition[i].scaling_key[0]));
@@ -2062,14 +2082,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 	}
 	else if (if_pointmesh)
 	{
-		//´æ´¢¶¥µã¶¯»­Êý¾Ý
+		//Ý´æ´¢ï¿½ï¿½ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½
 		int point_number = FBXanim_import->GetMeshAnimNumber();
 		mesh_animation_data *new_data = new mesh_animation_data[point_number];
 		FBXanim_import->GetMeshAnimData(new_data);
-		//½«¶¯»­ÐÅÏ¢Ð´Èëjson
+		//Ý½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢Ð´ï¿½json
 		std::string animation_real_name_now = file_root_real_name + "_anim_" + "basic" + ".pointcatch";
 		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "PointAnimation", animation_real_name_now);
-		//½«¶¯»­Ï¸½Úµ¼Èëµ½ÎÄ¼þ
+		//ë½«ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½Úµï¿½ï¿½ëµ½ï¿½Ä¼
 		std::string animation_name_now = file_root_name + "_anim_" + "basic" + ".pointcatch";
 		out_stream.open(animation_name_now, ios::binary);
 		auto all_frame_num = FBXanim_import->get_frame_num();
@@ -2083,12 +2103,12 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		out_stream.close();
 		delete[] new_data;
 	}
-	//ÕûºÏ¶¥µãÊý¾Ý
+	//ï¿½ï¿½ï¿½Ï¶ï¿½ï¿½ï¿½ï¿½ï¿½
 	for (int i = 0; i < model_lod_divide.size(); ++i)
 	{
 		if (if_skinmesh)
 		{
-			//Ìî³ä¶¥µã¼°Ë÷Òý
+			//ï¿½ï¿½ï¿½ä¶¥ï¿½ã¼°ï¿½ï¿½ï¿½
 			std::vector<PancystarEngine::PointSkinCommon8> vertex_data_pack;
 			std::vector<IndexType> index_data_pack;
 			for (int j = 0; j < model_lod_divide[i].size(); ++j)
@@ -2098,16 +2118,16 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 				model_resource_list[model_lod_divide[i][j]]->GetSubModelData(vertex_data_in, index_data_in);
 				for (int k = 0; k < index_data_in.size(); ++k)
 				{
-					//Ìí¼ÓË÷ÒýºÅ
+					//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 					index_data_pack.push_back(index_data_in[i] + vertex_data_pack.size());
 				}
 				for (int k = 0; k < vertex_data_in.size(); ++k)
 				{
-					//Ìí¼Ó¶¥µãÐÅÏ¢
+					//ï¿½ï¿½ï¿½Ó¶ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 					vertex_data_pack.push_back(vertex_data_in[i]);
 				}
 			}
-			//´æ´¢¶¥µã¼°Ë÷Òý
+			//ï¿½æ´¢ï¿½ï¿½ï¿½ã¼°ï¿½ï¿½ï¿½
 			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
 			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
 			out_stream.close();
@@ -2117,7 +2137,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		}
 		else if (if_pointmesh)
 		{
-			//Ìî³ä¶¥µã¼°Ë÷Òý
+			//ï¿½ï¿½ï¿½ä¶¥ï¿½ã¼°ï¿½ï¿½ï¿½
 			std::vector<PancystarEngine::PointCatchCommon> vertex_data_pack;
 			std::vector<IndexType> index_data_pack;
 			for (int j = 0; j < model_lod_divide[i].size(); ++j)
@@ -2127,16 +2147,16 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 				model_resource_list[model_lod_divide[i][j]]->GetSubModelData(vertex_data_in, index_data_in);
 				for (int k = 0; k < index_data_in.size(); ++k)
 				{
-					//Ìí¼ÓË÷ÒýºÅ
+					//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 					index_data_pack.push_back(index_data_in[i] + vertex_data_pack.size());
 				}
 				for (int k = 0; k < vertex_data_in.size(); ++k)
 				{
-					//Ìí¼Ó¶¥µãÐÅÏ¢
+					//ï¿½ï¿½ï¿½Ó¶ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 					vertex_data_pack.push_back(vertex_data_in[i]);
 				}
 			}
-			//´æ´¢¶¥µã¼°Ë÷Òý
+			//ï¿½æ´¢ï¿½ï¿½ï¿½ã¼°ï¿½ï¿½ï¿½
 			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
 			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
 			out_stream.close();
@@ -2148,7 +2168,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		{
 			std::vector<PancystarEngine::PointCommon> vertex_data_pack;
 			std::vector<IndexType> index_data_pack;
-			//Ìî³ä¶¥µã¼°Ë÷Òý
+			//ï¿½ï¿½ï¿½ä¶¥ï¿½ã¼°ï¿½ï¿½ï¿½
 			for (int j = 0; j < model_lod_divide[i].size(); ++j)
 			{
 				std::vector<PancystarEngine::PointCommon> vertex_data_in;
@@ -2156,16 +2176,16 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 				model_resource_list[model_lod_divide[i][j]]->GetSubModelData(vertex_data_in, index_data_in);
 				for (int k = 0; k < index_data_in.size(); ++k)
 				{
-					//Ìí¼ÓË÷ÒýºÅ
+					//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 					index_data_pack.push_back(index_data_in[i] + vertex_data_pack.size());
 				}
 				for (int k = 0; k < vertex_data_in.size(); ++k)
 				{
-					//Ìí¼Ó¶¥µãÐÅÏ¢
+					//ï¿½ï¿½ï¿½Ó¶ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 					vertex_data_pack.push_back(vertex_data_in[i]);
 				}
 			}
-			//´æ´¢¶¥µã¼°Ë÷Òý
+			//ï¿½æ´¢ï¿½ï¿½ï¿½ã¼°ï¿½ï¿½ï¿½
 			out_stream.open(file_root_name + std::to_string(i) + ".vertex", ios::binary);
 			out_stream.write(reinterpret_cast<char*>(&vertex_data_pack[0]), vertex_data_pack.size() * sizeof(vertex_data_pack[0]));
 			out_stream.close();
@@ -2175,7 +2195,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		}
 
 	}
-	//ÏòjsonÎÄ¼þÐ´Èë²ÄÖÊÐÅÏ¢
+	//ï¿½ï¿½jsonï¿½ï¿½Ä¼ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 
 	for (auto material_data_deal = material_list.begin(); material_data_deal != material_list.end(); ++material_data_deal)
 	{
@@ -2187,8 +2207,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		}
 		else
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the albedo tex to export");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find the albedo tex to export",error_message);
+			
 			return error_message;
 		}
 		if (material_data_deal->second.find(TexType::tex_normal) != material_data_deal->second.end())
@@ -2197,8 +2218,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		}
 		else
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the normal tex to export");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find the normal tex to export",error_message);
+			
 			return error_message;
 		}
 		if (material_data_deal->second.find(TexType::tex_ambient) != material_data_deal->second.end())
@@ -2207,8 +2229,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 		}
 		else
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the ambient tex to export");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find the ambient tex to export",error_message);
+			
 			return error_message;
 		}
 		if (model_pbr_type == PbrMaterialType::PbrType_MetallicRoughness)
@@ -2219,8 +2242,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			}
 			else
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the metallic tex to export");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "could not find the metallic tex to export",error_message);
+				
 				return error_message;
 			}
 			if (material_data_deal->second.find(TexType::tex_roughness) != material_data_deal->second.end())
@@ -2229,8 +2253,9 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			}
 			else
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the roughness tex to export");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "could not find the roughness tex to export",error_message);
+				
 				return error_message;
 			}
 		}
@@ -2242,21 +2267,22 @@ PancystarEngine::EngineFailReason PancyModelAssimp::SaveModelToFile(ID3D11Device
 			}
 			else
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the specularsmooth tex to export");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Export mesh to file", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "could not find the specularsmooth tex to export",error_message);
+				
 				return error_message;
 			}
 		}
 		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_outmodel, "material", json_data_material);
 	}
 	check_error = PancyJsonTool::GetInstance()->WriteValueToJson(json_data_outmodel, out_file_in);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	return PancystarEngine::succeed;
 }
-//¶¥µã¶¯»­
+//ï¿½ï¿½ï¿½ã¶¯ï¿½ï¿½
 PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 	PancyNowGraphicsCommandList* cmdList,
 	int64_t memory_alignment_size,
@@ -2270,14 +2296,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 {
 	HRESULT hr;
 	PancystarEngine::EngineFailReason check_error;
-	//ÏÈ´´½¨4M¶ÔÆëµÄ´æ´¢¿é
-	UINT alignment_buffer_size = (BufferSize + memory_alignment_size) & ~(memory_alignment_size - 1);//4M¶ÔÆë
+	//ï¿½È´ï¿½ï¿½ï¿½4Mï¿½ï¿½ï¿½ï¿½Ä´æ´¢ï¿½
+	UINT alignment_buffer_size = (BufferSize + memory_alignment_size) & ~(memory_alignment_size - 1);//4Mï¿½ï¿½ï¿½
 	std::string heapdesc_file_name = "json\\resource_heap\\PointBuffer" + std::to_string(alignment_buffer_size) + ".json";
 	std::string dynamic_heapdesc_file_name = "json\\resource_heap\\DynamicBuffer" + std::to_string(alignment_buffer_size) + ".json";
-	//¼ìÑé×ÊÔ´¶Ñ¸ñÊ½´´½¨
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½Ñ¸ï¿½Ê½ï¿½ï¿½ï¿½ï¿½
 	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(heapdesc_file_name))
 	{
-		//¸üÐÂ¸ñÊ½ÎÄ¼þ
+		//ï¿½ï¿½ï¿½Â¸ï¿½Ê½ï¿½Ä¼
 		Json::Value json_data_out;
 		UINT resource_block_num = (4194304 * 20) / alignment_buffer_size;
 		if (resource_block_num < 1)
@@ -2289,13 +2315,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_type_in", "D3D12_HEAP_TYPE_DEFAULT");
 		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_out, "heap_flag_in", "D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS");
 		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, heapdesc_file_name);
-		//½«ÎÄ¼þ±ê¼ÇÎªÒÑ¾­´´½¨
+		//ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Îªï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½
 		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(heapdesc_file_name);
 	}
-	//¼ìÑéÉÏ´«µÄÁÙÊ±×ÊÔ´¶Ñ¸ñÊ½´´½¨
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ô´ï¿½Ñ¸ï¿½Ê½ï¿½ï¿½ï¿½ï¿½
 	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(dynamic_heapdesc_file_name))
 	{
-		//¸üÐÂ¸ñÊ½ÎÄ¼þ
+		//ï¿½ï¿½ï¿½Â¸ï¿½Ê½ï¿½Ä¼
 		Json::Value json_data_out;
 		UINT resource_block_num = (4194304 * 5) / alignment_buffer_size;
 		if (resource_block_num < 1)
@@ -2307,11 +2333,11 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "heap_type_in", "D3D12_HEAP_TYPE_UPLOAD");
 		PancyJsonTool::GetInstance()->AddJsonArrayValue(json_data_out, "heap_flag_in", "D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS");
 		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, dynamic_heapdesc_file_name);
-		//½«ÎÄ¼þ±ê¼ÇÎªÒÑ¾­´´½¨
+		//ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Îªï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½
 		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(dynamic_heapdesc_file_name);
 	}
-	//´´½¨´æ´¢µ¥ÔªµÄ·ÖÇø´óÐ¡
-	UINT buffer_block_size = (BufferSize + memory_block_alignment_size) & ~(memory_block_alignment_size - 1);//128k¶ÔÆë
+	//ï¿½ï¿½ï¿½ï¿½ï¿½æ´¢ï¿½ï¿½Ôªï¿½Ä·ï¿½ï¿½ï¿½ï¿½Ð¡
+	UINT buffer_block_size = (BufferSize + memory_block_alignment_size) & ~(memory_block_alignment_size - 1);//128kï¿½ï¿½ï¿½
 	if (alignment_buffer_size % buffer_block_size != 0)
 	{
 		int32_t max_divide_size = alignment_buffer_size / buffer_block_size;
@@ -2326,10 +2352,10 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 	}
 	std::string bufferblock_file_name = "json\\resource_view\\PointBufferSub" + std::to_string(buffer_block_size) + ".json";
 	std::string dynamic_bufferblock_file_name = "json\\resource_view\\DynamicBufferSub" + std::to_string(buffer_block_size) + ".json";
-	//¼ìÑé×ÊÔ´¶Ñ´æ´¢µ¥Ôª¸ñÊ½´´½¨
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½Ñ´æ´¢ï¿½ï¿½Ôªï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½
 	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(bufferblock_file_name))
 	{
-		//¸üÐÂ¸ñÊ½ÎÄ¼þ
+		//ï¿½ï¿½ï¿½Â¸ï¿½Ê½ï¿½Ä¼
 		Json::Value json_data_resourceview;
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "ResourceType", heapdesc_file_name);
 		Json::Value json_data_res_desc;
@@ -2345,20 +2371,20 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 		Json::Value json_data_sample_desc;
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Count", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Quality", 0);
-		//µÝ¹é»Øµ÷
+		//ï¿½Ý¹ï¿½Øµ
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "SampleDesc", json_data_sample_desc);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_DESC", json_data_res_desc);
-		//¼ÌÐøÌî³äÖ÷¸É
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_STATES", "D3D12_RESOURCE_STATE_COPY_DEST");
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "per_block_size", buffer_block_size);
-		//Ð´ÈëÎÄ¼þ²¢±ê¼ÇÎªÒÑ´´½¨
+		//ï¿½Ð´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Îªï¿½Ñ´ï¿½ï¿½ï¿½
 		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_resourceview, bufferblock_file_name);
 		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(bufferblock_file_name);
 	}
-	//¼ìÑéÉÏ´«µÄÁÙÊ±×ÊÔ´¶Ñ´æ´¢µ¥Ôª¸ñÊ½´´½¨
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ô´ï¿½Ñ´æ´¢ï¿½ï¿½Ôªï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½
 	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(dynamic_bufferblock_file_name))
 	{
-		//¸üÐÂ¸ñÊ½ÎÄ¼þ
+		//ï¿½ï¿½ï¿½Â¸ï¿½Ê½ï¿½Ä¼
 		Json::Value json_data_resourceview;
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "ResourceType", dynamic_heapdesc_file_name);
 		Json::Value json_data_res_desc;
@@ -2374,27 +2400,27 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 		Json::Value json_data_sample_desc;
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Count", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_sample_desc, "Quality", 0);
-		//µÝ¹é»Øµ÷
+		//ï¿½Ý¹ï¿½Øµ
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_res_desc, "SampleDesc", json_data_sample_desc);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_DESC", json_data_res_desc);
-		//¼ÌÐøÌî³äÖ÷¸É
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "D3D12_RESOURCE_STATES", "D3D12_RESOURCE_STATE_GENERIC_READ");
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_resourceview, "per_block_size", buffer_block_size);
-		//Ð´ÈëÎÄ¼þ²¢±ê¼ÇÎªÒÑ´´½¨
+		//ï¿½Ð´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Îªï¿½Ñ´ï¿½ï¿½ï¿½
 		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_resourceview, dynamic_bufferblock_file_name);
 		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(dynamic_bufferblock_file_name);
 	}
 	check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(bufferblock_file_name, default_buffer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = SubresourceControl::GetInstance()->BuildSubresourceFromFile(dynamic_bufferblock_file_name, upload_buffer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
-	//ÏòCPU¿É·ÃÎÊ»º³åÇøÌí¼ÓÊý¾Ý
+	//ï¿½CPUï¿½É·ï¿½ï¿½Ê»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	D3D12_SUBRESOURCE_DATA vertexData_buffer = {};
 	vertexData_buffer.pData = initData;
 	vertexData_buffer.RowPitch = BufferSize;
@@ -2402,15 +2428,15 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 	int64_t per_memory_size;
 	auto dest_res = SubresourceControl::GetInstance()->GetResourceData(default_buffer, per_memory_size);
 	auto copy_res = SubresourceControl::GetInstance()->GetResourceData(upload_buffer, per_memory_size);
-	//ÏÈ½«cpuÉÏµÄÊý¾Ý¿½±´µ½ÉÏ´«»º³åÇø
+	//ï¿½ï¿½È½ï¿½cpuï¿½Ïµï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	check_error = copy_res->WriteFromCpuToBuffer(upload_buffer.offset*per_memory_size, initData, BufferSize);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
-	//½«ÉÏ´«»º³åÇøµÄÊý¾Ý¿½±´µ½ÏÔ´æ»º³åÇø
+	//ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´æ»ºï¿½ï¿½ï¿½
 	cmdList->CopyBufferRegion(dest_res->GetResource().Get(), default_buffer.offset * per_memory_size, copy_res->GetResource().Get(), upload_buffer.offset*per_memory_size, buffer_block_size);
-	//ÐÞ¸Ä»º³åÇø¸ñÊ½
+	//ï¿½ï¿½Þ¸Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½
 	cmdList->ResourceBarrier(
 		1,
 		&CD3DX12_RESOURCE_BARRIER::Transition(
@@ -2421,7 +2447,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::BuildDefaultBuffer(
 	);
 	return PancystarEngine::succeed;
 }
-//¹Ç÷À¶¯»­
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 bool PancyModelAssimp::check_ifsame(char a[], char b[])
 {
 	int length = strlen(a);
@@ -2503,14 +2529,14 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_skintree(aiNode *now_n
 		now_root->bone_number = NouseAssimpStruct;
 		if (now_node->mNumChildren > 0)
 		{
-			//Èç¹ûÓÐÖÁÉÙÒ»¸ö¶ù×ÓÔò½¨Á¢¶ù×Ó½áµã
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó½ï¿½
 			now_root->son = new skin_tree();
 			build_skintree(now_node->mChildren[0], now_root->son);
 		}
 		skin_tree *p = now_root->son;
 		for (int i = 1; i < now_node->mNumChildren; ++i)
 		{
-			//½¨Á¢ËùÓÐµÄÐÖµÜÁ´
+			//ã½¨ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½Öµï¿½ï¿½
 			p->brother = new skin_tree();
 			build_skintree(now_node->mChildren[i], p->brother);
 			p = p->brother;
@@ -2607,12 +2633,13 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list(const a
 			now_bone_anim_data.bone_point = find_tree(root_skin, model_need->mAnimations[i]->mChannels[j]->mNodeName.data);
 			if (now_bone_anim_data.bone_point == NULL)
 			{
-				//Î´·¢ÏÖ¹Ç÷À£¬Ìø¹ý´¦Àí
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find the bone :" + now_bone_anim_data.bone_name + " from model:" + resource_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load animation data From Model", error_message);
+				//Î´ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "Could not find the bone :" + now_bone_anim_data.bone_name + " from model:" + resource_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING,error_message);
+				
 				continue;
 			}
-			//Ðý×ªËÄÔªÊý
+			//ï¿½ï¿½ï¿½×ªï¿½ï¿½Ôªï¿½
 			int32_t number_rotation = model_need->mAnimations[i]->mChannels[j]->mNumRotationKeys;
 			for (int k = 0; k < number_rotation; ++k)
 			{
@@ -2624,7 +2651,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list(const a
 				new_animation_rotate.main_key[3] = model_need->mAnimations[i]->mChannels[j]->mRotationKeys[k].mValue.w;
 				now_bone_anim_data.rotation_key.push_back(new_animation_rotate);
 			}
-			//Æ½ÒÆÏòÁ¿
+			//ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½
 			int32_t number_translation = model_need->mAnimations[i]->mChannels[j]->mNumPositionKeys;
 			for (int k = 0; k < number_translation; ++k)
 			{
@@ -2635,7 +2662,7 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list(const a
 				new_animation_translate.main_key[2] = model_need->mAnimations[i]->mChannels[j]->mPositionKeys[k].mValue.z;
 				now_bone_anim_data.translation_key.push_back(new_animation_translate);
 			}
-			//Ëõ·ÅÏòÁ¿
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			int32_t number_scaling = model_need->mAnimations[i]->mChannels[j]->mNumScalingKeys;
 			for (int k = 0; k < number_scaling; ++k)
 			{
@@ -2646,14 +2673,15 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list(const a
 				new_animation_scaling.main_key[2] = model_need->mAnimations[i]->mChannels[j]->mScalingKeys[k].mValue.z;
 				now_bone_anim_data.scaling_key.push_back(new_animation_scaling);
 			}
-			//½«¸Ã¹Ç÷ÀµÄ¶¯»­Ìí¼ÓÖÁ×Ü¶¯»­
+			//ï¿½ï¿½ï¿½Ã¹ï¿½ï¿½ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü¶ï¿½ï¿½ï¿½
 			now_anim_set.data_animition.push_back(now_bone_anim_data);
 		}
 		if (skin_animation_map.find(now_animation_name) != skin_animation_map.end())
 		{
-			//¶¯»­ÖØ¸´¼ÓÔØ£¬Ìø¹ý´¦Àí
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "repeat load the animation :" + now_animation_name + " from model:" + resource_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load animation data From Model", error_message);
+			//ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½Ø£ï¿½ï¿½ï¿½ï¿½ï¿½
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "repeat load the animation :" + now_animation_name + " from model:" + resource_name, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING,error_message);
+			
 			continue;
 		}
 		else
@@ -2666,23 +2694,24 @@ PancystarEngine::EngineFailReason PancyModelAssimp::build_animation_list(const a
 PancystarEngine::EngineFailReason PancyModelAssimp::LoadAnimation(const std::string &resource_desc_file, const std::string &animation_name)
 {
 	PancystarEngine::EngineFailReason check_error;
-	//¿ªÊ¼¼ÓÔØÄ£ÐÍ
-	const aiScene *model_need = NULL;//assimpÄ£ÐÍ±¸·Ý
+	//í¿ªÊ¼ï¿½ï¿½ï¿½ï¿½Ä£ï¿½
+	const aiScene *model_need = NULL;//assimpï¿½Ä£ï¿½Í±ï¿½ï¿½
 	model_need = importer.ReadFile(resource_desc_file,
 		aiProcess_MakeLeftHanded |
 		aiProcess_FlipWindingOrder |
 		aiProcess_CalcTangentSpace |
 		aiProcess_JoinIdenticalVertices
-	);//½«²»Í¬Í¼Ôª·ÅÖÃµ½²»Í¬µÄÄ£ÐÍÖÐÈ¥£¬Í¼Æ¬ÀàÐÍ¿ÉÄÜÊÇµã¡¢Ö±Ïß¡¢Èý½ÇÐÎµÈ
+	);//Ý½ï¿½ï¿½ï¿½Í¬Í¼Ôªï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½Í¬ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½Í¼Æ¬ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ï¿½Çµã¡¢Ö±ï¿½ß¡ï¿½ï¿½ï¿½ï¿½ï¿½Îµ
 	if (model_need == NULL)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "read model" + resource_desc_file + "error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load model from Assimp", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "read model" + resource_desc_file + "error",error_message);
+		
 		return error_message;
 	}
-	//¼ÓÔØ¶¯»­Êý¾Ý
+	//È¼ï¿½ï¿½Ø¶ï¿½ï¿½ï¿½ï¿½ï¿½
 	check_error = build_animation_list(model_need, animation_name);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -2715,13 +2744,13 @@ void PancyModelAssimp::update_root(skin_tree *root, DirectX::XMFLOAT4X4 matrix_p
 }
 void PancyModelAssimp::GetModelBoneData(DirectX::XMFLOAT4X4 *bone_matrix)
 {
-	//¸üÐÂ¶¯»­
+	//Ý¸ï¿½ï¿½Â¶ï¿½ï¿½ï¿½
 	update_anim_data();
-	//Ë¢ÐÂ¹Ç÷À¶¯»­Ê÷
+	//Ë¢ï¿½Â¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	DirectX::XMFLOAT4X4 matrix_identi;
 	DirectX::XMStoreFloat4x4(&matrix_identi, DirectX::XMMatrixIdentity());
 	update_root(root_skin, matrix_identi);
-	//½«¸üÐÂºóµÄ¶¯»­¾ØÕó×öÆ«ÒÆ
+	//ï¿½ï¿½ï¿½Âºï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½
 	for (int i = 0; i < MaxBoneNum; ++i)
 	{
 		DirectX::XMStoreFloat4x4(&final_matrix_array[i], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&offset_matrix_array[i]) * DirectX::XMLoadFloat4x4(&bone_matrix_array[i])));
@@ -2739,7 +2768,7 @@ void PancyModelAssimp::update_anim_data()
 
 		int start_anim, end_anim;
 		find_anim_sted(input_time, start_anim, end_anim, now.rotation_key);
-		//ËÄÔªÊý²åÖµ²¢Ñ°ÕÒ±ä»»¾ØÕó
+		//ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½Öµï¿½ï¿½Ñ°ï¿½Ò±ä»»ï¿½ï¿½ï¿½
 		quaternion_animation rotation_now;
 		if (start_anim == end_anim || end_anim >= now.rotation_key.size())
 		{
@@ -2750,7 +2779,7 @@ void PancyModelAssimp::update_anim_data()
 			Interpolate(rotation_now, now.rotation_key[start_anim], now.rotation_key[end_anim], (input_time - now.rotation_key[start_anim].time) / (now.rotation_key[end_anim].time - now.rotation_key[start_anim].time));
 		}
 		Get_quatMatrix(rec_rot, rotation_now);
-		//Ëõ·Å±ä»»
+		//ï¿½ï¿½ï¿½Å±ä»»
 		find_anim_sted(input_time, start_anim, end_anim, now.scaling_key);
 		vector_animation scalling_now;
 		if (start_anim == end_anim)
@@ -2762,7 +2791,7 @@ void PancyModelAssimp::update_anim_data()
 			Interpolate(scalling_now, now.scaling_key[start_anim], now.scaling_key[end_anim], (input_time - now.scaling_key[start_anim].time) / (now.scaling_key[end_anim].time - now.scaling_key[start_anim].time));
 		}
 		rec_scal = DirectX::XMMatrixScaling(scalling_now.main_key[0], scalling_now.main_key[1], scalling_now.main_key[2]);
-		//Æ½ÒÆ±ä»»
+		//Æ½ï¿½Æ±ä»»
 		find_anim_sted(input_time, start_anim, end_anim, now.translation_key);
 		vector_animation translation_now;
 		if (start_anim == end_anim)
@@ -2774,7 +2803,7 @@ void PancyModelAssimp::update_anim_data()
 			Interpolate(translation_now, now.translation_key[start_anim], now.translation_key[end_anim], (input_time - now.translation_key[start_anim].time) / (now.translation_key[end_anim].time - now.translation_key[start_anim].time));
 		}
 		rec_trans = DirectX::XMMatrixTranslation(translation_now.main_key[0], translation_now.main_key[1], translation_now.main_key[2]);
-		//×Ü±ä»»
+		//ï¿½Ü±ä»»
 		XMStoreFloat4x4(&now.bone_point->animation_matrix, rec_scal * XMLoadFloat4x4(&rec_rot) * rec_trans);
 	}
 }
@@ -2994,9 +3023,9 @@ PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 	view_rect.top = 0;
 	view_rect.right = Scene_width;
 	view_rect.bottom = Scene_height;
-	//´´½¨Á½¸öÀëÆÁ»º³åÇø£¬ÓÃÓÚäÖÈ¾ÒÔ¼°Êý¾Ý»Ø¶Á
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½Ô¼ï¿½ï¿½ï¿½Ý»Ø¶
 	std::vector<D3D12_HEAP_FLAGS> heap_flags;
-	//´´½¨ÆÁÄ»¿Õ¼äuint4äÖÈ¾Ä¿±ê¸ñÊ½
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½Õ¼uint4ï¿½ï¿½ï¿½È¾Ä¿ï¿½ï¿½ï¿½Ê½
 	D3D12_RESOURCE_DESC uint_tex_desc;
 	uint_tex_desc.Alignment = 0;
 	uint_tex_desc.DepthOrArraySize = 1;
@@ -3014,7 +3043,7 @@ PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_BUFFERS);
 	heap_flags.push_back(D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES);
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(uint_tex_desc, 1, D3D12_HEAP_TYPE_DEFAULT, heap_flags, D3D12_RESOURCE_STATE_COMMON, subres_name);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -3022,24 +3051,24 @@ PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(RGB8uint_file_data))
 	{
 		Json::Value json_data_out;
-		//Ìî³ä×ÊÔ´¸ñÊ½
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Ê½
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 0);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
-		//Ð´ÈëÎÄ¼þ²¢±ê¼ÇÎªÒÑ´´½¨
+		//Ð´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Îªï¿½Ñ´ï¿½ï¿½ï¿½
 		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, RGB8uint_file_data);
-		//½«ÎÄ¼þ±ê¼ÇÎªÒÑ¾­´´½¨
+		//ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Îªï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½
 		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(RGB8uint_file_data);
 	}
-	//´´½¨ÆÁÄ»¿Õ¼äreadback»º³åÇø
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½Õ¼readbackä»ºï¿½ï¿½ï¿½
 	uint64_t subresources_size;
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&uint_tex_desc, 0, 1, 0, nullptr, nullptr, nullptr, &subresources_size);
 	if (subresources_size % 65536 != 0)
 	{
-		//65536¶ÔÆë
+		//65536ï¿½ï¿½ï¿½
 		subresources_size = (subresources_size + 65536) & ~65535;
 	}
 	texture_size = subresources_size;
@@ -3058,7 +3087,7 @@ PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 	heap_flags.clear();
 	heap_flags.push_back(D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->BuildTextureTypeJson(default_tex_readback, 1, D3D12_HEAP_TYPE_READBACK, heap_flags, D3D12_RESOURCE_STATE_COPY_DEST, subres_name);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -3066,96 +3095,96 @@ PancystarEngine::EngineFailReason scene_test_simple::ScreenChange()
 	if (!PancystarEngine::FileBuildRepeatCheck::GetInstance()->CheckIfCreated(readback_data))
 	{
 		Json::Value json_data_out;
-		//Ìî³ä×ÊÔ´¸ñÊ½
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Ê½
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfFromFile", 0);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFSRV", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IfRTV", 1);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFUAV", 0);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "IFDSV", 0);
 		PancyJsonTool::GetInstance()->SetJsonValue(json_data_out, "SubResourceFile", subres_name);
-		//Ð´ÈëÎÄ¼þ²¢±ê¼ÇÎªÒÑ´´½¨
+		//Ð´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Îªï¿½Ñ´ï¿½ï¿½ï¿½
 		PancyJsonTool::GetInstance()->WriteValueToJson(json_data_out, readback_data);
-		//½«ÎÄ¼þ±ê¼ÇÎªÒÑ¾­´´½¨
+		//ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Îªï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½
 		PancystarEngine::FileBuildRepeatCheck::GetInstance()->AddFileName(readback_data);
 	}
 	for (int i = 0; i < 2; ++i)
 	{
-		//¸ù¾ÝÐÂÉú³ÉµÄ¸ñÊ½´´½¨Á½¸öÀëÆÁ»º³åÇø
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÉµÄ¸ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if (if_readback_build)
 		{
-			//Ö®Ç°ÒÑ¾­Éú³ÉÁËÀëÆÁÊý¾Ý£¬É¾³ýÖ®Ç°µÄ±¸·Ý
+			//ï¿½Ö®Ç°ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½É¾ï¿½ï¿½Ö®Ç°ï¿½Ä±ï¿½ï¿½
 			check_error = PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(tex_uint_save[i]);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			check_error = PancystarEngine::PancyTextureControl::GetInstance()->DeleteResurceReference(read_back_buffer[i]);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			if_readback_build = false;
 		}
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(RGB8uint_file_data, tex_uint_save[i]);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(readback_data, read_back_buffer[i]);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
-		//´´½¨Ò»¸ö¶îÍâµÄÉî¶È»º³åÇø
+		//Ý´ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½
 		std::string depth_stencil_use = "screentarget\\screen_" + std::to_string(Scene_width) + "_" + std::to_string(Scene_height) + "_DSV.json";
 		auto check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource(depth_stencil_use, depth_stencil_mask[i]);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
-		//´´½¨Éî¶ÈÄ£°å»º³åÇøÃèÊö·û
+		//ï¿½ï¿½ï¿½ï¿½Ä£ï¿½å»ºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		SubMemoryPointer tex_resource_data;
 		D3D12_DEPTH_STENCIL_VIEW_DESC DSV_desc;
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(depth_stencil_mask[i], tex_resource_data);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		check_error = PancystarEngine::PancyTextureControl::GetInstance()->GetDSVDesc(depth_stencil_mask[i], DSV_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		std::string dsv_descriptor_name = "json\\descriptor_heap\\DSV_1_descriptor_heap.json";
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, dsv_mask[i].resource_view_pack_id);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		dsv_mask[i].resource_view_offset_id = 0;
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildDSV(dsv_mask[i], tex_resource_data, DSV_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
-		//´´½¨äÖÈ¾Ä¿±ê
+		//ï¿½ï¿½ï¿½È¾Ä¿ï¿½
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_uint_save[i], tex_resource_data);
 		D3D12_RENDER_TARGET_VIEW_DESC RTV_desc;
 		PancystarEngine::PancyTextureControl::GetInstance()->GetRTVDesc(tex_uint_save[i], RTV_desc);
 		RTV_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 		std::string rtv_descriptor_name = "json\\descriptor_heap\\RTV_1_descriptor_heap.json";
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(rtv_descriptor_name, rtv_mask[i].resource_view_pack_id);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		rtv_mask[i].resource_view_offset_id = 0;
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildRTV(rtv_mask[i], tex_resource_data, RTV_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
-		//´´½¨äÖÈ¾»Ø¶ÁÊý¾ÝµÄ¿½±´¸ñÊ½
+		//ê´´ï¿½ï¿½ï¿½ï¿½È¾ï¿½Ø¶ï¿½ï¿½ï¿½ÝµÄ¿ï¿½ï¿½ï¿½ï¿½ï¿½Ê½
 		int64_t per_memory_size;
 		SubMemoryPointer sub_res_rtv;
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_uint_save[i], sub_res_rtv);
@@ -3196,44 +3225,44 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatPbrDescriptor()
 	}
 	ResourceViewPack globel_var;
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(descriptor_use_data[0].descriptor_heap_name, globel_var);
-	//ÏÈ´´½¨Á½¸öcbufferview
+	//ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½cbufferview
 	table_offset_model[0].resource_view_pack_id = globel_var;
 	table_offset_model[0].resource_view_offset_id = descriptor_use_data[0].table_offset[0];
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(table_offset_model[0], cbuffer_model[0]);
 	table_offset_model[1].resource_view_pack_id = globel_var;
 	table_offset_model[1].resource_view_offset_id = descriptor_use_data[0].table_offset[1];
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(table_offset_model[1], cbuffer_model[1]);
-	//´´½¨ÎÆÀísrv
+	//ï¿½ï¿½ï¿½ï¿½ï¿½srv
 	SubMemoryPointer texture_need;
 	//tex_id = tex_brdf_id;
 	table_offset_model[2].resource_view_pack_id = globel_var;
 	table_offset_model[2].resource_view_offset_id = descriptor_use_data[0].table_offset[2];
 	ResourceViewPointer new_rvp = table_offset_model[2];
 	D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
-	//¾µÃæ·´Éä»·¾³¹â
+	//í¾µï¿½æ·´ï¿½ä»·ï¿½ï¿½ï¿½
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_ibl_spec_id, texture_need);
 	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_ibl_spec_id, SRV_desc);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
-	//Âþ·´Éä»·¾³¹â
+	//ï¿½ï¿½ï¿½ï¿½ä»·ï¿½ï¿½ï¿½
 	new_rvp.resource_view_offset_id += 1;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_ibl_diffuse_id, texture_need);
 	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_ibl_diffuse_id, SRV_desc);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
-	//brdfÔ¤´¦ÀíÎÆÀí
+	//brdfï¿½Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	new_rvp.resource_view_offset_id += 1;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_brdf_id, texture_need);
 	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_brdf_id, SRV_desc);
 	SRV_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -3262,7 +3291,7 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 		SRV_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 		SRV_desc.Buffer.FirstElement = 0;
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(animation_buffer_pointer, buffer_need, SRV_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -3273,60 +3302,60 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 	for (int i = 0; i < model_deal->GetMaterialNum(); ++i)
 	{
 		pancy_object_id now_tex_id;
-		//Âþ·´ÉäÎÆÀí
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		check_error = model_deal->GetMateriaTexture(i, TexType::tex_diffuse, now_tex_id);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
 		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		new_rvp.resource_view_offset_id += 1;
-		//·¨ÏßÎÆÀí
+		//í·¨ï¿½ï¿½ï¿½ï¿½ï¿½
 		check_error = model_deal->GetMateriaTexture(i, TexType::tex_normal, now_tex_id);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
 		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		new_rvp.resource_view_offset_id += 1;
 		if (model_deal->GetModelPbrDesc() == PbrMaterialType::PbrType_MetallicRoughness)
 		{
-			//½ðÊô¶ÈÎÆÀí
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			check_error = model_deal->GetMateriaTexture(i, TexType::tex_metallic, now_tex_id);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
 			PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			new_rvp.resource_view_offset_id += 1;
-			//´Ö²Ú¶ÈÎÆÀí
+			//ï¿½Ö²Ú¶ï¿½ï¿½ï¿½ï¿½
 			check_error = model_deal->GetMateriaTexture(i, TexType::tex_roughness, now_tex_id);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
 			PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -3334,31 +3363,31 @@ PancystarEngine::EngineFailReason scene_test_simple::UpdatePbrDescriptor()
 		}
 		else if (model_deal->GetModelPbrDesc() == PbrMaterialType::PbrType_SpecularSmoothness)
 		{
-			//¾µÃæ¹â&¹â»¬¶ÈÎÆÀí
+			//í¾µï¿½ï¿½&ï¿½â»¬ï¿½ï¿½ï¿½ï¿½ï¿½
 			check_error = model_deal->GetMateriaTexture(i, TexType::tex_specular_smoothness, now_tex_id);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
 			PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			new_rvp.resource_view_offset_id += 1;
 		}
-		//aoÎÆÀí
+		//aoï¿½ï¿½ï¿½ï¿½
 		check_error = model_deal->GetMateriaTexture(i, TexType::tex_ambient, now_tex_id);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(now_tex_id, texture_need);
 		PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(now_tex_id, SRV_desc);
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(new_rvp, texture_need, SRV_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -3377,15 +3406,15 @@ PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(
 	PancystarEngine::EngineFailReason check_error;
 	if (if_load_model)
 	{
-		//ÓÐÒÑ¾­¼ÓÔØµÄÄ£ÐÍ£¬ÏÈÉ¾³ýÄ£ÐÍµÄ±¸·Ý
+		//ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Øµï¿½Ä£ï¿½Í£ï¿½ï¿½ï¿½É¾ï¿½ï¿½Ä£ï¿½ÍµÄ±ï¿½ï¿½
 		delete model_deal;
 		model_deal = NULL;
 		if_load_model = false;
 	}
-	//¼ÓÔØÄ£ÐÍ
+	//Ý¼ï¿½ï¿½ï¿½Ä£ï¿½
 	model_deal = new PancyModelAssimp(file_name, "json\\pipline_state_object\\pso_pbr.json");
 	check_error = model_deal->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -3395,14 +3424,14 @@ PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(
 	{
 		assimp_pointer->GetAnimationNameList(animation_list);
 	}
-	//Ô¤¼ÓÔØ½ðÊô¶È/´Ö²Ú¶ÈÊý¾Ý
+	//ï¿½Ô¤ï¿½ï¿½ï¿½Ø½ï¿½ï¿½ï¿½/È´Ö²Ú¶ï¿½ï¿½ï¿½
 	std::vector<PancySubModel*> model_resource_list;
 	model_deal->GetRenderMesh(model_resource_list);
 	model_part_num = model_resource_list.size();
 	GetDealModelLodPart(Lod_out);
-	//¸üÐÂÄ£ÐÍµÄÎÆÀíÊý¾Ýµ½descriptor_heap
+	//Ý¸ï¿½ï¿½ï¿½Ä£ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ýµï¿½descriptor_heap
 	check_error = UpdatePbrDescriptor();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -3412,7 +3441,7 @@ PancystarEngine::EngineFailReason scene_test_simple::LoadDealModel(
 PancystarEngine::EngineFailReason scene_test_simple::Init()
 {
 	PancystarEngine::EngineFailReason check_error;
-	//´´½¨ÁÙÊ±µÄd3d11Éè±¸ÓÃÓÚÎÆÀíÑ¹Ëõ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½d3d11ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¹ï¿½
 
 	UINT createDeviceFlags = 0;
 #if defined(DEBUG) || defined(_DEBUG)  
@@ -3422,11 +3451,12 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	HRESULT hr = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, 0, 0, D3D11_SDK_VERSION, &device_pancy, &featureLevel, &contex_pancy);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "D3D11CreateDevice Failed.");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Scene", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "D3D11CreateDevice Failed.",error_message);
+		
 		return error_message;
 	}
-	//´´½¨È«ÆÁÈý½ÇÐÎ
+	//ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	PancystarEngine::Point2D point[4];
 	point[0].position = DirectX::XMFLOAT4(-1.0f, -1.0f, 0.0f, 1.0f);
 	point[1].position = DirectX::XMFLOAT4(-1.0f, +1.0f, 0.0f, 1.0f);
@@ -3439,76 +3469,76 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	UINT index[] = { 0,1,2 ,0,2,3 };
 	test_model = new PancystarEngine::GeometryCommonModel<PancystarEngine::Point2D>(point, index, 4, 6);
 	check_error = test_model->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 
-	//¼ÓÔØÒ»¸öpso
+	//Î¼ï¿½ï¿½ï¿½Ò»ï¿½pso
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_test.json");
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 
-	//Ä£ÐÍ¼ÓÔØ²âÊÔ
+	//ï¿½Ä£ï¿½Í¼ï¿½ï¿½Ø²ï¿½ï¿½
 	model_sky = new PancyModelAssimp("model\\ball\\ball.obj", "json\\pipline_state_object\\pso_test.json");
 	check_error = model_sky->Create();
 
 
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	model_cube = new PancyModelAssimp("model\\ball\\square.obj", "json\\pipline_state_object\\pso_test.json");
 	check_error = model_cube->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_pbr.json");
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_pbr_bone.json");
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_pbr_pointcatch.json");
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_geometry_normal.json");
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_screenmask.json");
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_boundbox.json");
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	/*
 	model_deal = new PancyModelAssimp("model\\ball2\\ball.obj", "json\\pipline_state_object\\pso_pbr.json");
 	check_error = model_deal->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	*/
-	//´´½¨Ò»¸öcbuffer
-	//¼ÓÔØÒ»¸öpso
+	//Ô´ï¿½ï¿½ï¿½Ò»ï¿½cbuffer
+	//ï¿½ï¿½ï¿½ï¿½Ò»ï¿½pso
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_sky.json");
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -3531,34 +3561,34 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	table_offset[1].resource_view_pack_id = globel_var;
 	table_offset[1].resource_view_offset_id = descriptor_use_data[0].table_offset[1];
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCBV(table_offset[1], cbuffer[1]);
-	//Ô¤´¦Àíbrdf
+	//ï¿½Ô¤ï¿½ï¿½ï¿½brdf
 	check_error = PretreatBrdf();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 
-	//¼ÓÔØÐèÒªµÄpbrÎÆÀí
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½pbrï¿½ï¿½ï¿½ï¿½
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Cubemap.json", tex_ibl_spec_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\IrradianceMap.json", tex_ibl_diffuse_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	/*
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("data\\Sphere002_roughness.json", tex_roughness_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	*/
-	//ÎªpbrÄ£ÐÍµÄäÖÈ¾´´½¨descriptor
+	//ï¿½ÎªpbrÄ£ï¿½Íµï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½descriptor
 	check_error = PretreatPbrDescriptor();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -3570,7 +3600,7 @@ PancystarEngine::EngineFailReason scene_test_simple::Init()
 	D3D12_SHADER_RESOURCE_VIEW_DESC SRV_desc;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetSRVDesc(tex_ibl_spec_id, SRV_desc);
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildSRV(table_offset[2], texture_need, SRV_desc);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -3593,21 +3623,21 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	view_rect_brdf.bottom = 1024;
 	PancystarEngine::EngineFailReason check_error;
 	check_error = PancyEffectGraphic::GetInstance()->BuildPso("json\\pipline_state_object\\pso_brdfgen.json");
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
-	//¼ÓÔØbrdfÔ¤´¦ÀíÎÆÀí
-	//todo:commandalloctor¼ä¸ôÖ¡ÐèÒªÁ½¸öÏß³Ì³Ø
-	//todo£ºÒÀ¿¿resourcedescÀ´¼ÆËãheap¼°·Ö¿éµÄ´óÐ¡
+	//ï¿½ï¿½ï¿½brdfï¿½Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	//todo:commandalloctorï¿½ï¿½ï¿½Ö¡ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ß³Ì³
+	//todoØ£ï¿½ï¿½ï¿½ï¿½resourcedescï¿½ï¿½ï¿½ï¿½heapã¼°ï¿½Ö¿ï¿½Ä´ï¿½Ð¡
 	//pancy_object_id tex_brdf_id;
 	SubMemoryPointer texture_brdf_need;
 	check_error = PancystarEngine::PancyTextureControl::GetInstance()->LoadResource("json\\texture\\1024_1024_R16B16G16A16FLOAT.json", tex_brdf_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
-	//´´½¨äÖÈ¾Ä¿±ê
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾Ä¿ï¿½
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(tex_brdf_id, texture_brdf_need);
 	D3D12_RENDER_TARGET_VIEW_DESC RTV_desc;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetRTVDesc(tex_brdf_id, RTV_desc);
@@ -3615,17 +3645,17 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	std::string dsv_descriptor_name = "json\\descriptor_heap\\RTV_1_descriptor_heap.json";
 	ResourceViewPointer RTV_pointer;
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildResourceViewFromFile(dsv_descriptor_name, RTV_pointer.resource_view_pack_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	RTV_pointer.resource_view_offset_id = 0;
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildRTV(RTV_pointer, texture_brdf_need, RTV_desc);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
-	//ÉèÖÃÔ¤äÖÈ¾²ÎÊý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ô¤ï¿½ï¿½È¾ï¿½ï¿½ï¿½
 	PancyRenderCommandList *m_commandList;
 	auto pso_data = PancyEffectGraphic::GetInstance()->GetPSO("json\\pipline_state_object\\pso_brdfgen.json");
 	PancyThreadIdGPU commdlist_id_use;
@@ -3634,7 +3664,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect_brdf);
 	auto rootsignature_data = pso_data->GetRootSignature()->GetResource();
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
-	//ÉèÖÃäÖÈ¾Ä¿±ê
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾Ä¿ï¿½
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	int64_t per_mem_size;
 	auto rtv_res_data = SubresourceControl::GetInstance()->GetResourceData(texture_brdf_need, per_mem_size);
@@ -3645,7 +3675,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	m_commandList->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, NULL);
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	m_commandList->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	//äÖÈ¾µ½ÎÆÀí
+	//ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½ï¿½
 	m_commandList->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_commandList->GetCommandList()->IASetVertexBuffers(0, 1, &test_model->GetVertexBufferView());
 	m_commandList->GetCommandList()->IASetIndexBuffer(&test_model->GetIndexBufferView());
@@ -3654,7 +3684,7 @@ PancystarEngine::EngineFailReason scene_test_simple::PretreatBrdf()
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 	m_commandList->UnlockPrepare();
 	check_error = ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SubmitRenderlist(1, &commdlist_id_use);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -3699,7 +3729,7 @@ void scene_test_simple::Display()
 		WaitForPreviousFrame();
 		ThreadPoolGPUControl::GetInstance()->GetMainContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT)->SetGpuBrokenFence(broken_fence_id);
 	}
-	//»Ø¶ÁGPUÊý¾Ý
+	//ï¿½Ø¶GPUï¿½ï¿½ï¿½
 	if (if_pointed && if_load_model)
 	{
 		ReadBackData(x_point, y_point);
@@ -3719,14 +3749,14 @@ void scene_test_simple::ClearScreen()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	ComPtr<ID3D12Resource> screen_rendertarget = PancyDx12DeviceBasic::GetInstance()->GetBackBuffer(rtvHandle);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-	//ÐÞ¸Ä×ÊÔ´¸ñÊ½Îªdsv
+	//ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Ê½Îªdsv
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	SubMemoryPointer sub_res_dsv;
 	int64_t per_memory_size;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
 	auto memory_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_dsv, per_memory_size);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE));
-	//»ñÈ¡Éî¶È»º³åÇø
+	//ï¿½ï¿½È¡ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(Default_depthstencil_view[now_render_num], dsvHandle);
 
@@ -3754,11 +3784,11 @@ void scene_test_simple::PopulateCommandListSky()
 	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
 	auto rootsignature_data = pso_data->GetRootSignature()->GetResource();
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
-	//ÉèÖÃÃèÊö·û¶Ñ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	ID3D12DescriptorHeap *heap_pointer;
 	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset[0].resource_view_pack_id.descriptor_heap_type_id).Get();
 	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
-	//ÉèÖÃÃèÊö·û¶ÑµÄÆ«ÒÆ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñµï¿½Æ«ï¿½
 	for (int i = 0; i < 3; ++i)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
@@ -3772,7 +3802,7 @@ void scene_test_simple::PopulateCommandListSky()
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 
-	//ÐÞ¸Ä×ÊÔ´¸ñÊ½Îªdsv
+	//ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Ê½Îªdsv
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	screen_rendertarget->SetName(PancystarEngine::PancyString("back_buffer" + std::to_string(now_render_num)).GetUnicodeString().c_str());
 	SubMemoryPointer sub_res_dsv;
@@ -3780,7 +3810,7 @@ void scene_test_simple::PopulateCommandListSky()
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
 	auto memory_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_dsv, per_memory_size);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE));
-	//»ñÈ¡Éî¶È»º³åÇø
+	//ï¿½ï¿½È¡ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(Default_depthstencil_view[now_render_num], dsvHandle);
 
@@ -3815,11 +3845,11 @@ void scene_test_simple::PopulateCommandListReadBack()
 	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
 	auto rootsignature_data = pso_data->GetRootSignature()->GetResource();
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
-	//ÉèÖÃÃèÊö·û¶Ñ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	ID3D12DescriptorHeap *heap_pointer;
 	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset_model[0].resource_view_pack_id.descriptor_heap_type_id).Get();
 	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
-	//ÉèÖÃÃèÊö·û¶ÑµÄÆ«ÒÆ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñµï¿½Æ«ï¿½
 	for (int i = 0; i < 2; ++i)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
@@ -3830,7 +3860,7 @@ void scene_test_simple::PopulateCommandListReadBack()
 	CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
 	auto heap_offset_bindless = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(table_offset_model[4], srvHandle);
 	m_commandList->GetCommandList()->SetGraphicsRootDescriptorTable(2, srvHandle);
-	//äÖÈ¾Ä¿±ê
+	//ï¿½ï¿½ï¿½È¾Ä¿ï¿½
 	int64_t per_memory_size;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	SubMemoryPointer sub_res_rtv;
@@ -3838,14 +3868,14 @@ void scene_test_simple::PopulateCommandListReadBack()
 	auto memory_rtv_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_rtv, per_memory_size);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_rtv_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(rtv_mask[now_render_num], rtvHandle);
-	//ÐÞ¸Ä×ÊÔ´¸ñÊ½Îªdsv
+	//ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Ê½Îªdsv
 
 	SubMemoryPointer sub_res_dsv;
 
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(depth_stencil_mask[now_render_num], sub_res_dsv);
 	auto memory_dsv_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_dsv, per_memory_size);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_dsv_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE));
-	//»ñÈ¡Éî¶È»º³åÇø
+	//ï¿½ï¿½È¡ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(dsv_mask[now_render_num], dsvHandle);
 
@@ -3908,11 +3938,11 @@ void scene_test_simple::PopulateCommandListModelDeal()
 	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
 	auto rootsignature_data = pso_data->GetRootSignature()->GetResource();
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
-	//ÉèÖÃÃèÊö·û¶Ñ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	ID3D12DescriptorHeap *heap_pointer;
 	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset_model[0].resource_view_pack_id.descriptor_heap_type_id).Get();
 	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
-	//ÉèÖÃÃèÊö·û¶ÑµÄÆ«ÒÆ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñµï¿½Æ«ï¿½
 	for (int i = 0; i < 5; ++i)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
@@ -3923,13 +3953,13 @@ void scene_test_simple::PopulateCommandListModelDeal()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	ComPtr<ID3D12Resource> screen_rendertarget = PancyDx12DeviceBasic::GetInstance()->GetBackBuffer(rtvHandle);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-	//ÐÞ¸Ä×ÊÔ´¸ñÊ½Îªdsv
+	//ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Ê½Îªdsv
 	SubMemoryPointer sub_res_dsv;
 	int64_t per_memory_size;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
 	auto memory_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_dsv, per_memory_size);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE));
-	//»ñÈ¡Éî¶È»º³åÇø
+	//ï¿½ï¿½È¡ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(Default_depthstencil_view[now_render_num], dsvHandle);
 
@@ -3975,11 +4005,11 @@ void scene_test_simple::PopulateCommandList(PancyModelBasic *now_res)
 	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
 	auto rootsignature_data = render_object->GetPso()->GetRootSignature()->GetResource();
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
-	//ÉèÖÃÃèÊö·û¶Ñ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	ID3D12DescriptorHeap *heap_pointer;
 	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(render_object->GetDescriptorHeap()[0].resource_view_pack_id.descriptor_heap_type_id).Get();
 	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
-	//ÉèÖÃÃèÊö·û¶ÑµÄÆ«ÒÆ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñµï¿½Æ«ï¿½
 	for (int i = 0; i < 3; ++i)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
@@ -3992,14 +4022,14 @@ void scene_test_simple::PopulateCommandList(PancyModelBasic *now_res)
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 
-	//ÐÞ¸Ä×ÊÔ´¸ñÊ½Îªdsv
+	//ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Ê½Îªdsv
 	int32_t now_render_num = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	SubMemoryPointer sub_res_dsv;
 	int64_t per_memory_size;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
 	auto memory_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_dsv, per_memory_size);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE));
-	//»ñÈ¡Éî¶È»º³åÇø
+	//ï¿½ï¿½È¡ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(Default_depthstencil_view[now_render_num], dsvHandle);
 
@@ -4035,11 +4065,11 @@ void scene_test_simple::PopulateCommandListModelDealBound()
 	m_commandList->GetCommandList()->RSSetScissorRects(1, &view_rect);
 	auto rootsignature_data = pso_data->GetRootSignature()->GetResource();
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
-	//ÉèÖÃÃèÊö·û¶Ñ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	ID3D12DescriptorHeap *heap_pointer;
 	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset_model[0].resource_view_pack_id.descriptor_heap_type_id).Get();
 	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
-	//ÉèÖÃÃèÊö·û¶ÑµÄÆ«ÒÆ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñµï¿½Æ«ï¿½
 	for (int i = 0; i < 2; ++i)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
@@ -4052,14 +4082,14 @@ void scene_test_simple::PopulateCommandListModelDealBound()
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(screen_rendertarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 
-	//ÐÞ¸Ä×ÊÔ´¸ñÊ½Îªdsv
+	//ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Ê½Îªdsv
 
 	SubMemoryPointer sub_res_dsv;
 	int64_t per_memory_size;
 	PancystarEngine::PancyTextureControl::GetInstance()->GetTexResource(Default_depthstencil_buffer[now_render_num], sub_res_dsv);
 	auto memory_data = SubresourceControl::GetInstance()->GetResourceData(sub_res_dsv, per_memory_size);
 	m_commandList->GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(memory_data->GetResource().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_DEPTH_WRITE));
-	//»ñÈ¡Éî¶È»º³åÇø
+	//ï¿½ï¿½È¡ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	auto heap_offset = PancyDescriptorHeapControl::GetInstance()->GetOffsetNum(Default_depthstencil_view[now_render_num], dsvHandle);
 
@@ -4092,11 +4122,11 @@ void scene_test_simple::PopulateCommandList()
 
 	auto rootsignature_data = PancyRootSignatureControl::GetInstance()->GetRootSignature("json\\root_signature\\test_root_signature.json")->GetRootSignature();
 	m_commandList->GetCommandList()->SetGraphicsRootSignature(rootsignature_data.Get());
-	//ÉèÖÃÃèÊö·û¶Ñ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	ID3D12DescriptorHeap *heap_pointer;
 	heap_pointer = PancyDescriptorHeapControl::GetInstance()->GetDescriptorHeap(table_offset[0].resource_view_pack_id.descriptor_heap_type_id).Get();
 	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &heap_pointer);
-	//ÉèÖÃÃèÊö·û¶ÑµÄÆ«ÒÆ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñµï¿½Æ«ï¿½
 	for (int i = 0; i < 3; ++i)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srvHandle;
@@ -4153,7 +4183,7 @@ void scene_test_simple::Update(float delta_time)
 	DirectX::XMFLOAT4X4 view_mat, inv_view_mat;
 	PancyCamera::GetInstance()->CountViewMatrix(&view_mat);
 	PancyCamera::GetInstance()->CountInvviewMatrix(&inv_view_mat);
-	//Ìî³äÌì¿Õcbuffer
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½cbuffer
 	DirectX::XMMATRIX proj_mat = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV4, 1280.0f / 720.0f, 0.1f, 1000.0f);
 	DirectX::XMStoreFloat4x4(&sky_world_mat[0], DirectX::XMMatrixTranspose(DirectX::XMMatrixScaling(100, 100, 100)));
 	DirectX::XMStoreFloat4x4(&sky_world_mat[1], DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&sky_world_mat[0]) * DirectX::XMLoadFloat4x4(&view_mat) * proj_mat));
@@ -4161,14 +4191,14 @@ void scene_test_simple::Update(float delta_time)
 	DirectX::XMVECTOR x_delta;
 	DirectX::XMStoreFloat4x4(&sky_world_mat[3], DirectX::XMMatrixInverse(&x_delta, DirectX::XMLoadFloat4x4(&sky_world_mat[0])));
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer[0].offset* per_memory_size, sky_world_mat, sizeof(sky_world_mat));
-	//Ìî³ä´¦ÀíÄ£ÐÍµÄcbuffer
+	//ï¿½ï¿½ï¿½ä´¦ï¿½ï¿½Ä£ï¿½Íµcbuffer
 	data_submemory = SubresourceControl::GetInstance()->GetResourceData(cbuffer_model[0], per_memory_size);
 	DirectX::XMFLOAT4X4 pbr_world_mat[4];
 	DirectX::XMMATRIX pbr_pre_world_mat = DirectX::XMMatrixScaling(scale_size, scale_size, scale_size) * DirectX::XMMatrixRotationX((DirectX::XM_PI * rotation_angle.x) / 180.0f) * DirectX::XMMatrixRotationY((DirectX::XM_PI * rotation_angle.y) / 180.0f) *  DirectX::XMMatrixRotationZ((DirectX::XM_PI * rotation_angle.z) / 180.0f) * DirectX::XMMatrixTranslation(translation_pos.x, translation_pos.y, translation_pos.z);
 	DirectX::XMStoreFloat4x4(&pbr_world_mat[0], DirectX::XMMatrixTranspose(pbr_pre_world_mat));
 	DirectX::XMStoreFloat4x4(&pbr_world_mat[1], DirectX::XMMatrixTranspose(pbr_pre_world_mat * DirectX::XMLoadFloat4x4(&view_mat) * proj_mat));
 	DirectX::XMStoreFloat4x4(&pbr_world_mat[2], DirectX::XMMatrixIdentity());
-	//ÏÈ¼ÆËã3*3¾ØÕóµÄÄæ×ªÖÃ
+	//ï¿½ï¿½È¼ï¿½ï¿½3*3ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½
 	DirectX::XMMATRIX normal_need = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(&x_delta, pbr_pre_world_mat));
 	DirectX::XMFLOAT4X4 mat_normal;
 	DirectX::XMStoreFloat4x4(&mat_normal, normal_need);
@@ -4208,12 +4238,12 @@ void scene_test_simple::Update(float delta_time)
 	view_buffer_data.view_position.z = view_pos.z;
 	view_buffer_data.view_position.w = 1.0f;
 	check_error = data_submemory->WriteFromCpuToBuffer(cbuffer_model[1].offset* per_memory_size, &view_buffer_data, sizeof(view_buffer_data));
-	//¶¥µã¶¯»­Êý¾Ý
+	//Ã¶ï¿½ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½
 	if (render_object_deal != NULL && render_object_deal->CheckIfPointMesh())
 	{
 		DirectX::XMUINT4 vertex_animation_size;
 		render_object_deal->GetPointAnimationFrame(vertex_animation_size.x, vertex_animation_size.y);
-		//ÊÇ·ñÏÔÊ¾·¨Ïß
+		//ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½
 		if (if_show_normal && if_show_normal_point)
 		{
 			vertex_animation_size.z = 1;

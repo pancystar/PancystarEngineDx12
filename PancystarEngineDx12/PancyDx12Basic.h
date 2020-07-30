@@ -77,8 +77,8 @@ public:
 		hr = dx12_swapchain->Present(SyncInterval, Flags);
 		if (FAILED(hr)) 
 		{
-			PancystarEngine::EngineFailReason error_message(hr,"swapchain present error");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("present frame by Swapchain", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "swapchain present error", error_message);
 			return error_message;
 		}
 		last_frame_use = current_frame_use;

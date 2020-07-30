@@ -75,7 +75,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::BuildBufferDescriptorByDes
 	PancystarEngine::EngineFailReason check_error;
 	auto& new_res_data = ShaderResourceData.emplace_back();
 	check_error = LoadBufferResourceFromFile(resource_file_name, new_res_data);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -103,7 +103,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::BuildTextureDescriptorByDe
 	PancystarEngine::EngineFailReason check_error;
 	auto& new_res_data = ShaderResourceData.emplace_back();
 	check_error = LoadDDSTextureResource(resource_file_name, new_res_data);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -187,8 +187,9 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::BuildTextureDescriptorByDe
 	}
 	default:
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "texture type SRV Desc not support");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyMaterialBasic::BuildTexturerDescriptorByDesc", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "texture type SRV Desc not support",error_message);
+		
 		return error_message;
 	}
 	}
@@ -213,14 +214,14 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 				all_resource_array,
 				all_descriptor_array
 			);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			//创建描述符
 			BindDescriptorPointer new_res_descriptor;
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(all_descriptor_array, all_resource_array, false, new_res_descriptor);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -239,7 +240,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 					all_resource_array,
 					all_descriptor_array
 				);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
@@ -253,7 +254,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 			BindlessDescriptorPointer new_res_descriptor;
 			pancy_object_id resource_size = static_cast<pancy_object_id>(all_resource_array.size());
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonBindlessShaderResourceView(bindless_srv_array, all_resource_array, resource_size, new_res_descriptor);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -262,8 +263,9 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 		}
 		else
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "buffer type SRV Desc not support");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyMaterialBasic::LoadResoureDataByDesc", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "buffer type SRV Desc not support",error_message);
+			
 			return error_message;
 		}
 	}
@@ -287,14 +289,14 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 				all_resource_array,
 				all_descriptor_array
 			);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			//创建描述符
 			BindDescriptorPointer new_res_descriptor;
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(all_descriptor_array, all_resource_array, false, new_res_descriptor);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -305,8 +307,9 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 		{
 			if (now_buffer_desc.shader_resource_path.size() != now_buffer_desc.texture_descriptor_desc.size()) 
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "texture number dismatch texture desc member, load material error");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyMaterialBasic::BuildTexturerDescriptorByDesc", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "texture number dismatch texture desc member, load material error",error_message);
+				
 				return error_message;
 			}
 			std::vector<D3D12_SHADER_RESOURCE_VIEW_DESC> bindless_srv_array;
@@ -324,7 +327,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 					all_resource_array,
 					all_descriptor_array
 				);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
@@ -338,7 +341,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 			BindlessDescriptorPointer new_res_descriptor;
 			pancy_object_id resource_size = static_cast<pancy_object_id>(all_resource_array.size());
 			check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonBindlessShaderResourceView(bindless_srv_array, all_resource_array, resource_size, new_res_descriptor);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -347,8 +350,9 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::LoadResoureDataByDesc(cons
 		}
 		else
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "texture type SRV Desc not support");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyMaterialBasic::LoadResoureDataByDesc", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "texture type SRV Desc not support",error_message);
+			
 			return error_message;
 		}
 	}
@@ -358,7 +362,7 @@ PancystarEngine::EngineFailReason PancyMaterialBasic::BuildRenderParam(PancyRend
 {
 	auto &res_desc = GetResourceDesc();
 	auto check_error = RenderParamSystem::GetInstance()->GetCommonRenderParam(res_desc.pipeline_state_name, bind_shader_resource, bindless_shader_resource, render_param_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -386,7 +390,7 @@ PancystarEngine::EngineFailReason PancystarEngine::LoadMaterialFromFile(
 		id_need,
 		false
 		);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}

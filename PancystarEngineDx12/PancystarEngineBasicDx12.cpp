@@ -53,7 +53,7 @@ void PancyString::WstringToString()
 	int nResult = WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)unicode_string.c_str(), nLen, (LPSTR)ascii_string.c_str(), nLen, NULL, NULL);
 }
 //错误信息
-EngineFailReason::EngineFailReason()
+EngineFailReasonMessage::EngineFailReasonMessage()
 {
 	std::string a;
 	if_succeed = true;
@@ -61,7 +61,7 @@ EngineFailReason::EngineFailReason()
 	failed_reason = "";
 	log_type = LOG_MESSAGE_SUCCESS;
 }
-EngineFailReason::EngineFailReason(HRESULT windows_result_in, std::string failed_reason_in, LogMessageType log_type_in)
+EngineFailReasonMessage::EngineFailReasonMessage(HRESULT windows_result_in, std::string failed_reason_in, LogMessageType log_type_in)
 {
 	windows_result = windows_result_in;
 	failed_reason = failed_reason_in;
@@ -76,18 +76,35 @@ EngineFailReason::EngineFailReason(HRESULT windows_result_in, std::string failed
 		if_succeed = false;
 	}
 }
-void EngineFailReason::ShowFailedReason()
+void EngineFailReasonMessage::ShowFailedReason()
 {
 	MessageBox(0, failed_reason.GetUnicodeString().c_str(), L"error", MB_OK);
 }
 //log记录
 EngineFailLog* EngineFailLog::this_instance = NULL;
-void EngineFailLog::AddLog(std::string log_source, EngineFailReason engine_error_message)
+void EngineFailLog::AddLog(const std::string& log_source, const EngineFailReasonMessage& engine_error_message, EngineFailReason& error_log)
 {
 	PancyBasicLog new_log;
 	new_log.log_source = log_source;
 	new_log.fail_reason = engine_error_message;
 	log_save_list.push_back(new_log);
+	error_log.if_succeed = engine_error_message.CheckIfSucceed();
+	error_log.log_id = static_cast<pancy_object_id>(log_save_list.size()) - 1;
+}
+void PancystarEngine::BuildDebugLog(
+	const HRESULT& windows_result,
+	const std::string& error_reason,
+	const std::string& file_name,
+	const std::string& function_name,
+	const pancy_object_id& line,
+	const LogMessageType& log_type,
+	EngineFailReason& log_turn
+)
+{
+	PancyBasicLog new_log;
+	std::string new_log_source = "file: " + file_name + " function: " + function_name + " line " + std::to_string(line);
+	EngineFailReasonMessage new_message(windows_result, new_log_source, log_type);
+	EngineFailLog::GetInstance()->AddLog(new_log_source, new_message, log_turn);
 }
 void EngineFailLog::SaveLogToFile(std::string log_file_name)
 {

@@ -73,8 +73,9 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::SetEnumVectorValue(vo
 	if (vec_pointer->size() != enum_offsetdata) 
 	{
 		//偏移量不正确，插入第i个元素要保证已经有了i个成员
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "reflect vector have wrong offset: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetEnumVectorValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "reflect vector have wrong offset: ",error_message);
+		
 		return error_message;
 	}
 	T new_value = static_cast<T>(enum_data);
@@ -104,8 +105,9 @@ PancystarEngine::EngineFailReason PancyEnumValueParser<T>::GetEnumVectorValue(vo
 	if (vec_pointer->size() <= enum_offsetdata)
 	{
 		//偏移量不正确，成员数量不足
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "reflect vector have wrong offset: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::GetEnumVectorValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "reflect vector have wrong offset: ",error_message);
+		
 		return error_message;
 	}
 	enum_data_out = static_cast<int32_t>((*vec_pointer)[enum_offsetdata]);

@@ -18,8 +18,9 @@ ResourceBlockGpu::ResourceBlockGpu(
 		HRESULT hr = resource_data->Map(0, &readRange, reinterpret_cast<void**>(&map_pointer));
 		if (FAILED(hr))
 		{
-			PancystarEngine::EngineFailReason error_message(hr, "map dynamic buffer to cpu error");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::ResourceBlockGpu", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(hr, "map dynamic buffer to cpu error",error_message);
+			
 		}
 		now_res_load_state = RESOURCE_LOAD_CPU_FINISH;
 	}
@@ -51,7 +52,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::WaitForResourceLoading()
 	{
 		//等待资源拷贝结束
 		auto check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->WaitGpuBrokenFence(wait_fence);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -75,8 +76,9 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::ResourceBarrier(
 		}
 		else
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "resource state dismatch, could not change resource using state");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::ResourceBarrier", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "resource state dismatch, could not change resource using state",error_message);
+			
 			return error_message;
 		}
 	}
@@ -102,32 +104,36 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
 {
 	if (now_res_load_state == RESOURCE_LOAD_FAILED)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource load failed, could not copy data to memory",error_message);
+		
 		return error_message;
 	}
 	if (dynamic_buffer.GetResourceLoadingState() != RESOURCE_LOAD_CPU_FINISH)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource haven't load to cpu, could not copy data to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource haven't load to cpu, could not copy data to GPU",error_message);
+		
 		return error_message;
 	}
 	if (now_res_load_state != RESOURCE_LOAD_GPU_FINISH)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a GPU resource, could not copy data to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource is not a GPU resource, could not copy data to GPU",error_message);
+		
 		return error_message;
 	}
 	auto src_size_check = src_offset + data_size;
 	auto dst_size_check = dst_offset + data_size;
 	if (src_size_check > dynamic_buffer.GetSize() || dst_size_check > memory_size)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource size overflow, could not copy resource from cpu to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource size overflow, could not copy resource from cpu to GPU",error_message);
+		
 		return error_message;
 	}
 	auto check_error = ResourceBarrier(commandlist, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -138,7 +144,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
 		src_offset,
 		data_size);
 	check_error = ResourceBarrier(commandlist, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -154,24 +160,27 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
 {
 	if (now_res_load_state == RESOURCE_LOAD_FAILED)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource load failed, could not copy data to memory",error_message);
+		
 		return error_message;
 	}
 	if (dynamic_buffer.GetResourceLoadingState() != RESOURCE_LOAD_CPU_FINISH)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource haven't laod to cpu, could not copy data to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource haven't laod to cpu, could not copy data to GPU",error_message);
+		
 		return error_message;
 	}
 	if (now_res_load_state != RESOURCE_LOAD_GPU_FINISH)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a GPU resource, could not copy data to GPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::CopyFromDynamicBufferToGpu", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource is not a GPU resource, could not copy data to GPU",error_message);
+		
 		return error_message;
 	}
 	auto check_error = ResourceBarrier(commandlist, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -186,7 +195,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::CopyFromDynamicBufferToGpu(
 		commandlist->GetCommandList()->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
 	}
 	check_error = ResourceBarrier(commandlist, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -197,8 +206,9 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::SetResourceCopyBrokenFence(c
 {
 	if (now_res_load_state != PancyResourceLoadState::RESOURCE_LOAD_GPU_LOADING)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "haven't copy any data to cpu, could not set broken fence");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::SetResourceCopyBrokenFence", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "haven't copy any data to cpu, could not set broken fence",error_message);
+		
 		return error_message;
 	}
 	wait_fence = broken_fence_id;
@@ -213,20 +223,23 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::WriteFromCpuToBuffer(
 {
 	if (now_res_load_state == RESOURCE_LOAD_FAILED)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource load failed, could not copy data to memory",error_message);
+		
 		return error_message;
 	}
 	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource type is not upload, could not copy data to memory",error_message);
+		
 		return error_message;
 	}
 	if (now_res_load_state != RESOURCE_LOAD_CPU_FINISH)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a CPU copy resource, could not copy data to CPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource is not a CPU copy resource, could not copy data to CPU",error_message);
+		
 		return error_message;
 	}
 	memcpy(map_pointer + pointer_offset, copy_data, data_size);
@@ -243,20 +256,23 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::WriteFromCpuToBuffer(
 {
 	if (now_res_load_state == RESOURCE_LOAD_FAILED)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource load failed, could not copy data to memory",error_message);
+		
 		return error_message;
 	}
 	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource type is not upload, could not copy data to memory",error_message);
+		
 		return error_message;
 	}
 	if (now_res_load_state != RESOURCE_LOAD_CPU_FINISH)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a CPU copy resource, could not copy data to CPU");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource is not a CPU copy resource, could not copy data to CPU",error_message);
+		
 		return error_message;
 	}
 	//获取待拷贝指针
@@ -280,8 +296,9 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::ReadFromBufferToCpu(
 {
 	if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not readback, could not read data back");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::ReadFromBufferToCpu", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource type is not readback, could not read data back",error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -296,7 +313,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildCommonDescriptorView(
 	if (if_wait_for_gpu)
 	{
 		auto check_error = WaitForResourceLoading();
-		if (!check_error.CheckIfSucceed()) 
+		if (!check_error.if_succeed) 
 		{
 			return check_error;
 		}
@@ -333,8 +350,9 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildCommonDescriptorView(
 		}
 		default:
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "resourceview is not a descriptor view");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::BuildCommonDescriptorView", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "resourceview is not a descriptor view",error_message);
+			
 			return error_message;
 			break;
 		}
@@ -342,8 +360,9 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildCommonDescriptorView(
 	}
 	else
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not build finished,could not build descriptor view");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::BuildCommonDescriptorView", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource is not build finished,could not build descriptor view",error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -359,7 +378,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildVertexBufferView(
 	if (if_wait_for_gpu)
 	{
 		auto check_error = WaitForResourceLoading();
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -374,8 +393,9 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildVertexBufferView(
 	}
 	else
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a build finished,could not build descriptor view");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::BuildVertexBufferView", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource is not a build finished,could not build descriptor view",error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -391,7 +411,7 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildIndexBufferView(
 	if (if_wait_for_gpu)
 	{
 		auto check_error = WaitForResourceLoading();
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -406,8 +426,9 @@ PancystarEngine::EngineFailReason ResourceBlockGpu::BuildIndexBufferView(
 	}
 	else
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "resource is not a build finished,could not build descriptor view");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::BuildIndexBufferView", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "resource is not a build finished,could not build descriptor view",error_message);
+		
 		return error_message;
 	}
 

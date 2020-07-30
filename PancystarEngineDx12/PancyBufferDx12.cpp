@@ -27,7 +27,7 @@ PancyBasicBuffer::PancyBasicBuffer(const bool &if_could_reload) :PancyCommonVirt
 PancystarEngine::EngineFailReason PancyBasicBuffer::WriteDataToBuffer(void* cpu_data_pointer, const pancy_resource_size &data_size)
 {
 	auto check_error = CopyCpuDataToBufferGpu(cpu_data_pointer, data_size);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -37,21 +37,22 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::CopyCpuDataToBufferGpu(void*
 {
 	if (data_size > subresources_size) 
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy data to GPU, size too large than buffer");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicBuffer::CopyCpuDataToBufferGpu", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not copy data to GPU, size too large than buffer",error_message);
+		
 		return error_message;
 	}
 	//获取用于拷贝的commond list
 	PancyRenderCommandList *copy_render_list;
 	PancyThreadIdGPU copy_render_list_ID;
 	auto check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//拷贝资源数据
 	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, cpu_data_pointer, data_size, *buffer_data);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -62,7 +63,7 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::CopyCpuDataToBufferGpu(void*
 	PancyFenceIdGPU WaitFence;
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
 	check_error = buffer_data->SetResourceCopyBrokenFence(WaitFence);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -122,23 +123,25 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::LoadResoureDataByDesc(const 
 	);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Create commit resource error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicBuffer::InitResource", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Create commit resource error",error_message);
+		
 		return error_message;
 	}
 	//计算缓冲区的大小，创建资源块
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&resource_desc.buffer_res_desc, 0, 1, 0, nullptr, nullptr, nullptr, &subresources_size);
 	if (resource_desc.buffer_res_desc.Width != subresources_size)
 	{
-		PancystarEngine::EngineFailReason error_message(0, "buffer resource size dismatch, maybe it's not a buffer resource");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicBuffer::InitResource", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(0, "buffer resource size dismatch, maybe it's not a buffer resource",error_message);
+		
 		return error_message;
 	}
 	buffer_data = new ResourceBlockGpu(subresources_size, resource_data, heap_type, resource_build_state);
 	if (heap_type == D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 	{
 		check_error = buffer_data->GetCpuMapPointer(&map_pointer);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -153,7 +156,7 @@ PancystarEngine::EngineFailReason PancyBasicBuffer::LoadResoureDataByDesc(const 
 		{
 			/*
 			check_error = CopyCpuDataToBufferGpu(cpu_data_pointer, data_size);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -185,8 +188,9 @@ ResourceBlockGpu * PancystarEngine::GetBufferResourceData(VirtualResourcePointer
 	auto now_buffer_resource_value = virtual_pointer.GetResourceData();
 	if (now_buffer_resource_value->GetResourceTypeName() != typeid(PancyBasicBuffer).name())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the vertex resource is not a buffer");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("GetBufferResourceData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "the vertex resource is not a buffer",error_message);
+		
 		check_error = error_message;
 	}
 	const PancyBasicBuffer* buffer_real_pointer = dynamic_cast<const PancyBasicBuffer*>(now_buffer_resource_value);
@@ -212,7 +216,7 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResource(
 		id_need,
 		if_allow_repeat
 		);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -246,7 +250,7 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResourceFromMemory
 		id_need,
 		true
 	);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -254,18 +258,18 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResourceFromMemory
 	PancyRenderCommandList* copy_render_list;
 	PancyThreadIdGPU copy_render_list_ID;
 	check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//拷贝资源数据
 	ResourceBlockGpu* buffer_gpu_resource = GetBufferResourceData(id_need, check_error);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, data_pointer, resource_size, *buffer_gpu_resource);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -276,7 +280,7 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildBufferResourceFromMemory
 	PancyFenceIdGPU WaitFence;
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
 	check_error = buffer_gpu_resource->SetResourceCopyBrokenFence(WaitFence);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -292,7 +296,7 @@ PancystarEngine::EngineFailReason PancystarEngine::LoadBufferResourceFromFile(
 		id_need,
 		false
 		);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}

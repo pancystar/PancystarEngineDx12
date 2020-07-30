@@ -34,16 +34,18 @@ PancystarEngine::EngineFailReason PancyJsonTool::LoadJsonFile(const std::string 
 	FileOpen.open(file_name);
 	if (!FileOpen.is_open())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not open json file " + file_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Json File " + file_name, error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not open json file " + file_name,error_message);
+		
 		return error_message; 
 	}
 	root_value.clear();
 	JSONCPP_STRING errs;
 	if (!parseFromStream(builder, FileOpen, &root_value, &errs))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, errs);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Json File " + file_name, error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, errs,error_message);
+		
 		return error_message;
 	}
 	FileOpen.close();
@@ -70,8 +72,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(
 	auto check_if_have_enum_name = enum_variable_type->second.find(variable_name);
 	if (check_if_have_enum_name != enum_variable_type->second.end())
 	{
-		PancystarEngine::EngineFailReason error_message(S_OK, "Add Json Variable name " + variable_name + " repeated", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetGlobelVraiable", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogWarning(S_OK, "Add Json Variable name " + variable_name + " repeated",error_message);
+		
 		return PancystarEngine::succeed;
 	}
 	enum_variable_type->second.insert(std::pair<std::string, int32_t>(variable_name, variable_value));
@@ -86,8 +89,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetGlobelVraiable(
 	auto check_if_have_enum_value = enum_list_type->second.find(variable_value);
 	if (check_if_have_enum_value != enum_list_type->second.end())
 	{
-		PancystarEngine::EngineFailReason error_message(S_OK, "Add Json Variable value " + check_if_have_enum_value->second + " repeated", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetGlobelVraiable", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogWarning(S_OK, "Add Json Variable value " + check_if_have_enum_value->second + " repeated",error_message);
+		
 		return PancystarEngine::succeed;
 	}
 	enum_list_type->second.insert(std::pair<int32_t, std::string>(variable_value, variable_name));
@@ -135,9 +139,10 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 	if (enum_type_value == Json::Value::null)
 	{
 		//未能获得json数据
-		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value of variable " + member_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
-		return error_mesage;
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find value of variable " + member_name,error_message);
+		
+		return error_message;
 	}
 	//整数数据
 	else if (json_type == pancy_json_data_type::json_data_int)
@@ -146,9 +151,10 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 		{
 			int now_type_name = static_cast<int32_t>(enum_type_value.type());
 			//json数据对应的类型不是整数类型
-			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable " + member_name + " need int but find " + name_value_type[now_type_name]);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
-			return error_mesage;
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "the value of variable " + member_name + " need int but find " + name_value_type[now_type_name],error_message);
+			
+			return error_message;
 		}
 		if (enum_type_value.type() == Json::ValueType::intValue)
 		{
@@ -166,9 +172,10 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 		{
 			int now_type_name = static_cast<int32_t>(enum_type_value.type());
 			//json数据对应的类型不是浮点类型
-			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable " + member_name + " need float but find " + name_value_type[now_type_name]);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
-			return error_mesage;
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "the value of variable " + member_name + " need float but find " + name_value_type[now_type_name],error_message);
+			
+			return error_message;
 		}
 		variable_value.float_value = enum_type_value.asFloat();
 	}
@@ -179,9 +186,10 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 		{
 			int now_type_name = static_cast<int32_t>(enum_type_value.type());
 			//json数据对应的类型不是浮点类型
-			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable " + member_name + " need string but find " + name_value_type[now_type_name]);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
-			return error_mesage;
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "the value of variable " + member_name + " need string but find " + name_value_type[now_type_name],error_message);
+			
+			return error_message;
 		}
 		variable_value.string_value = enum_type_value.asCString();
 	}
@@ -192,18 +200,20 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetJsonMemberData
 		{
 			int now_type_name = static_cast<int32_t>(enum_type_value.type());
 			//json数据对应的类型不是浮点类型
-			PancystarEngine::EngineFailReason error_mesage(E_FAIL, "the value of variable " + member_name + " need bool but find " + name_value_type[now_type_name]);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
-			return error_mesage;
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "the value of variable " + member_name + " need bool but find " + name_value_type[now_type_name],error_message);
+			
+			return error_message;
 		}
 		variable_value.bool_value = enum_type_value.asBool();
 	}
 	else 
 	{
 		//未能获得json数据
-		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not parse value of variable " + member_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("combile Root Signature json file " + file_name + " error", error_mesage);
-		return error_mesage;
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not parse value of variable " + member_name,error_message);
+		
+		return error_message;
 	}
 	return PancystarEngine::succeed;
 }
@@ -303,8 +313,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetEnumNameByPointerName(const 
 	auto enum_member_type_data = enum_pointer_value_map.find(enum_pointer_type);
 	if (enum_member_type_data == enum_pointer_value_map.end())
 	{
-		PancystarEngine::EngineFailReason error_message(0, "could not find enum type by pointer: " + enum_pointer_type);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumNameByPointerName", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(0, "could not find enum type by pointer: " + enum_pointer_type,error_message);
+		
 		return error_message;
 	}
 	enum_type = enum_member_type_data->second;
@@ -391,8 +402,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetEnumMemberValue(const std::s
 	auto enum_parse_member = enum_parse_list.find(variable_type);
 	if (enum_parse_member == enum_parse_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetEnumMemberValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(0, "could not parse enum variable with type: " + variable_type,error_message);
+		
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->SetEnumValue(value_pointer, value_data);
@@ -403,8 +415,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetEnumArrayValue(const std::st
 	auto enum_parse_member = enum_parse_list.find(variable_type);
 	if (enum_parse_member == enum_parse_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetEnumArrayValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(0, "could not parse enum variable with type: " + variable_type,error_message);
+		
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->SetEnumArrayValue(value_pointer, enum_offset, enum_data);
@@ -415,8 +428,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::SetEnumVectorValue(const std::s
 	auto enum_parse_member = enum_parse_list.find(variable_type);
 	if (enum_parse_member == enum_parse_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::SetEnumVectorValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(0, "could not parse enum variable with type: " + variable_type,error_message);
+		
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->SetEnumVectorValue(value_pointer, enum_offsetdata, value_data);
@@ -427,8 +441,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetEnumMemberValue(const std::s
 	auto enum_parse_member = enum_parse_list.find(variable_type);
 	if (enum_parse_member == enum_parse_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumMemberValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(0, "could not parse enum variable with type: " + variable_type,error_message);
+		
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->GetEnumValue(value_pointer, value_data);
@@ -439,8 +454,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetEnumArrayValue(const std::st
 	auto enum_parse_member = enum_parse_list.find(variable_type);
 	if (enum_parse_member == enum_parse_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumMemberValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(0, "could not parse enum variable with type: " + variable_type,error_message);
+		
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->GetEnumArrayValue(value_pointer, enum_offsetdata, enum_data_out);
@@ -451,8 +467,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetEnumVectorValue(const std::s
 	auto enum_parse_member = enum_parse_list.find(variable_type);
 	if (enum_parse_member == enum_parse_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumMemberValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(0, "could not parse enum variable with type: " + variable_type,error_message);
+		
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->GetEnumVectorValue(value_pointer, enum_offsetdata, enum_data_out);
@@ -463,8 +480,9 @@ PancystarEngine::EngineFailReason PancyJsonTool::GetEnumVectorSize(const std::st
 	auto enum_parse_member = enum_parse_list.find(variable_type);
 	if (enum_parse_member == enum_parse_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(0, "could not parse enum variable with type: " + variable_type);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonTool::GetEnumMemberValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(0, "could not parse enum variable with type: " + variable_type,error_message);
+		
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error = enum_parse_member->second->GetEnumVectorSize(value_pointer, enum_size_out);

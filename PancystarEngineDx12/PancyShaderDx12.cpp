@@ -183,16 +183,18 @@ PancystarEngine::EngineFailReason PancyShaderBasic::Create()
 		{
 			memcpy(data, error_message->GetBufferPointer(), error_message->GetBufferSize());
 		}
-		PancystarEngine::EngineFailReason error_message(hr, "Compile shader : " + shader_file_name.GetAsciiString() + ":: " + shader_entry_point_name.GetAsciiString() + " error:" + data);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("load shader from file", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Compile shader : " + shader_file_name.GetAsciiString() + ":: " + shader_entry_point_name.GetAsciiString() + " error:" + data,error_message);
+		
 		return error_message;
 	}
 	//获取shader反射
 	hr = D3DReflect(shader_memory_pointer->GetBufferPointer(), shader_memory_pointer->GetBufferSize(), IID_ID3D12ShaderReflection, &shader_reflection);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "get shader reflect message : " + shader_file_name.GetAsciiString() + ":: " + shader_entry_point_name.GetAsciiString() + " error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("load shader from file", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "get shader reflect message : " + shader_file_name.GetAsciiString() + ":: " + shader_entry_point_name.GetAsciiString() + " error",error_message);
+		
 		return error_message;
 	}
 	//获取输入格式
@@ -233,13 +235,14 @@ PancystarEngine::EngineFailReason PancyShaderControl::LoadShader(const std::stri
 	auto check_data = shader_list.find(shader_final_name);
 	if (check_data != shader_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the shader " + shader_final_name + " had been insert to map before", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("build new shader", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogWarning(E_FAIL,  "the shader " + shader_final_name + " had been insert to map before",error_message);
+		
 		return error_message;
 	}
 	PancyShaderBasic *new_shader = new PancyShaderBasic(shader_file, shader_main_func, shader_type);
 	auto check_error = new_shader->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -255,7 +258,7 @@ PancystarEngine::EngineFailReason PancyShaderControl::GetShaderReflection(const 
 	{
 		//shader尚未加载，重新从文件中加载shader
 		check_error = LoadShader(shader_file, shader_main_func, shader_type);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -263,8 +266,9 @@ PancystarEngine::EngineFailReason PancyShaderControl::GetShaderReflection(const 
 	HRESULT hr = shader_data->second->GetShaderReflect().As(res_data);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy shader reflection com_ptr of shader " + shader_final_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get shader reflection", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not copy shader reflection com_ptr of shader " + shader_final_name,error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -278,7 +282,7 @@ PancystarEngine::EngineFailReason PancyShaderControl::GetShaderData(const std::s
 	{
 		//shader尚未加载，重新从文件中加载shader
 		check_error = LoadShader(shader_file, shader_main_func, shader_type);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -287,8 +291,9 @@ PancystarEngine::EngineFailReason PancyShaderControl::GetShaderData(const std::s
 	HRESULT hr = shader_data->second->GetShader().As(res_data);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy shader data com_ptr of shader " + shader_final_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get shader data", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not copy shader data com_ptr of shader " + shader_final_name,error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -312,13 +317,13 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 	//借助json反射将文件中的格式读取到类中
 	root_signature_desc_reflect.Create();
 	check_error = root_signature_desc_reflect.LoadFromJsonFile(root_signature_name.GetAsciiString());
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	RootSignatureDesc now_root_signature_desc;
 	check_error = root_signature_desc_reflect.CopyMemberData(&now_root_signature_desc, typeid(&now_root_signature_desc).name(), sizeof(now_root_signature_desc));
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -381,7 +386,7 @@ PancystarEngine::EngineFailReason PancyRootSignature::Create()
 	desc_out.Init_1_1(static_cast<UINT>(num_parameter), rootParameters, num_static_sampler, data_sampledesc, root_signature);
 	//创建rootsignature
 	check_error = BuildResource(desc_out);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -413,15 +418,17 @@ PancystarEngine::EngineFailReason PancyRootSignature::BuildResource(
 	hr = D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "serial rootsignature " + root_signature_name.GetAsciiString() + " error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create Root Signature", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "serial rootsignature " + root_signature_name.GetAsciiString() + " error",error_message);
+		
 		return error_message;
 	}
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&root_signature_data));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create root signature " + root_signature_name.GetAsciiString() + " failed");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create Root Signature", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create root signature " + root_signature_name.GetAsciiString() + " failed",error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -543,8 +550,9 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetResource(const p
 	auto root_signature_find = root_signature_array.find(root_signature_id);
 	if (root_signature_find == root_signature_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find rootsignature ID: " + std::to_string(root_signature_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find rootsignature by id", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find rootsignature ID: " + std::to_string(root_signature_id),error_message);
+		
 		return error_message;
 	}
 	root_signature_find->second->GetResource(root_signature_res);
@@ -558,14 +566,15 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::BuildRootSignature(
 	auto check_data = RootSig_name.find(rootsig_config_file);
 	if (check_data != RootSig_name.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the root signature " + rootsig_config_file + " had been insert to map before", PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("build new root signature", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogWarning(E_FAIL,  "the root signature " + rootsig_config_file + " had been insert to map before",error_message);
+		
 		return error_message;
 	}
 	//创建RootSignature
 	PancyRootSignature *data_root_signature = new PancyRootSignature(rootsig_config_file);
 	check_error = data_root_signature->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -595,7 +604,7 @@ PancystarEngine::EngineFailReason PancyRootSignatureControl::GetRootSignature(co
 	{
 		//未找到root signature，尝试加载
 		check_error = BuildRootSignature(name_in);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -623,7 +632,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetDescriptorHea
 {
 	PancystarEngine::EngineFailReason check_error;
 	check_error = PancyRootSignatureControl::GetInstance()->GetDescriptorHeapUse(root_signature_ID, descriptor_heap_name);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -634,7 +643,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetDescriptorDis
 {
 	PancystarEngine::EngineFailReason check_error;
 	check_error = PancyRootSignatureControl::GetInstance()->GetDescriptorDistribute(root_signature_ID, descriptor_distribute);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -645,8 +654,9 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::CheckCbuffer(con
 	auto cbuffer_data = Cbuffer_map.find(cbuffer_name);
 	if (cbuffer_data == Cbuffer_map.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString());
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Check Pso cbuffer", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString(),error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -657,8 +667,9 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetCbuffer(const
 	auto cbuffer_data = Cbuffer_map.find(cbuffer_name);
 	if (cbuffer_data == Cbuffer_map.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString());
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get Pso cbuffer desc", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString(),error_message);
+		
 		return error_message;
 	}
 	CbufferData = &cbuffer_data->second;
@@ -673,12 +684,13 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::BuildCbufferByNa
 	auto cbuffer_allocator = Cbuffer_map.find(cbuffer_name);
 	if (cbuffer_allocator == Cbuffer_map.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString());
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyPiplineStateObjectGraph::BuildCbufferByName", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString(),error_message);
+		
 		return error_message;
 	}
 	auto check_error = cbuffer_allocator->second->BuildNewCbuffer(cbuffer_data_out);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -693,12 +705,13 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::ReleaseCbufferBy
 	auto cbuffer_allocator = Cbuffer_map.find(cbuffer_name);
 	if (cbuffer_allocator == Cbuffer_map.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString());
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyPiplineStateObjectGraph::ReleaseCbufferByID", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in PSO: " + pso_name.GetAsciiString(),error_message);
+		
 		return error_message;
 	}
 	auto check_error = cbuffer_allocator->second->ReleaseCbuffer(buffer_resource_id, buffer_offset_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -816,7 +829,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 	//获取格式
 	Json::Value pre_read_jsonRoot;
 	auto check_error = PancyJsonTool::GetInstance()->LoadJsonFile(file_name, pre_read_jsonRoot);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -828,8 +841,9 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 	int32_t now_divide_pos = static_cast<int32_t>(now_value.string_value.find("@-->"));
 	if (now_divide_pos < 0)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not recognize PSO type" + pso_name.GetAsciiString());
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyPiplineStateObjectGraph::Create", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not recognize PSO type" + pso_name.GetAsciiString(),error_message);
+		
 		return error_message;
 	}
 	enum_data_head = now_value.string_value.substr(0, now_divide_pos);
@@ -837,8 +851,9 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 	int32_t now_enum_value = PancyJsonTool::GetInstance()->GetEnumValue(enum_data_head, enum_data_tail);
 	if (now_enum_value < 0)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not recognize PSO type" + pso_name.GetAsciiString());
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyPiplineStateObjectGraph::Create", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not recognize PSO type" + pso_name.GetAsciiString(),error_message);
+		
 		return error_message;
 	}
 	pipline_type = static_cast<PSOType>(now_enum_value);
@@ -849,7 +864,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		grapthic_reflect.Create();
 		//读取管线的格式信息
 		check_error = grapthic_reflect.LoadFromJsonMemory(file_name, pre_read_jsonRoot);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -857,7 +872,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		grapthic_reflect.CopyMemberData(&graphic_pipeline_desc, typeid(&graphic_pipeline_desc).name(), sizeof(graphic_pipeline_desc));
 		//根据读取的信息建立管线数据
 		check_error = PancyRootSignatureControl::GetInstance()->GetRootSignature(graphic_pipeline_desc.root_signature_file, root_signature_ID);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -898,19 +913,19 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			{
 				ComPtr<ID3DBlob> shader_data;
 				check_error = PancyShaderControl::GetInstance()->GetShaderData(shader_file_name[i], shader_func_name[i], shader_version[i], &shader_data);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				//获取shader reflect并存储cbuffer的信息
 				ComPtr<ID3D12ShaderReflection> now_shader_reflect;
 				check_error = PancyShaderControl::GetInstance()->GetShaderReflection(shader_file_name[i], shader_func_name[i], shader_version[i], &now_shader_reflect);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
 				check_error = BuildCbufferByShaderReflect(now_shader_reflect);
-				if (!check_error.CheckIfSucceed())
+				if (!check_error.if_succeed)
 				{
 					return check_error;
 				}
@@ -940,7 +955,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		//根据顶点着色器获取顶点输入格式
 		ComPtr<ID3D12ShaderReflection> vertex_shader_reflect;
 		check_error = PancyShaderControl::GetInstance()->GetShaderReflection(graphic_pipeline_desc.vertex_shader_file, graphic_pipeline_desc.vertex_shader_func, "vs_5_1", &vertex_shader_reflect);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -949,7 +964,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			//未找到输入缓冲区，添加新的缓冲区
 			std::vector<D3D12_INPUT_ELEMENT_DESC> input_desc_array;
 			check_error = GetInputDesc(vertex_shader_reflect, input_desc_array);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -960,7 +975,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		desc_out.InputLayout.NumElements = static_cast<UINT>(vertex_desc->input_element_num);
 		//读取当前pipeline的资源绑定格式
 		check_error = ParseDiscriptorDistribution(graphic_pipeline_desc.descriptor_type);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -968,8 +983,9 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateGraphicsPipelineState(&desc_out, IID_PPV_ARGS(&pso_data));
 		if (FAILED(hr))
 		{
-			PancystarEngine::EngineFailReason error_message(hr, "Create PSO error name " + pso_name.GetAsciiString());
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build PSO", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(hr, "Create PSO error name " + pso_name.GetAsciiString(),error_message);
+			
 			return error_message;
 		}
 	}
@@ -979,7 +995,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		compute_reflect.Create();
 		//读取管线的信息
 		check_error = compute_reflect.LoadFromJsonMemory(file_name, pre_read_jsonRoot);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -987,7 +1003,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 		compute_reflect.CopyMemberData(&compute_pipeline_desc, typeid(&compute_pipeline_desc).name(), sizeof(compute_pipeline_desc));
 		//根据读取的信息建立管线数据
 		check_error = PancyRootSignatureControl::GetInstance()->GetRootSignature(compute_pipeline_desc.root_signature_file, root_signature_ID);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -1002,19 +1018,19 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			//获取shader数据
 			ComPtr<ID3DBlob> shader_data;
 			check_error = PancyShaderControl::GetInstance()->GetShaderData(compute_pipeline_desc.compute_shader_file, compute_pipeline_desc.compute_shader_func, "cs_5_1", &shader_data);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			//获取shader reflect并存储cbuffer的信息
 			ComPtr<ID3D12ShaderReflection> now_shader_reflect;
 			check_error = PancyShaderControl::GetInstance()->GetShaderReflection(compute_pipeline_desc.compute_shader_file, compute_pipeline_desc.compute_shader_func, "cs_5_1", &now_shader_reflect);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			check_error = BuildCbufferByShaderReflect(now_shader_reflect);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -1022,7 +1038,7 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			desc_out.CS = CD3DX12_SHADER_BYTECODE(shader_data.Get());
 			//读取当前pipeline的资源绑定格式
 			check_error = ParseDiscriptorDistribution(compute_pipeline_desc.descriptor_type);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -1030,8 +1046,9 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::Create()
 			HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateComputePipelineState(&desc_out, IID_PPV_ARGS(&pso_data));
 			if (FAILED(hr))
 			{
-				PancystarEngine::EngineFailReason error_message(hr, "Create PSO error name " + pso_name.GetAsciiString());
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Build PSO", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(hr, "Create PSO error name " + pso_name.GetAsciiString(),error_message);
+				
 				return error_message;
 			}
 		}
@@ -1060,8 +1077,9 @@ const std::vector<PancyDescriptorPSODescription> &PancyPiplineStateObjectGraph::
 	default:
 		break;
 	}
-	PancystarEngine::EngineFailReason error_message(E_FAIL, "unrecognized PSO descriptor type");
-	PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO Descriptor", error_message);
+	PancystarEngine::EngineFailReason error_message;
+	PancyDebugLogError(E_FAIL, "unrecognized PSO descriptor type",error_message);
+	
 	return globel_cbuffer;
 }
 PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetInputDesc(ComPtr<ID3D12ShaderReflection> t_ShaderReflection, std::vector<D3D12_INPUT_ELEMENT_DESC> &t_InputElementDescVec)
@@ -1075,8 +1093,9 @@ PancystarEngine::EngineFailReason PancyPiplineStateObjectGraph::GetInputDesc(Com
 	hr = t_ShaderReflection->GetDesc(&t_ShaderDesc);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "get desc of shader reflect error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get input desc from shader reflect", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "get desc of shader reflect error",error_message);
+		
 		return error_message;
 	}
 	unsigned int t_ByteOffset = 0;
@@ -1284,7 +1303,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::BuildPso(const std::string
 	//加载一个新的PSO结构
 	PancyPiplineStateObjectGraph *new_pancy = new PancyPiplineStateObjectGraph(pso_config_file);
 	check_error = new_pancy->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -1311,8 +1330,9 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetPSOName(const pancy_obj
 	auto PSO_array_find = PSO_name_reflect.find(PSO_id);
 	if (PSO_array_find == PSO_name_reflect.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	pso_name_out = PSO_array_find->second;
@@ -1323,8 +1343,9 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetPSOResource(const pancy
 	auto PSO_array_find = PSO_array.find(PSO_id);
 	if (PSO_array_find == PSO_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	PSO_array_find->second->GetResource(PSO_res);
@@ -1335,8 +1356,9 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetRootSignatureResource(c
 	auto PSO_array_find = PSO_array.find(PSO_id);
 	if (PSO_array_find == PSO_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	PancyRootSignatureControl::GetInstance()->GetResource(PSO_array_find->second->GetRootSignature(), RootSig_res);
@@ -1348,8 +1370,9 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetPSODescriptorName(const
 	auto PSO_array_find = PSO_array.find(PSO_id);
 	if (PSO_array_find == PSO_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	PSO_array_find->second->GetDescriptorHeapUse(descriptor_heap_name);
@@ -1360,8 +1383,9 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDescriptorDistribute(co
 	auto PSO_array_find = PSO_array.find(PSO_id);
 	if (PSO_array_find == PSO_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	PSO_array_find->second->GetDescriptorDistribute(descriptor_distribute);
@@ -1376,7 +1400,7 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetPSO(const std::string &
 	{
 		//未找到PSO，尝试加载
 		check_error = BuildPso(name_in);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -1392,12 +1416,13 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::CheckCbuffer(const pancy_o
 	auto PSO_array_find = PSO_array.find(PSO_id);
 	if (PSO_array_find == PSO_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	check_error = PSO_array_find->second->CheckCbuffer(name_in);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -1409,12 +1434,13 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetCbuffer(const pancy_obj
 	auto PSO_array_find = PSO_array.find(PSO_id);
 	if (PSO_array_find == PSO_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	check_error = PSO_array_find->second->GetCbuffer(cbuffer_name, CbufferData);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -1431,12 +1457,13 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::BuildCbufferByName(
 	auto PSO_array_find = PSO_array.find(PSO_id);
 	if (PSO_array_find == PSO_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyEffectGraphic::BuildCbufferByName", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	check_error = PSO_array_find->second->BuildCbufferByName(cbuffer_name, cbuffer_data_out);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -1453,12 +1480,13 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::ReleaseCbufferByID(
 	auto PSO_array_find = PSO_array.find(PSO_id);
 	if (PSO_array_find == PSO_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyEffectGraphic::BuildCbufferByName", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	check_error = PSO_array_find->second->ReleaseCbufferByID(cbuffer_name, buffer_resource_id, buffer_offset_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -1474,8 +1502,9 @@ PancystarEngine::EngineFailReason PancyEffectGraphic::GetDescriptorDesc(
 	auto PSO_array_find = PSO_array.find(PSO_id);
 	if (PSO_array_find == PSO_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get PSO name", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find the PSO ID:" + std::to_string(PSO_id),error_message);
+		
 		return error_message;
 	}
 	const std::vector<PancyDescriptorPSODescription> &pre_data = PSO_array_find->second->GetDescriptor(descriptor_type);
@@ -1528,7 +1557,7 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyC
 			new_buffer_resource,
 			true
 		);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -1545,7 +1574,7 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::BuildNewCbuffer(PancyC
 		cbuffer_size,
 		cbuffer_desc_value
 	);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -1560,14 +1589,16 @@ PancystarEngine::EngineFailReason ConstantBufferAlloctor::ReleaseCbuffer(const p
 	auto buffer_resource_pointer = all_cbuffer_list.find(buffer_resource_id);
 	if (buffer_resource_pointer == all_cbuffer_list.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find buffer resource: " + std::to_string(buffer_resource_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ConstantBufferAlloctor::ReleaseCbuffer", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find buffer resource: " + std::to_string(buffer_resource_id),error_message);
+		
 		return error_message;
 	}
 	if (buffer_resource_pointer->second->now_use_offset.find(buffer_offset_id) == buffer_resource_pointer->second->now_use_offset.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find cbuffer offset: " + std::to_string(buffer_offset_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("ConstantBufferAlloctor::ReleaseCbuffer", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find cbuffer offset: " + std::to_string(buffer_offset_id),error_message);
+		
 		return error_message;
 	}
 	//将资源的偏移量释放
@@ -1627,8 +1658,9 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::SetStruct(const std::stri
 }
 PancystarEngine::EngineFailReason PancyConstantBuffer::ErrorVariableNotFind(const std::string &variable_name)
 {
-	PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find shader variable:" + variable_name + " in Cbuffer: " + cbuffer_name + " PSO:" + cbuffer_effect_name);
-	PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer Variable", error_message);
+	PancystarEngine::EngineFailReason error_message;
+	PancyDebugLogError(E_FAIL, "Could not find shader variable:" + variable_name + " in Cbuffer: " + cbuffer_name + " PSO:" + cbuffer_effect_name,error_message);
+	
 	return error_message;
 }
 PancyConstantBuffer::PancyConstantBuffer()
@@ -1654,12 +1686,12 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::Create(
 	//从json文件中读取cbuffer的布局反射
 	PancystarEngine::EngineFailReason check_error;
 	std::string cbuffer_final_name = cbuffer_effect_name + "_" + cbuffer_name;
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = GetCbufferDesc(cbuffer_final_name, root_value);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -1673,9 +1705,10 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 	Json::Value value_cbuffer_desc = root_value.get("CbufferDesc", Json::Value::null);
 	if (value_cbuffer_desc == Json::Value::null)
 	{
-		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value: CbufferDesc of variable: " + file_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyConstantBuffer::GetCbufferDesc", error_mesage);
-		return error_mesage;
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find value: CbufferDesc of variable: " + file_name,error_message);
+		
+		return error_message;
 	}
 	//读取缓冲区大小
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_desc, "BufferSize", pancy_json_data_type::json_data_int, now_value);
@@ -1684,9 +1717,10 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 	Json::Value value_cbuffer_member = value_cbuffer_desc.get("VariableMember", Json::Value::null);
 	if (value_cbuffer_member == Json::Value::null)
 	{
-		PancystarEngine::EngineFailReason error_mesage(E_FAIL, "could not find value: VariableMember of variable: " + file_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyConstantBuffer::GetCbufferDesc", error_mesage);
-		return error_mesage;
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find value: VariableMember of variable: " + file_name,error_message);
+		
+		return error_message;
 	}
 	for (Json::ArrayIndex i = 0; i < static_cast<Json::ArrayIndex>(value_cbuffer_member.size()); ++i)
 	{
@@ -1696,21 +1730,21 @@ PancystarEngine::EngineFailReason PancyConstantBuffer::GetCbufferDesc(const std:
 		value_cbuffer_variable = value_cbuffer_member.get(i, Json::nullValue);
 		//读取变量名称
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "Name", pancy_json_data_type::json_data_string, now_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		variable_name = now_value.string_value;
 		//读取变量大小
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "Size", pancy_json_data_type::json_data_int, now_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		new_variable_data.variable_size = now_value.int_value;
 		//读取变量偏移
 		check_error = PancyJsonTool::GetInstance()->GetJsonData(file_name, value_cbuffer_variable, "StartOffset", pancy_json_data_type::json_data_int, now_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -1726,12 +1760,12 @@ PancyConstantBuffer::~PancyConstantBuffer()
 	{
 		pancy_object_id effect_pso_id;
 		auto check_error = PancyEffectGraphic::GetInstance()->GetPSO(cbuffer_effect_name, effect_pso_id);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return;
 		}
 		check_error = PancyEffectGraphic::GetInstance()->ReleaseCbufferByID(effect_pso_id, cbuffer_name, buffer_ID.GetResourceId(), buffer_offset_id);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return;
 		}

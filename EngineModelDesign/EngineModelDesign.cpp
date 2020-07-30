@@ -9,7 +9,7 @@ EngineModelDesign::EngineModelDesign(QWidget *parent)
 	widget->move(QPoint(0, 150));
 	auto new_scene = new scene_test_simple();
 	PancystarEngine::EngineFailReason check_error = widget->Create(new_scene);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.if_succeed) 
 	{
 		PancystarEngine::EngineFailLog::GetInstance()->PrintLogToconsole();
 	}
@@ -34,7 +34,7 @@ void EngineModelDesign::on_actionopen_triggered()
 	if (file_name.toStdString() != "") 
 	{
 		PancystarEngine::EngineFailReason check_error = widget->LoadModel(file_name.toStdString());
-		if (check_error.CheckIfSucceed())
+		if (check_error.if_succeed)
 		{
 			ui.meshpart->clear();
 			ui.MeshLod->clear();
@@ -54,7 +54,7 @@ void EngineModelDesign::on_actionopen_triggered()
 			if (widget->CheckIfSkinMesh()) 
 			{
 				QString new_str;
-				new_str = QString::fromLocal8Bit("¹Ç÷À¶¯»­");
+				new_str = QString::fromLocal8Bit("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 				ui.label_animation_type->setText(new_str);
 				auto skin_anim_name = widget->GetSkinAnimation();
 				for (int i = 0; i < skin_anim_name.size(); ++i) 
@@ -65,7 +65,7 @@ void EngineModelDesign::on_actionopen_triggered()
 			else 
 			{
 				QString new_str;
-				new_str = QString::fromLocal8Bit("ÎÞ¶¯»­");
+				new_str = QString::fromLocal8Bit("ï¿½Þ¶ï¿½ï¿½ï¿½");
 				ui.label_animation_type->setText(new_str);
 			}
 		}
@@ -193,7 +193,7 @@ void EngineModelDesign::on_actionsave_triggered()
 	if (file_name.toStdString() != "")
 	{
 		PancystarEngine::EngineFailReason check_error = widget->SaveModel(file_name.toStdString());
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return;
 		}

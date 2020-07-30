@@ -120,14 +120,16 @@ public:
 	{
 		if (now_res_load_state == RESOURCE_LOAD_FAILED)
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "resource load failed, could not copy data to memory");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::WriteFromCpuToBuffer", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "resource load failed, could not copy data to memory",error_message);
+			
 			return error_message;
 		}
 		if (resource_usage != D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD)
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "resource type is not upload, could not copy data to memory");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Get CPU Pointer of memory block gpu", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "resource type is not upload, could not copy data to memory",error_message);
+			
 			map_pointer_out = NULL;
 			return error_message;
 		}

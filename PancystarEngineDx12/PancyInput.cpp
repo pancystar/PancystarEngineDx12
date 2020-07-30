@@ -8,12 +8,13 @@ PancystarEngine::EngineFailReason PancyInput::Init(HWND hwnd, HINSTANCE hinst)
 	HRESULT hr = DirectInput8Create(hinst, DIRECTINPUT_HEADER_VERSION, IID_IDirectInput8, (void**)&pancy_dinput, NULL);//获取DirectInput设备
 	if (FAILED(hr)) 
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "init directinput error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create directx input object", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "init directinput error",error_message);
+		
 		return error_message;
 	}
 	PancystarEngine::EngineFailReason check_error = DinputClear(hwnd, (DISCL_FOREGROUND | DISCL_NONEXCLUSIVE), (DISCL_FOREGROUND | DISCL_NONEXCLUSIVE));//创建键盘及鼠标
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.if_succeed) 
 	{
 		return check_error;
 	}
@@ -31,8 +32,9 @@ PancystarEngine::EngineFailReason PancyInput::DinputClear(HWND hwnd,DWORD keyboa
 	HRESULT hr = pancy_dinput->CreateDevice(GUID_SysKeyboard,&dinput_keyboard,NULL);
 	if (FAILED(hr)) 
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "init directinput device error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create directx input object", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "init directinput device error",error_message);
+		
 		return error_message;
 	}
 	dinput_keyboard->SetDataFormat(&c_dfDIKeyboard);//设置设备的数据格式

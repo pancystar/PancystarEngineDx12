@@ -101,7 +101,7 @@ namespace PancystarEngine
 		{
 			model_mesh = new PancystarEngine::GeometryCommonModel<T>(vertex_need, index_need, vert_num, index_num, false, true);
 			auto check_error = model_mesh->Create();
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -188,8 +188,9 @@ namespace PancystarEngine
 		{
 			if (submesh_id >= model_resource_list.size()) 
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "submesh id:" + std::to_string(submesh_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: ");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find submesh from model ", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "submesh id:" + std::to_string(submesh_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: ",error_message);
+				
 				return error_message;
 			}
 			*render_mesh = model_resource_list[submesh_id];
@@ -276,7 +277,7 @@ namespace PancystarEngine
 			instream.close();
 			PancyRenderMesh *new_submodel = new PancyRenderMesh();
 			check_error = new_submodel->Create(vertex_data, index_data, vertex_num, index_num);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}

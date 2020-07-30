@@ -16,12 +16,12 @@ PancystarEngine::EngineFailReason SceneRoot::Create(int32_t width_in, int32_t he
 
 	PancystarEngine::EngineFailReason check_error;
 	check_error = ResetScreen(width_in, height_in);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = Init();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -83,7 +83,7 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 		//加载深度模板缓冲区
 		VirtualResourcePointer default_dsv_resource;
 		auto check_error = BuildTextureResource("ScreenSpaceDepthstencil", default_tex_desc_depthstencil, default_dsv_resource,true);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -100,13 +100,13 @@ PancystarEngine::EngineFailReason SceneRoot::ResetScreen(int32_t width_in, int32
 		back_buffer_desc.push_back(new_descriptor_desc);
 	}
 	check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor("DefaultDepthBufferSRV", back_buffer_desc, Default_depthstencil_buffer,true);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//D3D12_DESCRIPTOR_HEAP_TYPE_DSV
 	check_error = ScreenChange();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -131,7 +131,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbufferByFrame(
 		std::string pso_name_pre;
 		//先检查pso是否存在
 		check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name_pre);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -147,7 +147,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbufferByFrame(
 		//cbuffer未创建，加载一个常量缓冲区
 		PancyConstantBuffer *new_cbuffer = new PancyConstantBuffer();
 		check_error = PancyEffectGraphic::GetInstance()->BuildCbufferByName(PSO_id, cbuffer_name, *new_cbuffer);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -167,7 +167,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	bool if_create = false;
 	pancy_object_id now_frame = PancyDx12DeviceBasic::GetInstance()->GetNowFrame();
 	check_error = GetGlobelCbufferByFrame(now_frame, PSO_id, cbuffer_name, cbuffer_data, if_create);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -189,7 +189,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	{
 		PancyConstantBuffer *cbuffer_data;
 		check_error = GetGlobelCbufferByFrame(i, PSO_id, cbuffer_name, &cbuffer_data, if_create);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -203,7 +203,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	}
 	std::string pso_name;
 	check_error = PancyEffectGraphic::GetInstance()->GetPSOName(PSO_id, pso_name);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -211,7 +211,7 @@ PancystarEngine::EngineFailReason SceneRoot::GetGlobelCbuffer(
 	if (if_create) 
 	{
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonGlobelDescriptor(cbuffer_name, back_buffer_desc, back_buffer_data, true);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -293,7 +293,7 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	//创建directx设备
 	PancystarEngine::EngineFailReason check_error;
 	check_error = PancyDx12DeviceBasic::SingleCreate(hwnd, window_width, window_height);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return E_FAIL;
 	}
@@ -310,13 +310,13 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	PancyInput::SingleCreate(hwnd, hInstance);
 	PancyCamera::GetInstance();
 	check_error = PancystarEngine::PancySkinAnimationControl::SingleCreate(MEMORY_128MB, MEMORY_8MB);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return E_FAIL;
 	}
 	//创建线程池管理
 	check_error = ThreadPoolGPUControl::SingleCreate();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return E_FAIL;
 	}
@@ -325,7 +325,7 @@ HRESULT engine_windows_main::game_create(SceneRoot   *new_scene_in)
 	//new_scene = new scene_test_simple();
 
 	check_error = new_scene->Create(window_width, window_height);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return E_FAIL;
 	}

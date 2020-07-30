@@ -32,8 +32,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&dxgi_factory));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create DXGIFactory Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create DXGIFactory Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	ComPtr<IDXGIAdapter1> hardwareAdapter;
@@ -41,8 +42,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	hr = D3D12CreateDevice(hardwareAdapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Dx12 Device Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Dx12 Device Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	//创建直接渲染队列
@@ -52,8 +54,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	hr = m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&command_queue_direct));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Command Queue(Direct) Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Command Queue(Direct) Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	command_queue_direct->SetName(PancystarEngine::PancyString("direct queue").GetUnicodeString().c_str());
@@ -64,8 +67,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	hr = m_device->CreateCommandQueue(&queueDesc_copy, IID_PPV_ARGS(&command_queue_copy));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Command Queue(Copy) Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Command Queue(Copy) Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	command_queue_direct->SetName(PancystarEngine::PancyString("copy queue").GetUnicodeString().c_str());
@@ -76,8 +80,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	hr = m_device->CreateCommandQueue(&queueDesc_compute, IID_PPV_ARGS(&command_queue_compute));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Command Queue(Compute) Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Init dx12 basic state", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Command Queue(Compute) Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	command_queue_direct->SetName(PancystarEngine::PancyString("Compute queue").GetUnicodeString().c_str());
@@ -86,27 +91,30 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&queue_fence_direct));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Fence Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDx12DeviceBasic::Init", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Fence Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&queue_fence_compute));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Fence Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDx12DeviceBasic::Init", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Fence Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&queue_fence_copy));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Fence Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDx12DeviceBasic::Init", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Fence Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	//创建屏幕
 	check_error = ResetScreen(width, height);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -118,7 +126,8 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::Init()
 	hr = m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create DescriptorHeap Error When init D3D basic");
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create DescriptorHeap Error When init D3D basic",error_message);
 		return error_message;
 
 	}
@@ -169,8 +178,9 @@ PancystarEngine::EngineFailReason PancyDx12DeviceBasic::ResetScreen(uint32_t win
 	);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Swap Chain Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Change window size", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Swap Chain Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	swapChain.As(&dx12_swapchain);
@@ -186,8 +196,9 @@ void PancyDx12DeviceBasic::FlushGpu()
 	wait_thread_ID_direct = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (wait_thread_ID_direct == nullptr)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Create fence event Error When build commandlist");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render command list", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Create fence event Error When build commandlist",error_message);
+		
 	}
 	command_queue_direct->Signal(queue_fence_direct.Get(), fenceValueForSignal);
 	if (queue_fence_direct->GetCompletedValue() < 1)
@@ -201,8 +212,9 @@ void PancyDx12DeviceBasic::FlushGpu()
 	wait_thread_ID_compute = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (wait_thread_ID_compute == nullptr)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Create fence event Error When build commandlist");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render command list", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Create fence event Error When build commandlist",error_message);
+		
 	}
 	command_queue_compute->Signal(queue_fence_compute.Get(), fenceValueForSignal);
 	if (queue_fence_compute->GetCompletedValue() < 1)
@@ -216,8 +228,9 @@ void PancyDx12DeviceBasic::FlushGpu()
 	wait_thread_ID_copy = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (wait_thread_ID_copy == nullptr)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Create fence event Error When build commandlist");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render command list", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Create fence event Error When build commandlist",error_message);
+		
 	}
 	command_queue_copy->Signal(queue_fence_copy.Get(), fenceValueForSignal);
 	if (queue_fence_copy->GetCompletedValue() < 1)

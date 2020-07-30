@@ -10,7 +10,7 @@ D3d12RenderWidget::D3d12RenderWidget(QWidget *parent) : QWidget(parent)
 
 D3d12RenderWidget::~D3d12RenderWidget()
 {
-	//ÔÚÕâÀïÊÍ·Å½Ó¿Ú
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·Å½Ó¿
 	//CleanUp();
 	delete new_scene;
 
@@ -33,15 +33,16 @@ D3d12RenderWidget::~D3d12RenderWidget()
 
 PancystarEngine::EngineFailReason D3d12RenderWidget::Create(SceneRoot *new_scene_in)
 {
-	//´´½¨directxÉè±¸
+	//Ú´ï¿½ï¿½ï¿½directxï¿½è±¸
 	PancystarEngine::EngineFailReason check_error;
 	check_error = PancyDx12DeviceBasic::SingleCreate((HWND)winId(), width(), height());
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build D3d12 Device");
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not Build D3d12 Device",error_message);
 		return error_message;
 	}
-	//×¢²áµ¥Àý
+	//×¢ï¿½áµ¥ï¿½
 	PancyShaderControl::GetInstance();
 	PancyRootSignatureControl::GetInstance();
 	PancyEffectGraphic::GetInstance();
@@ -52,19 +53,20 @@ PancystarEngine::EngineFailReason D3d12RenderWidget::Create(SceneRoot *new_scene
 	SubresourceControl::GetInstance();
 	PancyInput::SingleCreate((HWND)winId(), GetModuleHandle(0));
 	PancyCamera::GetInstance();
-	//´´½¨Ïß³Ì³Ø¹ÜÀí
+	//ï¿½ï¿½ß³Ì³Ø¹ï¿½ï¿½
 	check_error = ThreadPoolGPUControl::SingleCreate();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not Build d3d12 GPU pool Device");
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not Build d3d12 GPU pool Device",error_message);
 		return error_message;
 	}
-	//´´½¨³¡¾°
+	//í´´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	new_scene = new_scene_in;
 	//new_scene = new scene_test_simple();
 
 	check_error = new_scene->Create(width(), height());
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}

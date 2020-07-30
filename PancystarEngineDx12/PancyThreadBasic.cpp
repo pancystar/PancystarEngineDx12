@@ -13,8 +13,9 @@ PancystarEngine::EngineFailReason PancyRenderCommandList::Create(ID3D12CommandAl
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandList(0, command_list_type_in, allocator_use_in, pso_use_in, IID_PPV_ARGS(&command_list_data));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create CommandList Error When build commandlist");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render command list", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create CommandList Error When build commandlist",error_message);
+		
 		return error_message;
 	}
 	if_preparing.store(true);
@@ -29,8 +30,9 @@ PancystarEngine::EngineFailReason CommandListEngine::Create()
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateCommandAllocator(engine_type_id, IID_PPV_ARGS(&allocator_use));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Direct CommandAllocator Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render ThreadPoolGPU", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Direct CommandAllocator Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	if_alloctor_locked = false;
@@ -38,16 +40,18 @@ PancystarEngine::EngineFailReason CommandListEngine::Create()
 	hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&GPU_thread_fence));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create Direct Fence Error When init D3D basic");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render ThreadPoolGPU", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create Direct Fence Error When init D3D basic",error_message);
+		
 		return error_message;
 	}
 	//创建一个同步fence消息的事件
 	wait_thread_ID = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (wait_thread_ID == nullptr)
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "Create fence event Error When build commandlist");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("create render command list", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "Create fence event Error When build commandlist",error_message);
+		
 		return error_message;
 	}
 	now_prepare_commandlist = 0;
@@ -98,8 +102,9 @@ PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 	//资源分配器正在使用
 	if (if_alloctor_locked)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the resource alloctor been using now,could not alloct new resource:");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Add command list int Thread Pool GPU", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "the resource alloctor been using now,could not alloct new resource:",error_message);
+		
 		return error_message;
 	}
 	//检查当前是否还有剩余的空闲commandlist
@@ -117,7 +122,7 @@ PancystarEngine::EngineFailReason CommandListEngine::GetEmptyRenderlist
 		PancyRenderCommandList *new_render_command_list = new PancyRenderCommandList(command_list_ID_selfadd);
 		PancystarEngine::EngineFailReason check_error;
 		check_error = new_render_command_list->Create(allocator_use.Get(), pso_use_in, engine_type_id);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -135,15 +140,17 @@ PancystarEngine::EngineFailReason CommandListEngine::FreeAlloctor()
 {
 	if (command_list_work.size() != 0)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "not all of the command list work finished engine ID: " + std::to_string(engine_type_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free command allocter int Thread Pool GPU", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "not all of the command list work finished engine ID: " + std::to_string(engine_type_id),error_message);
+		
 		return error_message;
 	}
 	HRESULT hr = allocator_use->Reset();
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "release command allocator error: " + std::to_string(engine_type_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Free command allocter int Thread Pool GPU", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "release command allocator error: " + std::to_string(engine_type_id),error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -156,8 +163,9 @@ PancystarEngine::EngineFailReason CommandListEngine::SubmitRenderlist
 {
 	if (command_list_num > MaxSubmitCommandList)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not submit too much commandlist which num > " + std::to_string(MaxSubmitCommandList));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("submit command list int Thread Pool GPU", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not submit too much commandlist which num > " + std::to_string(MaxSubmitCommandList),error_message);
+		
 		return error_message;
 	}
 	//更新commandlist池
@@ -189,8 +197,9 @@ PancystarEngine::EngineFailReason CommandListEngine::SubmitRenderlist
 		else
 		{
 			//无法找到commandlist
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find finish thread ID" + std::to_string(command_list_ID[i]), PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("submit command list int Thread Pool GPU", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogWarning(E_FAIL, "could not find finish thread ID" + std::to_string(command_list_ID[i]),error_message);
+			
 			return error_message;
 		}
 	}
@@ -236,8 +245,9 @@ PancystarEngine::EngineFailReason CommandListEngine::SetGpuBrokenFence(PancyFenc
 	HRESULT hr = now_command_queue->Signal(GPU_thread_fence.Get(), fence_value_self_add);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "signel waiting value error in engine ID: " + std::to_string(engine_type_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("submit command list int Thread Pool GPU", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "signel waiting value error in engine ID: " + std::to_string(engine_type_id),error_message);
+		
 		return error_message;
 	}
 	broken_point_id = fence_value_self_add;
@@ -260,8 +270,9 @@ bool CommandListEngine::CheckGpuBrokenFence(const PancyFenceIdGPU &broken_point_
 			auto work_command_list_use = command_list_work.find(*working_thread);
 			if (work_command_list_use == command_list_work.end())
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the working thread id :" + std::to_string(*working_thread));
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("wait fence value in render command list class", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "could not find the working thread id :" + std::to_string(*working_thread),error_message);
+				
 			}
 			//将该线程标记为运行结束的待回收线程
 			work_command_list_use->second->EndProcessing();
@@ -282,8 +293,9 @@ PancystarEngine::EngineFailReason CommandListEngine::WaitGpuBrokenFence(const Pa
 		hr = GPU_thread_fence->SetEventOnCompletion(broken_point_id, wait_thread_ID);
 		if (FAILED(hr))
 		{
-			PancystarEngine::EngineFailReason error_message(hr, "reflect GPU thread fence to CPU thread handle failed");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("wait fence value in render command list class", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(hr, "reflect GPU thread fence to CPU thread handle failed",error_message);
+			
 			return error_message;
 		}
 		WaitForSingleObject(wait_thread_ID, INFINITE);
@@ -296,8 +308,9 @@ PancystarEngine::EngineFailReason CommandListEngine::WaitGpuBrokenFence(const Pa
 				auto work_command_list_use = command_list_work.find(*working_thread);
 				if (work_command_list_use == command_list_work.end())
 				{
-					PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the working thread id :" + std::to_string(*working_thread));
-					PancystarEngine::EngineFailLog::GetInstance()->AddLog("wait fence value in render command list class", error_message);
+					PancystarEngine::EngineFailReason error_message;
+					PancyDebugLogError(E_FAIL, "could not find the working thread id :" + std::to_string(*working_thread),error_message);
+					
 					return error_message;
 				}
 				//将该线程标记为运行结束的待回收线程
@@ -351,7 +364,7 @@ PancystarEngine::EngineFailReason ThreadPoolGPU::BuildNewEngine(D3D12_COMMAND_LI
 		PancystarEngine::EngineFailReason check_error;
 		CommandListEngine *new_engine_list = new CommandListEngine(engine_type);
 		check_error = new_engine_list->Create();
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -380,7 +393,7 @@ CommandListEngine* ThreadPoolGPU::GetThreadPool(D3D12_COMMAND_LIST_TYPE engine_t
 	{
 		//尚未创建对应类型的存储开辟装置
 		PancystarEngine::EngineFailReason check_error = BuildNewEngine(engine_type);
-		if (check_error.CheckIfSucceed())
+		if (check_error.if_succeed)
 		{
 			engine_data = multi_engine_list[now_frame].find(engine_id);
 			return engine_data->second;
@@ -409,7 +422,7 @@ CommandListEngine* ThreadPoolGPU::GetLastThreadPool(D3D12_COMMAND_LIST_TYPE engi
 	{
 		//尚未创建对应类型的存储开辟装置
 		PancystarEngine::EngineFailReason check_error = BuildNewEngine(engine_type);
-		if (check_error.CheckIfSucceed())
+		if (check_error.if_succeed)
 		{
 			engine_data = multi_engine_list[now_frame].find(engine_id);
 			return engine_data->second;
@@ -434,12 +447,12 @@ PancystarEngine::EngineFailReason ThreadPoolGPUControl::Create()
 {
 	PancystarEngine::EngineFailReason check_error;
 	check_error = main_contex->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = resource_load_contex->Create();
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}

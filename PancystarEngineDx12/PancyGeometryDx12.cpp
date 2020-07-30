@@ -17,7 +17,7 @@ PancystarEngine::EngineFailReason GeometryBasic::Create()
 	}
 	//注册几何体格式
 	check_error = InitGeometryDesc(if_create_adj);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -33,7 +33,7 @@ PancystarEngine::EngineFailReason GeometryBasic::Create()
 		geometry_index_buffer_view,
 		geometry_adj_index_buffer_view
 	);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}

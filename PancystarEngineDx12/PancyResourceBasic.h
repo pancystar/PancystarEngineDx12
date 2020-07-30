@@ -158,22 +158,23 @@ namespace PancystarEngine
 		auto reflect_class = PancyJsonReflectControl::GetInstance()->GetJsonReflect(typeid(ResourceDescStruct).name());
 		if (reflect_class == NULL)
 		{
-			PancystarEngine::EngineFailReason error_message(0, std::string("class: ") + typeid(ResourceDescStruct).name() + " haven't init to reflect class");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyCommonVirtualResource::InitResourceJson", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(0, std::string("class: ") + typeid(ResourceDescStruct).name() + " haven't init to reflect class",error_message);
+			
 			return error_message;
 		}
 		check_error = reflect_class->LoadFromJsonMemory(resource_name_in, root_value_in);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		check_error = reflect_class->CopyMemberData(&resource_desc, typeid(&resource_desc).name(), sizeof(resource_desc));
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		check_error = LoadResoureDataByDesc(resource_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -185,13 +186,14 @@ namespace PancystarEngine
 		//进行数据类型检查，检测成功后拷贝数据
 		if ((typeid(ResourceDescStruct*).name() != resource_type) || (resource_size != sizeof(ResourceDescStruct)))
 		{
-			PancystarEngine::EngineFailReason error_message(0, "class type dismatch: " + resource_type + " haven't init to reflect class");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyCommonVirtualResource::InitResourceMemory", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(0, "class type dismatch: " + resource_type + " haven't init to reflect class",error_message);
+			
 			return error_message;
 		}
 		resource_desc = *reinterpret_cast<ResourceDescStruct*>(resource_data);
 		auto check_error = LoadResoureDataByDesc(resource_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -201,7 +203,7 @@ namespace PancystarEngine
 	PancystarEngine::EngineFailReason PancyCommonVirtualResource<ResourceDescStruct>::InitResourceDirect(const std::string &file_name) 
 	{
 		auto check_error = LoadResoureDataByOtherFile(file_name, resource_desc);
-		if (!check_error.CheckIfSucceed()) 
+		if (!check_error.if_succeed) 
 		{
 			return check_error;
 		}
@@ -211,8 +213,9 @@ namespace PancystarEngine
 	PancystarEngine::EngineFailReason PancyCommonVirtualResource<ResourceDescStruct>::LoadResoureDataByOtherFile(const std::string &file_name, ResourceDescStruct &resource_desc)
 	{
 		//默认情况下，不处理任何非json文件的加载
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not parse file: " + file_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicVirtualResource::LoadResourceDirect", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not parse file: " + file_name,error_message);
+		
 		return error_message;
 	}
 	//虚拟资源的模拟智能指针
@@ -318,20 +321,21 @@ namespace PancystarEngine
 			if (check_data != resource_name_list.end())
 			{
 				res_pointer.MakeShared(check_data->second);
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "repeat load resource : " + name_resource_in, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Resource", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogWarning(E_FAIL, "repeat load resource : " + name_resource_in,error_message);
+				
 				return error_message;
 			}
 		}
 		//创建一个新的资源
 		PancyBasicVirtualResource *new_data = new ResourceType(if_allow_repeat);
 		check_error = new_data->Create(name_resource_in, root_value);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		check_error = AddResourceToControl(name_resource_in, new_data, res_pointer, if_allow_repeat);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -351,20 +355,21 @@ namespace PancystarEngine
 			auto check_data = resource_name_list.find(desc_file_in);
 			if (check_data != resource_name_list.end())
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "repeat load resource : " + desc_file_in, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Resource", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogWarning(E_FAIL, "repeat load resource : " + desc_file_in,error_message);
+				
 				return error_message;
 			}
 		}
 		//创建一个新的资源
 		PancyBasicVirtualResource *new_data = new ResourceType(if_allow_repeat);
 		check_error = new_data->Create(desc_file_in);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		check_error = AddResourceToControl(desc_file_in, new_data, res_pointer, if_allow_repeat);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -387,20 +392,21 @@ namespace PancystarEngine
 			auto check_data = resource_name_list.find(name_resource_in);
 			if (check_data != resource_name_list.end())
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "repeat load resource : " + name_resource_in, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Resource", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogWarning(E_FAIL, "repeat load resource : " + name_resource_in,error_message);
+				
 				return error_message;
 			}
 		}
 		//创建一个新的资源
 		PancyBasicVirtualResource *new_data = new ResourceType(if_allow_repeat);
 		check_error = new_data->Create(name_resource_in, resource_data, resource_type, resource_size);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		check_error = AddResourceToControl(name_resource_in, new_data, id_need, if_allow_repeat);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}

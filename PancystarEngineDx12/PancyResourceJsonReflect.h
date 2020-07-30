@@ -138,8 +138,9 @@ PancystarEngine::EngineFailReason PancyJsonReflect::BindArraySizeValue(
 	else 
 	{
 		//未找到变量，无法绑定
-		PancystarEngine::EngineFailReason error_message(E_FAIL, array_name + " is not an array value, could not bind it's size to other member: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::BindArraySizeValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, array_name + " is not an array value, could not bind it's size to other member: ",error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -151,8 +152,9 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SetVectorValue(JsonReflectDa
 	if (now_data_pointer->size() != offset_value)
 	{
 		//偏移量不正确，插入第i个元素要保证已经有了i个成员
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "reflect vector have wrong offset: " + reflect_data.data_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SetIntArrayValue", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "reflect vector have wrong offset: " + reflect_data.data_name,error_message);
+		
 		return error_message;
 	}
 	now_data_pointer->push_back(static_cast<T1>(input_value));
@@ -163,15 +165,16 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveArrayValueMemberToJson(c
 {
 	if (typeid(ArrayType*).name() != reflect_data.data_type_name)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "array type dismatch: " + reflect_data.data_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SaveArrayValueMemberToJson", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "array type dismatch: " + reflect_data.data_name,error_message);
+		
 		return error_message;
 	}
 	ArrayType *pointer = reinterpret_cast<ArrayType*>(reflect_data.data_pointer);
 	//获取真实使用的数组大小
 	pancy_object_id array_used_size = 0;
 	auto check_error = GetArrayDataSize(reflect_data, array_used_size);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.if_succeed) 
 	{
 		return check_error;
 	}
@@ -186,8 +189,9 @@ PancystarEngine::EngineFailReason PancyJsonReflect::SaveVectorValueMemberToJson(
 {
 	if (typeid(std::vector<ArrayType>).name() != reflect_data.data_type_name)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "array type dismatch: " + reflect_data.data_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflect::SaveArrayValueMemberToJson", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "array type dismatch: " + reflect_data.data_name,error_message);
+		
 		return error_message;
 	}
 	std::vector<ArrayType> *pointer = reinterpret_cast<std::vector<ArrayType>*>(reflect_data.data_pointer);
@@ -230,14 +234,16 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Cop
 	std::string check_data_type_name = typeid(ReflectDataType*).name();
 	if (check_data_type_name != data_type_name)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy memory for json reflect,type dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::CopyMemberData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not copy memory for json reflect,type dismatch",error_message);
+		
 		return error_message;
 	}
 	if (size != sizeof(ReflectDataType))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy memory for json reflect,size dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::CopyMemberData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not copy memory for json reflect,size dismatch",error_message);
+		
 		return error_message;
 	}
 	ReflectDataType *pointer = reinterpret_cast<ReflectDataType*>(dst_pointer);
@@ -250,21 +256,24 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Cop
 	std::string check_data_type_name = typeid(std::vector<ReflectDataType>).name();
 	if (check_data_type_name != data_type_name)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not push back vector for json reflect,type dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::CopyVectorData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not push back vector for json reflect,type dismatch",error_message);
+		
 		return error_message;
 	}
 	if (size != sizeof(ReflectDataType))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not push back vector for json reflect,size dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::CopyVectorData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not push back vector for json reflect,size dismatch",error_message);
+		
 		return error_message;
 	}
 	std::vector<ReflectDataType> *pointer = reinterpret_cast<std::vector<ReflectDataType>*>(vector_pointer);
 	if (pointer->size() != index)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not add vector memory for json reflect,index number dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::CopyMemberData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not add vector memory for json reflect,index number dismatch",error_message);
+		
 		return error_message;
 	}
 	pointer->push_back(reflect_data);
@@ -276,14 +285,16 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Res
 	std::string check_data_type_name = typeid(ReflectDataType*).name();
 	if (check_data_type_name != data_type_name)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy memory for json reflect,type dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::ResetMemoryByArrayData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not copy memory for json reflect,type dismatch",error_message);
+		
 		return error_message;
 	}
 	if (size != sizeof(ReflectDataType))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy memory for json reflect,size dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::ResetMemoryByArrayData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not copy memory for json reflect,size dismatch",error_message);
+		
 		return error_message;
 	}
 	ReflectDataType *real_data_pointer = reinterpret_cast<ReflectDataType*>(memory_pointer);
@@ -296,14 +307,16 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Res
 	std::string check_data_type_name = typeid(ReflectDataType*).name();
 	if (check_data_type_name != data_type_name)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy memory for json reflect,type dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::ResetMemoryByArrayData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not copy memory for json reflect,type dismatch",error_message);
+		
 		return error_message;
 	}
 	if (size != sizeof(ReflectDataType))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not copy memory for json reflect,size dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::ResetMemoryByArrayData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not copy memory for json reflect,size dismatch",error_message);
+		
 		return error_message;
 	}
 	ReflectDataType *real_data_pointer = reinterpret_cast<ReflectDataType*>(array_pointer);
@@ -316,21 +329,24 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Res
 	std::string check_data_type_name = typeid(std::vector<ReflectDataType>).name();
 	if (check_data_type_name != data_type_name)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not push back vector for json reflect,type dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::ResetMemoryByVectorData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not push back vector for json reflect,type dismatch",error_message);
+		
 		return error_message;
 	}
 	if (size != sizeof(ReflectDataType))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not push back vector for json reflect,size dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::ResetMemoryByVectorData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not push back vector for json reflect,size dismatch",error_message);
+		
 		return error_message;
 	}
 	std::vector<ReflectDataType> *pointer = reinterpret_cast<std::vector<ReflectDataType>*>(vector_pointer);
 	if (pointer->size() <= index)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not add vector memory for json reflect,index number dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::ResetMemoryByVectorData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not add vector memory for json reflect,index number dismatch",error_message);
+		
 		return error_message;
 	}
 	reflect_data = (*pointer)[index];
@@ -342,8 +358,9 @@ PancystarEngine::EngineFailReason PancyJsonReflectTemplate<ReflectDataType>::Get
 	std::string check_data_type_name = typeid(std::vector<ReflectDataType>).name();
 	if (check_data_type_name != data_type_name)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not push back vector for json reflect,type dismatch");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyJsonReflectTemplate::GetVectorDataSize", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not push back vector for json reflect,type dismatch",error_message);
+		
 		return error_message;
 	}
 	std::vector<ReflectDataType> *pointer = reinterpret_cast<std::vector<ReflectDataType>*>(vector_pointer);

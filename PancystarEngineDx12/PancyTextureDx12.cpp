@@ -255,7 +255,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadResoureDataByDesc(const
 		PancyCommonTextureDesc *desc_pointer = const_cast<PancyCommonTextureDesc *>(&resource_desc);
 		//启动从图片中加载纹理数据的流程
 		check_error = LoadPictureFromFile(*desc_pointer);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -263,7 +263,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadResoureDataByDesc(const
 	else
 	{
 		check_error = BuildEmptyPicture(resource_desc);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -278,7 +278,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadResoureDataByOtherFile(
 	texture_desc.if_force_srgb = false;
 	texture_desc.if_gen_mipmap = false;
 	auto check_error = LoadPictureFromFile(texture_desc);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -325,8 +325,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 		);
 		if (FAILED(hr))
 		{
-			PancystarEngine::EngineFailReason error_message(hr, "load texture: " + picture_path_file + " error");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(hr, "load texture: " + picture_path_file + " error",error_message);
+			
 			return error_message;
 		}
 		//检验纹理格式
@@ -350,8 +351,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 			arraySize = d3d10ext->arraySize;
 			if (arraySize == 0)
 			{
-				PancystarEngine::EngineFailReason error_message(ERROR_INVALID_DATA, "Texture: " + picture_path_file + " have a wrong size of array");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(ERROR_INVALID_DATA, "Texture: " + picture_path_file + " have a wrong size of array",error_message);
+				
 				return error_message;
 			}
 			switch (d3d10ext->dxgiFormat)
@@ -362,15 +364,17 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 			case DXGI_FORMAT_A8P8:
 			{
 
-				PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + " ERROR: DDSTextureLoader does not support video textures. Consider using DirectXTex instead.");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + " ERROR: DDSTextureLoader does not support video textures. Consider using DirectXTex instead.",error_message);
+				
 				return error_message;
 			}
 			default:
 				if (DirectX::LoaderHelpers::BitsPerPixel(d3d10ext->dxgiFormat) == 0)
 				{
-					PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Unknown DXGI format (" + std::to_string(static_cast<uint32_t>(d3d10ext->dxgiFormat)) + ")");
-					PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+					PancystarEngine::EngineFailReason error_message;
+					PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Unknown DXGI format (" + std::to_string(static_cast<uint32_t>(d3d10ext->dxgiFormat)) + ")",error_message);
+					
 					return error_message;
 				}
 			}
@@ -383,8 +387,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 				// D3DX writes 1D textures with a fixed Height of 1
 				if ((header->flags & DDS_HEIGHT) && height != 1)
 				{
-					PancystarEngine::EngineFailReason error_message(ERROR_INVALID_DATA, picture_path_file + "D3DX writes 1D textures with a fixed Height of 1");
-					PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+					PancystarEngine::EngineFailReason error_message;
+					PancyDebugLogError(ERROR_INVALID_DATA, picture_path_file + "D3DX writes 1D textures with a fixed Height of 1",error_message);
+					
 					return error_message;
 				}
 				height = depth = 1;
@@ -402,22 +407,25 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 			case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
 				if (!(header->flags & DDS_HEADER_FLAGS_VOLUME))
 				{
-					PancystarEngine::EngineFailReason error_message(ERROR_INVALID_DATA, picture_path_file + "ERROR: texture3d with volume texture");
-					PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+					PancystarEngine::EngineFailReason error_message;
+					PancyDebugLogError(ERROR_INVALID_DATA, picture_path_file + "ERROR: texture3d with volume texture",error_message);
+					
 					return error_message;
 				}
 
 				if (arraySize > 1)
 				{
-					PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Volume textures are not texture arrays");
-					PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+					PancystarEngine::EngineFailReason error_message;
+					PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Volume textures are not texture arrays",error_message);
+					
 					return error_message;
 				}
 				break;
 
 			default:
-				PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Unknown resource dimension: " + std::to_string(static_cast<uint32_t>(d3d10ext->resourceDimension)));
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Unknown resource dimension: " + std::to_string(static_cast<uint32_t>(d3d10ext->resourceDimension)),error_message);
+				
 				return error_message;
 			}
 
@@ -429,8 +437,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 
 			if (format == DXGI_FORMAT_UNKNOWN)
 			{
-				PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: DDSTextureLoader does not support all legacy DDS formats. Consider using DirectXTex.");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: DDSTextureLoader does not support all legacy DDS formats. Consider using DirectXTex.",error_message);
+				
 				return error_message;
 			}
 
@@ -445,8 +454,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 					// We require all six faces to be defined
 					if ((header->caps2 & DDS_CUBEMAP_ALLFACES) != DDS_CUBEMAP_ALLFACES)
 					{
-						PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: DirectX 12 does not support partial cubemaps");
-						PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+						PancystarEngine::EngineFailReason error_message;
+						PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: DirectX 12 does not support partial cubemaps",error_message);
+						
 						return error_message;
 					}
 
@@ -464,8 +474,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 		}
 		if (mipCount > D3D12_REQ_MIP_LEVELS)
 		{
-			PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Too many mipmap levels defined for DirectX 12: " + std::to_string(mipCount));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Too many mipmap levels defined for DirectX 12: " + std::to_string(mipCount),error_message);
+			
 			return error_message;
 		}
 		switch (resDim)
@@ -474,8 +485,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 			if ((arraySize > D3D12_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION) ||
 				(width > D3D12_REQ_TEXTURE1D_U_DIMENSION))
 			{
-				PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Resource dimensions too large for DirectX 12 (1D: array " + std::to_string(arraySize) + ", size " + std::to_string(width) + ")\n");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Resource dimensions too large for DirectX 12 (1D: array " + std::to_string(arraySize) + ", size " + std::to_string(width) + ")\n",error_message);
+				
 				return error_message;
 			}
 			break;
@@ -488,8 +500,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 					(width > D3D12_REQ_TEXTURECUBE_DIMENSION) ||
 					(height > D3D12_REQ_TEXTURECUBE_DIMENSION))
 				{
-					PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Resource dimensions too large for DirectX 12 (2D cubemap: " + std::to_string(arraySize) + ", size " + std::to_string(width) + "by " + std::to_string(height) + "%u)\n");
-					PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+					PancystarEngine::EngineFailReason error_message;
+					PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Resource dimensions too large for DirectX 12 (2D cubemap: " + std::to_string(arraySize) + ", size " + std::to_string(width) + "by " + std::to_string(height) + "%u)\n",error_message);
+					
 					return error_message;
 				}
 			}
@@ -497,8 +510,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 				(width > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION) ||
 				(height > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION))
 			{
-				PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Resource dimensions too large for DirectX 12 (2D: " + std::to_string(arraySize) + ", size " + std::to_string(width) + "by " + std::to_string(height) + "%u)\n");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Resource dimensions too large for DirectX 12 (2D: " + std::to_string(arraySize) + ", size " + std::to_string(width) + "by " + std::to_string(height) + "%u)\n",error_message);
+				
 				return error_message;
 			}
 			break;
@@ -509,29 +523,33 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 				(height > D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION) ||
 				(depth > D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION))
 			{
-				PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Resource dimensions too large for DirectX 12 (3D: array " + std::to_string(arraySize) + ", size " + std::to_string(width) + " by " + std::to_string(height) + " by " + std::to_string(depth) + ")\n");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Resource dimensions too large for DirectX 12 (3D: array " + std::to_string(arraySize) + ", size " + std::to_string(width) + " by " + std::to_string(height) + " by " + std::to_string(depth) + ")\n",error_message);
+				
 				return error_message;
 			}
 			break;
 
 		default:
-			PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Unknown resource dimension (" + std::to_string(static_cast<uint32_t>(resDim)) + ")\n");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(ERROR_NOT_SUPPORTED, picture_path_file + "ERROR: Unknown resource dimension (" + std::to_string(static_cast<uint32_t>(resDim)) + ")\n",error_message);
+			
 			return error_message;
 		}
 		UINT numberOfPlanes = D3D12GetFormatPlaneCount(PancyDx12DeviceBasic::GetInstance()->GetD3dDevice(), format);
 		if (!numberOfPlanes)
 		{
-			PancystarEngine::EngineFailReason error_message(E_INVALIDARG, "load: " + picture_path_file + " error, device don't support specified format: " + std::to_string(format));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::LoadPictureFromFile", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_INVALIDARG, "load: " + picture_path_file + " error, device don't support specified format: " + std::to_string(format),error_message);
+			
 			return error_message;
 		}
 		if ((numberOfPlanes > 1) && CheckIfDepthStencil(format))
 		{
 			// DirectX 12 uses planes for stencil, DirectX 11 does not
-			PancystarEngine::EngineFailReason error_message(ERROR_NOT_SUPPORTED, "load: " + picture_path_file + " error, DirectX 12 uses planes for stencil, DirectX 11 does not");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::LoadPictureFromFile", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(ERROR_NOT_SUPPORTED, "load: " + picture_path_file + " error, DirectX 12 uses planes for stencil, DirectX 11 does not",error_message);
+			
 			return error_message;
 		}
 		if_cube_map = isCubeMap;
@@ -542,8 +560,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 		numberOfResources *= numberOfPlanes;
 		if (numberOfResources > D3D12_REQ_SUBRESOURCES)
 		{
-			PancystarEngine::EngineFailReason error_message(E_INVALIDARG, "load: " + picture_path_file + " error, texture3d can't afford number of resource: " + std::to_string(numberOfResources));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::LoadPictureFromFile", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_INVALIDARG, "load: " + picture_path_file + " error, texture3d can't afford number of resource: " + std::to_string(numberOfResources),error_message);
+			
 			return error_message;
 		}
 		std::vector<D3D12_SUBRESOURCE_DATA> subresources;
@@ -581,7 +600,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 			check_error = BuildTextureResource(resDim, twidth, theight, tdepth, reservedMips - skipMip, static_cast<size_t>(arraySize),
 				format, D3D12_RESOURCE_FLAG_NONE, loadFlags, static_cast<int32_t>(subresources.size()), new_texture_desc);
 			//修改纹理大小限制重新加载
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				if (!new_texture_desc.max_size && (mipCount > 1))
 				{
@@ -599,17 +618,19 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 					{
 						check_error = BuildTextureResource(resDim, twidth, theight, tdepth, mipCount - skipMip, static_cast<size_t>(arraySize),
 							format, D3D12_RESOURCE_FLAG_NONE, loadFlags, static_cast<int32_t>(subresources.size()), new_texture_desc);
-						if (!check_error.CheckIfSucceed())
+						if (!check_error.if_succeed)
 						{
-							PancystarEngine::EngineFailReason error_message(E_INVALIDARG, "load: " + picture_path_file + "error, second try create resource");
-							PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+							PancystarEngine::EngineFailReason error_message;
+							PancyDebugLogError(E_INVALIDARG, "load: " + picture_path_file + "error, second try create resource",error_message);
+							
 							return error_message;
 						}
 					}
 					else
 					{
-						PancystarEngine::EngineFailReason error_message(E_INVALIDARG, "load: " + picture_path_file + "error, second try fillInitData failed");
-						PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+						PancystarEngine::EngineFailReason error_message;
+						PancyDebugLogError(E_INVALIDARG, "load: " + picture_path_file + "error, second try fillInitData failed",error_message);
+						
 						return error_message;
 					}
 				}
@@ -619,22 +640,24 @@ PancystarEngine::EngineFailReason PancyBasicTexture::LoadPictureFromFile(PancyCo
 				}
 			}
 			check_error = UpdateTextureResource(subresources, new_texture_desc);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 		}
 		else
 		{
-			PancystarEngine::EngineFailReason error_message(E_INVALIDARG, "load: " + picture_path_file + "error, first try fillInitData failed");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_INVALIDARG, "load: " + picture_path_file + "error, first try fillInitData failed",error_message);
+			
 			return error_message;
 		}
 	}
 	else
 	{
-		PancystarEngine::EngineFailReason error_message(ERROR_INVALID_DATA, "unsupported texture type:" + picture_path_file);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Texture From Picture", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(ERROR_INVALID_DATA, "unsupported texture type:" + picture_path_file,error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -649,7 +672,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 	PancyRenderCommandList *copy_render_list;
 	PancyThreadIdGPU copy_render_list_ID;
 	check_error = ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->GetEmptyRenderlist(NULL, &copy_render_list, copy_render_list_ID);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -658,15 +681,17 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 	UINT64 MemToAlloc = static_cast<UINT64>(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64)) * subres_size;
 	if (MemToAlloc > SIZE_MAX)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "subresource size is bigger than max_size");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("copy CPU resource to update texture", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "subresource size is bigger than max_size",error_message);
+		
 		return error_message;
 	}
 	void* pMem = HeapAlloc(GetProcessHeap(), 0, static_cast<SIZE_T>(MemToAlloc));
 	if (pMem == NULL)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "alloc heap for write resource failed");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("copy CPU resource to update texture", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "alloc heap for write resource failed",error_message);
+		
 		return error_message;
 	}
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts = reinterpret_cast<D3D12_PLACED_SUBRESOURCE_FOOTPRINT*>(pMem);
@@ -675,7 +700,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&texture_desc.texture_res_desc, 0, subres_size, 0, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
 	//拷贝资源数据
 	check_error = PancyDynamicRingBuffer::GetInstance()->CopyDataToGpu(copy_render_list, subresources, pLayouts, pRowSizesInBytes, pNumRows, RequiredSize, *texture_data);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -686,7 +711,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::UpdateTextureResource(std::
 	PancyFenceIdGPU WaitFence;
 	ThreadPoolGPUControl::GetInstance()->GetResourceLoadContex()->GetThreadPool(D3D12_COMMAND_LIST_TYPE_COPY)->SetGpuBrokenFence(WaitFence);
 	check_error = texture_data->SetResourceCopyBrokenFence(WaitFence);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -734,8 +759,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildTextureResource(
 	);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Create texture resource error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::InitResource", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Create texture resource error",error_message);
+		
 		return error_message;
 	}
 	//计算缓冲区的大小，创建资源块
@@ -788,16 +814,18 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Pan
 	);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Create texture resource error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::BuildEmptyPicture", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Create texture resource error",error_message);
+		
 		return error_message;
 	}
 	//计算缓冲区的大小
 	UINT numberOfPlanes = D3D12GetFormatPlaneCount(PancyDx12DeviceBasic::GetInstance()->GetD3dDevice(), texture_desc.texture_res_desc.Format);
 	if (!numberOfPlanes)
 	{
-		PancystarEngine::EngineFailReason error_message(E_INVALIDARG, "BuildEmptyPicture error, device don't support specified format: " + std::to_string(texture_desc.texture_res_desc.Format));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::LoadPictureFromFile", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_INVALIDARG, "BuildEmptyPicture error, device don't support specified format: " + std::to_string(texture_desc.texture_res_desc.Format),error_message);
+		
 		return error_message;
 	}
 	size_t numberOfResources = (texture_desc.texture_res_desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
@@ -806,8 +834,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::BuildEmptyPicture(const Pan
 	numberOfResources *= numberOfPlanes;
 	if (numberOfResources > D3D12_REQ_SUBRESOURCES)
 	{
-		PancystarEngine::EngineFailReason error_message(E_INVALIDARG, "BuildEmptyPicture error, texture3d can't afford number of resource: " + std::to_string(numberOfResources));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::BuildEmptyPicture", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_INVALIDARG, "BuildEmptyPicture error, texture3d can't afford number of resource: " + std::to_string(numberOfResources),error_message);
+		
 		return error_message;
 	}
 	PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->GetCopyableFootprints(&texture_desc.texture_res_desc, 0, static_cast<UINT>(numberOfResources), 0, nullptr, nullptr, nullptr, &subresources_size);
@@ -874,8 +903,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::CaptureTextureDataToWindows
 {
 	if (!CheckIfResourceLoadFinish())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "texture not loading finish,could not Capture texture");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::CaptureTextureDataToWindows", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "texture not loading finish,could not Capture texture",error_message);
+		
 		return error_message;
 	}
 	HRESULT hr = DirectX::CaptureTexture(
@@ -888,8 +918,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::CaptureTextureDataToWindows
 	);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason error_message(hr, "could not Capture texture to windows desc");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicTexture::CaptureTextureDataToWindows", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(hr, "could not Capture texture to windows desc",error_message);
+		
 		return error_message;
 	}
 	return PancystarEngine::succeed;
@@ -909,7 +940,7 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 	new_image = new DirectX::ScratchImage();
 	//将纹理数据拍摄到图片中
 	check_error = CaptureTextureDataToWindows(new_image);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -943,8 +974,9 @@ PancystarEngine::EngineFailReason PancyBasicTexture::SaveTextureToFile(
 		}
 		else
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "compress format could not recognize: " + std::to_string(texture_desc.Format));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Save texture file:" + file_name, error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "compress format could not recognize: " + std::to_string(texture_desc.Format),error_message);
+			
 			return error_message;
 		}
 		hr = DirectX::Compress(pDevice,
@@ -981,8 +1013,9 @@ ResourceBlockGpu* PancystarEngine::GetTextureResourceData(VirtualResourcePointer
 	auto now_texture_resource_value = virtual_pointer.GetResourceData();
 	if (now_texture_resource_value->GetResourceTypeName() != typeid(PancyBasicTexture).name())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "the vertex resource is not a texture");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("GetTextureResourceData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "the vertex resource is not a texture",error_message);
+		
 		check_error = error_message;
 	}
 	const PancyBasicTexture* texture_real_pointer = dynamic_cast<const PancyBasicTexture*>(now_texture_resource_value);
@@ -1003,7 +1036,7 @@ PancystarEngine::EngineFailReason PancystarEngine::LoadDDSTextureResource(
 		id_need,
 		false
 		);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -1024,7 +1057,7 @@ PancystarEngine::EngineFailReason PancystarEngine::BuildTextureResource(
 		id_need,
 		if_allow_repeat
 		);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}

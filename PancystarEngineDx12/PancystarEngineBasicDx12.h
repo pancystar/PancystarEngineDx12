@@ -98,16 +98,23 @@ namespace PancystarEngine
 		void WstringToString();
 	};
 	
+
+	struct EngineFailReason 
+	{
+		bool if_succeed = true;
+		int32_t log_id = -1;
+	};
+
 	//错误返回信息
-	class EngineFailReason
+	class EngineFailReasonMessage
 	{
 		bool if_succeed;
 		HRESULT windows_result;
 		PancyString failed_reason;
 		LogMessageType log_type;
 	public:
-		EngineFailReason();
-		EngineFailReason(HRESULT windows_result_in, std::string failed_reason_in, LogMessageType log_type_in = LOG_MESSAGE_ERROR);
+		EngineFailReasonMessage();
+		EngineFailReasonMessage(HRESULT windows_result_in, std::string failed_reason_in, LogMessageType log_type_in = LOG_MESSAGE_ERROR);
 		PancyString GetFailReason() 
 		{
 			return failed_reason;
@@ -116,7 +123,7 @@ namespace PancystarEngine
 		{
 			return log_type;
 		};
-		bool CheckIfSucceed() 
+		const bool CheckIfSucceed() const
 		{
 			return if_succeed; 
 		};
@@ -127,7 +134,7 @@ namespace PancystarEngine
 	struct PancyBasicLog 
 	{
 		std::string log_source;
-		EngineFailReason fail_reason;
+		EngineFailReasonMessage fail_reason;
 	};
 	class EngineFailLog 
 	{
@@ -156,10 +163,19 @@ namespace PancystarEngine
 			}
 		}
 		//log信息(log来源，log错误记录)
-		void AddLog(std::string log_source, EngineFailReason engine_error_message);
+		void AddLog(const std::string &log_source, const EngineFailReasonMessage &engine_error_message, EngineFailReason &error_log);
 		void SaveLogToFile(std::string log_file_name);
 		void PrintLogToconsole();
 	};
+	void BuildDebugLog(
+		const HRESULT& windows_result,
+		const std::string& error_reason,
+		const std::string& file_name,
+		const std::string& function_name,
+		const pancy_object_id& line,
+		const LogMessageType& log_type,
+		EngineFailReason& log_turn
+	);
 	//创建文件的重复查询
 	class FileBuildRepeatCheck
 	{
@@ -196,4 +212,5 @@ namespace PancystarEngine
 	pancy_resource_size SizeAligned(const pancy_resource_size &size_in, const pancy_resource_size &size_aligned_in);
 	static EngineFailReason succeed;
 }
-
+#define PancyDebugLogError(windows_result,error_reason,log_index) PancystarEngine::BuildDebugLog(windows_result,error_reason,__FILE__,__FUNCTION__,__LINE__,PancystarEngine::LogMessageType::LOG_MESSAGE_ERROR,log_index)
+#define PancyDebugLogWarning(windows_result,error_reason,log_index) PancystarEngine::BuildDebugLog(windows_result,error_reason,__FILE__,__FUNCTION__,__LINE__,PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING,log_index)

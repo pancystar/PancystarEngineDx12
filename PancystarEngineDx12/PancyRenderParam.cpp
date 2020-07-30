@@ -11,13 +11,14 @@ PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferMatrix(
 	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
 	if (cbuffer_data == per_object_cbuffer.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer Matrix", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name,error_message);
+		
 		return error_message;
 	}
 	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
 	check_error = cbuffer_data->second[now_frame_id]->SetMatrix(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -27,8 +28,9 @@ PancystarEngine::EngineFailReason BasicRenderParam::GetPsoData(ID3D12PipelineSta
 {
 	if (PSO_pointer == NULL)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Render Param Havn't Init Pipeline State Object Or Render Param Init Failed");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BasicRenderParam::GetPsoData", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Render Param Havn't Init Pipeline State Object Or Render Param Init Failed",error_message);
+		
 		return error_message;
 	}
 	*pso_data = PSO_pointer;
@@ -45,14 +47,15 @@ PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferFloat4(
 	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
 	if (cbuffer_data == per_object_cbuffer.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer float4", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name,error_message);
+		
 		return error_message;
 	}
 	//写操作作用在隔一帧的缓冲区
 	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
 	check_error = cbuffer_data->second[now_frame_id]->SetFloat4(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -69,14 +72,15 @@ PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferUint4(
 	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
 	if (cbuffer_data == per_object_cbuffer.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer uint4", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name,error_message);
+		
 		return error_message;
 	}
 	//写操作作用在隔一帧的缓冲区
 	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
 	check_error = cbuffer_data->second[now_frame_id]->SetUint4(variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -94,14 +98,15 @@ PancystarEngine::EngineFailReason BasicRenderParam::SetCbufferStructData(
 	auto cbuffer_data = per_object_cbuffer.find(cbuffer_name);
 	if (cbuffer_data == per_object_cbuffer.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Set Cbuffer struct", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Could not find Cbuffer: " + cbuffer_name + " in DescriptorObject of PSO: " + PSO_name,error_message);
+		
 		return error_message;
 	}
 	//写操作作用在隔一帧的缓冲区
 	pancy_object_id now_frame_id = PancyDx12DeviceBasic::GetInstance()->GetLastFrame();
 	check_error = cbuffer_data->second[now_frame_id]->SetStruct(variable_name, data_in, data_size, offset);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -155,31 +160,31 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 	pancy_object_id PSO_id_need;
 	//PSO数据
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id_need);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyEffectGraphic::GetInstance()->GetPSOResource(PSO_id_need, &PSO_pointer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//rootsignature数据
 	check_error = PancyEffectGraphic::GetInstance()->GetRootSignatureResource(PSO_id_need, &rootsignature);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//描述符堆数据
 	check_error = PancyDescriptorHeapControl::GetInstance()->GetBasicDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, &descriptor_heap_use);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//获取所有的全局绑定Cbuffer信息
 	const std::vector<PancyDescriptorPSODescription> *globel_cbuffer_desc;
 	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::CbufferGlobel, globel_cbuffer_desc);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -189,7 +194,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 		const std::string &cbuffer_name = (*globel_cbuffer_desc)[i].descriptor_name;
 		const pancy_object_id &now_bind_id = (*globel_cbuffer_desc)[i].rootsignature_slot;
 		check_error = PancyDescriptorHeapControl::GetInstance()->GetCommonGlobelDescriptorID(PancyDescriptorType::DescriptorTypeConstantBufferView, cbuffer_name, now_cbuffer_descriptor);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -200,7 +205,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 	//开始注册所有的私有常量缓冲区
 	const std::vector<PancyDescriptorPSODescription> *private_cbuffer_desc;
 	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::CbufferPrivate, private_cbuffer_desc);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -218,7 +223,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 			PancystarEngine::DivideFilePath(PSO_name, pso_divide_path, pso_divide_name, pso_divide_tail);
 			PancyConstantBuffer *new_cbuffer = new PancyConstantBuffer();
 			check_error = PancyEffectGraphic::GetInstance()->BuildCbufferByName(PSO_id_need, cbuffer_name, *new_cbuffer);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -241,7 +246,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 		}
 		BindDescriptorPointer now_cbuffer_descriptor;
 		check_error = PancyDescriptorHeapControl::GetInstance()->BuildCommonDescriptor(descriptor_desc_list, cbuffer_memory_data, true, now_cbuffer_descriptor);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -252,7 +257,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 	//获取所有的全局绑定ShaderResource信息
 	const std::vector<PancyDescriptorPSODescription> *globel_shader_resource_desc;
 	check_error = PancyEffectGraphic::GetInstance()->GetDescriptorDesc(PSO_id_need, PancyShaderDescriptorType::SRVGlobel, globel_shader_resource_desc);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -262,7 +267,7 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 		const std::string &shader_resource_name = (*globel_shader_resource_desc)[i].descriptor_name;
 		const pancy_object_id &now_shader_resource_bind_id = (*globel_shader_resource_desc)[i].rootsignature_slot;
 		check_error = PancyDescriptorHeapControl::GetInstance()->GetCommonGlobelDescriptorID(PancyDescriptorType::DescriptorTypeShaderResourceView, shader_resource_name, now_shader_resource_descriptor);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -281,8 +286,9 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 		auto check_if_have_resource = bind_shader_resource_in.find(shader_resource_name);
 		if (check_if_have_resource == bind_shader_resource_in.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor slot: " + shader_resource_name + " in pso: " + PSO_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("build bind descriptor & slot", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find descriptor slot: " + shader_resource_name + " in pso: " + PSO_name,error_message);
+			
 			return error_message;
 		}
 		bind_shader_resource.insert(std::pair<std::string, BindDescriptorPointer>(check_if_have_resource->first, check_if_have_resource->second));
@@ -300,8 +306,9 @@ PancystarEngine::EngineFailReason BasicRenderParam::CommonCreate(
 		auto check_if_have_resource = bindless_shader_resource_in.find(shader_resource_name);
 		if (check_if_have_resource == bindless_shader_resource_in.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor slot: " + shader_resource_name + " in pso: " + PSO_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("build bindless descriptor & slot", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find descriptor slot: " + shader_resource_name + " in pso: " + PSO_name,error_message);
+			
 			return error_message;
 		}
 		bindless_shader_resource.insert(std::pair<std::string, BindlessDescriptorPointer>(check_if_have_resource->first, check_if_have_resource->second));
@@ -323,8 +330,9 @@ PancystarEngine::EngineFailReason BasicRenderParam::AddToCommandList(PancyRender
 		m_commandList->GetCommandList()->SetComputeRootSignature(rootsignature);
 		break;
 	default:
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "commond list type is not graph/compute, could not bind shader resource data");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("BasicRenderParam::AddToCommandList", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "commond list type is not graph/compute, could not bind shader resource data",error_message);
+		
 		return error_message;
 		break;
 	}
@@ -332,28 +340,28 @@ PancystarEngine::EngineFailReason BasicRenderParam::AddToCommandList(PancyRender
 	m_commandList->GetCommandList()->SetDescriptorHeaps(1, &descriptor_heap_use);
 	//绑定普通的描述符堆的数据(todo:先按照字符串进行绑定，之后再优化)
 	check_error = BindDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeConstantBufferView, globel_constant_buffer, globel_constant_buffer_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return PancystarEngine::succeed;
 	}
 	check_error = BindDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeConstantBufferView, private_constant_buffer, private_constant_buffer_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return PancystarEngine::succeed;
 	}
 	check_error = BindDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeShaderResourceView, globel_shader_resource, globel_shader_resource_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return PancystarEngine::succeed;
 	}
 	check_error = BindDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeShaderResourceView, bind_shader_resource, bind_shader_resource_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return PancystarEngine::succeed;
 	}
 	//绑定解绑顶的描述符堆的数据
 	check_error = BindBindlessDescriptorToRootsignature(PancyDescriptorType::DescriptorTypeShaderResourceView, bindless_shader_resource, bindless_shader_resource_root_signature_offset, render_param_type, m_commandList);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return PancystarEngine::succeed;
 	}
@@ -370,8 +378,9 @@ PancystarEngine::EngineFailReason BasicRenderParam::BindDescriptorToRootsignatur
 	PancystarEngine::EngineFailReason check_error;
 	if (descriptor_data.size() != root_signature_slot_data.size())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "descriptor resource number: " + std::to_string(descriptor_data.size()) + " dismatch descriptor slot number: " + std::to_string(root_signature_slot_data.size()) + " in pso: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("bind descriptor resource to slot", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "descriptor resource number: " + std::to_string(descriptor_data.size()) + " dismatch descriptor slot number: " + std::to_string(root_signature_slot_data.size()) + " in pso: " + PSO_name,error_message);
+		
 		return error_message;
 	}
 	for (auto now_descriptor_data : descriptor_data)
@@ -379,12 +388,13 @@ PancystarEngine::EngineFailReason BasicRenderParam::BindDescriptorToRootsignatur
 		auto now_descriptor_slot = root_signature_slot_data.find(now_descriptor_data.first);
 		if (now_descriptor_slot == root_signature_slot_data.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor resource slot: " + now_descriptor_data.first + " in pso: " + PSO_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("bind descriptor resource to slot", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find descriptor resource slot: " + now_descriptor_data.first + " in pso: " + PSO_name,error_message);
+			
 			return error_message;
 		}
 		check_error = PancyDescriptorHeapControl::GetInstance()->BindCommonDescriptor(now_descriptor_data.second, render_param_type, m_commandList, now_descriptor_slot->second);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return PancystarEngine::succeed;
 		}
@@ -402,8 +412,9 @@ PancystarEngine::EngineFailReason BasicRenderParam::BindBindlessDescriptorToRoot
 	PancystarEngine::EngineFailReason check_error;
 	if (descriptor_data.size() != root_signature_slot_data.size())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "descriptor resource number: " + std::to_string(descriptor_data.size()) + " dismatch descriptor slot number: " + std::to_string(root_signature_slot_data.size()) + " in pso: " + PSO_name);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("bind descriptor resource to slot", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "descriptor resource number: " + std::to_string(descriptor_data.size()) + " dismatch descriptor slot number: " + std::to_string(root_signature_slot_data.size()) + " in pso: " + PSO_name,error_message);
+		
 		return error_message;
 	}
 	for (auto now_descriptor_data : descriptor_data)
@@ -411,12 +422,13 @@ PancystarEngine::EngineFailReason BasicRenderParam::BindBindlessDescriptorToRoot
 		auto now_descriptor_slot = root_signature_slot_data.find(now_descriptor_data.first);
 		if (now_descriptor_slot == root_signature_slot_data.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find descriptor resource slot: " + now_descriptor_data.first + " in pso: " + PSO_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("bind descriptor resource to slot", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find descriptor resource slot: " + now_descriptor_data.first + " in pso: " + PSO_name,error_message);
+			
 			return error_message;
 		}
 		check_error = PancyDescriptorHeapControl::GetInstance()->BindBindlessDescriptor(now_descriptor_data.second, render_param_type, m_commandList, now_descriptor_slot->second);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return PancystarEngine::succeed;
 		}
@@ -447,7 +459,7 @@ PancystarEngine::EngineFailReason RenderParamSystem::GetCommonRenderParam(
 	pancy_object_id PSO_id_need;
 	//PSO数据
 	check_error = PancyEffectGraphic::GetInstance()->GetPSO(PSO_name, PSO_id_need);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -464,7 +476,7 @@ PancystarEngine::EngineFailReason RenderParamSystem::GetCommonRenderParam(
 	//未发现渲染单元的模板数据，新创建一个渲染单元
 	BasicRenderParam *new_render_param = new BasicRenderParam();
 	check_error = new_render_param->CommonCreate(PSO_name, bind_shader_resource_in, bindless_shader_resource_in);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -495,12 +507,12 @@ PancystarEngine::EngineFailReason RenderParamSystem::AddRenderParamToCommandList
 	PancystarEngine::EngineFailReason check_error;
 	BasicRenderParam* data_pointer;
 	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = data_pointer->AddToCommandList(m_commandList, render_param_type);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -514,12 +526,12 @@ PancystarEngine::EngineFailReason RenderParamSystem::GetPsoData(
 	PancystarEngine::EngineFailReason check_error;
 	BasicRenderParam* data_pointer;
 	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = data_pointer->GetPsoData(pso_data);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -536,12 +548,12 @@ PancystarEngine::EngineFailReason RenderParamSystem::SetCbufferMatrix(
 	PancystarEngine::EngineFailReason check_error;
 	BasicRenderParam* data_pointer;
 	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = data_pointer->SetCbufferMatrix(cbuffer_name, variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -558,12 +570,12 @@ PancystarEngine::EngineFailReason RenderParamSystem::SetCbufferFloat4(
 	PancystarEngine::EngineFailReason check_error;
 	BasicRenderParam* data_pointer;
 	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = data_pointer->SetCbufferFloat4(cbuffer_name, variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -580,12 +592,12 @@ PancystarEngine::EngineFailReason RenderParamSystem::SetCbufferUint4(
 	PancystarEngine::EngineFailReason check_error;
 	BasicRenderParam* data_pointer;
 	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = data_pointer->SetCbufferUint4(cbuffer_name, variable_name, data_in, offset);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -603,12 +615,12 @@ PancystarEngine::EngineFailReason RenderParamSystem::SetCbufferStructData(
 	PancystarEngine::EngineFailReason check_error;
 	BasicRenderParam* data_pointer;
 	check_error = GetResource(renderparam_id, &data_pointer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = data_pointer->SetCbufferStructData(cbuffer_name, variable_name, data_in, data_size, offset);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -621,15 +633,17 @@ PancystarEngine::EngineFailReason RenderParamSystem::GetResource(const PancyRend
 	auto render_param_list_now = render_param_table.find(renderparam_id.PSO_id);
 	if (render_param_list_now == render_param_table.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find PSO ID: " + std::to_string(renderparam_id.PSO_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("RenderParamSystem::AddRenderParamToCommandList", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find PSO ID: " + std::to_string(renderparam_id.PSO_id),error_message);
+		
 		return error_message;
 	}
 	auto render_param_data = render_param_list_now->second.find(renderparam_id.render_param_id);
 	if (render_param_data == render_param_list_now->second.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find renderparam ID: " + std::to_string(renderparam_id.render_param_id));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("RenderParamSystem::AddRenderParamToCommandList", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find renderparam ID: " + std::to_string(renderparam_id.render_param_id),error_message);
+		
 		return error_message;
 	}
 	*data_pointer = render_param_data->second;

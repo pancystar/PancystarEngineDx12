@@ -10,10 +10,10 @@ VirtualResourcePointer::VirtualResourcePointer()
 VirtualResourcePointer::VirtualResourcePointer(const pancy_object_id &resource_id_in)
 {
 	auto check_error = PancyGlobelResourceControl::GetInstance()->AddResurceReference(resource_id_in);
-	if (check_error.CheckIfSucceed())
+	if (check_error.if_succeed)
 	{
 		check_error = PancyGlobelResourceControl::GetInstance()->GetResourceById(resource_id_in, &data_pointer);
-		if (check_error.CheckIfSucceed())
+		if (check_error.if_succeed)
 		{
 			resource_id = resource_id_in;
 			if_NULL = false;
@@ -23,10 +23,10 @@ VirtualResourcePointer::VirtualResourcePointer(const pancy_object_id &resource_i
 VirtualResourcePointer::VirtualResourcePointer(const VirtualResourcePointer & copy_data)
 {
 	auto check_error = PancyGlobelResourceControl::GetInstance()->AddResurceReference(copy_data.resource_id);
-	if (check_error.CheckIfSucceed())
+	if (check_error.if_succeed)
 	{
 		check_error = PancyGlobelResourceControl::GetInstance()->GetResourceById(copy_data.resource_id, &data_pointer);
-		if (check_error.CheckIfSucceed())
+		if (check_error.if_succeed)
 		{
 			resource_id = copy_data.resource_id;
 			if_NULL = false;
@@ -51,19 +51,19 @@ PancystarEngine::EngineFailReason VirtualResourcePointer::MakeShared(const pancy
 	if (!if_NULL)
 	{
 		check_error = PancyGlobelResourceControl::GetInstance()->DeleteResurceReference(resource_id);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		resource_id = 0;
 	}
 	check_error = PancyGlobelResourceControl::GetInstance()->GetResourceById(resource_id_in, &data_pointer);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	check_error = PancyGlobelResourceControl::GetInstance()->AddResurceReference(resource_id_in);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -85,9 +85,9 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::LoadInitData()
 	HRESULT hr = PancyDx12DeviceBasic::GetInstance()->GetD3dDevice()->CreateHeap(&heapDesc, IID_PPV_ARGS(&ringbuffer_heap_data));
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason check_error(hr, "Create DynamicRingBuffer Heap error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDynamicRingBuffer::LoadInitData", check_error);
-		return check_error;
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Create DynamicRingBuffer Heap error", error_message);
+		return error_message;
 	}
 	return PancystarEngine::succeed;
 }
@@ -120,8 +120,9 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
 		pancy_resource_size head_could_use_size = pointer_tail_offset - pointer_head_offset;
 		if (head_could_use_size < data_size)
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "dynamic ring-buffer is full, could not alloc new data");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDynamicRingBuffer::AllocNewDynamicData", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "dynamic ring-buffer is full, could not alloc new data",error_message);
+			
 			return error_message;
 		}
 		alloc_start_position = pointer_head_offset;
@@ -143,8 +144,9 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
 			}
 			else
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "dynamic ring-buffer is full, could not alloc new data");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDynamicRingBuffer::AllocNewDynamicData", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "dynamic ring-buffer is full, could not alloc new data",error_message);
+				
 				return error_message;
 			}
 		}
@@ -173,8 +175,8 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::AllocNewDynamicData(
 	);
 	if (FAILED(hr))
 	{
-		PancystarEngine::EngineFailReason check_error(hr, "Allocate Memory From Dynamic ring-buffer Heap error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyDynamicRingBuffer::AllocNewDynamicData", check_error);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "Allocate Memory From Dynamic ring-buffer Heap error", error_message);
 		return check_error;
 	}
 	//将创建成功的资源绑定到gpu资源
@@ -201,13 +203,13 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 	UploadResourceBlock* new_dynamic_block;
 	pancy_resource_size data_size = PancystarEngine::SizeAligned(data_size_in,65536);
 	check_error = AllocNewDynamicData(data_size, gpu_resource_pointer, &new_dynamic_block);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	//将数据从CPU拷贝到dynamic-buffer
 	check_error = new_dynamic_block->dynamic_buffer_resource.WriteFromCpuToBuffer(0, data_pointer, data_size_in);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -219,7 +221,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 		0,
 		data_size
 	);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -241,7 +243,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 	UploadResourceBlock* new_dynamic_block;
 	pancy_resource_size size_alied = PancystarEngine::SizeAligned(data_size,65536);
 	check_error = AllocNewDynamicData(size_alied, gpu_resource_pointer, &new_dynamic_block);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -253,7 +255,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 		pRowSizesInBytes,
 		pNumRows
 	);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -264,7 +266,7 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::CopyDataToGpu(
 		pLayouts,
 		static_cast<pancy_object_id>(subresources.size())
 	);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 
 		return check_error;
@@ -284,8 +286,9 @@ PancystarEngine::EngineFailReason PancyDynamicRingBuffer::RefreshOldDynamicData(
 			//检测当前资源释放之前的指针是否与期待的一致
 			if (top_data->pointer_before_alloc != pointer_tail_offset)
 			{
-				PancystarEngine::EngineFailReason error_message(E_FAIL, "dynamic buffer pointer dismatch");
-				PancystarEngine::EngineFailLog::GetInstance()->AddLog("ResourceBlockGpu::RefreshOldDynamicData", error_message);
+				PancystarEngine::EngineFailReason error_message;
+				PancyDebugLogError(E_FAIL, "dynamic buffer pointer dismatch",error_message);
+				
 				return error_message;
 			}
 			//释放完毕后修改尾指针
@@ -331,12 +334,12 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 	{
 		Json::Value jsonRoot;
 		auto check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_name_in, jsonRoot);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
 		check_error = Create(resource_name_in, jsonRoot);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -345,7 +348,7 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 	{
 		resource_type_name = typeid(*this).name();
 		auto check_error = InitResourceDirect(resource_name_in);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -357,7 +360,7 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 	resource_name = resource_name_in;
 	resource_type_name = typeid(*this).name();
 	auto check_error = InitResourceJson(resource_name_in, root_value_in);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -368,7 +371,7 @@ PancystarEngine::EngineFailReason PancyBasicVirtualResource::Create(const std::s
 	resource_name = resource_name_in;
 	resource_type_name = typeid(*this).name();
 	auto check_error = InitResourceMemory(resource_data, resource_type, resource_size);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -396,8 +399,9 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::GetResourceById(
 	auto data_now = basic_resource_array.find(resource_id);
 	if (data_now == basic_resource_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyGlobelResourceControl::GetResourceById", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogWarning(E_FAIL, "could not find resource: " + resource_id,error_message);
+		
 		return error_message;
 	}
 	*data_pointer = data_now->second;
@@ -430,7 +434,7 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::AddResourceToContr
 	//插入到资源列表
 	basic_resource_array.insert(std::pair<pancy_object_id, PancyBasicVirtualResource*>(id_now, new_data));
 	check_error = res_pointer.MakeShared(id_now);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -441,8 +445,9 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::AddResurceReferenc
 	auto data_now = basic_resource_array.find(resource_id);
 	if (data_now == basic_resource_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyGlobelResourceControl::AddResurceReference", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogWarning(E_FAIL, "could not find resource: " + resource_id,error_message);
+		
 		return error_message;
 	}
 	data_now->second->AddReference();
@@ -453,8 +458,9 @@ PancystarEngine::EngineFailReason PancyGlobelResourceControl::DeleteResurceRefer
 	auto data_now = basic_resource_array.find(resource_id);
 	if (data_now == basic_resource_array.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find resource: " + resource_id, PancystarEngine::LogMessageType::LOG_MESSAGE_WARNING);
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyGlobelResourceControl::DeleteResurceReference", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogWarning(E_FAIL, "could not find resource: " + resource_id,error_message);
+		
 		return error_message;
 	}
 	data_now->second->DeleteReference();

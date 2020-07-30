@@ -20,12 +20,12 @@ PancystarEngine::EngineFailReason PancyBasicModel::Create(const std::string &res
 {
 	Json::Value root_value;
 	auto check_error = PancyJsonTool::GetInstance()->LoadJsonFile(resource_name, root_value);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.if_succeed) 
 	{
 		return check_error;
 	}
 	check_error = InitResource(root_value, resource_name);
-	if (!check_error.CheckIfSucceed()) 
+	if (!check_error.if_succeed) 
 	{
 		return check_error;
 	}
@@ -45,8 +45,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &fi
 	instream.open(filename, ios::binary);
 	if (!instream.is_open())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "open file " + filename + " error");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Model From File", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "open file " + filename + " error",error_message);
+		
 		return error_message;
 	}
 	//读取偏移矩阵
@@ -58,7 +59,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::LoadSkinTree(const string &fi
 	//递归重建骨骼树
 	bone_object_num = bone_num;
 	auto check_error = ReadBoneTree(root_id);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -163,7 +164,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_bui
 		int32_t now_son_ID = NouseBoneStruct;
 		//递归创建子节点
 		auto check_error = ReadBoneTree(now_son_ID);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -172,15 +173,17 @@ PancystarEngine::EngineFailReason PancyBasicModel::ReadBoneTree(int32_t &now_bui
 		if (now_parent_data == bone_tree_data.end())
 		{
 			//传入的父节点不合理
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find Parent bone ID " + std::to_string(now_build_id));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Model Bone Data From File", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find Parent bone ID " + std::to_string(now_build_id),error_message);
+			
 			return error_message;
 		}
 		else if (now_data == bone_tree_data.end())
 		{
 			//生成的子节点不合理
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find Son Bone ID " + std::to_string(now_son_ID));
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Model Bone Data From File", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find Son Bone ID " + std::to_string(now_son_ID),error_message);
+			
 			return error_message;
 		}
 		else
@@ -297,8 +300,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 	//先判断模型数据是否支持骨骼动画
 	if (!if_skinmesh)
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "model: don't have skin mesh message");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::GetBoneByAnimation", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "model: don't have skin mesh message",error_message);
+		
 		return error_message;
 	}
 	std::vector<DirectX::XMFLOAT4X4> matrix_animation_save;
@@ -309,7 +313,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::GetBoneByAnimation(
 		DirectX::XMStoreFloat4x4(&matrix_animation_save[i], DirectX::XMMatrixIdentity());
 	}
 	check_error = UpdateAnimData(animation_ID, animation_time, matrix_animation_save);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -367,8 +371,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateAnimData(
 	auto skin_anim_data = skin_animation_map.find(animation_ID);
 	if (skin_anim_data == skin_animation_map.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find skin_animation ID " + std::to_string(animation_ID));
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update mesh animation", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find skin_animation ID " + std::to_string(animation_ID),error_message);
+		
 		return error_message;
 	}
 	animation_set now_animation_use = skin_anim_data->second;
@@ -420,8 +425,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateAnimData(
 		auto bone_data = bone_tree_data.find(now.bone_ID);
 		if (bone_data == bone_tree_data.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find Bone ID " + std::to_string(now.bone_ID) + " in model: ");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update mesh animation", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find Bone ID " + std::to_string(now.bone_ID) + " in model: ",error_message);
+			
 			return error_message;
 		}
 		XMStoreFloat4x4(&matrix_out[now.bone_ID], rec_scal * XMLoadFloat4x4(&rec_rot) * rec_trans);
@@ -441,8 +447,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateRoot(
 	auto now_root_bone_data = bone_tree_data.find(root_id);
 	if (now_root_bone_data == bone_tree_data.end())
 	{
-		PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find bone ID" + std::to_string(root_id) + " in model: ");
-		PancystarEngine::EngineFailLog::GetInstance()->AddLog("Update Bone tree", error_message);
+		PancystarEngine::EngineFailReason error_message;
+		PancyDebugLogError(E_FAIL, "could not find bone ID" + std::to_string(root_id) + " in model: ",error_message);
+		
 		return error_message;
 	}
 	//获取当前骨骼的动画矩阵
@@ -457,7 +464,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateRoot(
 	if (now_root_bone_data->second.bone_ID_brother != NouseBoneStruct)
 	{
 		check_error = UpdateRoot(now_root_bone_data->second.bone_ID_brother, matrix_parent, matrix_animation, matrix_combine_save, matrix_out);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -465,7 +472,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::UpdateRoot(
 	if (now_root_bone_data->second.bone_ID_son != NouseBoneStruct)
 	{
 		check_error = UpdateRoot(now_root_bone_data->second.bone_ID_son, matrix_combine_save[root_id], matrix_animation, matrix_combine_save, matrix_out);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -524,14 +531,14 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 	pancy_json_value rec_value;
 	//是否包含骨骼动画
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "IfHaveSkinAnimation", pancy_json_data_type::json_data_bool, rec_value);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
 	if_skinmesh = rec_value.bool_value;
 	//是否包含顶点动画
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "IfHavePoinAnimation", pancy_json_data_type::json_data_bool, rec_value);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -539,7 +546,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 	//读取模型的网格数据
 	int32_t model_part_num;
 	check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, root_value, "model_num", pancy_json_data_type::json_data_int, rec_value);
-	if (!check_error.CheckIfSucceed())
+	if (!check_error.if_succeed)
 	{
 		return check_error;
 	}
@@ -551,7 +558,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		if (if_skinmesh)
 		{
 			check_error = LoadMeshData<PancystarEngine::PointSkinCommon8>(model_vertex_data_name, model_index_data_name);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -559,7 +566,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		else if (if_pointmesh)
 		{
 			check_error = LoadMeshData<PancystarEngine::PointCatchCommon>(model_vertex_data_name, model_index_data_name);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -567,7 +574,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		else
 		{
 			check_error = LoadMeshData<PancystarEngine::PointCommon>(model_vertex_data_name, model_index_data_name);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -579,7 +586,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		std::string bone_data_name = path_name + file_name + ".bone";
 		//读取骨骼信息
 		check_error = LoadSkinTree(bone_data_name);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -589,7 +596,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		{
 			animation_set new_animation;
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, skin_animation_value, i, pancy_json_data_type::json_data_string, rec_value);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -612,8 +619,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 				auto now_used_bone_ID = bone_name_index.find(new_bone_data.bone_name);
 				if (now_used_bone_ID == bone_name_index.end())
 				{
-					PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find bone: " + new_bone_data.bone_name + " in model: " + resource_name);
-					PancystarEngine::EngineFailLog::GetInstance()->AddLog("Load Skin Mesh Animation Data", error_message);
+					PancystarEngine::EngineFailReason error_message;
+					PancyDebugLogError(E_FAIL, "could not find bone: " + new_bone_data.bone_name + " in model: " + resource_name,error_message);
+					
 					return error_message;
 				}
 				new_bone_data.bone_ID = now_used_bone_ID->second;
@@ -745,8 +753,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 						}
 						else
 						{
-							PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
-							PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+							PancystarEngine::EngineFailReason error_message;
+							PancyDebugLogError(E_FAIL, "could not resample animation",error_message);
+							
 							return error_message;
 						}
 					}
@@ -757,8 +766,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 					now_resample = static_cast<int32_t>(max(now_resample, each_bone_data_anim.scaling_key.size()));
 					if (max_resample_data != 0 && now_resample != max_resample_data)
 					{
-						PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
-						PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+						PancystarEngine::EngineFailReason error_message;
+						PancyDebugLogError(E_FAIL, "could not resample animation",error_message);
+						
 						return error_message;
 					}
 					for (int32_t key_index = 0; key_index < max_resample_data; ++key_index)
@@ -778,8 +788,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 						}
 						else
 						{
-							PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
-							PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+							PancystarEngine::EngineFailReason error_message;
+							PancyDebugLogError(E_FAIL, "could not resample animation",error_message);
+							
 							return error_message;
 						}
 
@@ -799,8 +810,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 						}
 						else
 						{
-							PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
-							PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+							PancystarEngine::EngineFailReason error_message;
+							PancyDebugLogError(E_FAIL, "could not resample animation",error_message);
+							
 							return error_message;
 						}
 
@@ -818,8 +830,9 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 						}
 						else
 						{
-							PancystarEngine::EngineFailReason error_message(E_FAIL, "could not resample animation");
-							PancystarEngine::EngineFailLog::GetInstance()->AddLog("PancyBasicModel::InitResource", error_message);
+							PancystarEngine::EngineFailReason error_message;
+							PancyDebugLogError(E_FAIL, "could not resample animation",error_message);
+							
 							return error_message;
 						}
 					}
@@ -831,7 +844,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		auto real_buffer_size = animation_buffer_data.size() * sizeof(AnimationNodeData);
 		animation_buffer_size = 3 * animation_buffer_data.size();
 		check_error = BuildBufferResourceFromMemory(file_name+"_animation", model_animation_buffer, &animation_buffer_data[0], real_buffer_size, true);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -858,7 +871,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		auto real_parent_buffer_size = bone_node_parent_multilayer_data.size() * sizeof(uint32_t);
 		bonetree_buffer_size = bone_node_parent_multilayer_data.size();
 		check_error = BuildBufferResourceFromMemory(file_name + "_boneparent", model_bonetree_buffer, &bone_node_parent_multilayer_data[0], real_parent_buffer_size, true);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -880,7 +893,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		auto real_offset_buffer_size = bone_offset_mat_data.size() * sizeof(DirectX::XMFLOAT4X4);
 		boneoffset_buffer_size = bone_offset_mat_data.size();
 		check_error = BuildBufferResourceFromMemory(file_name + "_boneoffset", model_boneoffset_buffer, &bone_offset_mat_data[0], real_offset_buffer_size, true);
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -896,7 +909,7 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 		for (int i = 0; i < point_animation_value.size(); ++i)
 		{
 			check_error = PancyJsonTool::GetInstance()->GetJsonData(resource_name, point_animation_value, i, pancy_json_data_type::json_data_string, rec_value);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
@@ -917,28 +930,28 @@ PancystarEngine::EngineFailReason PancyBasicModel::InitResource(const Json::Valu
 			Json::Value point_animation_buffer_type;
 			std::string buffer_subresource_name;
 			check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(Buffer_ShaderResource_static, buffer_size, buffer_subresource_name);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			PancyJsonTool::GetInstance()->SetJsonValue(point_animation_buffer_type, "BufferType", "Buffer_ShaderResource_static");
 			PancyJsonTool::GetInstance()->SetJsonValue(point_animation_buffer_type, "SubResourceFile", buffer_subresource_name);
 			check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, point_animation_buffer_type, point_aimation_buffer_pointer, true);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 
 			Json::Value point_animation_buffer_id_type;
 			check_error = PancyBasicBufferControl::GetInstance()->BuildBufferTypeJson(Buffer_ShaderResource_static, buffer_id_size, buffer_subresource_name);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}
 			PancyJsonTool::GetInstance()->SetJsonValue(point_animation_buffer_id_type, "BufferType", "Buffer_ShaderResource_static");
 			PancyJsonTool::GetInstance()->SetJsonValue(point_animation_buffer_id_type, "SubResourceFile", buffer_subresource_name);
 			check_error = PancyBasicBufferControl::GetInstance()->LoadResource(file_name, point_animation_buffer_id_type, point_aimation_id_buffer_pointer, true);
-			if (!check_error.CheckIfSucceed())
+			if (!check_error.if_succeed)
 			{
 				return check_error;
 			}

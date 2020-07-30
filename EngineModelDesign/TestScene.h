@@ -1,8 +1,8 @@
 #pragma once
 #include"..\\PancystarEngineDx12\\PancySceneDesign.h"
-#include <assimp/Importer.hpp>      // µ¼ÈëÆ÷ÔÚ¸ÃÍ·ÎÄ¼þÖÐ¶¨Òå
-#include <assimp/scene.h>           // ¶ÁÈ¡µ½µÄÄ£ÐÍÊý¾Ý¶¼·ÅÔÚsceneÖÐ
-#include <assimp/postprocess.h>     // ¸ÃÍ·ÎÄ¼þÖÐ°üº¬ºó´¦ÀíµÄ±êÖ¾Î»¶¨Òå
+#include <assimp/Importer.hpp>      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¸ï¿½Í·ï¿½Ä¼ï¿½ï¿½Ð¶ï¿½ï¿½
+#include <assimp/scene.h>           // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½Ý¶ï¿½ï¿½ï¿½ï¿½sceneï¿½ï¿½
+#include <assimp/postprocess.h>     // Ð¸ï¿½Í·ï¿½Ä¼ï¿½ï¿½Ð°ï¿½ï¿½ï¿½ï¿½Ä±ï¿½Ö¾Î»ï¿½ï¿½ï¿½
 #include <assimp/matrix4x4.h>
 #include <assimp/matrix3x3.h>
 #include <fbxsdk.h>
@@ -63,30 +63,30 @@ enum PbrMaterialType
 	PbrType_MetallicRoughness = 0,
 	PbrType_SpecularSmoothness
 };
-//±ä»»ÏòÁ¿
+//ï¿½ä»»ï¿½ï¿½ï¿½
 struct vector_animation
 {
-	float time;               //Ö¡Ê±¼ä
-	float main_key[3];        //Ö¡Êý¾Ý
+	float time;               //Ö¡Ê±ï¿½
+	float main_key[3];        //ï¿½Ö¡ï¿½ï¿½
 };
-//±ä»»ËÄÔªÊý
+//Ý±ä»»ï¿½ï¿½Ôªï¿½
 struct quaternion_animation
 {
-	float time;               //Ö¡Ê±¼ä
-	float main_key[4];        //Ö¡Êý¾Ý
+	float time;               //ï¿½Ö¡Ê±ï¿½
+	float main_key[4];        //ï¿½Ö¡ï¿½ï¿½
 };
 struct animation_data
 {
-	std::string bone_name;                              //±¾´Î±ä»»Êý¾Ý¶ÔÓ¦µÄ¹Ç÷ÀÃû³Æ
-	skin_tree *bone_point;                              //±¾´Î±ä»»Êý¾Ý¶ÔÓ¦µÄ¹Ç÷ÀµÄÖ¸Õë
-	std::vector<vector_animation> translation_key;      //¸÷¸öÆ½ÒÆ±ä»»Êý¾Ý
-	std::vector<vector_animation> scaling_key;          //¸÷¸ö·ÅËõ±ä»»Êý¾Ý
-	std::vector<quaternion_animation> rotation_key;     //¸÷¸öÐý×ª±ä»»µÄÊý¾Ý
+	std::string bone_name;                              //Ý±ï¿½ï¿½Î±ä»»ï¿½ï¿½Ý¶ï¿½Ó¦ï¿½Ä¹ï¿½ï¿½ï¿½ï¿½ï¿½
+	skin_tree *bone_point;                              //Æ±ï¿½ï¿½Î±ä»»ï¿½ï¿½Ý¶ï¿½Ó¦ï¿½Ä¹ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½
+	std::vector<vector_animation> translation_key;      //ï¿½ï¿½ï¿½Æ½ï¿½Æ±ä»»ï¿½ï¿½
+	std::vector<vector_animation> scaling_key;          //Ý¸ï¿½ï¿½ï¿½ï¿½ï¿½ä»»ï¿½ï¿½
+	std::vector<quaternion_animation> rotation_key;     //Ý¸ï¿½ï¿½ï¿½ï¿½×ªï¿½ä»»ï¿½ï¿½ï¿½ï¿½
 };
 struct animation_set
 {
-	float animation_length;                             //¶¯»­µÄ³¤¶È
-	std::vector<animation_data> data_animition;         //¸Ã¶¯»­µÄÊý¾Ý
+	float animation_length;                             //Ý¶ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½
+	std::vector<animation_data> data_animition;         //È¸Ã¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 };
 class PancySubModel
 {
@@ -100,7 +100,7 @@ public:
 	{
 		model_mesh = new PancystarEngine::GeometryCommonModel<T>(vertex_need, index_need, vert_num, index_num,false,true);
 		auto check_error = model_mesh->Create();
-		if (!check_error.CheckIfSucceed())
+		if (!check_error.if_succeed)
 		{
 			return check_error;
 		}
@@ -140,16 +140,16 @@ public:
 class PancyModelBasic : public PancystarEngine::PancyBasicVirtualResource
 {
 protected:
-	std::vector<PancySubModel*> model_resource_list;     //Ä£ÐÍµÄÃ¿¸ö×Ó²¿¼þ
+	std::vector<PancySubModel*> model_resource_list;     //ï¿½Ä£ï¿½Íµï¿½Ã¿ï¿½ï¿½ï¿½Ó²ï¿½ï¿½
 	std::unordered_map<pancy_object_id, std::unordered_map<TexType, pancy_object_id>> material_list;
 	std::vector<pancy_object_id> texture_list;
-	//Ä£ÐÍµÄLODÐÅÏ¢
+	//ï¿½Ä£ï¿½ÍµLODï¿½ï¿½ï¿½Ï¢
 	std::vector<std::vector<int32_t>> model_lod_divide;
 	std::string model_root_path;
-	//Ä£ÐÍµÄ¶¯»­ÐÅÏ¢
+	//Ä£ï¿½ÍµÄ¶ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 	bool if_skinmesh;
 	bool if_pointmesh;
-	//Ä£ÐÍµÄpbr¸ñÊ½
+	//Ä£ï¿½ÍµpbrÄ¸ï¿½Ê½
 	PbrMaterialType model_pbr_type;
 public:
 	PancyModelBasic(const std::string &desc_file_in);
@@ -162,8 +162,9 @@ public:
 	{
 		if (submodel_id > model_resource_list.size())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "submodel id:" + std::to_string(submodel_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: " + resource_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find submodel from model ", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "submodel id:" + std::to_string(submodel_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: " + resource_name,error_message);
+			
 			return 0;
 		}
 		pancy_object_id mat_use = model_resource_list[submodel_id]->GetMaterial();
@@ -179,16 +180,18 @@ public:
 	{
 		if (material_id > material_list.size())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "material id:" + std::to_string(material_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: " + resource_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find texture from model ", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "material id:" + std::to_string(material_id) + " bigger than the submodel num:" + std::to_string(model_resource_list.size()) + " of model: " + resource_name,error_message);
+			
 			return error_message;
 		}
 		auto material_data = material_list.find(material_id);
 		auto texture_data = material_data->second.find(texture_type);
 		if (texture_data == material_data->second.end())
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "could not find the texture id:" + std::to_string(texture_type) + " in material id:" + std::to_string(material_id) + "in model " + resource_name);
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Find texture from model ", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "could not find the texture id:" + std::to_string(texture_type) + " in material id:" + std::to_string(material_id) + "in model " + resource_name,error_message);
+			
 			return error_message;
 		}
 		texture_id = texture_list[texture_data->second];
@@ -229,7 +232,7 @@ public:
 
 };
 
-//FBXÎÄ¼þ½âÎö
+//FBXï¿½Ä¼ï¿½ï¿½ï¿½
 struct mesh_animation_data
 {
 	DirectX::XMFLOAT3 position;
@@ -248,13 +251,13 @@ class mesh_animation_FBX
 #undef  IOS_REF
 #define IOS_REF (*(pManager->GetIOSettings()))
 #endif
-	//FBXÊôÐÔ
+	//FBXï¿½ï¿½ï¿½ï¿½
 	bool if_fbx_file;
 	FbxString *lFilePath;
 	FbxManager* lSdkManager = NULL;
 	FbxScene* lScene = NULL;
 	std::vector<FbxMesh*> lMesh_list;
-	//¶¯»­ÊôÐÔ
+	//Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	std::vector <std::vector<std::vector<mesh_animation_data>>> anim_data_list;
 	FbxTime anim_start;
 	FbxTime anim_end;
@@ -312,23 +315,23 @@ private:
 	DirectX::XMFLOAT3 get_normal_vert(FbxMesh * pMesh, int vertex_count);
 };
 
-//AssimpÎÄ¼þ½âÎö
+//Assimpï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
 class PancyModelAssimp : public PancyModelBasic
 {
-	//ÁÙÊ±äÖÈ¾±äÁ¿(Ä£ÐÍ´¦Àí¹¤¾ßÓÉÓÚÖ»´¦ÀíÒ»¸öÄ£ÐÍ£¬²»×öview»¯´¦ÀíºÍrenderobj·â×°£¬ÕýÊ½Ê¹ÓÃ»áÓÐview»¯´¦Àí)
+	//ï¿½ï¿½ï¿½Ê±ï¿½ï¿½È¾ï¿½ï¿½ï¿½(Ä£ï¿½Í´ï¿½ï¿½í¹¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ä£ï¿½Í£ï¿½ï¿½ï¿½ï¿½viewï¿½ï¿½ï¿½ï¿½renderobjÍ·ï¿½×°ï¿½ï¿½ï¿½ï¿½Ê½Ê¹ï¿½Ã»ï¿½ï¿½viewÐ»ï¿½ï¿½ï¿½ï¿½)
 	std::string pso_use;                  //pso
-	std::vector<SubMemoryPointer> cbuffer;//³£Á¿»º³åÇø
-	std::vector<ResourceViewPointer> table_offset;//Ã¿¸öshaderÍâ²¿±äÁ¿µÄÎ»ÖÃ
-	//Ä£ÐÍ¼ÓÔØ±äÁ¿
+	std::vector<SubMemoryPointer> cbuffer;//í³£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	std::vector<ResourceViewPointer> table_offset;//ï¿½Ã¿ï¿½shaderï¿½ï¿½â²¿ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½
+	//ï¿½Ä£ï¿½Í¼ï¿½ï¿½Ø±ï¿½ï¿½
 	Assimp::Importer importer;
 	
 	std::unordered_map<pancy_object_id, std::string> material_name_list;
-	//Ä£ÐÍµÄ°üÎ§ÒÔ¼°ÐÎ±äÐÅÏ¢
+	//Ä£ï¿½ÍµÄ°ï¿½Î§ï¿½Ô¼ï¿½ï¿½Î±ï¿½ï¿½ï¿½Ï¢
 	BoundingData model_size;
 	DirectX::XMFLOAT4X4 model_translation;
 	PancystarEngine::GeometryBasic *model_boundbox;
 	
-	//¹Ç÷À¶¯»­ÐÅÏ¢
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 	skin_tree *root_skin;
 	int bone_num;
 	int root_bone_num = 0;
@@ -337,12 +340,12 @@ class PancyModelAssimp : public PancyModelBasic
 	DirectX::XMFLOAT4X4 final_matrix_array[MaxBoneNum];
 	int tree_node_num[MaxBoneNum][MaxBoneNum];
 	std::unordered_map<std::string, animation_set> skin_animation_map;
-	animation_set now_animation_use;//µ±Ç°ÕýÔÚÊ¹ÓÃµÄ¶¯»­
-	float now_animation_play_station;//µ±Ç°ÕýÔÚ²¥·ÅµÄ¶¯»­
-	DirectX::XMFLOAT4X4 bind_pose_matrix;//¿ØÖÆÄ£ÐÍÎ»ÖÃµÄ¸ù¹Ç÷ÀÆ«ÒÆ¾ØÕó
-	skin_tree *model_move_skin;//µ±Ç°¿ØÖÆÄ£ÐÍÎ»ÖÃµÄ¸ù¹Ç÷À
+	animation_set now_animation_use;//ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ÃµÄ¶ï¿½ï¿½ï¿½
+	float now_animation_play_station;//ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ÅµÄ¶ï¿½ï¿½ï¿½
+	DirectX::XMFLOAT4X4 bind_pose_matrix;//ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½Î»ï¿½ÃµÄ¸ï¿½ï¿½ï¿½ï¿½Æ«ï¿½Æ¾ï¿½ï¿½
+	skin_tree *model_move_skin;//ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½Î»ï¿½ÃµÄ¸ï¿½ï¿½ï¿½
 	bool if_animation_choose;
-	//¶¥µã¶¯»­ÐÅÏ¢
+	//ï¿½ï¿½ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½Ï¢
 	mesh_animation_FBX *FBXanim_import;
 	SubMemoryPointer vertex_anim_buffer;
 	PancyFenceIdGPU upload_fence_value;
@@ -356,7 +359,7 @@ class PancyModelAssimp : public PancyModelBasic
 		const UINT BufferSize,
 		D3D12_RESOURCE_STATES buffer_type
 	);
-	//ÎÄ¼þ´æ´¢Ö¸Õë
+	//ï¿½Ä¼ï¿½æ´¢Ö¸ï¿½
 	ofstream out_stream;
 public:
 	PancyModelAssimp(const std::string &desc_file_in, const std::string &pso_in);
@@ -446,14 +449,14 @@ private:
 		int32_t mat_start_id
 	)
 	{
-		//´´½¨¶¥µã»º³åÇø
+		//ë´´ï¿½ï¿½ï¿½ï¿½ï¿½ã»ºï¿½ï¿½ï¿½
 		for (unsigned int j = 0; j < paiMesh->mNumVertices; j++)
 		{
-			//´ÓassimpÖÐ¶ÁÈ¡µÄÊý¾Ý
+			//ï¿½assimpï¿½ï¿½Ð¶ï¿½È¡ï¿½ï¿½ï¿½ï¿½
 			point_need[j].position.x = paiMesh->mVertices[j].x;
 			point_need[j].position.y = paiMesh->mVertices[j].y;
 			point_need[j].position.z = paiMesh->mVertices[j].z;
-			//¸üÐÂAABB°üÎ§ºÐ
+			//Ý¸ï¿½ï¿½AABBÂ°ï¿½Î§ï¿½
 			if (point_need[j].position.x > model_size.max_box_pos.x)
 			{
 				model_size.max_box_pos.x = point_need[j].position.x;
@@ -505,8 +508,8 @@ private:
 				point_need[j].tangent.y = 0.0f;
 				point_need[j].tangent.z = 0.0f;
 			}
-			//Éú³ÉÎÆÀíÊ¹ÓÃÊý¾Ý
-			//Ê¹ÓÃÂþ·´ÉäÎÆÀí×÷ÎªµÚÒ»¸öÎÆÀíµÄÆ«ÒÆÁ¿,uvidµÄyÍ¨Á¿¼ÇÂ¼ÎÆÀíÊýÁ¿
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½
+			//ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½ï¿½,uvidï¿½yï¿½Í¨ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			point_need[j].tex_id.x = mat_start_id;
 			
 		}
@@ -533,7 +536,7 @@ private:
 		return false;
 	}
 	pancy_object_id insert_new_texture(std::vector<pancy_object_id> &texture_use, const pancy_object_id &tex_id);
-	//¹Ç÷À¶¯»­¼ÆËã
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	skin_tree* find_tree(skin_tree* p, char name[]);
 	skin_tree* find_tree(skin_tree* p, int num);
 	void FindRootBone(skin_tree *now_bone);
@@ -555,23 +558,23 @@ private:
 };
 class scene_test_simple : public SceneRoot
 {
-	//dx11½Ó¿Ú(ÓÃÓÚ½øÐÐbc6/7ÎÆÀíµÄgpuÑ¹Ëõ£¬µÈÎ¢ÈíÐÞÕýÁËdx12ÏÂµÄbc7Ñ¹ËõºóÔÙÏûµô)
+	//dx11ï¿½Ó¿(ï¿½ï¿½ï¿½ï¿½Ú½ï¿½ï¿½bc6/7ï¿½ï¿½ï¿½ï¿½ï¿½gpuï¿½Ñ¹ï¿½ï¿½ï¿½Î¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½dx12ï¿½ï¿½Âµbc7ï¿½Ñ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	ID3D11Device* device_pancy;
 	ID3D11DeviceContext *contex_pancy;
-	//¹ÜÏß×´Ì¬
+	//ï¿½ï¿½ï¿½ï¿½×´Ì¬
 	ComPtr<ID3D12PipelineState> m_pipelineState;
 	std::vector<PancyThreadIdGPU> renderlist_ID;
-	//Ä£ÐÍ²âÊÔ
+	//Ä£ï¿½Í²ï¿½ï¿½
 	PancystarEngine::GeometryBasic *test_model;
-	//ÊÓ¿Ú
+	//ï¿½ï¿½Ó¿
 	CD3DX12_VIEWPORT view_port;
 	CD3DX12_RECT view_rect;
-	//Ö¡µÈ´ýfenceºÅÂë
+	//ï¿½Ö¡ï¿½È´fenceï¿½ï¿½ï¿½
 	PancyFenceIdGPU broken_fence_id;
-	//×ÊÔ´°ó¶¨(Ìì¿ÕºÐ)
+	//ï¿½ï¿½ï¿½Ô´ï¿½(ï¿½ï¿½ï¿½Õº)
 	ResourceViewPointer table_offset[3];
 	SubMemoryPointer cbuffer[2];
-	//×ÊÔ´°ó¶¨(´ý´¦ÀíÄ£ÐÍ)
+	//ï¿½ï¿½ï¿½Ô´ï¿½(ó¶¨´ï¿½ï¿½ï¿½Ä£ï¿½)
 	ResourceViewPointer table_offset_model[5];
 	/*
 	cbuffer_per_object
@@ -582,10 +585,10 @@ class scene_test_simple : public SceneRoot
 	roughness/smoothness
 	*/
 	SubMemoryPointer cbuffer_model[2];
-	//Ä£ÐÍ×ÊÔ´
+	//ï¿½Ä£ï¿½ï¿½ï¿½ï¿½Ô´
 	PancyModelBasic *model_sky;
 	PancyModelBasic *model_cube;
-	//´ý´¦ÀíµÄÄ£ÐÍ×ÊÔ´
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½Ô´
 	bool if_load_model;
 	PancyModelBasic *model_deal;
 	bool if_show_boundbox;
@@ -593,15 +596,15 @@ class scene_test_simple : public SceneRoot
 	std::vector<int32_t> now_show_part;
 	bool if_show_normal;
 	bool if_show_normal_point;
-	//´ý´¦ÀíÄ£ÐÍµÄ±ä»»ÐÅÏ¢
+	//ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ÍµÄ±ä»»ï¿½ï¿½Ï¢
 	float scale_size;
 	DirectX::XMFLOAT3 translation_pos;
 	DirectX::XMFLOAT3 rotation_angle;
-	//pbrÎÆÀí
+	//pbrï¿½ï¿½ï¿½
 	pancy_object_id tex_brdf_id;
 	pancy_object_id tex_ibl_spec_id;
 	pancy_object_id tex_ibl_diffuse_id;
-	//ÆÁÄ»¿Õ¼ä»Ø¶ÁÎÆÀí
+	//ï¿½ï¿½ï¿½Ä»ï¿½Õ¼ï¿½Ø¶ï¿½ï¿½ï¿½ï¿½
 	bool if_readback_build;
 	int32_t texture_size;
 	pancy_object_id tex_uint_save[2];
@@ -615,7 +618,7 @@ class scene_test_simple : public SceneRoot
 	int32_t y_point;
 	bool if_pointed;
 	uint8_t now_point_answer;
-	//UI¿ØÖÆÐÅÏ¢
+	//UIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 	bool if_focus;
 	
 public:
@@ -668,14 +671,15 @@ public:
 		{
 			PancyModelAssimp *assimp_pointer = dynamic_cast<PancyModelAssimp*>(model_deal);
 			PancystarEngine::EngineFailReason check_error = assimp_pointer->SaveModelToFile(device_pancy,file_name);
-			if (!check_error.CheckIfSucceed()) 
+			if (!check_error.if_succeed) 
 			{
 				return check_error;
 			}
 		}
 		else 
 		{
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "model haven't load");
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "model haven't load",error_message);
 			return error_message;
 		}
 		return PancystarEngine::succeed;

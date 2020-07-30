@@ -17,8 +17,9 @@ public:
 		if (pancy_input_pInstance != NULL)
 		{
 			
-			PancystarEngine::EngineFailReason error_message(E_FAIL, "the d3d input instance have been created before");
-			PancystarEngine::EngineFailLog::GetInstance()->AddLog("Create directx input object", error_message);
+			PancystarEngine::EngineFailReason error_message;
+			PancyDebugLogError(E_FAIL, "the d3d input instance have been created before",error_message);
+			
 			return error_message;
 		}
 		else
